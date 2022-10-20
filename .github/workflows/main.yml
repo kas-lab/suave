@@ -1,0 +1,14 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  build_docker:
+    runs-on: ubuntu-latest
+    container:
+      image: rostooling/setup-ros-docker:ubuntu-jammy-latest
+    steps:
+      - uses: ros-tooling/action-ros-ci@v0.2
+        with:
+          package-name: pipeline_inspection
+          target-ros2-distro: humble
+          vcs-repo-file-url: https://raw.githubusercontent.com/kas-lab/pipeline_inspection/main/pipeline_inspection.rosinstall
