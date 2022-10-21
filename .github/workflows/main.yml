@@ -7,6 +7,8 @@ jobs:
     container:
       image: rostooling/setup-ros-docker:ubuntu-jammy-latest
     steps:
+      - name: Install Gazebo Garden deps
+        run: .github/workflows/build-and-test.sh
       - uses: ros-tooling/action-ros-ci@v0.2
         with:
           package-name: pipeline_inspection
