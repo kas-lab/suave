@@ -1,0 +1,20 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  build_docker:
+    name: Build pipeline_inspection pkg
+    runs-on: ubuntu-latest
+    container:
+      image: rostooling/setup-ros-docker:ubuntu-jammy-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Gazebo Garden deps
+        run: .github/workflows/build-and-test.sh
+      - name: Build pkg
+        uses: ros-tooling/action-ros-ci@v0.2
+        with:
+          package-name: pipeline_inspection
+          target-ros2-distro: humble
+          vcs-repo-file-url: https://raw.githubusercontent.com/kas-lab/pipeline_inspection/main/pipeline_inspection.rosinstall
