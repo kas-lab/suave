@@ -11,10 +11,6 @@ class MovePublisher(Node):
 
     def __init__(self):
         super().__init__('minimal_publisher')
-        self.rate = self.create_rate(2)
-        self.state_sub = self.create_subscription(State, '/mavros/state',
-                self.state_cb, 10)
-        self.state_sub
 
         self.arm_client = self.create_client(CommandBool, '/mavros/cmd/arming')
         while not self.arm_client.wait_for_service(timeout_sec=1.0):
