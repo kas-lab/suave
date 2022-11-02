@@ -11,6 +11,11 @@ class MovePublisher(Node):
 
     def __init__(self):
         super().__init__('minimal_publisher')
+        self.rate = self.create_rate(2)
+
+        self.state_sub = self.create_subscription(State, '/mavros/state',
+                self.state_cb, 10)
+        self.state_sub
 
         self.arm_client = self.create_client(CommandBool, '/mavros/cmd/arming')
         while not self.arm_client.wait_for_service(timeout_sec=1.0):
@@ -30,7 +35,6 @@ class MovePublisher(Node):
         self.local_pos_pub.publish(msg)
 
     def state_cb(self, msg):
-        print('entered state_cb')
         self.state = msg
 
     def normalized_to_pwm(self, x):
@@ -61,7 +65,7 @@ def main(args=None):
     msg = OverrideRCIn()
     start_time = move_publisher.get_clock().now().to_msg().sec 
     while move_publisher.get_clock().now().to_msg().sec-start_time<5:
-        print(move_publisher.get_clock().now().to_msg().sec)
+        # print(move_publisher.get_clock().now().to_msg().sec)
         movement = np.zeros(18, dtype=np.uint16)
         movement[4] = 1
         msg.channels = movement
