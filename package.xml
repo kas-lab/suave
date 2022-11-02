@@ -5,12 +5,20 @@
   <version>0.0.0</version>
   <description>TODO: Package description</description>
   <maintainer email="g.rezendesilva@tudelft.nl">gus</maintainer>
-  <license>TODO: License declaration</license>
+  <license>Apache-2.0</license>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
   <test_depend>python3-pytest</test_depend>
+
+  <build_export_depend>mavros</build_export_depend>
+  <exec_depend>mavros</exec_depend>
+  <build_depend>mavros</build_depend>
+
+  <exec_depend>mavros_msgs</exec_depend>
+  <exec_depend>mavros_wrapper</exec_depend>
+  <exec_depend>ros_gz</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
