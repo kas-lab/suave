@@ -48,6 +48,10 @@ def generate_launch_description():
 	mavros_node = Node(
         package='mavros',
         executable='mavros_node',
+        arguments = [
+            '--ros-args',
+            '-p', 'fcu_url:=udp://127.0.0.1:14551@14555'
+        ],
         parameters=[{
 		'fcu_url': LaunchConfiguration('fcu_url'),
 		'gcs_url': LaunchConfiguration('gcs_url'),
