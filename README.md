@@ -113,3 +113,10 @@ Build project:
 $  cd ~/pipeline_ws/
 $  colcon build --symlink-install
 ```
+
+## Run locally
+
+ArduSub:
+```
+$ sim_vehicle.py -L RATBeach -v ArduSub  --map --console
+```

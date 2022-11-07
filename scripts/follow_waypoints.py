@@ -56,7 +56,7 @@ if __name__ == '__main__':
     # Initialize ros node
     rclpy.init(args=sys.argv)
 
-    ardusub = BlueROVArduSubWrapper("ardusub_node")
+    ardusub = BlueROVArduSubWrapper("follow_waypoint_node")
 
     thread = threading.Thread(target=rclpy.spin, args=(ardusub, ), daemon=True)
     thread.start()
