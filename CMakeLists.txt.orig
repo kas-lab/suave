@@ -11,8 +11,13 @@ install(DIRECTORY launch
 )
 
 install(PROGRAMS
-  scripts/spiral_pattern_position.py
+<<<<<<< HEAD
+    scripts/spiral_pattern_position.py
+    DESTINATION share/${PROJECT_NAME}
+=======
+  scripts/lawn_mower.py
   DESTINATION lib/${PROJECT_NAME}
+>>>>>>> upstream/main
 )
 
 ament_package()
