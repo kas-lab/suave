@@ -7,8 +7,12 @@ find_package(rclpy REQUIRED)
 find_package(mavros_msgs REQUIRED)
 
 install(DIRECTORY launch
-  scripts/lawn_mower.py
   DESTINATION share/${PROJECT_NAME}
+)
+
+install(PROGRAMS
+  scripts/lawn_mower.py
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 ament_package()
