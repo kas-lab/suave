@@ -7,6 +7,7 @@ find_package(rclpy REQUIRED)
 find_package(mavros_msgs REQUIRED)
 
 install(DIRECTORY launch
+  scripts/lawn_mower.py
   DESTINATION share/${PROJECT_NAME}
 )
 
