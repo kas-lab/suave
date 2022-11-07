@@ -10,4 +10,9 @@ install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
 )
 
+install(PROGRAMS
+    scripts/lawn_mower_position.py
+    DESTINATION share/${PROJECT_NAME}
+)
+
 ament_package()

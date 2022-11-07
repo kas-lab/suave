@@ -1,16 +1,26 @@
+#!/usr/bin/env python
+
 import rclpy
 import threading
 from rclpy.node import Node
 import numpy as np
-from geometry_msgs.msg import PoseStamped, TwistStamped
+from geometry_msgs.msg import PoseStamped
 from mavros_msgs.msg import State, OverrideRCIn  
 from mavros_msgs.srv import CommandBool, SetMode
 
+def spiral_points(spiral_iteration, old_x, old_y, spiral_width):
+    spiral_width = 0.3
+    new_x = old_x + np.cos(spiral_width * spiral_iteration) * 0.02 * spiral_iteration 
+    new_y = old_y + np.sin(spiral_width * spiral_iteration) * 0.02 * spiral_iteration 
+
+    spiral_iteration += 1.
+
+    return new_x, new_y, spiral_iteration 
 
 class MovePublisher(Node):
 
     def __init__(self):
-        super().__init__('minimal_publisher')
+        super().__init__('pose_publisher')
         self.rate = self.create_rate(2)
 
         self.state_sub = self.create_subscription(State, '/mavros/state',
@@ -27,25 +37,18 @@ class MovePublisher(Node):
             print('Waiting for mode service')
             self.get_logger().info('service not available, waiting again...')
 
-        # self.local_pos_pub = self.create_publisher(PoseStamped,
-                # '/mavros/setpoint_position/local', 10)
-        self.local_vel_pub = self.create_publisher(TwistStamped,
-                '/mavros/setpoint_velocity/cmd_vel', 10)
+        self.local_pos_pub = self.create_publisher(PoseStamped,
+                '/mavros/setpoint_position/local', 10)
+
         self.state = State()
 
-    # def move_publisher_callback(self, msg):
-        # self.local_pos_pub.publish(msg)
-
-    def move_publisher_callback(self, vel):
-        print('forward vel=', vel.twist.linear.x, ' angular vel=',
-                vel.twist.angular.z)
-        self.local_vel_pub.publish(vel)
+    def pose_publisher_cb(self, point):
+        print('x position=', point.pose.position.x, ' y position=',
+                point.pose.position.y)
+        self.local_pos_pub.publish(point)
 
     def state_cb(self, msg):
         self.state = msg
-
-    def normalized_to_pwm(self, x):
-        return int((1900-1500)*x + 1500)
 
 def main(args=None):
     rclpy.init(args=args)
@@ -69,28 +72,22 @@ def main(args=None):
         move_publisher.mode_client.call_async(mode)
         move_publisher.rate.sleep()
 
-    vel = TwistStamped()
-    angular_vel = 10.0
-    forward_vel = 5.0
-
-    # CHANGE FRAME OF TOPIC WHERE VEL IS POSTED TO
-    # vel.twist.linear.x = forward_vel*np.sin(angular_vel)
-    vel.twist.linear.x = 10.0
-    # vel.twist.linear.y = forward_vel*np.cos(angular_vel)
-    vel.twist.linear.y = 10.0
-    
-    # vel.twist.angular.z = angular_vel
-
-    print('moving with forward_vel={} and angular_vel={}'.format(forward_vel,
-        angular_vel))
-
-    i=0
+    # Initialize variables
+    spiral_iteration = 0
+    x = 0
+    y = 0
+    i = 0
+    point = PoseStamped()
     try:
         while rclpy.ok():
-            print(i,'th print')
-            move_publisher.move_publisher_callback(vel)
+            if i%4==0:
+                print(spiral_iteration,'th iteration')
+                x,y,spiral_iteration = spiral_points(spiral_iteration, x, y, 1.0)
+                point.pose.position.x = x
+                point.pose.position.y = y
+                move_publisher.pose_publisher_cb(point)
             move_publisher.rate.sleep()
-            i+=1
+            i += 1 
     except KeyboardInterrupt:
         pass
     move_publisher.destroy_node()
