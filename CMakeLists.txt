@@ -11,7 +11,7 @@ install(DIRECTORY launch
 )
 
 install(PROGRAMS
-    scripts/lawn_mower_position.py
+    scripts/spiral_pattern_position.py
     DESTINATION share/${PROJECT_NAME}
 )
 
