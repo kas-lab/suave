@@ -5,8 +5,9 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-
+from launch.actions import DeclareLaunchArgument
 from launch_ros.actions import Node
+from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
@@ -18,6 +19,13 @@ def generate_launch_description():
     min_pipes_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(min_pipes_launch_path))
 
+    pipeline_inspection_path = get_package_share_directory('pipeline_inspection')
+    mavros_launch_path = os.path.join(
+        pipeline_inspection_path, 'launch', 'mavros.launch.py')
+
+    mavros_node = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(mavros_launch_path))
+
     bluerov2_ignition_path = get_package_share_directory('bluerov2_ignition')
     bluerov2_path = os.path.join(
         bluerov2_ignition_path, 'models', 'bluerov2')
@@ -27,6 +35,8 @@ def generate_launch_description():
         package='ros_gz_sim',
         executable='create',
         arguments=[
+            '-v4',
+            '-g',
             '-world', 'min_pipes',
             '-file', bluerov2_path,
             '-name', 'bluerov2',
@@ -39,4 +49,5 @@ def generate_launch_description():
     return LaunchDescription([
         min_pipes_sim,
         bluerov_spawn,
+        mavros_node
     ])
