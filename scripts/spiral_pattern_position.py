@@ -4,93 +4,59 @@ import rclpy
 import threading
 from rclpy.node import Node
 import numpy as np
+
 from geometry_msgs.msg import PoseStamped
 from mavros_msgs.msg import State, OverrideRCIn  
 from mavros_msgs.srv import CommandBool, SetMode
 
-def spiral_points(spiral_iteration, old_x, old_y, spiral_width):
-    spiral_width = 0.3
-    new_x = old_x + np.cos(spiral_width * spiral_iteration) * 0.02 * spiral_iteration 
-    new_y = old_y + np.sin(spiral_width * spiral_iteration) * 0.02 * spiral_iteration 
+from mavros_wrapper.ardusub_wrapper import *
 
-    spiral_iteration += 1.
+def check_setpoint_reached(a, x, y, delta=0.1):
+    return abs(a.x - x) <= delta \
+            and abs(a.y - y) <= delta
 
-    return new_x, new_y, spiral_iteration 
-
-class MovePublisher(Node):
-
-    def __init__(self):
-        super().__init__('pose_publisher')
-        self.rate = self.create_rate(2)
-
-        self.state_sub = self.create_subscription(State, '/mavros/state',
-                self.state_cb, 10)
-        self.state_sub
-
-        self.arm_client = self.create_client(CommandBool, '/mavros/cmd/arming')
-        while not self.arm_client.wait_for_service(timeout_sec=1.0):
-            print('Waiting for arm service')
-            self.get_logger().info('service not available, waiting again...')
-
-        self.mode_client = self.create_client(SetMode, '/mavros/set_mode')
-        while not self.mode_client.wait_for_service(timeout_sec=1.0):
-            print('Waiting for mode service')
-            self.get_logger().info('service not available, waiting again...')
-
-        self.local_pos_pub = self.create_publisher(PoseStamped,
-                '/mavros/setpoint_position/local', 10)
-
-        self.state = State()
-
-    def pose_publisher_cb(self, point):
-        print('x position=', point.pose.position.x, ' y position=',
-                point.pose.position.y)
-        self.local_pos_pub.publish(point)
-
-    def state_cb(self, msg):
-        self.state = msg
+def spiral_points(i, resolution=0.1, spiral_width=1.0):
+    step_idx = resolution * i
+    x = np.cos(step_idx) * spiral_width * step_idx 
+    y = np.sin(step_idx) * spiral_width * step_idx 
+    return x,y
 
 def main(args=None):
     rclpy.init(args=args)
-    move_publisher = MovePublisher()
+    sp_publisher = BlueROVArduSubWrapper('spiral_path_publisher')
+    sp_publisher.rate = sp_publisher.create_rate(2)
 
-    thread = threading.Thread(target=rclpy.spin, args=(move_publisher, ), daemon=True)
+    thread = threading.Thread(target=rclpy.spin, args=(sp_publisher, ), daemon=True)
     thread.start()
 
-    arm_cmd = CommandBool.Request()
-    arm_cmd.value = True
+    custom_mode = 'GUIDED'
 
-    mode = SetMode.Request()
-    mode.custom_mode = 'GUIDED'
+    while not sp_publisher.status.armed:
+        print('Robot is armed: ', sp_publisher.status.armed)
+        sp_publisher.arm_motors(True)
+        sp_publisher.rate.sleep()
+    while sp_publisher.status.mode != custom_mode:
+        print('Robot mode is : ', sp_publisher.status.mode)
+        sp_publisher.set_mode(custom_mode)
+        sp_publisher.rate.sleep()
 
-    while not move_publisher.state.armed:
-        print('Robot is armed: ', move_publisher.state.armed)
-        move_publisher.arm_client.call_async(arm_cmd)
-        move_publisher.rate.sleep()
-    while move_publisher.state.mode != mode.custom_mode:
-        print('Robot mode is : ', move_publisher.state.mode)
-        move_publisher.mode_client.call_async(mode)
-        move_publisher.rate.sleep()
-
-    # Initialize variables
-    spiral_iteration = 0
-    x = 0
-    y = 0
     i = 0
-    point = PoseStamped()
+    # Ensure that UUV is at start point
+    x = .0
+    y = .0
+    sp_publisher.setpoint_position_local(x,y,.0,.0,.0,.0,1.0)
     try:
         while rclpy.ok():
-            if i%4==0:
-                print(spiral_iteration,'th iteration')
-                x,y,spiral_iteration = spiral_points(spiral_iteration, x, y, 1.0)
-                point.pose.position.x = x
-                point.pose.position.y = y
-                move_publisher.pose_publisher_cb(point)
-            move_publisher.rate.sleep()
-            i += 1 
+            if check_setpoint_reached(sp_publisher.local_pos.pose.position,x,y):
+                print(i,'th iteration')
+                print('x pose goal = ', x, ' y pose goal = ', y)
+                x,y = spiral_points(i, resolution=0.1, spiral_width=1.0)
+                sp_publisher.setpoint_position_local(x,y,.0,.0,.0,.0,1.0)
+                i += 1 
+            sp_publisher.rate.sleep()
     except KeyboardInterrupt:
         pass
-    move_publisher.destroy_node()
+    sp_publisher.destroy_node()
     rclpy.shutdown()
 
 
