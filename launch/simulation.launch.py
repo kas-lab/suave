@@ -22,6 +22,20 @@ def generate_launch_description():
     bluerov2_path = os.path.join(
         bluerov2_ignition_path, 'models', 'bluerov2')
 
+    gz_pipe_pose_bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=['/model/min_pipes_pipeline/pose@geometry_msgs/msg/PoseArray@gz.msgs.Pose_V'],
+        output='screen'
+    )
+
+    gz_bluerov_pose_bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=['/model/bluerov2/pose@geometry_msgs/msg/Pose@gz.msgs.Pose'],
+        output='screen'
+    )
+
     # TODO: Pass x, y, z, R, P and Y as parameter
     bluerov_spawn = Node(
         package='ros_gz_sim',
@@ -39,4 +53,6 @@ def generate_launch_description():
     return LaunchDescription([
         min_pipes_sim,
         bluerov_spawn,
+        gz_pipe_pose_bridge,
+        gz_bluerov_pose_bridge,
     ])
