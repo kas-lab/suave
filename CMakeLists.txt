@@ -13,6 +13,7 @@ install(DIRECTORY launch
 install(PROGRAMS
   scripts/follow_waypoints.py
   scripts/thruster_failures.py
+  scripts/lawn_mower.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
