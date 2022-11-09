@@ -6,8 +6,6 @@ from rclpy.node import Node
 import numpy as np
 
 from geometry_msgs.msg import PoseStamped
-from mavros_msgs.msg import State, OverrideRCIn
-from mavros_msgs.srv import CommandBool, SetMode
 
 from mavros_wrapper.ardusub_wrapper import *
 
