@@ -87,7 +87,7 @@ class PipelineNode(Node):
             if compare_poses(bluerov_pose, pipe_pose):
                 pipe_detected = Bool()
                 pipe_detected.data = True
-                detect_pipeline_pub.publish(pipe_detected)
+                self.detect_pipeline_pub.publish(pipe_detected)
                 break
 
 
