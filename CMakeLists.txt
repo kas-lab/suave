@@ -19,8 +19,10 @@ install(DIRECTORY launch
 )
 
 install(PROGRAMS
-  scripts/lawn_mower.py
   scripts/pipeline_node.py
+  scripts/spiral_pattern_position.py
+  scripts/follow_waypoints.py
+  scripts/thruster_failures.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

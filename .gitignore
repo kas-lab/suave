@@ -1,5 +1,9 @@
-# Ignore .swp extensions
 *.swp
+logs/*
+eeprom.bin
+mav.parm
+mav.tlog
+mav.tlog.raw
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
