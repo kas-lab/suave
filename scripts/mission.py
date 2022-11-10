@@ -55,6 +55,9 @@ def mission(args=None):
         print('in while loop')
         pass
 
+    start_follow_msg.data = False
+    mission_node.start_search_pub.publish(start_search_msg)
+
     start_follow_msg = Bool()
     start_follow_msg.data = True
     mission_node.start_follow_pipe_pub.publish(start_follow_msg)
