@@ -14,6 +14,8 @@ install(PROGRAMS
   scripts/spiral_pattern_position.py
   scripts/follow_waypoints.py
   scripts/thruster_failures.py
+  scripts/mission.py
+  scripts/spiral_mission.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
