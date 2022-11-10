@@ -6,11 +6,20 @@ find_package(ament_cmake_python REQUIRED COMPONENTS)
 find_package(rclpy REQUIRED)
 find_package(mavros_msgs REQUIRED)
 
+find_package(geometry_msgs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/GetPath.srv"
+  DEPENDENCIES geometry_msgs
+)
+
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
 )
 
 install(PROGRAMS
+  scripts/pipeline_node.py
   scripts/spiral_pattern_position.py
   scripts/follow_waypoints.py
   scripts/thruster_failures.py

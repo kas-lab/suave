@@ -20,15 +20,29 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(min_pipes_launch_path))
 
     pipeline_inspection_path = get_package_share_directory('pipeline_inspection')
+
     mavros_launch_path = os.path.join(
         pipeline_inspection_path, 'launch', 'mavros.launch.py')
-
     mavros_node = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(mavros_launch_path))
 
     bluerov2_ignition_path = get_package_share_directory('bluerov2_ignition')
     bluerov2_path = os.path.join(
         bluerov2_ignition_path, 'models', 'bluerov2')
+
+    gz_pipe_pose_bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=['/model/min_pipes_pipeline/pose@geometry_msgs/msg/PoseArray@gz.msgs.Pose_V'],
+        output='screen'
+    )
+
+    gz_bluerov_pose_bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=['/model/bluerov2/pose@geometry_msgs/msg/Pose@gz.msgs.Pose'],
+        output='screen'
+    )
 
     # TODO: Pass x, y, z, R, P and Y as parameter
     bluerov_spawn = Node(
@@ -49,5 +63,7 @@ def generate_launch_description():
     return LaunchDescription([
         min_pipes_sim,
         bluerov_spawn,
+        gz_pipe_pose_bridge,
+        gz_bluerov_pose_bridge,
         mavros_node
     ])
