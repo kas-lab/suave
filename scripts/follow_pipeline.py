@@ -23,13 +23,13 @@ class BlueROVGazeboNode(BlueROVArduSubWrapper):
 
     def gazebo_pos_cb(self, msg):
         self.gazebo_pos = msg
-        if self.first_gazebo_pos_msg:
+        if self.first_gazebo_pos_msg and self.local_pos_received:
             self.gz_local_delta_pos = [
                 self.local_pos.pose.position.x - msg.position.x,
                 self.local_pos.pose.position.y - msg.position.y,
                 self.local_pos.pose.position.z - msg.position.z,
             ]
-        self.first_gazebo_pos_msg = False
+            self.first_gazebo_pos_msg = False
 
     def convert_gz_to_local_pos(self, gz_pose):
         local_pose = Pose()
