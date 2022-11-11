@@ -10,7 +10,7 @@ from geometry_msgs.msg import PoseArray
 from pipeline_inspection.srv import GetPath
 
 
-def compare_poses(pose1, pose2, delta=0.1):
+def compare_poses(pose1, pose2, delta=0.25):
     return abs(pose1.position.x - pose2.position.x) <= delta \
             and abs(pose1.position.y - pose2.position.y) <= delta
 
@@ -35,6 +35,7 @@ class PipelineNode(Node):
 
         self.detect_pipeline_pub = self.create_publisher(
             Bool, 'pipeline/detected', 10)
+        self.first_detection = True
 
         self.pipes_pose_array = PoseArray()
         self.interpolation_number = 10
@@ -44,6 +45,8 @@ class PipelineNode(Node):
             GetPath,
             'pipeline_inspection/get_path',
             self.get_interpolated_path_cb)
+
+        self.sorted_path = PoseArray()
 
     def pipeline_pose_cb(self, msg):
         self.pipes_pose_array = msg
@@ -79,16 +82,24 @@ class PipelineNode(Node):
                     pose1, pose2, self.interpolation_number))
 
     def get_interpolated_path_cb(self, req, response):
-        response.path = self.interpolated_path
+        response.path = self.sorted_path
         return response
 
     def detect_pipeline_cb(self, bluerov_pose):
-        for pipe_pose in self.interpolated_path.poses:
-            if compare_poses(bluerov_pose, pipe_pose):
+        for i in range(len(self.interpolated_path.poses)):
+            if compare_poses(bluerov_pose, self.interpolated_path.poses[i]):
                 pipe_detected = Bool()
                 pipe_detected.data = True
                 self.detect_pipeline_pub.publish(pipe_detected)
+                if self.first_detection:
+                    self.sort_pipe_path(i)
+                    self.first_detection = False
                 break
+
+    def sort_pipe_path(self, index):
+        self.sorted_path = PoseArray()
+        self.sorted_path.poses.extend(self.interpolated_path.poses[index:])
+        self.sorted_path.poses.extend(reversed(self.interpolated_path.poses))
 
 
 if __name__ == '__main__':
