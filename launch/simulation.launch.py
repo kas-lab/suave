@@ -55,7 +55,7 @@ def generate_launch_description():
             '-file', bluerov2_path,
             '-name', 'bluerov2',
             '-x', '0',
-            '-y', '10',
+            '-y', '3',
             '-z', '-17.5',
             '-Y', '0']
     )
