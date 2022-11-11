@@ -50,7 +50,11 @@ class PipelineNode(Node):
         self.destroy_subscription(self.min_pipes_pipeline_pose_subscription)
         self.calculate_interpolated_path()
 
-    def interpolate_line_by_points(self, x1, y1, x2, y2, n):
+    def interpolate_line_by_points(self, pose1, pose2, n):
+        x1 = pose1.position.x
+        y1 = pose1.position.y
+        x2 = pose2.position.x
+        y2 = pose2.position.y
         line_slope = (y2-y1)/(x2-x1)
         b = y1 - line_slope*x1
         points = []
@@ -62,21 +66,17 @@ class PipelineNode(Node):
             pose = Pose()
             pose.position.x = xn
             pose.position.y = yn
+            pose.position.z = pose1.position.z
             points.append(pose)
         return points
 
     def calculate_interpolated_path(self):
         for pose_index in range(len(self.pipes_pose_array.poses)-1):
-            pose_1 = self.pipes_pose_array.poses[pose_index]
-            pose_2 = self.pipes_pose_array.poses[pose_index+1]
+            pose1 = self.pipes_pose_array.poses[pose_index]
+            pose2 = self.pipes_pose_array.poses[pose_index+1]
             self.interpolated_path.poses.extend(
                 self.interpolate_line_by_points(
-                    pose_1.position.x,
-                    pose_1.position.y,
-                    pose_2.position.x,
-                    pose_2.position.y,
-                    self.interpolation_number)
-            )
+                    pose1, pose2, self.interpolation_number))
 
     def get_interpolated_path_cb(self, req, response):
         response.path = self.interpolated_path
