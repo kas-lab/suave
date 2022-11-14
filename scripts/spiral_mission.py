@@ -54,7 +54,8 @@ def main(args=None):
                         'spiral_width').get_parameter_value().double_value
                 if sp_publisher.check_setpoint_reached(sp_publisher.pose_stamped(x,y,z),
                         delta=0.2):
-                    x,y = spiral_points(i, resolution=0.1,  spiral_width=spiral_width)
+                    # x,y = spiral_points(i, resolution=0.1,  spiral_width=spiral_width)
+                    x,y = [0.,-10.]
                     i += 1 
                 sp_publisher.setpoint_position_local(x,y,z)
             sp_publisher.rate.sleep()

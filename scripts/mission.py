@@ -21,7 +21,7 @@ class MissionNode(BlueROVArduSubWrapper):
                 'start_follow_pipe', 10)
 
         self.pipeline_detected_sub = self.create_subscription(Bool,
-                'pipeline_detected', self.pipeline_detected_cb, 10)
+                'pipeline/detected', self.pipeline_detected_cb, 10)
 
     def pipeline_detected_cb(self, msg):
         self.pipeline_detected = msg.data
@@ -61,6 +61,9 @@ def mission(args=None):
     start_follow_msg = Bool()
     start_follow_msg.data = True
     mission_node.start_follow_pipe_pub.publish(start_follow_msg)
+
+    while start_follow_msg.data:
+        print('after start_follow_msg published')
 
     mission_node.rate.sleep()
 
