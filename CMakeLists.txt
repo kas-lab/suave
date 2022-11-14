@@ -22,6 +22,7 @@ install(PROGRAMS
   scripts/pipeline_node.py
   scripts/spiral_pattern_position.py
   scripts/follow_waypoints.py
+  scripts/follow_pipeline.py
   scripts/thruster_failures.py
   scripts/mission.py
   scripts/spiral_mission.py
