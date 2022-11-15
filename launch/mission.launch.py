@@ -13,15 +13,27 @@ def generate_launch_description():
     pkg_pipeline_inspection = get_package_share_directory(
         'pipeline_inspection')
 
-    mavros_launch_path = os.path.join(
-        pkg_pipeline_inspection, 'launch', 'mavros.launch.py')
-
-    mavros_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(mavros_launch_path))
-
-    follow_waypoint_node = Node(
+    mission_node = Node(
         package='pipeline_inspection',
-        executable='follow_waypoints.py',
+        executable='mission.py',
+        output='screen',
+    )
+
+    spiral_node = Node(
+        package='pipeline_inspection',
+        executable='spiral_mission.py',
+        output='screen',
+    )
+    
+    pipeline_node = Node(
+        package='pipeline_inspection',
+        executable='pipeline_node.py',
+        output='screen',
+    )
+
+    follow_pipeline_node = Node(
+        package='pipeline_inspection',
+        executable='follow_pipeline.py',
         output='screen',
     )
 
@@ -32,7 +44,9 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        # mavros_launch,
-        follow_waypoint_node,
-        thruster_failure_node,
+        mission_node,
+        spiral_node,
+        pipeline_node,
+        follow_pipeline_node,
+        # thruster_failure_node,
     ])
