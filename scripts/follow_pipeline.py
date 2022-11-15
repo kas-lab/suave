@@ -9,6 +9,7 @@ from mavros_wrapper.ardusub_wrapper import *
 from rcl_interfaces.msg import ParameterType
 from pipeline_inspection.srv import GetPath
 from geometry_msgs.msg import Pose
+from std_msgs.msg import Bool
 
 
 class BlueROVGazeboNode(BlueROVArduSubWrapper):
@@ -20,6 +21,11 @@ class BlueROVGazeboNode(BlueROVArduSubWrapper):
 
         # TODO: make this a ros param
         self.altitude = 2
+
+        self.start_follow = False
+
+        self.start_follow_sub = self.create_subscription(Bool,
+                'start_follow_pipe', self.follow_pipe_cb, 10)
 
     def gazebo_pos_cb(self, msg):
         self.gazebo_pos = msg
@@ -40,24 +46,16 @@ class BlueROVGazeboNode(BlueROVArduSubWrapper):
 
         return local_pose
 
+    def follow_pipe_cb(self, msg):
+        self.start_follow = msg.data
+
 
 def mission(ardusub):
 
     service_timer = ardusub.create_rate(2)
-    custom_mode = "GUIDED"
-    while ardusub.status.mode != custom_mode:
-        ardusub.set_mode(custom_mode)
-        service_timer.sleep()
 
-    print("Manual mode selected")
-
-    while ardusub.status.armed is False:
-        ardusub.arm_motors(True)
-        service_timer.sleep()
-
-    print("Thrusters armed")
-
-    print("Initializing mission")
+    while not ardusub.start_follow:
+        pass
 
     pipe_path = ardusub.call_service(
         GetPath, 'pipeline_inspection/get_path', GetPath.Request())
@@ -67,7 +65,9 @@ def mission(ardusub):
     while not pipe_path.done():
         timer.sleep()
 
+    
     for gz_pose in pipe_path.result().path.poses:
+        print(gz_pose)
         local_pose = ardusub.convert_gz_to_local_pos(gz_pose)
         ardusub.setpoint_position_local(
             x=local_pose.position.x,

@@ -52,13 +52,13 @@ def main(args=None):
             if sp_publisher.search_pipeline:
                 spiral_width = sp_publisher.get_parameter(
                         'spiral_width').get_parameter_value().double_value
-                if sp_publisher.check_setpoint_reached(sp_publisher.pose_stamped(x,y,z),
-                        delta=0.2):
-                    # x,y = spiral_points(i, resolution=0.1,  spiral_width=spiral_width)
-                    x,y = [0.,-10.]
-                    i += 1 
+                x,y = spiral_points(i, resolution=0.1,  spiral_width=spiral_width)
+                # x,y = [0.,-3.]
+                i += 1 
                 sp_publisher.setpoint_position_local(x,y,z)
-            sp_publisher.rate.sleep()
+                while not sp_publisher.check_setpoint_reached(
+                        sp_publisher.pose_stamped(x,y,z), delta=0.2):
+                    sp_publisher.rate.sleep()
     except KeyboardInterrupt:
         pass
     sp_publisher.destroy_node()

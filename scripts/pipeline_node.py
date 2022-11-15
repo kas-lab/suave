@@ -10,7 +10,7 @@ from geometry_msgs.msg import PoseArray
 from pipeline_inspection.srv import GetPath
 
 
-def compare_poses(pose1, pose2, delta=0.25):
+def compare_poses(pose1, pose2, delta=1.):
     return abs(pose1.position.x - pose2.position.x) <= delta \
             and abs(pose1.position.y - pose2.position.y) <= delta
 

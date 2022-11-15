@@ -49,22 +49,20 @@ def mission(args=None):
     print('start_search')
     start_search_msg = Bool()
     start_search_msg.data = True
+    mission_node.start_search_pub.publish(start_search_msg)
 
     while not mission_node.pipeline_detected:
-        mission_node.start_search_pub.publish(start_search_msg)
-        print('in while loop')
         pass
 
-    start_follow_msg.data = False
+    print('start_follow')
+    start_search_msg.data = False
     mission_node.start_search_pub.publish(start_search_msg)
 
     start_follow_msg = Bool()
     start_follow_msg.data = True
     mission_node.start_follow_pipe_pub.publish(start_follow_msg)
 
-    while start_follow_msg.data:
-        print('after start_follow_msg published')
-
+    print('mission complete, waiting for follow pipeline node to be done')
     mission_node.rate.sleep()
 
     
