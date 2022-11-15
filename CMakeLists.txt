@@ -24,6 +24,8 @@ install(PROGRAMS
   scripts/follow_waypoints.py
   scripts/follow_pipeline.py
   scripts/thruster_failures.py
+  scripts/mission.py
+  scripts/spiral_mission.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
