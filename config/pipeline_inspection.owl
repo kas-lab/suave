@@ -1,0 +1,321 @@
+<?xml version="1.0"?>
+<rdf:RDF xmlns="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#"
+     xml:base="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31"
+     xmlns:owl="http://www.w3.org/2002/07/owl#"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:xml="http://www.w3.org/XML/1998/namespace"
+     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+     xmlns:swrla="http://swrl.stanford.edu/ontologies/3.3/swrla.owl#"
+     xmlns:tomasys="http://metacontrol.org/tomasys#">
+    <owl:Ontology rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31">
+        <owl:imports rdf:resource="https://raw.githubusercontent.com/meta-control/mc_mdl_tomasys/ros2/owl/tomasys.owl"/>
+        <owl:imports rdf:resource="https://raw.githubusercontent.com/meta-control/mros_ontology/main/owl/mros.owl"/>
+    </owl:Ontology>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Individuals
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#c_thruster_1 -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#c_thruster_1">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#Component"/>
+        <tomasys:typeC rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#cc_thruster"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#c_thruster_2 -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#c_thruster_2">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#Component"/>
+        <tomasys:typeC rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#cc_thruster"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#c_thruster_3 -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#c_thruster_3">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#Component"/>
+        <tomasys:typeC rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#cc_thruster"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#c_thruster_4 -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#c_thruster_4">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#Component"/>
+        <tomasys:typeC rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#cc_thruster"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#c_thruster_5 -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#c_thruster_5">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#Component"/>
+        <tomasys:typeC rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#cc_thruster"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#c_thruster_6 -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#c_thruster_6">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#Component"/>
+        <tomasys:typeC rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#cc_thruster"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#cc_thruster -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#cc_thruster">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#ComponentClass"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#f_control_motion -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#f_control_motion">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#Function"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#f_follow_pipeline -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#f_follow_pipeline">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#Function"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#f_generate_search_path -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#f_generate_search_path">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#Function"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_all_thrusters -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_all_thrusters">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
+        <tomasys:hasQAestimation rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_motion_efficiency_normal"/>
+        <tomasys:solvesF rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#f_control_motion"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_failure_thruster_1 -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_failure_thruster_1">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
+        <tomasys:hasQAestimation rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_motion_efficiency_degraded"/>
+        <tomasys:solvesF rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#f_control_motion"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_failure_thruster_2 -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_failure_thruster_2">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
+        <tomasys:hasQAestimation rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_motion_efficiency_degraded"/>
+        <tomasys:solvesF rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#f_control_motion"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_failure_thruster_3 -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_failure_thruster_3">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
+        <tomasys:hasQAestimation rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_motion_efficiency_degraded"/>
+        <tomasys:solvesF rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#f_control_motion"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_failure_thruster_4 -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_failure_thruster_4">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
+        <tomasys:hasQAestimation rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_motion_efficiency_degraded"/>
+        <tomasys:solvesF rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#f_control_motion"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_failure_thruster_5 -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_failure_thruster_5">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
+        <tomasys:hasQAestimation rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_motion_efficiency_degraded"/>
+        <tomasys:solvesF rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#f_control_motion"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_failure_thruster_6 -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_failure_thruster_6">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
+        <tomasys:hasQAestimation rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_motion_efficiency_degraded"/>
+        <tomasys:solvesF rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#f_control_motion"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_spiral_high -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_spiral_high">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
+        <tomasys:hasQAestimation rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_water_visibility_high"/>
+        <tomasys:solvesF rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#f_generate_search_path"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_spiral_low -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_spiral_low">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
+        <tomasys:hasQAestimation rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_water_visibility_low"/>
+        <tomasys:solvesF rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#f_generate_search_path"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_spiral_medium -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#fd_spiral_medium">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
+        <tomasys:hasQAestimation rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_water_visibility_medium"/>
+        <tomasys:solvesF rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#f_generate_search_path"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#motion_efficiency -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#motion_efficiency">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#QualityAttributeType"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_motion_efficiency_degraded -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_motion_efficiency_degraded">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#QAvalue"/>
+        <tomasys:isQAtype rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#motion_efficiency"/>
+        <tomasys:hasValue rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">0.75</tomasys:hasValue>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_motion_efficiency_normal -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_motion_efficiency_normal">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#QAvalue"/>
+        <tomasys:isQAtype rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#motion_efficiency"/>
+        <tomasys:hasValue rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">1.0</tomasys:hasValue>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_search_efficiency_high -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_search_efficiency_high">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#QAvalue"/>
+        <tomasys:isQAtype rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#search_efficiency"/>
+        <tomasys:hasValue rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">1.0</tomasys:hasValue>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_search_efficiency_low -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_search_efficiency_low">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#QAvalue"/>
+        <tomasys:isQAtype rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#search_efficiency"/>
+        <tomasys:hasValue rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">0.25</tomasys:hasValue>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_search_efficiency_medium -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_search_efficiency_medium">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#QAvalue"/>
+        <tomasys:isQAtype rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#search_efficiency"/>
+        <tomasys:hasValue rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">0.5</tomasys:hasValue>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_water_visibility_high -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_water_visibility_high">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#QAvalue"/>
+        <tomasys:isQAtype rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#water_visibility"/>
+        <tomasys:hasValue rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">2.0</tomasys:hasValue>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_water_visibility_low -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_water_visibility_low">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#QAvalue"/>
+        <tomasys:isQAtype rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#water_visibility"/>
+        <tomasys:hasValue rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">0.5</tomasys:hasValue>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_water_visibility_medium -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#qa_water_visibility_medium">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#QAvalue"/>
+        <tomasys:isQAtype rdf:resource="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#water_visibility"/>
+        <tomasys:hasValue rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">1.0</tomasys:hasValue>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#search_efficiency -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#search_efficiency">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#QualityAttributeType"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#water_visibility -->
+
+    <owl:NamedIndividual rdf:about="http://www.semanticweb.org/gus/ontologies/2022/10/untitled-ontology-31#water_visibility">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#QualityAttributeType"/>
+    </owl:NamedIndividual>
+</rdf:RDF>
+
+
+
+<!-- Generated by the OWL API (version 4.5.9.2019-02-01T07:24:44Z) https://github.com/owlcs/owlapi -->
+
