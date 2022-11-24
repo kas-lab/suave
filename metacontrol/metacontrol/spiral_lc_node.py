@@ -21,7 +21,7 @@ import rclpy
 # In case of ambiguity, the more explicit names can be imported.
 
 from geometry_msgs.msg import PoseStamped
-from rcl_interfaces.msg import ParameterDescriptor
+from rcl_interfaces.msg import ParameterDescriptor, SetParametersResult
 from rclpy.lifecycle import Node
 from rclpy.lifecycle import Publisher
 from rclpy.lifecycle import State
@@ -52,6 +52,20 @@ class LifecycleTalker(Node):
         param_descriptor = ParameterDescriptor(
             description='Sets the spiral width of the UUV.')
         self.declare_parameter('spiral_width', 1.0, param_descriptor)        
+
+        self.param_change_callback_handle_ = self.add_on_set_parameters_callback(
+                self.param_change_callback)
+
+    def param_change_callback(self, parameters):
+        result = SetParametersResult()
+        result.successful = True
+        for parameter in parameters:
+            self.get_logger().info(
+                "parameter '{}' is now: {}".format(
+                    parameter.name,
+                    parameter.value))
+        return result
+
 
     def pose_stamped(
             self, x=.0, y=.0, z=.0, rx=.0, ry=.0, rz=.0, rw=1.0):
