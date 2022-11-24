@@ -14,18 +14,10 @@ def generate_launch_description():
     shm_model_path = (get_package_share_directory('metacontrol') +
         '/config/pipeline_modes.yaml')
 
-    declare_autostart_cmd = DeclareLaunchArgument(
-        'autostart', default_value='true',
-        description='Automatically startup the nav2 stack')
-
-    declare_use_sime_time_cmd = DeclareLaunchArgument(
-        'use_sim_time', default_value='false',
-        description='Use simulation (Gazebo) clock if true'),
-
-    declare_desired_configuration_cmd = DeclareLaunchArgument(
-        'desired_configuration',
-        default_value='f_normal_mode',
-        description='Desired inital configuration (system mode)')
+    # declare_desired_configuration_cmd = DeclareLaunchArgument(
+        # 'desired_configuration',
+        # default_value='f_normal_mode',
+        # description='Desired inital configuration (system mode)')
 
     # Start as a normal node is currently not possible.
     # Path to SHM file should be passed as a ROS parameter.
@@ -45,6 +37,14 @@ def generate_launch_description():
 
     # autostart = LaunchConfiguration('autostart')
     # use_sim_time = LaunchConfiguration('use_sim_time')
+
+    # declare_autostart_cmd = DeclareLaunchArgument(
+        # 'autostart', default_value='true',
+        # description='Automatically startup the nav2 stack')
+
+    # declare_use_sime_time_cmd = DeclareLaunchArgument(
+        # 'use_sim_time', default_value='false',
+        # description='Use simulation (Gazebo) clock if true'),
 
     # param_substitutions = {
             # 'use_sim_time': use_sim_time,
