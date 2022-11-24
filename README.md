@@ -120,3 +120,41 @@ ArduSub:
 ```
 $ sim_vehicle.py -L RATBeach -v ArduSub  --map --console
 ```
+
+Start Simulation:
+```Bash
+$ ros2 launch pipeline_inspection simulation.launch.py
+```
+
+Start Mission:
+```Bash
+$ ros2 launch pipeline_inspection mission.launch.py 
+```
+
+System modes have been added for the spiral_lc_node, but the mission file still
+simply plays all nodes in sequence using a topic. This should be changed by
+using system modes.
+
+System modes (be sure to add this to your ws) has a monitor for checking the
+states of the nodes. Run the monitor:
+```Bash
+$ ros2 launch system_modes mode_monitor.launch.py modelfile:=src/pipeline_inspection/metacontrol/config/simple_system_modes.yaml
+```
+
+Run the system mode node manager:
+```Bash
+$ ros2 launch system_modes mode_manager.launch.py modelfile:=src/pipeline_inspection/metacontrol/config/simple_system_modes.yaml
+```
+
+Change system states using the corresponding services:
+```Bash
+$ ros2 service call /spiral_lc_node/change_state lifecycle_msgs/ChangeState "{transition: {id: 1, label: configure}}"
+```
+To see which ids are needed to configure/activate/etc. see: the  [Lifecycle
+transition
+msg](https://docs.ros2.org/foxy/api/lifecycle_msgs/msg/Transition.html)
+
+Change system mode using the corresponding services:
+```Bash
+$ ros2 service call /spiral_lc_node/change_mode system_modes_msgs/ChangeMode "{mode_name: FAST}"
+```
