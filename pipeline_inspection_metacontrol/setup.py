@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'metacontrol'
+package_name = 'pipeline_inspection_metacontrol'
 
 setup(
     name=package_name,
@@ -20,8 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'spiral_lc_node = metacontrol.spiral_lc_node:main',
-            'talker_lc_node = metacontrol.talker_lc_node:main',
+            'spiral_lc_node = pipeline_inspection_metacontrol.spiral_lc_node:main',
+            'talker_lc_node = pipeline_inspection_metacontrol.talker_lc_node:main',
         ],
     },
 )
