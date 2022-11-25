@@ -10,6 +10,11 @@
   <exec_depend>rclpy</exec_depend>
   <exec_depend>lifecycle_msgs</exec_depend>
   <exec_depend>std_msgs</exec_depend>
+  <exec_depend>system_modes_msgs</exec_depend>
+  <exec_depend>system_modes</exec_depend>
+  <exec_depend>mros2_reasoner</exec_depend>
+  <exec_depend>mc_mdl_tomasys</exec_depend>
+  <exec_depend>mros_ontology</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
