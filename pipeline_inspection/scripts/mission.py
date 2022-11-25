@@ -38,15 +38,19 @@ def mission(args=None):
     custom_mode = 'GUIDED'
 
     while not mission_node.status.armed:
-        print('Robot is armed: ', mission_node.status.armed)
+        mission_node.get_logger().info(
+                'Robot is armed: {}'.format(
+                    mission_node.status.armed))
         mission_node.arm_motors(True)
         mission_node.rate.sleep()
     while mission_node.status.mode != custom_mode:
-        print('Robot mode is : ', mission_node.status.mode)
+        mission_node.get_logger().info(
+                'Robot mode is : {}'.format(
+                    mission_node.status.mode))
         mission_node.set_mode(custom_mode)
         mission_node.rate.sleep()
 
-    print('start_search')
+    mission_node.get_logger().info('Pipeline search started')
     start_search_msg = Bool()
     start_search_msg.data = True
     mission_node.start_search_pub.publish(start_search_msg)
@@ -54,7 +58,7 @@ def mission(args=None):
     while not mission_node.pipeline_detected:
         pass
 
-    print('start_follow')
+    mission_node.get_logger().info('Pipeline found, starting follow pipeline')
     start_search_msg.data = False
     mission_node.start_search_pub.publish(start_search_msg)
 
@@ -62,7 +66,7 @@ def mission(args=None):
     start_follow_msg.data = True
     mission_node.start_follow_pipe_pub.publish(start_follow_msg)
 
-    print('mission complete, waiting for follow pipeline node to be done')
+    mission_node.get_logger().info('Mission complete, waiting for follow pipeline node to be done')
     mission_node.rate.sleep()
 
     
