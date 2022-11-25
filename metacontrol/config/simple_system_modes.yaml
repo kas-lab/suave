@@ -1,49 +1,6 @@
 ---
 
-search:
-  ros__parameters:
-    type: system
-    parts:
-      lawn_mower
-      spiral_path
-    modes:
-      __DEFAULT__:
-        lawn_mower: inactive
-        spiral_path: inactive
-      LM_DEFAULT:
-        lawn_mower: active.__DEFAULT__
-        spiral_path: inactive
-      LM_FAST:
-        lawn_mower: active.FAST
-        spiral_path: inactive
-      LM_SLOW:
-        lawn_mower: active.SLOW
-        spiral_path: inactive
-      SP_DEFAULT:
-        lawn_mower: inactive
-        spiral_path: active.__DEFAULT__
-      SP_FAST:
-        lawn_mower: inactive
-        spiral_path: active.FAST
-      SP_SLOW:
-        lawn_mower: inactive
-        spiral_path: active.SLOW
-
-lawn_mower:
-  ros__parameters:
-    type: node
-    modes:
-      __DEFAULT__:
-        ros__parameters:
-          lane_distance: 1.0
-      FAST:
-        ros__parameters:
-          lane_distance: 0.5
-      SLOW:
-        ros__parameters:
-          lane_distance: 2.0
-
-spiral_path:
+spiral_lc_node:
   ros__parameters:
     type: node
     modes:

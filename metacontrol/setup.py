@@ -4,7 +4,7 @@ package_name = 'metacontrol'
 
 setup(
     name=package_name,
-    version='0.0.0',
+    version='0.23.0',
     packages=[package_name],
     data_files=[
         ('share/ament_index/resource_index/packages',
@@ -20,6 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'spiral_lc_node = metacontrol.spiral_lc_node:main',
+            'talker_lc_node = metacontrol.talker_lc_node:main',
         ],
     },
 )
