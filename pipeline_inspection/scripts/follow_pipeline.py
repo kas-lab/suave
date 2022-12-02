@@ -67,7 +67,6 @@ def mission(ardusub):
 
     
     for gz_pose in pipe_path.result().path.poses:
-        print(gz_pose)
         local_pose = ardusub.convert_gz_to_local_pos(gz_pose)
         ardusub.setpoint_position_local(
             x=local_pose.position.x,
@@ -76,12 +75,10 @@ def mission(ardusub):
         while not ardusub.check_setpoint_reached(ardusub.pose_stamped(local_pose.position.x, local_pose.position.y, local_pose.position.z), delta=0.2):
             timer.sleep()
 
-    print("Mission completed")
+    ardusub.get_logger().info("Mission completed")
 
 
 if __name__ == '__main__':
-    print("Starting Bluerov agent node")
-
     # Initialize ros node
     rclpy.init(args=sys.argv)
 

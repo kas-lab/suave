@@ -103,8 +103,6 @@ class PipelineNode(Node):
 
 
 if __name__ == '__main__':
-    print("Starting detect pipeline node")
-
     rclpy.init(args=sys.argv)
 
     detect_pipeline_node = PipelineNode()

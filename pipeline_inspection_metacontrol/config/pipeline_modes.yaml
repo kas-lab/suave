@@ -1,0 +1,120 @@
+---
+
+search:
+  ros__parameters:
+    type: system
+    parts:
+      lawn_mower
+      spiral_path
+    modes:
+      __DEFAULT__:
+        lawn_mower: inactive
+        spiral_path: inactive
+      LM_DEFAULT:
+        lawn_mower: active.__DEFAULT__
+        spiral_path: inactive
+      LM_FAST:
+        lawn_mower: active.FAST
+        spiral_path: inactive
+      LM_SLOW:
+        lawn_mower: active.SLOW
+        spiral_path: inactive
+      SP_DEFAULT:
+        lawn_mower: inactive
+        spiral_path: active.__DEFAULT__
+      SP_FAST:
+        lawn_mower: inactive
+        spiral_path: active.FAST
+      SP_SLOW:
+        lawn_mower: inactive
+        spiral_path: active.SLOW
+
+lawn_mower:
+  ros__parameters:
+    type: node
+    modes:
+      __DEFAULT__:
+        ros__parameters:
+          lane_distance: 1.0
+      FAST:
+        ros__parameters:
+          lane_distance: 0.5
+      SLOW:
+        ros__parameters:
+          lane_distance: 2.0
+
+spiral_path:
+  ros__parameters:
+    type: node
+    modes:
+      __DEFAULT__:
+        ros__parameters:
+          spiral_width: 1.0
+      FAST:
+        ros__parameters:
+          spiral_width: 0.5
+      SLOW:
+        ros__parameters:
+          spiral_width: 2.0
+
+thruster:
+  ros__parameters:
+    type: node
+    modes:
+      __DEFAULT__:
+        ros__parameters:
+          thruster1: 1
+          thruster2: 1
+          thruster3: 1
+          thruster4: 1
+          thruster5: 1
+          thruster6: 1
+      TF1:
+        ros__parameters:
+          thruster1: 0
+          thruster2: 1
+          thruster3: 1
+          thruster4: 1
+          thruster5: 1
+          thruster6: 1
+      TF2:
+        ros__parameters:
+          thruster1: 1
+          thruster2: 0
+          thruster3: 1
+          thruster4: 1
+          thruster5: 1
+          thruster6: 1
+      TF3:
+        ros__parameters:
+          thruster1: 1
+          thruster2: 1
+          thruster3: 0
+          thruster4: 1
+          thruster5: 1
+          thruster6: 1
+      TF4:
+        ros__parameters:
+          thruster1: 1
+          thruster2: 1
+          thruster3: 1
+          thruster4: 0
+          thruster5: 1
+          thruster6: 1
+      TF5:
+        ros__parameters:
+          thruster1: 1
+          thruster2: 1
+          thruster3: 1
+          thruster4: 1
+          thruster5: 0
+          thruster6: 1
+      TF6:
+        rot__parameters:
+          thruster1: 1
+          thruster2: 1
+          thruster3: 1
+          thruster4: 1
+          thruster5: 1
+          thruster6: 0
+

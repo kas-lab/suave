@@ -6,24 +6,36 @@ from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 
-from launch_ros.actions import Node
+from launch_ros.actions import Node, LifecycleNode
 
 
 def generate_launch_description():
-    pkg_pipeline_inspection = get_package_share_directory(
-        'pipeline_inspection')
-
     mission_node = Node(
         package='pipeline_inspection',
         executable='mission.py',
         output='screen',
     )
 
-    spiral_node = Node(
-        package='pipeline_inspection',
-        executable='spiral_mission.py',
+    spiral_node = LifecycleNode(
+        package='metacontrol',
+        executable='spiral_lc_node',
+        name='spiral_lc_node',
+        namespace='',
         output='screen',
+        parameters=[
+            {'spiral_width': 1.0}
+        ],
     )
+
+    # spiral_node = Node(
+        # package='metacontrol',
+        # executable='spiral_lc_node',
+        # name='spiral_lc_node',
+        # output='screen',
+        # parameters=[
+            # {'spiral_width': 1.0}
+        # ],
+    # )
     
     pipeline_node = Node(
         package='pipeline_inspection',
