@@ -1,7 +1,7 @@
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import (DeclareLaunchArgument, ExecuteProcess, 
+from launch.actions import (DeclareLaunchArgument, ExecuteProcess,
                             IncludeLaunchDescription, SetEnvironmentVariable)
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -11,7 +11,7 @@ from launch_ros.actions import Node, LifecycleNode
 
 def generate_launch_description():
 
-    shm_model_path = (get_package_share_directory('metacontrol') +
+    shm_model_path = (get_package_share_directory('pipeline_inspection_metacontrol') +
         '/config/pipeline_modes.yaml')
 
     # declare_desired_configuration_cmd = DeclareLaunchArgument(
@@ -21,15 +21,15 @@ def generate_launch_description():
 
     # Start as a normal node is currently not possible.
     # Path to SHM file should be passed as a ROS parameter.
-    
+
     mode_manager_node = Node(
-        package='metacontrol',
+        package='pipeline_inspection_metacontrol',
         executable='mode_manager',
         parameters=[{'modelfile': shm_model_path}],
         output='screen')
 
     dummy_lifecycle_node = LifecycleNode(
-        package='metacontrol',
+        package='pipeline_inspection_metacontrol',
         executable='dummy_lifecycle',
         name='dummy_lifecycle_node',
         namespace='',
