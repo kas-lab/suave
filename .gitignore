@@ -1,3 +1,5 @@
+*catalog-*.xml
+
 *.swp
 logs/*
 eeprom.bin
