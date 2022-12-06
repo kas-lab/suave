@@ -92,6 +92,59 @@
     
 
 
+    <!-- http://www.metacontrol.org/pipeline_inspection#cs_thruster_1 -->
+
+    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#cs_thruster_1">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#ComponentState"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.metacontrol.org/pipeline_inspection#cs_thruster_2 -->
+
+    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#cs_thruster_2">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#ComponentState"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_1"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_3"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_4"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_5"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_6"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.metacontrol.org/pipeline_inspection#cs_thruster_3 -->
+
+    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#cs_thruster_3">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#ComponentState"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.metacontrol.org/pipeline_inspection#cs_thruster_4 -->
+
+    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#cs_thruster_4">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#ComponentState"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.metacontrol.org/pipeline_inspection#cs_thruster_5 -->
+
+    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#cs_thruster_5">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#ComponentState"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.metacontrol.org/pipeline_inspection#cs_thruster_6 -->
+
+    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#cs_thruster_6">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#ComponentState"/>
+    </owl:NamedIndividual>
+    
+
+
     <!-- http://www.metacontrol.org/pipeline_inspection#f_control_motion -->
 
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#f_control_motion">
