@@ -6,7 +6,7 @@ from mros2_msgs.srv import NodeMode
 
 class BridgeService(Node):
     def __init__(self):
-        super.__init__('System_mode_bridge')
+        super.()__init__('System_mode_bridge')
         self.srv = self.create_service(
                 NodeMode,
                 '/ros_reasoner/change_node_mode',
