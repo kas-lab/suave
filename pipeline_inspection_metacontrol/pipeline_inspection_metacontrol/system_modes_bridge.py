@@ -24,7 +24,10 @@ class BridgeService(Node):
     
     def change_mode_cb(self, request, response):
         # Get node name and mode name from dictionary
-        (node_name, mode_name) = self.node_mapping[request.reqired_fd_name]
+        if request.required_fd_name in self.node_mapping:
+            (node_name, mode_name) = self.node_mapping[request.reqired_fd_name]
+        else:
+            (node_name, mode_name) = self.node_mapping['fd_spiral_medium']
 
         system_modes_cli = self.create_client(
                 ChangeMode,
