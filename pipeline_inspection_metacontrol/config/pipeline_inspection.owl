@@ -34,7 +34,12 @@
 
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#c_thruster_1">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#Component"/>
-        <tomasys:typeC rdf:resource="http://www.metacontrol.org/pipeline_inspection#cc_thruster"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_all_thrusters"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_2"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_3"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_4"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_5"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_6"/>
     </owl:NamedIndividual>
     
 
@@ -43,7 +48,12 @@
 
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#c_thruster_2">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#Component"/>
-        <tomasys:typeC rdf:resource="http://www.metacontrol.org/pipeline_inspection#cc_thruster"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_all_thrusters"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_1"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_3"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_4"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_5"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_6"/>
     </owl:NamedIndividual>
     
 
@@ -52,7 +62,12 @@
 
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#c_thruster_3">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#Component"/>
-        <tomasys:typeC rdf:resource="http://www.metacontrol.org/pipeline_inspection#cc_thruster"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_all_thrusters"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_1"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_2"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_4"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_5"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_6"/>
     </owl:NamedIndividual>
     
 
@@ -61,7 +76,12 @@
 
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#c_thruster_4">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#Component"/>
-        <tomasys:typeC rdf:resource="http://www.metacontrol.org/pipeline_inspection#cc_thruster"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_all_thrusters"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_1"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_2"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_3"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_5"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_6"/>
     </owl:NamedIndividual>
     
 
@@ -70,7 +90,12 @@
 
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#c_thruster_5">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#Component"/>
-        <tomasys:typeC rdf:resource="http://www.metacontrol.org/pipeline_inspection#cc_thruster"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_all_thrusters"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_1"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_2"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_3"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_4"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_6"/>
     </owl:NamedIndividual>
     
 
@@ -79,15 +104,12 @@
 
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#c_thruster_6">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#Component"/>
-        <tomasys:typeC rdf:resource="http://www.metacontrol.org/pipeline_inspection#cc_thruster"/>
-    </owl:NamedIndividual>
-    
-
-
-    <!-- http://www.metacontrol.org/pipeline_inspection#cc_thruster -->
-
-    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#cc_thruster">
-        <rdf:type rdf:resource="http://metacontrol.org/tomasys#ComponentClass"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_all_thrusters"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_1"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_2"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_3"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_4"/>
+        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_5"/>
     </owl:NamedIndividual>
     
 
@@ -233,6 +255,15 @@
 
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#motion_efficiency">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#QualityAttributeType"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.metacontrol.org/pipeline_inspection#obs_water_visibility -->
+
+    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#obs_water_visibility">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#QAvalue"/>
+        <tomasys:isQAtype rdf:resource="http://www.metacontrol.org/pipeline_inspection#water_visibility"/>
     </owl:NamedIndividual>
     
 
@@ -540,20 +571,7 @@
                         <swrl:argument2 rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IN_ERROR_NFR</swrl:argument2>
                     </rdf:Description>
                 </rdf:first>
-                <rdf:rest>
-                    <rdf:Description>
-                        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#AtomList"/>
-                        <rdf:first>
-                            <rdf:Description>
-                                <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#DatavaluedPropertyAtom"/>
-                                <swrl:propertyPredicate rdf:resource="http://metacontrol.org/tomasys#fd_realisability"/>
-                                <swrl:argument1 rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd"/>
-                                <swrl:argument2 rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">false</swrl:argument2>
-                            </rdf:Description>
-                        </rdf:first>
-                        <rdf:rest rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"/>
-                    </rdf:Description>
-                </rdf:rest>
+                <rdf:rest rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"/>
             </rdf:Description>
         </swrl:head>
     </rdf:Description>
