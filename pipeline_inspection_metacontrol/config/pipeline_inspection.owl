@@ -251,14 +251,6 @@
     
 
 
-    <!-- http://www.metacontrol.org/pipeline_inspection#motion_efficiency -->
-
-    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#motion_efficiency">
-        <rdf:type rdf:resource="http://metacontrol.org/tomasys#QualityAttributeType"/>
-    </owl:NamedIndividual>
-    
-
-
     <!-- http://www.metacontrol.org/pipeline_inspection#obs_water_visibility -->
 
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#obs_water_visibility">
@@ -354,14 +346,6 @@
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#QAvalue"/>
         <tomasys:isQAtype rdf:resource="http://www.metacontrol.org/pipeline_inspection#water_visibility"/>
         <tomasys:hasValue rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">1.0</tomasys:hasValue>
-    </owl:NamedIndividual>
-    
-
-
-    <!-- http://www.metacontrol.org/pipeline_inspection#search_efficiency -->
-
-    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#search_efficiency">
-        <rdf:type rdf:resource="http://metacontrol.org/tomasys#QualityAttributeType"/>
     </owl:NamedIndividual>
     
 
