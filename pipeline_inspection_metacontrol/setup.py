@@ -29,7 +29,7 @@ setup(
             'spiral_lc_node = ' +
                 'pipeline_inspection_metacontrol.spiral_lc_node:main',
             'fake_managed_system = ' +
-                'pipeline_inspection_metacontrol.fake_managed_system:main'
+                'pipeline_inspection_metacontrol.fake_managed_system:main',
         ],
     },
 )

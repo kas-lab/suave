@@ -12,6 +12,7 @@
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>system_modes_msgs</exec_depend>
   <exec_depend>system_modes</exec_depend>
+  <exec_depend>mros2_msgs</exec_depend>
   <exec_depend>mros2_reasoner</exec_depend>
   <exec_depend>mc_mdl_tomasys</exec_depend>
   <exec_depend>mros_ontology</exec_depend>
