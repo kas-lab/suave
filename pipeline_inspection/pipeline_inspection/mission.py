@@ -9,19 +9,20 @@ from std_msgs.msg import Bool
 
 from mavros_wrapper.ardusub_wrapper import *
 
+
 class MissionNode(BlueROVArduSubWrapper):
     def __init__(self, node_name='mission_node'):
         super().__init__(node_name)
 
         self.pipeline_detected = False
-        
-        self.start_search_pub = self.create_publisher(Bool,
-                'start_search', 10)
-        self.start_follow_pipe_pub = self.create_publisher(Bool,
-                'start_follow_pipe', 10)
 
-        self.pipeline_detected_sub = self.create_subscription(Bool,
-                'pipeline/detected', self.pipeline_detected_cb, 10)
+        self.start_search_pub = self.create_publisher(
+            Bool, 'start_search', 10)
+        self.start_follow_pipe_pub = self.create_publisher(
+            Bool, 'start_follow_pipe', 10)
+
+        self.pipeline_detected_sub = self.create_subscription(
+            Bool, 'pipeline/detected', self.pipeline_detected_cb, 10)
 
     def pipeline_detected_cb(self, msg):
         self.pipeline_detected = msg.data
@@ -29,10 +30,11 @@ class MissionNode(BlueROVArduSubWrapper):
 
 def mission(args=None):
     rclpy.init(args=args)
-    mission_node = MissionNode() 
+    mission_node = MissionNode()
     mission_node.rate = mission_node.create_rate(2)
 
-    thread = threading.Thread(target=rclpy.spin, args=(mission_node, ), daemon=True)
+    thread = threading.Thread(
+        target=rclpy.spin, args=(mission_node, ), daemon=True)
     thread.start()
 
     custom_mode = 'GUIDED'
@@ -66,9 +68,10 @@ def mission(args=None):
     start_follow_msg.data = True
     mission_node.start_follow_pipe_pub.publish(start_follow_msg)
 
-    mission_node.get_logger().info('Mission complete, waiting for follow pipeline node to be done')
+    mission_node.get_logger().info(
+        'Mission complete, waiting for follow pipeline node to be done')
     mission_node.rate.sleep()
 
-    
-if __name__=='__main__':
+
+if __name__ == '__main__':
     mission()
