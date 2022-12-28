@@ -1,5 +1,6 @@
-import os
 from glob import glob
+
+import os
 from setuptools import setup
 
 package_name = 'pipeline_inspection'
@@ -21,7 +22,7 @@ setup(
     maintainer_email='g.rezendesilva@tudelft.nl',
     description='TODO: Package description',
     license='TODO: License declaration',
-    tests_require=['pytest'],
+    # tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'pipeline_node = ' +
