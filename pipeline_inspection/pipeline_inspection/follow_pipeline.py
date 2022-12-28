@@ -7,7 +7,7 @@ import threading
 from mavros_wrapper.ardusub_wrapper import *
 
 from rcl_interfaces.msg import ParameterType
-from pipeline_inspection.srv import GetPath
+from pipeline_inspection_msgs.srv import GetPath
 from geometry_msgs.msg import Pose
 from std_msgs.msg import Bool
 
@@ -24,8 +24,8 @@ class BlueROVGazeboNode(BlueROVArduSubWrapper):
 
         self.start_follow = False
 
-        self.start_follow_sub = self.create_subscription(Bool,
-                'start_follow_pipe', self.follow_pipe_cb, 10)
+        self.start_follow_sub = self.create_subscription(
+            Bool, 'start_follow_pipe', self.follow_pipe_cb, 10)
 
     def gazebo_pos_cb(self, msg):
         self.gazebo_pos = msg
@@ -65,20 +65,23 @@ def mission(ardusub):
     while not pipe_path.done():
         timer.sleep()
 
-    
     for gz_pose in pipe_path.result().path.poses:
         local_pose = ardusub.convert_gz_to_local_pos(gz_pose)
         ardusub.setpoint_position_local(
             x=local_pose.position.x,
             y=local_pose.position.y,
             z=local_pose.position.z)
-        while not ardusub.check_setpoint_reached(ardusub.pose_stamped(local_pose.position.x, local_pose.position.y, local_pose.position.z), delta=0.2):
+        while not ardusub.check_setpoint_reached(ardusub.pose_stamped(
+           local_pose.position.x,
+           local_pose.position.y,
+           local_pose.position.z),
+           delta=0.2):
             timer.sleep()
 
     ardusub.get_logger().info("Mission completed")
 
 
-if __name__ == '__main__':
+def main():
     # Initialize ros node
     rclpy.init(args=sys.argv)
 

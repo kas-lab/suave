@@ -7,12 +7,7 @@ from rclpy.node import Node
 from std_msgs.msg import Bool
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseArray
-from pipeline_inspection.srv import GetPath
-
-
-def compare_poses(pose1, pose2, delta=1.):
-    return abs(pose1.position.x - pose2.position.x) <= delta \
-            and abs(pose1.position.y - pose2.position.y) <= delta
+from pipeline_inspection_msgs.srv import GetPath
 
 
 class PipelineNode(Node):
@@ -85,9 +80,14 @@ class PipelineNode(Node):
         response.path = self.sorted_path
         return response
 
+    def compare_poses(self, pose1, pose2, delta=1.):
+        return abs(pose1.position.x - pose2.position.x) <= delta \
+                and abs(pose1.position.y - pose2.position.y) <= delta
+
     def detect_pipeline_cb(self, bluerov_pose):
         for i in range(len(self.interpolated_path.poses)):
-            if compare_poses(bluerov_pose, self.interpolated_path.poses[i]):
+            if self.compare_poses(bluerov_pose,
+               self.interpolated_path.poses[i]):
                 pipe_detected = Bool()
                 pipe_detected.data = True
                 self.detect_pipeline_pub.publish(pipe_detected)
@@ -102,7 +102,7 @@ class PipelineNode(Node):
         self.sorted_path.poses.extend(reversed(self.interpolated_path.poses))
 
 
-if __name__ == '__main__':
+def main():
     rclpy.init(args=sys.argv)
 
     detect_pipeline_node = PipelineNode()

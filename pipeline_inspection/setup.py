@@ -1,3 +1,5 @@
+import os
+from glob import glob
 from setuptools import setup
 
 package_name = 'pipeline_inspection'
@@ -10,6 +12,8 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name, 'launch'),
+            glob('launch/*launch.[pxy][yma]*')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -20,6 +24,20 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'pipeline_node = ' +
+                'pipeline_inspection.pipeline_node:main',
+            'follow_pipeline = ' +
+                'pipeline_inspection.follow_pipeline:main',
+            'follow_waypoints = ' +
+                'pipeline_inspection.follow_waypoints:main',
+            'mission = ' +
+                'pipeline_inspection.mission:mission',
+            'spiral_mission = ' +
+                'pipeline_inspection.spiral_mission:main',
+            'spiral_pattern_position = ' +
+                'pipeline_inspection.spiral_pattern_position:main',
+            'thruster_failures = ' +
+                'pipeline_inspection.thruster_failures:main',
         ],
     },
 )
