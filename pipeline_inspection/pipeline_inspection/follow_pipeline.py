@@ -25,16 +25,8 @@ def mission(ardusub):
         timer.sleep()
 
     for gz_pose in pipe_path.result().path.poses:
-        local_pose = ardusub.convert_gz_to_local_pos(gz_pose)
-        ardusub.setpoint_position_local(
-            x=local_pose.position.x,
-            y=local_pose.position.y,
-            z=local_pose.position.z)
-        while not ardusub.check_setpoint_reached(ardusub.pose_stamped(
-           local_pose.position.x,
-           local_pose.position.y,
-           local_pose.position.z),
-           delta=0.2):
+        setpoint = ardusub.setpoint_position_gz(gz_pose, fixed_altitude=True)
+        while not ardusub.check_setpoint_reached(setpoint, delta=0.2):
             timer.sleep()
 
     ardusub.get_logger().info("Mission completed")
