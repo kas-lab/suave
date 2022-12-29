@@ -7,8 +7,7 @@ import numpy as np
 import math
 
 from geometry_msgs.msg import PoseStamped
-
-from mavros_wrapper.ardusub_wrapper import *
+from pipeline_inspection.bluerov_gazebo import BlueROVGazebo
 
 
 def spiral_points(i, resolution=0.52, spiral_width=1.0):
@@ -20,7 +19,7 @@ def spiral_points(i, resolution=0.52, spiral_width=1.0):
 
 def main(args=None):
     rclpy.init(args=args)
-    sp_publisher = BlueROVArduSubWrapper('spiral_path_publisher')
+    sp_publisher = BlueROVGazebo('spiral_path_publisher')
     sp_publisher.rate = sp_publisher.create_rate(2)
 
     thread = threading.Thread(
@@ -44,16 +43,15 @@ def main(args=None):
     # Ensure that UUV is at start point
     x = .0
     y = .0
-    z = sp_publisher.local_pos.pose.position.z
     try:
         while rclpy.ok():
             spiral_width = sp_publisher.get_parameter(
                 'spiral_width').get_parameter_value().double_value
             x, y = spiral_points(i, resolution=0.1,  spiral_width=spiral_width)
             i += 1
-            sp_publisher.setpoint_position_local(x, y, z)
-            while not sp_publisher.check_setpoint_reached(
-               sp_publisher.pose_stamped(x, y, z), delta=0.2):
+            setpoint = sp_publisher.setpoint_position_local(
+                x, y, fixed_altitude=True)
+            while not sp_publisher.check_setpoint_reached(setpoint, delta=0.2):
                 sp_publisher.rate.sleep()
     except KeyboardInterrupt:
         pass
