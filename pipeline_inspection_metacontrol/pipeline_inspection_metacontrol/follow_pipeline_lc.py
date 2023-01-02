@@ -20,6 +20,7 @@ class PipelineFollower(Node):
 
     def __init__(self, node_name, **kwargs):
         super().__init__(node_name, **kwargs)
+        self.trigger_configure()
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info("on_configure() is called.")
@@ -37,12 +38,17 @@ class PipelineFollower(Node):
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
-        # Log, only for demo purposes
         self.get_logger().info("on_activate() is called.")
-        if self.executor is not None:
-            self.executor.create_task(self.mission)
-        else:
+        if not self.get_path_service.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info(
+                'pipeline_inspection/get_path service is not available')
             return TransitionCallbackReturn.FAILURE
+        if self.executor is None:
+            self.get_logger().info('Executor is None')
+            return TransitionCallbackReturn.FAILURE
+        else:
+            self.executor.create_task(self.mission)
+
         return super().on_activate(state)
 
     def on_deactivate(self, state: State) -> TransitionCallbackReturn:
@@ -67,10 +73,6 @@ class PipelineFollower(Node):
     def mission(self):
         self.get_logger().info("Mission started")
 
-        while not self.get_path_service.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info(
-                 'pipeline_inspection/get_path service is not available')
-            self.get_path_timer.sleep()
         pipe_path = self.get_path_service.call_async(GetPath.Request())
 
         timer = self.create_rate(5)  # Hz
@@ -91,7 +93,7 @@ def main():
     rclpy.init()
 
     executor = rclpy.executors.MultiThreadedExecutor()
-    lc_node = PipelineFollower('pipeline_follower')
+    lc_node = PipelineFollower('follow_pipeline_lc')
     executor.add_node(lc_node)
     try:
         executor.spin()
