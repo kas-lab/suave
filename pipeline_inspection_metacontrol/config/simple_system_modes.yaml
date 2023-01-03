@@ -1,4 +1,18 @@
 ---
+spiral_lc_system:
+  ros__parameters:
+    type: system
+    parts:
+      spiral_lc_node
+    modes:
+      __DEFAULT__:
+        spiral_lc_node: active.__DEFAULT__
+      FAST:
+        spiral_lc_node: active.FAST
+      SLOW:
+        spiral_lc_node: active.SLOW
+      DEACTIVATED:
+        spiral_lc_node: inactive.SLOW
 
 spiral_lc_node:
   ros__parameters:
@@ -13,6 +27,27 @@ spiral_lc_node:
       SLOW:
         ros__parameters:
           spiral_width: 2.0
+
+follow_pipeline_system:
+  ros__parameters:
+    type: system
+    parts:
+      follow_pipeline_lc
+    modes:
+      __DEFAULT__:
+        follow_pipeline_lc: inactive
+      ON:
+        follow_pipeline_lc: active
+      OFF:
+        follow_pipeline_lc: inactive
+
+follow_pipeline_lc:
+  ros__parameters:
+    type: node
+    modes:
+      __DEFAULT__:
+        ros__parameters:
+          random_param: 2.0
 
 thruster:
   ros__parameters:
@@ -74,4 +109,3 @@ thruster:
           thruster4: 1
           thruster5: 1
           thruster6: 0
-
