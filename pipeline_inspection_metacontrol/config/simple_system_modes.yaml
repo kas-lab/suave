@@ -21,12 +21,15 @@ spiral_lc_node:
       __DEFAULT__:
         ros__parameters:
           spiral_width: 1.0
+          spiral_altitude: 1.0
       FAST:
         ros__parameters:
-          spiral_width: 0.5
+          spiral_width: 1.0
+          spiral_altitude: 2.0
       SLOW:
         ros__parameters:
-          spiral_width: 2.0
+          spiral_width: 1.0
+          spiral_altitude: 0.5
 
 follow_pipeline_system:
   ros__parameters:
