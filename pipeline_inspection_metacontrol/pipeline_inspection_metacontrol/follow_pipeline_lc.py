@@ -16,7 +16,7 @@ from pipeline_inspection.bluerov_gazebo import BlueROVGazebo
 import std_msgs.msg
 
 
-class PipelineFollower(Node):
+class PipelineFollowerLC(Node):
 
     def __init__(self, node_name, **kwargs):
         super().__init__(node_name, **kwargs)
@@ -24,9 +24,8 @@ class PipelineFollower(Node):
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info("on_configure() is called.")
-        self.ardusub = BlueROVGazebo()
+        self.ardusub = BlueROVGazebo('bluerov_pipeline_follower')
 
-        # I am not sure this is needed, use multi-threaded executor instead?
         self.thread = threading.Thread(
             target=rclpy.spin, args=(self.ardusub, ), daemon=True)
         self.thread.start()
@@ -52,7 +51,6 @@ class PipelineFollower(Node):
         return super().on_activate(state)
 
     def on_deactivate(self, state: State) -> TransitionCallbackReturn:
-        # Log, only for demo purposes
         self.get_logger().info("on_deactivate() is called.")
         return super().on_deactivate(state)
 
@@ -75,7 +73,7 @@ class PipelineFollower(Node):
 
         pipe_path = self.get_path_service.call_async(GetPath.Request())
 
-        timer = self.create_rate(5)  # Hz
+        timer = self.ardusub.create_rate(5)  # Hz
         while not pipe_path.done():
             timer.sleep()
 
@@ -93,7 +91,7 @@ def main():
     rclpy.init()
 
     executor = rclpy.executors.MultiThreadedExecutor()
-    lc_node = PipelineFollower('follow_pipeline_lc')
+    lc_node = PipelineFollowerLC('follow_pipeline_lc')
     executor.add_node(lc_node)
     try:
         executor.spin()
