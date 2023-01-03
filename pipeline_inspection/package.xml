@@ -12,21 +12,15 @@
   <test_depend>ament_pep257</test_depend>
   <test_depend>python3-pytest</test_depend>
 
-  <build_export_depend>mavros</build_export_depend>
   <exec_depend>mavros</exec_depend>
-  <build_depend>mavros</build_depend>
-
+  <exec_depend>pipeline_inspection_msgs</exec_depend>
   <exec_depend>mavros_msgs</exec_depend>
   <exec_depend>mavros_wrapper</exec_depend>
   <exec_depend>ros_gz</exec_depend>
 
   <depend>geometry_msgs</depend>
 
-  <build_depend>rosidl_default_generators</build_depend>
-  <exec_depend>rosidl_default_runtime</exec_depend>
-  <member_of_group>rosidl_interface_packages</member_of_group>
-
   <export>
-    <build_type>ament_cmake</build_type>
+    <build_type>ament_python</build_type>
   </export>
 </package>

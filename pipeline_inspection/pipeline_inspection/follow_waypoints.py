@@ -50,7 +50,7 @@ def mission(ardusub):
     print("Mission completed")
 
 
-if __name__ == '__main__':
+def main():
     print("Starting Bluerov agent node")
 
     # Initialize ros node
