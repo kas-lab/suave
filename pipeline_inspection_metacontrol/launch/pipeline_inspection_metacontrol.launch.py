@@ -33,6 +33,7 @@ def generate_launch_description():
     water_visibility_node = Node(
         package='pipeline_inspection_metacontrol',
         executable='water_visibility_observer',
+        name='water_visibility_observer',
     )
 
     pipeline_metacontrol_node = Node(
@@ -45,26 +46,24 @@ def generate_launch_description():
         executable='mros2_system_modes_bridge',
     )
 
-    spiral_lc_node = LifecycleNode(
+    spiral_lc_node = Node(
         package='pipeline_inspection_metacontrol',
         executable='spiral_lc_node',
-        name='spiral_lc_node',
-        namespace='',
+        output='screen'
     )
 
-    follow_pipeline_lc = LifecycleNode(
+    follow_pipeline_lc = Node(
         package='pipeline_inspection_metacontrol',
         executable='follow_pipeline_lc',
-        name='follow_pipeline_lc',
-        namespace='',
+        output='screen',
     )
 
     return LaunchDescription([
         metacontrol_launch,
-        system_modes_launch,
         water_visibility_node,
         pipeline_metacontrol_node,
         mros2_system_modes_bridge_node,
         spiral_lc_node,
         follow_pipeline_lc,
+        system_modes_launch,
     ])
