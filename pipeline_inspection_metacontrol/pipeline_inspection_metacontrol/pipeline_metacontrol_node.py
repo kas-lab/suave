@@ -23,15 +23,12 @@ class PipelineNodeMC(PipelineNode):
                         self.water_visibility = float(value.value)
 
     def compare_poses(self, pose1, pose2, delta=1.):
-        # print("pose1: ", pose1)
-        # print("pose2: ", pose2)
         result = False
         if self.water_visibility is not None:
             result = abs(pose1.position.x - pose2.position.x) <= delta \
                 and abs(pose1.position.y - pose2.position.y) <= delta \
                 and abs(pose1.position.z - pose2.position.z) \
                 <= self.water_visibility
-        print(result)
         return result
 
 

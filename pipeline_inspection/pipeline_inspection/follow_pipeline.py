@@ -11,8 +11,6 @@ from pipeline_inspection.bluerov_gazebo import BlueROVGazebo
 
 def mission(ardusub):
 
-    service_timer = ardusub.create_rate(2)
-
     while not ardusub.start_follow:
         pass
 
