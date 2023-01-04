@@ -94,22 +94,25 @@ class MissionNode(BlueROVGazebo):
             timer.sleep()
 
         self.get_logger().info('Starting Search Pipeline task')
-        generate_search_path_goal_handle = self.send_adaptation_goal(
-            'generate_search_path', [('water_visibility', 0.15)])
+        generate_search_path_goal_future = self.send_adaptation_goal(
+            'generate_search_path')
 
         while not self.pipeline_detected:
             timer.sleep()
 
+        generate_search_path_goal_handle = \
+            generate_search_path_goal_future.result()
         generate_search_path_goal_handle.cancel_goal_async()
         self.get_logger().info('Task Search Pipeline completed')
 
         self.get_logger().info('Starting Inspect Pipeline task')
-        inspect_pipeline_goal_handle = self.send_adaptation_goal(
+        inspect_pipeline_goal_future = self.send_adaptation_goal(
             'inspect_pipeline')
 
         while not self.pipeline_inspected:
             timer.sleep()
 
+        inspect_pipeline_goal_handle = inspect_pipeline_goal_future.result()
         inspect_pipeline_goal_handle.cancel_goal_async()
         self.get_logger().info('Task Inspect Pipeline completed')
 
