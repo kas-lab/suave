@@ -1,47 +1,52 @@
 ---
-spiral_lc_system:
+f_generate_search_path:
   ros__parameters:
     type: system
     parts:
-      spiral_lc_node
+      f_generate_search_path_part
     modes:
       __DEFAULT__:
         spiral_lc_node: active.__DEFAULT__
-      FAST:
-        spiral_lc_node: active.FAST
-      SLOW:
-        spiral_lc_node: active.SLOW
-      DEACTIVATED:
-        spiral_lc_node: inactive.SLOW
+      fd_spiral_high:
+        spiral_lc_node: active.fd_spiral_high
+      fd_spiral_low:
+        spiral_lc_node: active.fd_spiral_low
+      fd_spiral_medium:
+        spiral_lc_node: active.fd_spiral_medium
+      fd_unground:
+        spiral_lc_node: inactive
 
-spiral_lc_node:
+f_generate_search_path_part:
   ros__parameters:
     type: node
     modes:
       __DEFAULT__:
         ros__parameters:
           spiral_width: 1.0
-      FAST:
+      fd_spiral_high:
         ros__parameters:
           spiral_width: 0.5
-      SLOW:
+      fd_spiral_medium:
+        ros__parameters:
+          spiral_width: 1.0
+      fd_spiral_low:
         ros__parameters:
           spiral_width: 2.0
 
-follow_pipeline_system:
+f_inspect_pipeline:
   ros__parameters:
     type: system
     parts:
-      follow_pipeline_lc
+      f_inspect_pipeline_part
     modes:
       __DEFAULT__:
         follow_pipeline_lc: inactive
-      ON:
-        follow_pipeline_lc: active
-      OFF:
+      fd_inspect_pipeline:
+        follow_pipeline_lc: active.__DEFAULT__
+      fd_unground:
         follow_pipeline_lc: inactive
 
-follow_pipeline_lc:
+f_inspect_pipeline_part:
   ros__parameters:
     type: node
     modes:
@@ -49,7 +54,30 @@ follow_pipeline_lc:
         ros__parameters:
           random_param: 2.0
 
-thruster:
+f_control_motion:
+  ros__parameters:
+    type: system
+    parts:
+      f_control_motion_part
+    modes:
+      __DEFAULT__:
+        f_control_motion: active.__DEFAULT__
+      fd_failure_thruster_1:
+        f_control_motion: active.fd_failure_thruster_1
+      fd_failure_thruster_2:
+        f_control_motion: active.fd_failure_thruster_2
+      fd_failure_thruster_3:
+        f_control_motion: active.fd_failure_thruster_3
+      fd_failure_thruster_4:
+        f_control_motion: active.fd_failure_thruster_4
+      fd_failure_thruster_5:
+        f_control_motion: active.fd_failure_thruster_5
+      fd_failure_thruster_6:
+        f_control_motion: active.fd_failure_thruster_6
+      fd_unground:
+        f_control_motion: inactive
+
+f_control_motion_part:
   ros__parameters:
     type: node
     modes:
@@ -61,7 +89,7 @@ thruster:
           thruster4: 1
           thruster5: 1
           thruster6: 1
-      TF1:
+      fd_failure_thruster_1:
         ros__parameters:
           thruster1: 0
           thruster2: 1
@@ -69,7 +97,7 @@ thruster:
           thruster4: 1
           thruster5: 1
           thruster6: 1
-      TF2:
+      fd_failure_thruster_2:
         ros__parameters:
           thruster1: 1
           thruster2: 0
@@ -77,7 +105,7 @@ thruster:
           thruster4: 1
           thruster5: 1
           thruster6: 1
-      TF3:
+      fd_failure_thruster_3:
         ros__parameters:
           thruster1: 1
           thruster2: 1
@@ -85,7 +113,7 @@ thruster:
           thruster4: 1
           thruster5: 1
           thruster6: 1
-      TF4:
+      fd_failure_thruster_4:
         ros__parameters:
           thruster1: 1
           thruster2: 1
@@ -93,7 +121,7 @@ thruster:
           thruster4: 0
           thruster5: 1
           thruster6: 1
-      TF5:
+      fd_failure_thruster_5:
         ros__parameters:
           thruster1: 1
           thruster2: 1
@@ -101,7 +129,7 @@ thruster:
           thruster4: 1
           thruster5: 0
           thruster6: 1
-      TF6:
+      fd_failure_thruster_6:
         rot__parameters:
           thruster1: 1
           thruster2: 1
