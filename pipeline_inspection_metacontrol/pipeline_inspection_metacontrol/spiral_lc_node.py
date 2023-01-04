@@ -62,14 +62,12 @@ class SpiralSearcherLC(Node):
         if self._enabled is True:
             self.spiral_width = self.get_parameter(
                     'spiral_width').get_parameter_value().double_value
-            self.get_logger().info('spiral width is {}'.format(self.spiral_width))
 
             self.spiral_altitude = self.get_parameter(
                     'spiral_altitude').get_parameter_value().double_value
-            self.get_logger().info('spiral altitude is {}'.format(self.spiral_altitude))
 
             if self.goal_setpoint is None or \
-               self.ardusub.check_setpoint_reached(self.goal_setpoint, 0.2):
+               self.ardusub.check_setpoint_reached(self.goal_setpoint, 0.4):
 
                 x, y = spiral_points(
                     self.spiral_count,
