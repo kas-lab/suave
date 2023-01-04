@@ -8,7 +8,8 @@ from rclpy.duration import Duration
 
 from mavros_wrapper.ardusub_wrapper import *
 
-if __name__ == '__main__':
+
+def main():
     print("Starting thrusters failure node")
 
     rclpy.init(args=sys.argv)

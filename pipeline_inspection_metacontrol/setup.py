@@ -32,7 +32,12 @@ setup(
                 'pipeline_inspection_metacontrol.fake_managed_system:main',
             'water_visibility_observer = ' +
                 'pipeline_inspection_metacontrol.' +
-                'water_visibility_observer:main'
+                'water_visibility_observer:main',
+            'pipeline_metacontrol_node = ' +
+                'pipeline_inspection_metacontrol.' +
+                'pipeline_metacontrol_node:main',
+            'follow_pipeline_lc = ' +
+                'pipeline_inspection_metacontrol.follow_pipeline_lc:main',
         ],
     },
 )
