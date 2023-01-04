@@ -3,20 +3,20 @@ f_generate_search_path:
   ros__parameters:
     type: system
     parts:
-      f_generate_search_path_part
+      f_generate_search_path_node
     modes:
       __DEFAULT__:
-        spiral_lc_node: active.__DEFAULT__
+        f_generate_search_path_node: active.__DEFAULT__
       fd_spiral_high:
-        spiral_lc_node: active.fd_spiral_high
+        f_generate_search_path_node: active.fd_spiral_high
       fd_spiral_low:
-        spiral_lc_node: active.fd_spiral_low
+        f_generate_search_path_node: active.fd_spiral_low
       fd_spiral_medium:
-        spiral_lc_node: active.fd_spiral_medium
+        f_generate_search_path_node: active.fd_spiral_medium
       fd_unground:
-        spiral_lc_node: inactive
+        f_generate_search_path_node: inactive
 
-f_generate_search_path_part:
+f_generate_search_path_node:
   ros__parameters:
     type: node
     modes:
@@ -37,16 +37,16 @@ f_inspect_pipeline:
   ros__parameters:
     type: system
     parts:
-      f_inspect_pipeline_part
+      f_inspect_pipeline_node
     modes:
       __DEFAULT__:
-        follow_pipeline_lc: inactive
+        f_inspect_pipeline_node: inactive
       fd_inspect_pipeline:
-        follow_pipeline_lc: active.__DEFAULT__
+        f_inspect_pipeline_node: active.__DEFAULT__
       fd_unground:
-        follow_pipeline_lc: inactive
+        f_inspect_pipeline_node: inactive
 
-f_inspect_pipeline_part:
+f_inspect_pipeline_node:
   ros__parameters:
     type: node
     modes:
@@ -58,26 +58,26 @@ f_control_motion:
   ros__parameters:
     type: system
     parts:
-      f_control_motion_part
+      f_control_motion_node
     modes:
       __DEFAULT__:
-        f_control_motion: active.__DEFAULT__
+        f_control_motion_node: active.__DEFAULT__
       fd_failure_thruster_1:
-        f_control_motion: active.fd_failure_thruster_1
+        f_control_motion_node: active.fd_failure_thruster_1
       fd_failure_thruster_2:
-        f_control_motion: active.fd_failure_thruster_2
+        f_control_motion_node: active.fd_failure_thruster_2
       fd_failure_thruster_3:
-        f_control_motion: active.fd_failure_thruster_3
+        f_control_motion_node: active.fd_failure_thruster_3
       fd_failure_thruster_4:
-        f_control_motion: active.fd_failure_thruster_4
+        f_control_motion_node: active.fd_failure_thruster_4
       fd_failure_thruster_5:
-        f_control_motion: active.fd_failure_thruster_5
+        f_control_motion_node: active.fd_failure_thruster_5
       fd_failure_thruster_6:
-        f_control_motion: active.fd_failure_thruster_6
+        f_control_motion_node: active.fd_failure_thruster_6
       fd_unground:
-        f_control_motion: inactive
+        f_control_motion_node: inactive
 
-f_control_motion_part:
+f_control_motion_node:
   ros__parameters:
     type: node
     modes:
