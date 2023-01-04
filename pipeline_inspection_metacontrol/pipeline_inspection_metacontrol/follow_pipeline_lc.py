@@ -13,7 +13,7 @@ from rclpy.timer import Timer
 from pipeline_inspection_msgs.srv import GetPath
 from pipeline_inspection.bluerov_gazebo import BlueROVGazebo
 
-import std_msgs.msg
+from std_msgs.msg import Bool
 
 
 class PipelineFollowerLC(Node):
@@ -34,6 +34,8 @@ class PipelineFollowerLC(Node):
         self.get_path_service = self.create_client(
             GetPath, 'pipeline_inspection/get_path')
 
+        self.pipeline_inspected_pub = self.create_lifecycle_publisher(
+            Bool, "pipeline/inspected", 10)
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
@@ -83,8 +85,10 @@ class PipelineFollowerLC(Node):
             while not self.ardusub.check_setpoint_reached(setpoint, 0.2):
                 timer.sleep()
 
+        pipe_inspected = Bool()
+        pipe_inspected.data = True
+        self.pipeline_inspected_pub.publish(pipe_inspected)
         self.get_logger().info("Mission completed")
-        self.trigger_deactivate()
 
 
 def main():
