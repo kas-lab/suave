@@ -9,6 +9,8 @@ from diagnostic_msgs.msg import DiagnosticArray
 from diagnostic_msgs.msg import DiagnosticStatus
 from diagnostic_msgs.msg import KeyValue
 
+import threading
+
 
 class FakeManagedSystem(Node):
 
@@ -44,10 +46,17 @@ class FakeManagedSystem(Node):
         self.get_logger().info(
             'Sending goal  {0}'.format(
                 mock_goal_msg.qos_expected.objective_type))
-        self._action_client.send_goal_async(
+        future = self._action_client.send_goal_async(
             mock_goal_msg, feedback_callback=self.feedback_callback)
         self.get_logger().info('Goal Sent!!!')
 
+        timer = self.create_rate(0.1)
+        timer.sleep()
+
+        self.get_logger().info('%%%%CANCEL GOAL')
+        handle = future.result()
+        cancel_future = handle.cancel_goal_async()
+        # rclpy.spin_until_future_complete(self, cancel_future)
         # fake_goal_msg = ControlQos.Goal()
         # fake_goal_msg.qos_expected.objective_type = "f_fake"
         # fake_goal_msg.qos_expected.objective_id = "obj_fake_{:.0f}".format(
@@ -67,19 +76,21 @@ class FakeManagedSystem(Node):
 
     def feedback_callback(self, feedback_msg):
         feedback = feedback_msg.feedback
+        self.get_logger().info(">> Feedback received:")
         self.get_logger().info(
-            'Best mode: {0}'.format(
-                feedback.qos_status.selected_mode))
-        self.get_logger().info(
-            'Solving: {0} of type {1}'.format(
+            '  Solving: {0} of type {1}'.format(
                 feedback.qos_status.objective_id,
                 feedback.qos_status.objective_type))
         self.get_logger().info(
-            'obj status: {0}'.format(
+            '  Objective status: {0}'.format(
                 feedback.qos_status.objective_status))
+        self.get_logger().info('  QAs Status: ')
         for qos in feedback.qos_status.qos:
             self.get_logger().info(
-                'QoS Status: Key: {0} - Value {1}'.format(qos.key, qos.value))
+                '    Key: {0} - Value {1}'.format(qos.key, qos.value))
+        self.get_logger().info(
+            '  Current Function Grounding: {0}'.format(
+                feedback.qos_status.selected_mode))
 
     def timer_callback(self):
         if self.water_visibility <= 0.1 or self.water_visibility > 2.5:
@@ -108,7 +119,11 @@ def main():
     rclpy.init(args=sys.argv)
 
     managed_system = FakeManagedSystem()
+    thread = threading.Thread(
+        target=rclpy.spin, args=(managed_system, ), daemon=True)
+    thread.start()
     managed_system.set_objectives()
-    rclpy.spin(managed_system)
 
+    thread.join()
+    managed_system.destroy_node()
     rclpy.shutdown()

@@ -33,9 +33,17 @@ setup(
             'water_visibility_observer = ' +
                 'pipeline_inspection_metacontrol.' +
                 'water_visibility_observer:main',
+<<<<<<< HEAD
              'pipeline_metacontrol_node = ' +
                 'pipeline_inspection_metacontrol.' +
                 'pipeline_metacontrol_node:main',
+=======
+            'pipeline_metacontrol_node = ' +
+                'pipeline_inspection_metacontrol.' +
+                'pipeline_metacontrol_node:main',
+            'follow_pipeline_lc = ' +
+                'pipeline_inspection_metacontrol.follow_pipeline_lc:main',
+>>>>>>> dev
             'mission = ' +
                 'pipeline_inspection_metacontrol.mission:main',
         ],

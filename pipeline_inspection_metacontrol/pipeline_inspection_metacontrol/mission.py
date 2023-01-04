@@ -4,6 +4,7 @@ import rclpy
 import threading
 from rclpy.node import Node
 from rclpy.action import ActionClient
+from rclpy.executors import MultiThreadedExecutor
 from mros2_msgs.action import ControlQos
 from diagnostic_msgs.msg import DiagnosticArray
 from diagnostic_msgs.msg import DiagnosticStatus
@@ -59,19 +60,21 @@ class MissionNode(BlueROVGazebo):
 
     def feedback_callback(self, feedback_msg):
         feedback = feedback_msg.feedback
+        self.get_logger().info(">> Feedback received:")
         self.get_logger().info(
-            'Best mode: {0}'.format(
-                feedback.qos_status.selected_mode))
-        self.get_logger().info(
-            'Solving: {0} of type {1}'.format(
+            '    Solving: {0} of type {1}'.format(
                 feedback.qos_status.objective_id,
                 feedback.qos_status.objective_type))
         self.get_logger().info(
-            'obj status: {0}'.format(
+            '    Objective status: {0}'.format(
                 feedback.qos_status.objective_status))
+        self.get_logger().info('    QAs Status: ')
         for qos in feedback.qos_status.qos:
             self.get_logger().info(
-                'QoS Status: Key: {0} - Value {1}'.format(qos.key, qos.value))
+                '      Key: {0} - Value {1}'.format(qos.key, qos.value))
+        self.get_logger().info(
+            '    Current Function Grounding: {0}'.format(
+                feedback.qos_status.selected_mode))
 
     def perform_mission(self):
         self.get_logger().info("Pipeline inspection mission starting!!")
@@ -91,22 +94,25 @@ class MissionNode(BlueROVGazebo):
             timer.sleep()
 
         self.get_logger().info('Starting Search Pipeline task')
-        generate_search_path_goal_handle = self.send_adaptation_goal(
-            'generate_search_path', [('water_visibility', 0.15)])
+        generate_search_path_goal_future = self.send_adaptation_goal(
+            'generate_search_path')
 
         while not self.pipeline_detected:
             timer.sleep()
 
+        generate_search_path_goal_handle = \
+            generate_search_path_goal_future.result()
         generate_search_path_goal_handle.cancel_goal_async()
         self.get_logger().info('Task Search Pipeline completed')
 
         self.get_logger().info('Starting Inspect Pipeline task')
-        inspect_pipeline_goal_handle = self.send_adaptation_goal(
+        inspect_pipeline_goal_future = self.send_adaptation_goal(
             'inspect_pipeline')
 
         while not self.pipeline_inspected:
             timer.sleep()
 
+        inspect_pipeline_goal_handle = inspect_pipeline_goal_future.result()
         inspect_pipeline_goal_handle.cancel_goal_async()
         self.get_logger().info('Task Inspect Pipeline completed')
 
@@ -117,15 +123,16 @@ def main():
 
     mission_node = MissionNode()
 
+    mt_executor = MultiThreadedExecutor()
     thread = threading.Thread(
-        target=rclpy.spin, args=(mission_node, ), daemon=True)
+        target=rclpy.spin, args=[mission_node, mt_executor], daemon=True)
     thread.start()
 
     mission_node.perform_mission()
 
+    thread.join()
     mission_node.destroy_node()
     rclpy.shutdown()
-    thread.join()
 
 
 if __name__ == '__main__':

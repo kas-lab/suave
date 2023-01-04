@@ -29,12 +29,6 @@ def generate_launch_description():
         launch_arguments={
             'model_file': pipeline_inspection_ontology_path}.items())
 
-    water_visibility_node = Node(
-        package='pipeline_inspection_metacontrol',
-        executable='water_visibility_observer',
-    )
-
     return LaunchDescription([
         mros2_reasoner_node,
-        water_visibility_node
     ])
