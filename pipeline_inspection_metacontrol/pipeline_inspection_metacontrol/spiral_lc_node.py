@@ -107,11 +107,15 @@ class SpiralSearcherLC(Node):
         return super().on_deactivate(state)
 
     def on_cleanup(self, state: State) -> TransitionCallbackReturn:
+        self.thread.join()
+        self.ardusub.destroy_node()
         self.destroy_timer(self._timer)
         self.get_logger().info('on_cleanup() is called.')
         return TransitionCallbackReturn.SUCCESS
 
     def on_shutdown(self, state: State) -> TransitionCallbackReturn:
+        self.thread.join()
+        self.ardusub.destroy_node()
         self.destroy_timer(self._timer)
         self.get_logger().info('on_shutdown() is called.')
         return TransitionCallbackReturn.SUCCESS
