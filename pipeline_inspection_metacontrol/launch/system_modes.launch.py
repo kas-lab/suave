@@ -11,7 +11,7 @@ def generate_launch_description():
     shm_model_path = os.path.join(
         get_package_share_directory('pipeline_inspection_metacontrol'),
         'config',
-        'simple_system_modes.yaml')
+        'pipeline_inspection_modes.yaml')
 
     mode_manager_node = Node(
         package='system_modes',
