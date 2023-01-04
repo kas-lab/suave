@@ -1,9 +1,9 @@
 ---
-spiral_lc_system:
+f_generate_search_path:
   ros__parameters:
     type: system
     parts:
-      f_generate_search_path
+      f_generate_search_path_part
     modes:
       __DEFAULT__:
         spiral_lc_node: active.__DEFAULT__
@@ -16,7 +16,7 @@ spiral_lc_system:
       fd_unground:
         spiral_lc_node: inactive
 
-f_generate_search_path:
+f_generate_search_path_part:
   ros__parameters:
     type: node
     modes:
@@ -33,11 +33,11 @@ f_generate_search_path:
         ros__parameters:
           spiral_width: 2.0
 
-inspect_pipeline_system:
+f_inspect_pipeline:
   ros__parameters:
     type: system
     parts:
-      f_inspect_pipeline
+      f_inspect_pipeline_part
     modes:
       __DEFAULT__:
         follow_pipeline_lc: inactive
@@ -46,7 +46,7 @@ inspect_pipeline_system:
       fd_unground:
         follow_pipeline_lc: inactive
 
-f_inspect_pipeline:
+f_inspect_pipeline_part:
   ros__parameters:
     type: node
     modes:
@@ -54,11 +54,11 @@ f_inspect_pipeline:
         ros__parameters:
           random_param: 2.0
 
-thruster_failure_system:
+f_control_motion:
   ros__parameters:
     type: system
     parts:
-      f_control_motion
+      f_control_motion_part
     modes:
       __DEFAULT__:
         f_control_motion: active.__DEFAULT__
@@ -77,7 +77,7 @@ thruster_failure_system:
       fd_unground:
         f_control_motion: inactive
 
-f_control_motion:
+f_control_motion_part:
   ros__parameters:
     type: node
     modes:
