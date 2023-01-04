@@ -4,6 +4,7 @@ import rclpy
 import threading
 from rclpy.node import Node
 from rclpy.action import ActionClient
+from rclpy.executors import MultiThreadedExecutor
 from mros2_msgs.action import ControlQos
 from diagnostic_msgs.msg import DiagnosticArray
 from diagnostic_msgs.msg import DiagnosticStatus
@@ -119,15 +120,16 @@ def main():
 
     mission_node = MissionNode()
 
+    mt_executor = MultiThreadedExecutor()
     thread = threading.Thread(
-        target=rclpy.spin, args=(mission_node, ), daemon=True)
+        target=rclpy.spin, args=[mission_node, mt_executor], daemon=True)
     thread.start()
 
     mission_node.perform_mission()
 
+    thread.join()
     mission_node.destroy_node()
     rclpy.shutdown()
-    thread.join()
 
 
 if __name__ == '__main__':
