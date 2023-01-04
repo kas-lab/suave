@@ -82,7 +82,12 @@ class PipelineFollowerLC(Node):
         for gz_pose in pipe_path.result().path.poses:
             setpoint = self.ardusub.setpoint_position_gz(
                 gz_pose, fixed_altitude=True)
-            while not self.ardusub.check_setpoint_reached(setpoint, 0.2):
+            count = 0
+            while not self.ardusub.check_setpoint_reached(setpoint, 0.5):
+                if count > 10:
+                    setpoint = self.ardusub.setpoint_position_gz(
+                        gz_pose, fixed_altitude=True)
+                count += 1
                 timer.sleep()
 
         pipe_inspected = Bool()
