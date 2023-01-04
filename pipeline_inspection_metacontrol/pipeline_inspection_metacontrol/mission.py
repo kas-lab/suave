@@ -59,19 +59,21 @@ class MissionNode(BlueROVGazebo):
 
     def feedback_callback(self, feedback_msg):
         feedback = feedback_msg.feedback
+        self.get_logger().info(">> Feedback received:")
         self.get_logger().info(
-            'Best mode: {0}'.format(
-                feedback.qos_status.selected_mode))
-        self.get_logger().info(
-            'Solving: {0} of type {1}'.format(
+            '    Solving: {0} of type {1}'.format(
                 feedback.qos_status.objective_id,
                 feedback.qos_status.objective_type))
         self.get_logger().info(
-            'obj status: {0}'.format(
+            '    Objective status: {0}'.format(
                 feedback.qos_status.objective_status))
+        self.get_logger().info('    QAs Status: ')
         for qos in feedback.qos_status.qos:
             self.get_logger().info(
-                'QoS Status: Key: {0} - Value {1}'.format(qos.key, qos.value))
+                '      Key: {0} - Value {1}'.format(qos.key, qos.value))
+        self.get_logger().info(
+            '    Current Function Grounding: {0}'.format(
+                feedback.qos_status.selected_mode))
 
     def perform_mission(self):
         self.get_logger().info("Pipeline inspection mission starting!!")
