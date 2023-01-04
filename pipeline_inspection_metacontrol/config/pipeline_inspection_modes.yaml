@@ -130,7 +130,7 @@ f_control_motion_part:
           thruster5: 0
           thruster6: 1
       fd_failure_thruster_6:
-        rot__parameters:
+        ros__parameters:
           thruster1: 1
           thruster2: 1
           thruster3: 1
