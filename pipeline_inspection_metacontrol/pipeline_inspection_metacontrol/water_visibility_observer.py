@@ -19,7 +19,7 @@ class WaterVisibilityObserver(Node):
 
         self.declare_parameter('qa_publishing_period', 0.2)
         self.declare_parameter('water_visibility_period', 100)
-        self.declare_parameter('water_visibility_min', 0.25)
+        self.declare_parameter('water_visibility_min', 0.5)
         self.declare_parameter('water_visibility_max', 2.5)
 
         qa_publishing_period = self.get_parameter('qa_publishing_period').value
