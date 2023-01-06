@@ -25,13 +25,13 @@ f_generate_search_path_node:
           spiral_altitude: 1.0
       fd_spiral_high:
         ros__parameters:
-          spiral_altitude: 2.0
+          spiral_altitude: 3.0
       fd_spiral_medium:
         ros__parameters:
-          spiral_altitude: 1.0
+          spiral_altitude: 2.0
       fd_spiral_low:
         ros__parameters:
-          spiral_altitude: 0.5
+          spiral_altitude: 1.0
 
 f_inspect_pipeline:
   ros__parameters:
