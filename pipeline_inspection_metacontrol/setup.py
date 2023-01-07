@@ -40,6 +40,9 @@ setup(
                 'pipeline_inspection_metacontrol.follow_pipeline_lc:main',
             'mission = ' +
                 'pipeline_inspection_metacontrol.mission:main',
+            'pipeline_inspection_reasoner = ' +
+                'pipeline_inspection_metacontrol.' +
+                'pipeline_inspection_reasoner:main',
         ],
     },
 )
