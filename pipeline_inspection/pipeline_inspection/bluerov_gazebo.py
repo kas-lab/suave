@@ -23,7 +23,7 @@ class BlueROVGazebo(BlueROVArduSubWrapper):
 
     def gazebo_pos_cb(self, msg):
         self.gazebo_pos = msg
-        if self.local_pos_received:
+        if self.local_pos_received and self.status.mode == 'GUIDED':
             self.gz_to_local_pose_delta = [
                 self.local_pos.pose.position.x - msg.position.x,
                 self.local_pos.pose.position.y - msg.position.y,

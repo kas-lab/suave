@@ -38,6 +38,8 @@ setup(
                 'pipeline_metacontrol_node:main',
             'follow_pipeline_lc = ' +
                 'pipeline_inspection_metacontrol.follow_pipeline_lc:main',
+            'mission = ' +
+                'pipeline_inspection_metacontrol.mission:main',
         ],
     },
 )
