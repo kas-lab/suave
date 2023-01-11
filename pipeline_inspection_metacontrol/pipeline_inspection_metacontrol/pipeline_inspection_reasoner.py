@@ -16,20 +16,25 @@ class PipelineInspectionReasoner(RosReasoner):
         super().__init__()
 
     def analyze(self):
-        objectives_in_error = super().analyze()
-        objectives = self.search_objectives()
-        for objective in objectives:
-            if objective not in objectives_in_error and \
-             str(objective.typeF.name) == "f_generate_search_path":
-                measured_water_visibility = get_measured_qa(
-                    'water_visibility', self.tomasys)
-                current_fd = get_current_function_design(
-                    objective, self.tomasys)
-                for qa in current_fd.hasQAestimation:
-                    if str(qa.isQAtype.name) == 'water_visibility' \
-                     and (qa.hasValue - measured_water_visibility) < 0:
-                        objectives_in_error.append(objective)
-                        objective.o_status = "IN_ERROR_NFR"
+        objectives_in_error = []
+        try:
+            objectives_in_error = super().analyze()
+            objectives = self.search_objectives()
+            for objective in objectives:
+                if objective not in objectives_in_error and \
+                 str(objective.typeF.name) == "f_generate_search_path":
+                    measured_water_visibility = get_measured_qa(
+                        'water_visibility', self.tomasys)
+                    current_fd = get_current_function_design(
+                        objective, self.tomasys)
+                    if current_fd is not None:
+                        for qa in current_fd.hasQAestimation:
+                            if str(qa.isQAtype.name) == 'water_visibility' \
+                             and (qa.hasValue - measured_water_visibility) < 0:
+                                objectives_in_error.append(objective)
+                                objective.o_status = "IN_ERROR_NFR"
+        except Exception as err:
+            self.logger.info("In Analyze, exception returned: {}".format(err))
         return objectives_in_error
 
 
