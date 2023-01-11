@@ -68,7 +68,7 @@ class PipelineNode(Node):
             pose = Pose()
             pose.position.x = xn
             pose.position.y = yn
-            pose.position.z = pose1.position.z
+            pose.position.z = pose1.position.z + 0.75
             points.append(pose)
         return points
 

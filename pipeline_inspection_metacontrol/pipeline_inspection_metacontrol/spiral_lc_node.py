@@ -34,6 +34,7 @@ class SpiralSearcherLC(Node):
         self.spiral_count: int = 0
         self.spiral_x: float = 0.0
         self.spiral_y: float = 0.0
+        self.timer_period = 1.0
         self._timer: Optional[Timer] = None
 
         super().__init__(node_name, **kwargs)
@@ -99,7 +100,7 @@ class SpiralSearcherLC(Node):
             target=rclpy.spin, args=(self.ardusub, ), daemon=True)
         self.thread.start()
 
-        self._timer_ = self.create_timer(1.0, self.publish)
+        self._timer_ = self.create_timer(self.timer_period, self.publish)
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
