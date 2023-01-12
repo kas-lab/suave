@@ -1,7 +1,11 @@
 #!/usr/bin/env python
+
+import csv
 import sys
 import rclpy
 import threading
+from pathlib import Path
+from datetime import datetime
 from rclpy.node import Node
 from rclpy.action import ActionClient
 from rclpy.executors import MultiThreadedExecutor
@@ -27,6 +31,13 @@ class MissionNode(BlueROVGazebo):
 
         self.mros_action_client = ActionClient(
             self, ControlQos, 'mros_objective')
+
+        self.declare_parameter('result_path', '~/pipeline_inspection/results')
+        self.declare_parameter('result_filename', 'small_pipe_const_dist')
+
+        self.result_path = self.get_parameter('result_path').value
+
+        self.result_filename = self.get_parameter('result_filename').value
 
     def pipeline_detected_cb(self, msg):
         self.pipeline_detected = msg.data
@@ -94,11 +105,15 @@ class MissionNode(BlueROVGazebo):
             timer.sleep()
 
         self.get_logger().info('Starting Search Pipeline task')
+
+        mission_start_time = self.get_clock().now()
         generate_search_path_goal_future = self.send_adaptation_goal(
             'generate_search_path')
 
         while not self.pipeline_detected:
             timer.sleep()
+
+        pipeline_detected_time = self.get_clock().now()
 
         generate_search_path_goal_handle = \
             generate_search_path_goal_future.result()
@@ -112,9 +127,43 @@ class MissionNode(BlueROVGazebo):
         while not self.pipeline_inspected:
             timer.sleep()
 
+        mission_completed_time = self.get_clock().now()
+
         inspect_pipeline_goal_handle = inspect_pipeline_goal_future.result()
         inspect_pipeline_goal_handle.cancel_goal_async()
         self.get_logger().info('Task Inspect Pipeline completed')
+
+        detection_time_delta = pipeline_detected_time - mission_start_time
+        mission_time_delta = mission_completed_time - mission_start_time
+
+        self.get_logger().info(
+            'Time elapsed to detect pipeline {}'.format(
+                detection_time_delta.to_msg().sec))
+        self.get_logger().info(
+            'Time elapsed to complete mission {}'.format(
+                mission_time_delta.to_msg().sec))
+
+        mission_data = [
+            'small_pipe_const_dist',
+            datetime.now().strftime("%b-%d-%Y-%H-%M-%S"),
+            detection_time_delta.to_msg().sec,
+            mission_time_delta.to_msg().sec]
+
+        self.save_metrics(mission_data)
+
+    def save_metrics(self, data):
+        result_path = Path(self.result_path).expanduser()
+
+        if result_path.is_dir() is False:
+            result_path.mkdir(parents=True)
+
+        result_file = result_path / (self.result_filename + '.csv')
+        if result_file.is_file() is False:
+            result_file.touch()
+
+        with open(result_file, 'a') as file:
+            writer = csv.writer(file)
+            writer.writerow(data)
 
 
 def main():
