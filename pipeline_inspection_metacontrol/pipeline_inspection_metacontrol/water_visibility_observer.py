@@ -3,6 +3,7 @@
 from diagnostic_msgs.msg import DiagnosticArray
 from diagnostic_msgs.msg import DiagnosticStatus
 from diagnostic_msgs.msg import KeyValue
+from mavros_msgs.msg import State
 
 import math
 import rclpy
@@ -15,20 +16,26 @@ class WaterVisibilityObserver(Node):
     def __init__(self):
         super().__init__('water_visibility_node')
 
-        self.initial_time = self.get_clock().now().to_msg().sec
-
         self.declare_parameter('qa_publishing_period', 0.2)
         self.declare_parameter('water_visibility_period', 100)
         self.declare_parameter('water_visibility_min', 0.25)
         self.declare_parameter('water_visibility_max', 2.5)
 
-        qa_publishing_period = self.get_parameter('qa_publishing_period').value
+        self.qa_publishing_period = self.get_parameter(
+            'qa_publishing_period').value
 
         self.diagnostics_publisher = self.create_publisher(
             DiagnosticArray, '/diagnostics', 10)
 
-        self.qa_publisher_timer = self.create_timer(
-            qa_publishing_period, self.qa_publisher_cb)
+        self.mavros_state_sub = self.create_subscription(
+            State, 'mavros/state', self.status_cb, 10)
+
+    def status_cb(self, msg):
+        if msg.mode == "GUIDED":
+            self.initial_time = self.get_clock().now().to_msg().sec
+            self.qa_publisher_timer = self.create_timer(
+                self.qa_publishing_period, self.qa_publisher_cb)
+            self.destroy_subscription(self.mavros_state_sub)
 
     def qa_publisher_cb(self):
         water_visibility_period = self.get_parameter(
