@@ -15,6 +15,7 @@ from pipeline_inspection_msgs.srv import GetPath
 from pipeline_inspection.bluerov_gazebo import BlueROVGazebo
 
 from std_msgs.msg import Bool
+from std_msgs.msg import Float32
 
 
 class PipelineFollowerLC(Node):
@@ -38,7 +39,10 @@ class PipelineFollowerLC(Node):
             GetPath, 'pipeline_inspection/get_path')
 
         self.pipeline_inspected_pub = self.create_lifecycle_publisher(
-            Bool, "pipeline/inspected", 10)
+            Bool, 'pipeline/inspected', 10)
+
+        self.pipeline_distance_inspected_pub = self.create_publisher(
+            Float32, 'pipeline/distance_inspected', 10)
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
@@ -95,10 +99,13 @@ class PipelineFollowerLC(Node):
                 gz_pose, fixed_altitude=True)
 
             count = 0
-            while not self.ardusub.check_setpoint_reached(setpoint, 0.5):
+            while not self.ardusub.check_setpoint_reached(setpoint, 0.4):
                 if self.abort_follow is True:
                     self.distance_inspected += self.calc_distance(
                         last_point, self.ardusub.local_pos)
+                    dist = Float32()
+                    dist.data = self.distance_inspected
+                    self.pipeline_distance_inspected_pub.publish(dist)
                     return
                 if count > 10:
                     setpoint = self.ardusub.setpoint_position_gz(
@@ -109,6 +116,9 @@ class PipelineFollowerLC(Node):
             if last_point is not None:
                 self.distance_inspected += self.calc_distance(
                     last_point, setpoint)
+                dist = Float32()
+                dist.data = self.distance_inspected
+                self.pipeline_distance_inspected_pub.publish(dist)
             last_point = setpoint
 
         pipe_inspected = Bool()
