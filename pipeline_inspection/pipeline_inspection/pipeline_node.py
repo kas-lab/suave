@@ -29,7 +29,7 @@ class PipelineNode(Node):
         )
 
         self.detect_pipeline_pub = self.create_publisher(
-            Bool, 'pipeline/detected', 1)
+            Bool, 'pipeline/detected', 10)
         self.first_detection = True
 
         self.pipes_pose_array = PoseArray()
