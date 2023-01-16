@@ -20,6 +20,7 @@ class WaterVisibilityObserver(Node):
         self.declare_parameter('water_visibility_period', 100)
         self.declare_parameter('water_visibility_min', 1.25)
         self.declare_parameter('water_visibility_max', 3.75)
+        self.declare_parameter('water_visibility_sec_shift', 0.0)
 
         self.qa_publishing_period = self.get_parameter(
             'qa_publishing_period').value
@@ -46,12 +47,14 @@ class WaterVisibilityObserver(Node):
             'water_visibility_max').value
         water_visibility_amp = abs(
             water_visibility_max - water_visibility_min)/2
+        sec_shift = self.get_parameter(
+            'water_visibility_sec_shift').value
 
         current_time = self.get_clock().now().to_msg().sec
         t = current_time - self.initial_time
         v_delta = water_visibility_amp + water_visibility_min
         water_visibility = water_visibility_amp * math.cos(
-            (2*math.pi/water_visibility_period)*t) + v_delta
+            (2*math.pi/water_visibility_period)*(t + sec_shift)) + v_delta
 
         key_value = KeyValue()
         key_value.key = "water_visibility"
