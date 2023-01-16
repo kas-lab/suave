@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from typing import Optional
 
+import math
 import rclpy
 import threading
 
@@ -14,6 +15,7 @@ from pipeline_inspection_msgs.srv import GetPath
 from pipeline_inspection.bluerov_gazebo import BlueROVGazebo
 
 from std_msgs.msg import Bool
+from std_msgs.msg import Float32
 
 
 class PipelineFollowerLC(Node):
@@ -21,6 +23,8 @@ class PipelineFollowerLC(Node):
     def __init__(self, node_name, **kwargs):
         super().__init__(node_name, **kwargs)
         self.trigger_configure()
+        self.abort_follow = False
+        self.distance_inspected = 0
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info("on_configure() is called.")
@@ -35,7 +39,10 @@ class PipelineFollowerLC(Node):
             GetPath, 'pipeline_inspection/get_path')
 
         self.pipeline_inspected_pub = self.create_lifecycle_publisher(
-            Bool, "pipeline/inspected", 10)
+            Bool, 'pipeline/inspected', 10)
+
+        self.pipeline_distance_inspected_pub = self.create_publisher(
+            Float32, 'pipeline/distance_inspected', 10)
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
@@ -48,52 +55,81 @@ class PipelineFollowerLC(Node):
             self.get_logger().info('Executor is None')
             return TransitionCallbackReturn.FAILURE
         else:
-            self.executor.create_task(self.mission)
+            self.executor.create_task(self.follow_pipeline)
+            self.abort_follow = False
 
         return super().on_activate(state)
 
     def on_deactivate(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info("on_deactivate() is called.")
+        self.abort_follow = True
         return super().on_deactivate(state)
 
     def on_cleanup(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info('on_cleanup() is called.')
         self.ardusub.destroy_node()
         self.thread.join()
-        self.mission_thread.join()
+        self.follow_pipeline_thread.join()
         return TransitionCallbackReturn.SUCCESS
 
     def on_shutdown(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info('on_shutdown() is called.')
         self.ardusub.destroy_node()
         self.thread.join()
-        self.mission_thread.join()
+        self.follow_pipeline_thread.join()
         return TransitionCallbackReturn.SUCCESS
 
-    def mission(self):
-        self.get_logger().info("Mission started")
+    def follow_pipeline(self):
+        self.get_logger().info("Follow pipeline started")
 
         pipe_path = self.get_path_service.call_async(GetPath.Request())
 
         timer = self.ardusub.create_rate(5)  # Hz
         while not pipe_path.done():
+            if self.abort_follow is True:
+                return
             timer.sleep()
 
+        last_point = None
+        self.distance_inspected = 0
         for gz_pose in pipe_path.result().path.poses:
+            if self.abort_follow is True:
+                return
             setpoint = self.ardusub.setpoint_position_gz(
                 gz_pose, fixed_altitude=True)
+
             count = 0
-            while not self.ardusub.check_setpoint_reached(setpoint, 0.5):
+            while not self.ardusub.check_setpoint_reached(setpoint, 0.4):
+                if self.abort_follow is True:
+                    self.distance_inspected += self.calc_distance(
+                        last_point, self.ardusub.local_pos)
+                    dist = Float32()
+                    dist.data = self.distance_inspected
+                    self.pipeline_distance_inspected_pub.publish(dist)
+                    return
                 if count > 10:
                     setpoint = self.ardusub.setpoint_position_gz(
                         gz_pose, fixed_altitude=True)
                 count += 1
                 timer.sleep()
 
+            if last_point is not None:
+                self.distance_inspected += self.calc_distance(
+                    last_point, setpoint)
+                dist = Float32()
+                dist.data = self.distance_inspected
+                self.pipeline_distance_inspected_pub.publish(dist)
+            last_point = setpoint
+
         pipe_inspected = Bool()
         pipe_inspected.data = True
         self.pipeline_inspected_pub.publish(pipe_inspected)
-        self.get_logger().info("Mission completed")
+        self.get_logger().info("Follow pipeline completed")
+
+    def calc_distance(self, pose1, pose2):
+        return math.sqrt(
+            (pose1.pose.position.x - pose2.pose.position.x)**2 +
+            (pose1.pose.position.y - pose2.pose.position.y)**2)
 
 
 def main():

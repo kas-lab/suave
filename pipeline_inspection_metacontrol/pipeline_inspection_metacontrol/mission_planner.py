@@ -1,9 +1,5 @@
-#!/usr/bin/env python
-
 import csv
-import sys
 import rclpy
-import threading
 from pathlib import Path
 from datetime import datetime
 from rclpy.node import Node
@@ -17,7 +13,7 @@ from pipeline_inspection.bluerov_gazebo import BlueROVGazebo
 from std_msgs.msg import Bool
 
 
-class MissionNode(BlueROVGazebo):
+class MissionPlanner(BlueROVGazebo):
     def __init__(self, node_name='mission_node'):
         super().__init__(node_name)
 
@@ -33,11 +29,13 @@ class MissionNode(BlueROVGazebo):
             self, ControlQos, 'mros_objective')
 
         self.declare_parameter('result_path', '~/pipeline_inspection/results')
-        self.declare_parameter('result_filename', 'small_pipe_const_dist')
+        self.declare_parameter('result_filename', 'mission_results')
 
         self.result_path = self.get_parameter('result_path').value
 
         self.result_filename = self.get_parameter('result_filename').value
+
+        self.metrics_header = ['mission_name', 'datetime', 'metric']
 
     def pipeline_detected_cb(self, msg):
         self.pipeline_detected = msg.data
@@ -63,11 +61,11 @@ class MissionNode(BlueROVGazebo):
         self.get_logger().info(
             'Sending adaptation goal  {0}'.format(
                 goal_msg.qos_expected.objective_type))
-        action_handle = self.mros_action_client.send_goal_async(
+        action_future = self.mros_action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback)
         self.get_logger().info('Adaptation goal Sent!!!')
 
-        return action_handle
+        return action_future
 
     def feedback_callback(self, feedback_msg):
         feedback = feedback_msg.feedback
@@ -87,70 +85,6 @@ class MissionNode(BlueROVGazebo):
             '    Current Function Grounding: {0}'.format(
                 feedback.qos_status.selected_mode))
 
-    def perform_mission(self):
-        self.get_logger().info("Pipeline inspection mission starting!!")
-        timer = self.create_rate(1)
-
-        while not self.status.armed:
-            self.get_logger().info(
-                'BlueROV is armed: {}'.format(self.status.armed))
-            self.arm_motors(True)
-            timer.sleep()
-
-        guided_mode = 'GUIDED'
-        while self.status.mode != guided_mode:
-            self.get_logger().info(
-                'BlueROV mode is : {}'.format(self.status.mode))
-            self.set_mode(guided_mode)
-            timer.sleep()
-
-        self.get_logger().info('Starting Search Pipeline task')
-
-        mission_start_time = self.get_clock().now()
-        generate_search_path_goal_future = self.send_adaptation_goal(
-            'generate_search_path')
-
-        while not self.pipeline_detected:
-            timer.sleep()
-
-        pipeline_detected_time = self.get_clock().now()
-
-        generate_search_path_goal_handle = \
-            generate_search_path_goal_future.result()
-        generate_search_path_goal_handle.cancel_goal_async()
-        self.get_logger().info('Task Search Pipeline completed')
-
-        self.get_logger().info('Starting Inspect Pipeline task')
-        inspect_pipeline_goal_future = self.send_adaptation_goal(
-            'inspect_pipeline')
-
-        while not self.pipeline_inspected:
-            timer.sleep()
-
-        mission_completed_time = self.get_clock().now()
-
-        inspect_pipeline_goal_handle = inspect_pipeline_goal_future.result()
-        inspect_pipeline_goal_handle.cancel_goal_async()
-        self.get_logger().info('Task Inspect Pipeline completed')
-
-        detection_time_delta = pipeline_detected_time - mission_start_time
-        mission_time_delta = mission_completed_time - mission_start_time
-
-        self.get_logger().info(
-            'Time elapsed to detect pipeline {}'.format(
-                detection_time_delta.to_msg().sec))
-        self.get_logger().info(
-            'Time elapsed to complete mission {}'.format(
-                mission_time_delta.to_msg().sec))
-
-        mission_data = [
-            'small_pipe_const_dist',
-            datetime.now().strftime("%b-%d-%Y-%H-%M-%S"),
-            detection_time_delta.to_msg().sec,
-            mission_time_delta.to_msg().sec]
-
-        self.save_metrics(mission_data)
-
     def save_metrics(self, data):
         result_path = Path(self.result_path).expanduser()
 
@@ -160,29 +94,14 @@ class MissionNode(BlueROVGazebo):
         result_file = result_path / (self.result_filename + '.csv')
         if result_file.is_file() is False:
             result_file.touch()
+            self.append_csv(result_file, self.metrics_header)
 
-        with open(result_file, 'a') as file:
+        self.append_csv(result_file, data)
+
+    def append_csv(self, file_path, data):
+        with open(file_path, 'a') as file:
             writer = csv.writer(file)
             writer.writerow(data)
 
-
-def main():
-
-    rclpy.init(args=sys.argv)
-
-    mission_node = MissionNode()
-
-    mt_executor = MultiThreadedExecutor()
-    thread = threading.Thread(
-        target=rclpy.spin, args=[mission_node, mt_executor], daemon=True)
-    thread.start()
-
-    mission_node.perform_mission()
-
-    thread.join()
-    mission_node.destroy_node()
-    rclpy.shutdown()
-
-
-if __name__ == '__main__':
-    main()
+    def perform_mission(self):
+        self.get_logger().warning("No mission defined!!!")
