@@ -38,6 +38,7 @@ def generate_launch_description():
     pipeline_metacontrol_node = Node(
         package='pipeline_inspection_metacontrol',
         executable='pipeline_metacontrol_node',
+        output='screen'
     )
 
     mros2_system_modes_bridge_node = Node(

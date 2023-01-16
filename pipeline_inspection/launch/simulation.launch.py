@@ -14,12 +14,13 @@ def generate_launch_description():
     pkg_ros_gz_sim = get_package_share_directory('ros_gz_sim')
     remaro_worlds_path = get_package_share_directory('remaro_worlds')
     min_pipes_launch_path = os.path.join(
-        remaro_worlds_path, 'launch', 'min_pipes.launch.py')
+        remaro_worlds_path, 'launch', 'small_min_pipes.launch.py')
 
     min_pipes_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(min_pipes_launch_path))
 
-    pipeline_inspection_path = get_package_share_directory('pipeline_inspection')
+    pipeline_inspection_path = get_package_share_directory(
+        'pipeline_inspection')
 
     mavros_launch_path = os.path.join(
         pipeline_inspection_path, 'launch', 'mavros.launch.py')
@@ -56,8 +57,8 @@ def generate_launch_description():
             '-world', 'min_pipes',
             '-file', bluerov2_path,
             '-name', 'bluerov2',
-            '-x', '0',
-            '-y', '3',
+            '-x', '-17',
+            '-y', '2',
             '-z', '-17.5',
             '-Y', '0']
     )
