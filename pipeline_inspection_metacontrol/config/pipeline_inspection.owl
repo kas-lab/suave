@@ -325,7 +325,7 @@
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#qa_water_visibility_high">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#QAvalue"/>
         <tomasys:isQAtype rdf:resource="http://www.metacontrol.org/pipeline_inspection#water_visibility"/>
-        <tomasys:hasValue rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">2.0</tomasys:hasValue>
+        <tomasys:hasValue rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">3.25</tomasys:hasValue>
     </owl:NamedIndividual>
     
 
@@ -335,7 +335,7 @@
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#qa_water_visibility_low">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#QAvalue"/>
         <tomasys:isQAtype rdf:resource="http://www.metacontrol.org/pipeline_inspection#water_visibility"/>
-        <tomasys:hasValue rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">0.5</tomasys:hasValue>
+        <tomasys:hasValue rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">1.25</tomasys:hasValue>
     </owl:NamedIndividual>
     
 
@@ -345,7 +345,7 @@
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#qa_water_visibility_medium">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#QAvalue"/>
         <tomasys:isQAtype rdf:resource="http://www.metacontrol.org/pipeline_inspection#water_visibility"/>
-        <tomasys:hasValue rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">1.0</tomasys:hasValue>
+        <tomasys:hasValue rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">2.25</tomasys:hasValue>
     </owl:NamedIndividual>
     
 

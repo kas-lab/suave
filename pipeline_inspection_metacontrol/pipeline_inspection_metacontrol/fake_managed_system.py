@@ -25,8 +25,8 @@ class FakeManagedSystem(Node):
         timer_period = 4.0  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
-        self.water_visibility = 2.5
-        self.water_visibility_delta = -0.25
+        self.water_visibility = 3.5
+        self.water_visibility_delta = -0.1
 
     def set_objectives(self):
         self.get_logger().info('Waiting for server')
@@ -50,12 +50,12 @@ class FakeManagedSystem(Node):
             mock_goal_msg, feedback_callback=self.feedback_callback)
         self.get_logger().info('Goal Sent!!!')
 
-        timer = self.create_rate(0.1)
-        timer.sleep()
+        # timer = self.create_rate(0.1)
+        # timer.sleep()
 
-        self.get_logger().info('%%%%CANCEL GOAL')
-        handle = future.result()
-        cancel_future = handle.cancel_goal_async()
+        # self.get_logger().info('%%%%CANCEL GOAL')
+        # handle = future.result()
+        # cancel_future = handle.cancel_goal_async()
         # rclpy.spin_until_future_complete(self, cancel_future)
         # fake_goal_msg = ControlQos.Goal()
         # fake_goal_msg.qos_expected.objective_type = "f_fake"
@@ -93,7 +93,7 @@ class FakeManagedSystem(Node):
                 feedback.qos_status.selected_mode))
 
     def timer_callback(self):
-        if self.water_visibility <= 0.1 or self.water_visibility > 2.5:
+        if self.water_visibility <= 1.25 or self.water_visibility > 3.75:
             self.water_visibility_delta = -self.water_visibility_delta
 
         diag_msg = DiagnosticArray()

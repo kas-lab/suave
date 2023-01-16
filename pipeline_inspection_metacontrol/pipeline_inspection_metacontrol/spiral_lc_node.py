@@ -11,15 +11,20 @@ from rclpy.timer import Timer
 from pipeline_inspection.bluerov_gazebo import BlueROVGazebo
 
 import std_msgs.msg
-import numpy as np
 import threading
+import math
 
 
-def spiral_points(i, resolution=0.1, spiral_width=1.0):
-    step_idx = resolution * i
-    x = np.cos(step_idx) * spiral_width * step_idx
-    y = np.sin(step_idx) * spiral_width * step_idx
-    return x, y
+def spiral_points(i, old_x, old_y, resolution=0.1, spiral_width=1.0):
+    if i == 0:
+        return .0, .0
+    else:
+        delta_angle = i*resolution - (i-1)*resolution
+        old_radius = math.sqrt(old_x**2 + old_y**2)
+        current_radius = old_radius + (spiral_width*delta_angle/(2*math.pi))
+        x = current_radius*math.cos(i*resolution)
+        y = current_radius*math.sin(i*resolution)
+        return x, y
 
 
 class SpiralSearcherLC(Node):
@@ -27,16 +32,14 @@ class SpiralSearcherLC(Node):
     def __init__(self, node_name, **kwargs):
         self._enabled = False
         self.spiral_count: int = 0
+        self.spiral_x: float = 0.0
+        self.spiral_y: float = 0.0
+        self.timer_period = 1.0
         self._timer: Optional[Timer] = None
 
         super().__init__(node_name, **kwargs)
 
-        self.spiral_width: float = 0.
         self.goal_setpoint = None
-
-        param_descriptor = ParameterDescriptor(
-            description='Sets the spiral width of the UUV.')
-        self.declare_parameter('spiral_width', 1.0, param_descriptor)
 
         spiral_altitude_descriptor = ParameterDescriptor(
             description='Sets the spiral altitude of the UUV.')
@@ -60,19 +63,23 @@ class SpiralSearcherLC(Node):
 
     def publish(self):
         if self._enabled is True:
-            self.spiral_width = self.get_parameter(
-                    'spiral_width').get_parameter_value().double_value
 
             self.spiral_altitude = self.get_parameter(
                     'spiral_altitude').get_parameter_value().double_value
+
+            fov = math.pi/3
+            pipe_z = 0.5
+            spiral_width = 2.0*self.spiral_altitude*math.tan(fov/2)
 
             if self.goal_setpoint is None or \
                self.ardusub.check_setpoint_reached(self.goal_setpoint, 0.4):
 
                 x, y = spiral_points(
                     self.spiral_count,
+                    self.spiral_x,
+                    self.spiral_y,
                     resolution=0.1,
-                    spiral_width=self.spiral_width)
+                    spiral_width=spiral_width)
 
                 self.get_logger().info(
                         'setpoint_postion_local value {0}, {1}'.format(x, y))
@@ -82,6 +89,8 @@ class SpiralSearcherLC(Node):
                     x, y, fixed_altitude=True)
                 if self.goal_setpoint is not None:
                     self.spiral_count += 1
+                    self.spiral_x = x
+                    self.spiral_y = y
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info('on_configure() is called.')
@@ -91,7 +100,7 @@ class SpiralSearcherLC(Node):
             target=rclpy.spin, args=(self.ardusub, ), daemon=True)
         self.thread.start()
 
-        self._timer_ = self.create_timer(1.0, self.publish)
+        self._timer_ = self.create_timer(self.timer_period, self.publish)
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:

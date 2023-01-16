@@ -10,14 +10,14 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    pkg_mros2_reasoner_path = get_package_share_directory(
-        'mros2_reasoner')
-
-    mros2_launch_path = os.path.join(
-        pkg_mros2_reasoner_path, 'launch_reasoner.launch.py')
 
     pkg_pipeline_inspection_metacontrol_path = get_package_share_directory(
         'pipeline_inspection_metacontrol')
+
+    reasoner_launch_path = os.path.join(
+        pkg_pipeline_inspection_metacontrol_path,
+        'launch',
+        'launch_reasoner.launch.py')
 
     pipeline_inspection_ontology_path = os.path.join(
         pkg_pipeline_inspection_metacontrol_path,
@@ -25,7 +25,7 @@ def generate_launch_description():
         'pipeline_inspection.owl')
 
     mros2_reasoner_node = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(mros2_launch_path),
+        PythonLaunchDescriptionSource(reasoner_launch_path),
         launch_arguments={
             'model_file': pipeline_inspection_ontology_path}.items())
 
