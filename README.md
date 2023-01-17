@@ -54,19 +54,17 @@ sudo apt-get --assume-yes install build-essential ccache g++ gawk git make wget 
 
 #### Install ardusub_plugin
 
-**IMPORTANT:** Clone into the ignition-garden branch:
-
 Install dependencies:
 
 ```Bash
-  sudo apt install rapidjson-dev libgz-sim7-dev
+  sudo apt install libgz-sim7-dev rapidjson-dev
 ```
 
 Clone and build repo:
 
 ```Bash
   cd ~/
-  git clone https://github.com/ArduPilot/ardupilot_gazebo -b ignition-garden
+  git clone https://github.com/ArduPilot/ardupilot_gazebo
   cd ardupilot_gazebo
   mkdir build && cd build
   cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
@@ -91,7 +89,7 @@ Create workspace and download required repositories:
 ```Bash
 $ mkdir -p ~/pipeline_ws/src/
 $ cd ~/pipeline_ws/
-$ wget https://raw.githubusercontent.com/kas-lab/pipeline_inspection/main/pipeline_inspection.rosinstall
+$ wget https://raw.githubusercontent.com/kas-lab/pipeline_inspection/main/pipeline_inspection/pipeline_inspection.rosinstall
 $ vcs import src < pipeline_inspection.rosinstall --recursive
 ```
 
@@ -126,35 +124,74 @@ Start Simulation:
 $ ros2 launch pipeline_inspection simulation.launch.py
 ```
 
-Start Mission:
-```Bash
-$ ros2 launch pipeline_inspection mission.launch.py 
+Start all nodes except mission:
+```
+$ ros2 launch pipeline_inspection_metacontrol pipeline_inspection_metacontrol.launch.py
 ```
 
-System modes have been added for the spiral_lc_node, but the mission file still
-simply plays all nodes in sequence using a topic. This should be changed by
-using system modes.
+Arguments:
+```
+Arguments (pass arguments as '<name>:=<value>'):
 
-System modes (be sure to add this to your ws) has a monitor for checking the
-states of the nodes. Run the monitor:
-```Bash
-$ ros2 launch system_modes mode_monitor.launch.py modelfile:=src/pipeline_inspection/metacontrol/config/simple_system_modes.yaml
+    'water_visibility_period':
+        Water visibility period in seconds
+        (default: '100')
+
+    'water_visibility_min':
+        Minimum value for water visibility
+        (default: '1.25')
+
+    'water_visibility_max':
+        Maximum value for water visibility
+        (default: '3.75')
+
+    'water_visibility_sec_shift':
+        Water visibility seconds shift to left
+        (default: '0.0')
 ```
 
-Run the system mode node manager:
+Start Mission (select one of the missions to run):
+
+Time constrained mission:
 ```Bash
-$ ros2 launch system_modes mode_manager.launch.py modelfile:=src/pipeline_inspection/metacontrol/config/simple_system_modes.yaml
+$ ros2 launch pipeline_inspection_metacontrol time_constrained_mission.launch.py time_limit:=300
 ```
 
-Change system states using the corresponding services:
-```Bash
-$ ros2 service call /spiral_lc_node/change_state lifecycle_msgs/ChangeState "{transition: {id: 1, label: configure}}"
+Arguments:
 ```
-To see which ids are needed to configure/activate/etc. see: the  [Lifecycle
-transition
-msg](https://docs.ros2.org/foxy/api/lifecycle_msgs/msg/Transition.html)
+Arguments (pass arguments as '<name>:=<value>'):
 
-Change system mode using the corresponding services:
-```Bash
-$ ros2 service call /spiral_lc_node/change_mode system_modes_msgs/ChangeMode "{mode_name: FAST}"
+    'result_path':
+        Path to save mission measured metrics
+        (default: '~/pipeline_inspection/results')
+
+    'result_filename':
+        Filename for the mission measured metrics
+        (default: 'time_constrained_mission_results')
+
+    'time_limit':
+        Time limit for the mission (seconds)
+        (default: '300')
 ```
+
+
+Constant distance mission:
+```
+$ ros2 launch pipeline_inspection_metacontrol const_distance_mission.launch.py
+```
+
+Arguments:
+```
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'result_path':
+        Path to save mission measured metrics
+        (default: '~/pipeline_inspection/results')
+
+    'result_filename':
+        Filename for the mission measured metrics
+        (default: 'const_distance_mission_results')
+
+```
+
+Mission results will be save in `<result_path>/<result_filename>.csv`
