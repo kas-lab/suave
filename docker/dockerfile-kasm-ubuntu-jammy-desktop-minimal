@@ -1,0 +1,88 @@
+ARG BASE_TAG="develop"
+ARG BASE_IMAGE="core-ubuntu-jammy"
+FROM egalberts/jammy:1.0.1
+
+USER root
+
+ENV HOME /home/kasm-default-profile
+ENV STARTUPDIR /dockerstartup
+WORKDIR $HOME
+
+### Envrionment config
+ENV DEBIAN_FRONTEND noninteractive
+ENV KASM_RX_HOME $STARTUPDIR/kasmrx
+ENV INST_SCRIPTS $STARTUPDIR/install
+
+###Add Sudo
+RUN apt-get update \
+    && apt-get install -y sudo \
+    && echo 'kasm-user ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers \
+    && rm -rf /var/lib/apt/list/*
+
+###Add the USER env var
+RUN echo 'USER=whoami; export USER' >> $HOME/.bashrc
+
+
+
+### Install Tools
+COPY ./src/ubuntu/install/tools $INST_SCRIPTS/tools/
+RUN bash $INST_SCRIPTS/tools/install_tools_deluxe.sh  && rm -rf $INST_SCRIPTS/tools/
+
+# Install Utilities
+COPY ./src/ubuntu/install/misc $INST_SCRIPTS/misc/
+RUN bash $INST_SCRIPTS/misc/install_tools.sh && rm -rf $INST_SCRIPTS/misc/
+
+# Install Google Chrome
+COPY ./src/ubuntu/install/chrome $INST_SCRIPTS/chrome/
+RUN bash $INST_SCRIPTS/chrome/install_chrome.sh  && rm -rf $INST_SCRIPTS/chrome/
+
+# Install Chromium
+COPY ./src/ubuntu/install/chromium $INST_SCRIPTS/chromium/
+RUN if [ "$(uname -m)" = "aarch64" ]; then bash $INST_SCRIPTS/chromium/install_chromium.sh; fi && rm -rf $INST_SCRIPTS/chromium/
+
+# Install Firefox
+COPY ./src/ubuntu/install/firefox/ $INST_SCRIPTS/firefox/
+COPY ./src/ubuntu/install/firefox/firefox.desktop $HOME/Desktop/
+RUN bash $INST_SCRIPTS/firefox/install_firefox.sh && rm -rf $INST_SCRIPTS/firefox/
+
+### Install Visual Studio Code
+COPY ./src/ubuntu/install/vs_code $INST_SCRIPTS/vs_code/
+RUN bash $INST_SCRIPTS/vs_code/install_vs_code.sh  && rm -rf $INST_SCRIPTS/vs_code/
+
+### Install Gazebo
+COPY ./src/ubuntu/install/gazebo $INST_SCRIPTS/gazebo/
+RUN bash $INST_SCRIPTS/gazebo/install_gazebo_ignition.sh  && rm -rf $INST_SCRIPTS/gazebo/
+
+### Install ROS2
+COPY ./src/ubuntu/install/ros2 $INST_SCRIPTS/ros2/
+RUN bash $INST_SCRIPTS/ros2/install_ros2_humble.sh  && rm -rf $INST_SCRIPTS/ros2/
+
+
+#ADD ./src/common/scripts $STARTUPDIR
+RUN $STARTUPDIR/set_user_permission.sh $HOME
+
+RUN chown 1000:0 $HOME
+
+ENV HOME /home/kasm-user
+WORKDIR $HOME
+RUN mkdir -p $HOME && chown -R 1000:0 $HOME
+
+USER 1000
+
+### Install Ardusub and Arduplugin and Hackathon
+WORKDIR $INST_SCRIPTS
+COPY ./src/ubuntu/install/ardusub $INST_SCRIPTS/ardusub/
+COPY ./src/ubuntu/install/hackathon $INST_SCRIPTS/hackathon/
+RUN bash $INST_SCRIPTS/ardusub/install_ardusub.sh
+#RUN bash $INST_SCRIPTS/ardusub/install_ardusub_two.sh
+
+RUN bash $INST_SCRIPTS/ardusub/install_arduplugin.sh  
+
+RUN bash $INST_SCRIPTS/hackathon/install_hackathon.sh
+
+# WORKDIR $HOME
+# USER 0
+# RUN rm -rf $INST_SCRIPTS/ardusub/
+# USER 1000
+
+CMD ["--tail-log"]
