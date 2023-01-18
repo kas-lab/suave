@@ -10,7 +10,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     result_path = LaunchConfiguration('result_path')
     result_filename = LaunchConfiguration('result_filename')
-    result_filename = LaunchConfiguration('time_limit')
+    time_limit = LaunchConfiguration('time_limit')
 
     result_path_arg = DeclareLaunchArgument(
         'result_path',
@@ -26,7 +26,7 @@ def generate_launch_description():
 
     time_limit_arg = DeclareLaunchArgument(
         'time_limit',
-        default_value=300,
+        default_value='300',
         description='Time limit for the mission (seconds)'
     )
 
