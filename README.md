@@ -120,8 +120,21 @@ $ sim_vehicle.py -L RATBeach -v ArduSub  --map --console
 ```
 
 Start Simulation:
-```Bash
-$ ros2 launch pipeline_inspection simulation.launch.py
+```
+$ ros2 launch pipeline_inspection simulation.launch.py x:=-17.0 y:=2.0
+```
+
+Arguments:
+```
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'x':
+        Initial x coordinate for bluerov2
+        (default: '-17.0')
+
+    'y':
+        Initial y coordinate for bluerov2
+        (default: '2.0')
 ```
 
 Start all nodes except mission:
