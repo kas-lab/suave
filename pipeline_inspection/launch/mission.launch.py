@@ -12,12 +12,12 @@ from launch_ros.actions import Node, LifecycleNode
 def generate_launch_description():
     mission_node = Node(
         package='pipeline_inspection',
-        executable='mission.py',
+        executable='mission',
         output='screen',
     )
 
     spiral_node = LifecycleNode(
-        package='metacontrol',
+        package='pipeline_inspection_metacontrol',
         executable='spiral_lc_node',
         name='spiral_lc_node',
         namespace='',
@@ -39,19 +39,19 @@ def generate_launch_description():
     
     pipeline_node = Node(
         package='pipeline_inspection',
-        executable='pipeline_node.py',
+        executable='pipeline_node',
         output='screen',
     )
 
     follow_pipeline_node = Node(
         package='pipeline_inspection',
-        executable='follow_pipeline.py',
+        executable='follow_pipeline',
         output='screen',
     )
 
     thruster_failure_node = Node(
         package='pipeline_inspection',
-        executable='thruster_failures.py',
+        executable='thruster_failures',
         output='screen',
     )
 
