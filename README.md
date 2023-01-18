@@ -20,9 +20,10 @@ Problems may occur with different combinations of ArduPilot and MavROS versions.
 
 ```Bash
   cd ~/
-  git clone https://github.com/ArduPilot/ardupilot.git --recurse-submodules
+  git clone https://github.com/ArduPilot/ardupilot.git
   cd ardupilot
-  git checkout c623ae8
+  git checkout 74f8cee
+  git git submodule update --init --recursive
 ```
 
 Don't forget to install ardupilot prerequisites:
@@ -81,7 +82,7 @@ Assuming that you have clone the repository in `$HOME/ardupilot_gazebo`:
 
 Reload your terminal with source ~/.bashrc
 
-More info about the plugin can be found in the [repo](https://github.com/ArduPilot/ardupilot_gazebo/tree/ignition-garden)
+More info about the plugin can be found in the [repo](https://github.com/ArduPilot/ardupilot_gazebo/)
 
 ### Install pipeline_inspection workspace
 
@@ -120,8 +121,21 @@ $ sim_vehicle.py -L RATBeach -v ArduSub  --map --console
 ```
 
 Start Simulation:
-```Bash
-$ ros2 launch pipeline_inspection simulation.launch.py
+```
+$ ros2 launch pipeline_inspection simulation.launch.py x:=-17.0 y:=2.0
+```
+
+Arguments:
+```
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'x':
+        Initial x coordinate for bluerov2
+        (default: '-17.0')
+
+    'y':
+        Initial y coordinate for bluerov2
+        (default: '2.0')
 ```
 
 Start all nodes except mission:

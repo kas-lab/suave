@@ -39,6 +39,27 @@ def generate_launch_description():
         name='gz_pipe_pose_bridge',
     )
 
+    x = LaunchConfiguration('x')
+    y = LaunchConfiguration('y')
+    z = LaunchConfiguration('z')
+    x_arg = DeclareLaunchArgument(
+        'x',
+        default_value='-17.0',
+        description='Initial x coordinate for bluerov2'
+    )
+
+    y_arg = DeclareLaunchArgument(
+        'y',
+        default_value='2.0',
+        description='Initial y coordinate for bluerov2'
+    )
+
+    z_arg = DeclareLaunchArgument(
+        'z',
+        default_value='-18.5',
+        description='Initial z coordinate for bluerov2'
+    )
+
     gz_bluerov_pose_bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
@@ -47,7 +68,6 @@ def generate_launch_description():
         name='gz_bluerov_pose_bridge',
     )
 
-    # TODO: Pass x, y, z, R, P and Y as parameter
     bluerov_spawn = Node(
         package='ros_gz_sim',
         executable='create',
@@ -57,13 +77,16 @@ def generate_launch_description():
             '-world', 'min_pipes',
             '-file', bluerov2_path,
             '-name', 'bluerov2',
-            '-x', '-17',
-            '-y', '2',
-            '-z', '-17.5',
+            '-x', x,
+            '-y', y,
+            '-z', z,
             '-Y', '0']
     )
 
     return LaunchDescription([
+        x_arg,
+        y_arg,
+        z_arg,
         min_pipes_sim,
         bluerov_spawn,
         gz_pipe_pose_bridge,

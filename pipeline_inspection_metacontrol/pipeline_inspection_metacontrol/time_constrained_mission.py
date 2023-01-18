@@ -15,7 +15,7 @@ class MissionTimeConstrained(MissionPlanner):
         super().__init__(node_name)
         self.mission_name = 'time_constrained_mission'
         self.metrics_header = [
-            'mission_name', 'datetime', 'time budget (s)',
+            'mission_name', 'datetime', 'initial pos (x,y)', 'time budget (s)',
             'time search (s)', 'distance inspected (m)']
 
         self.declare_parameter('time_limit', 300)
@@ -50,6 +50,8 @@ class MissionTimeConstrained(MissionPlanner):
             mission_metrics = [
                 self.mission_name,
                 datetime.now().strftime("%b-%d-%Y-%H-%M-%S"),
+                '({0}, {1})'.format(
+                    round(self.initial_x, 2), round(self.initial_y, 2)),
                 self.time_limit,
                 detection_time_delta,
                 self.distance_inspected]

@@ -6,7 +6,7 @@ repositories:
   mavros:
     type: git
     url: https://github.com/mavlink/mavros.git
-    version: 686bd83
+    version: 10569e6
   mavros_wrapper:
     type: git
     url: https://github.com/remaro-network/mavros_wrapper.git
