@@ -13,7 +13,8 @@ class MissionConstDist(MissionPlanner):
         super().__init__(node_name)
         self.mission_name = 'const_dist_mission'
         self.metrics_header = [
-            'mission_name', 'datetime', 'time_search (s)', 'time_mission (s)']
+            'mission_name', 'datetime', 'initial pos (x,y)',
+            'time_search (s)', 'time_mission (s)']
 
     def perform_mission(self):
         self.get_logger().info("Pipeline inspection mission starting!!")
@@ -74,6 +75,8 @@ class MissionConstDist(MissionPlanner):
         mission_data = [
             self.mission_name,
             datetime.now().strftime("%b-%d-%Y-%H-%M-%S"),
+            '({0}, {1})'.format(
+                round(self.initial_x, 2), round(self.initial_y, 2)),
             detection_time_delta.to_msg().sec,
             mission_time_delta.to_msg().sec]
 

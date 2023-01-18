@@ -7,6 +7,9 @@ class BlueROVGazebo(BlueROVArduSubWrapper):
     def __init__(self, node_name='bluerov_gz'):
         super().__init__(node_name)
         self.gz_to_local_pose_delta = None
+        self.first_gz_pose = True
+        self.initial_x = None
+        self.initial_y = None
 
         self.gazebo_pos_sub = self.create_subscription(
             Pose, 'model/bluerov2/pose', self.gazebo_pos_cb, 10)
@@ -23,6 +26,11 @@ class BlueROVGazebo(BlueROVArduSubWrapper):
 
     def gazebo_pos_cb(self, msg):
         self.gazebo_pos = msg
+        if self.first_gz_pose is True:
+            self.first_gz_pose = False
+            self.initial_x = msg.position.x
+            self.initial_y = msg.position.y
+
         if self.local_pos_received and self.status.mode == 'GUIDED':
             self.gz_to_local_pose_delta = [
                 self.local_pos.pose.position.x - msg.position.x,
