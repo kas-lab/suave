@@ -40,6 +40,8 @@ setup(
                 'pipeline_inspection_metacontrol.follow_pipeline_lc:main',
             'const_dist_mission = ' +
                 'pipeline_inspection_metacontrol.const_dist_mission:main',
+            'const_dist_mission_no_adapt = ' +
+                'pipeline_inspection_metacontrol.const_dist_mission_no_adapt:main',
             'time_constrained_mission = ' +
                 'pipeline_inspection_metacontrol.time_constrained_mission:main',
             'pipeline_inspection_reasoner = ' +
