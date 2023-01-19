@@ -16,20 +16,27 @@ Follow the [official instructions](https://docs.ros.org/en/humble/Installation/U
 Instructions can be found [here](https://ardupilot.org/dev/docs/building-setup-linux.html#building-setup-linux)
 
 **Disclaimer:**
-Problems may occur with different combinations of ArduPilot and MavROS versions. This repo was tested with [ardupilot in commit c623ae8](https://github.com/ArduPilot/ardupilot/tree/c623ae8b82db4d7e195f4b757e2ae5d049f941e5) and [mavros 2.2.0](https://github.com/mavlink/mavros/tree/686bd833e7d6ea5542977178872762dfbec5ed89). Unfortunately, at least at the time of writing this README, the releases available in Ubuntu 22.04 do not match.
+Problems may occur with different combinations of ArduPilot and MavROS versions. This repo was tested with [ardupilot in commit c623ae8](https://github.com/ArduPilot/ardupilot/tree/9f1c4df5e744d58d3089671926bb964c924b2090) and [mavros 2.4.0](https://github.com/mavlink/mavros/tree/10569e626a36d8c69fc78749bb83c112a00e2be8). Unfortunately, at least at the time of writing this README, the releases available in Ubuntu 22.04 do not match.
 
 ```Bash
   cd ~/
   git clone https://github.com/ArduPilot/ardupilot.git
   cd ardupilot
-  git checkout 74f8cee
-  git git submodule update --init --recursive
+  git checkout 9f1c4df
+  git submodule update --init --recursive
 ```
 
-Don't forget to install ardupilot prerequisites:
+Unfortunately, the script used to install prerequisites available in this
+version of ardusub don't work in Ubuntu 22.04. So you need to replace it before
+running it. Install ardupilot prerequisites:
 
 ```Bash
   cd ardupilot
+  cd Tools/environment_install/
+  rm install-prereqs-ubuntu.sh
+  wget wget https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/environment_install/install-prereqs-ubuntu.sh
+  cd ../../
+  chmod +x Tools/environment_install/install-prereqs-ubuntu.sh
   Tools/environment_install/install-prereqs-ubuntu.sh -y
   . ~/.profile
 ```
