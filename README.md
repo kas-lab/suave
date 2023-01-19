@@ -19,11 +19,11 @@ Instructions can be found [here](https://ardupilot.org/dev/docs/building-setup-l
 Problems may occur with different combinations of ArduPilot and MavROS versions. This repo was tested with [ardupilot in commit c623ae8](https://github.com/ArduPilot/ardupilot/tree/9f1c4df5e744d58d3089671926bb964c924b2090) and [mavros 2.4.0](https://github.com/mavlink/mavros/tree/10569e626a36d8c69fc78749bb83c112a00e2be8). Unfortunately, at least at the time of writing this README, the releases available in Ubuntu 22.04 do not match.
 
 ```Bash
-  cd ~/
-  git clone https://github.com/ArduPilot/ardupilot.git
-  cd ardupilot
-  git checkout 9f1c4df
-  git submodule update --init --recursive
+cd ~/
+git clone https://github.com/ArduPilot/ardupilot.git
+cd ardupilot
+git checkout 9f1c4df
+git submodule update --init --recursive
 ```
 
 Unfortunately, the script used to install prerequisites available in this
@@ -31,14 +31,14 @@ version of ardusub don't work in Ubuntu 22.04. So you need to replace it before
 running it. Install ardupilot prerequisites:
 
 ```Bash
-  cd ardupilot
-  cd Tools/environment_install/
-  rm install-prereqs-ubuntu.sh
-  wget wget https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/environment_install/install-prereqs-ubuntu.sh
-  cd ../../
-  chmod +x Tools/environment_install/install-prereqs-ubuntu.sh
-  Tools/environment_install/install-prereqs-ubuntu.sh -y
-  . ~/.profile
+cd ardupilot
+cd Tools/environment_install/
+rm install-prereqs-ubuntu.sh
+wget wget https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/environment_install/install-prereqs-ubuntu.sh
+cd ../../
+chmod +x Tools/environment_install/install-prereqs-ubuntu.sh
+Tools/environment_install/install-prereqs-ubuntu.sh -y
+. ~/.profile
 ```
 
 To test if the installation worked, run:
@@ -65,26 +65,26 @@ sudo apt-get --assume-yes install build-essential ccache g++ gawk git make wget 
 Install dependencies:
 
 ```Bash
-  sudo apt install libgz-sim7-dev rapidjson-dev
+sudo apt install libgz-sim7-dev rapidjson-dev
 ```
 
 Clone and build repo:
 
 ```Bash
-  cd ~/
-  git clone https://github.com/ArduPilot/ardupilot_gazebo
-  cd ardupilot_gazebo
-  mkdir build && cd build
-  cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
-  make -j4
+cd ~/
+git clone https://github.com/ArduPilot/ardupilot_gazebo
+cd ardupilot_gazebo
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
+make -j4
 ```
 
 Add required paths:
 
 Assuming that you have clone the repository in `$HOME/ardupilot_gazebo`:
 ```bash
-  echo 'export GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot_gazebo/build:${GZ_SIM_SYSTEM_PLUGIN_PATH}' >> ~/.bashrc
-  echo 'export GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
+echo 'export GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot_gazebo/build:${GZ_SIM_SYSTEM_PLUGIN_PATH}' >> ~/.bashrc
+echo 'export GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
 ```
 
 Reload your terminal with source ~/.bashrc
@@ -95,41 +95,41 @@ More info about the plugin can be found in the [repo](https://github.com/ArduPil
 
 Create workspace and download required repositories:
 ```Bash
-$ mkdir -p ~/pipeline_ws/src/
-$ cd ~/pipeline_ws/
-$ wget https://raw.githubusercontent.com/kas-lab/pipeline_inspection/main/pipeline_inspection/pipeline_inspection.rosinstall
-$ vcs import src < pipeline_inspection.rosinstall --recursive
+mkdir -p ~/pipeline_ws/src/
+cd ~/pipeline_ws/
+wget https://raw.githubusercontent.com/kas-lab/pipeline_inspection/main/pipeline_inspection/pipeline_inspection.rosinstall
+vcs import src < pipeline_inspection.rosinstall --recursive
 ```
 
 Add required paths:
 ```Bash
-$ echo 'export GZ_SIM_RESOURCE_PATH=$HOME/pipeline_ws/src/bluerov2_ignition/models:$HOME/pipeline_ws/src/bluerov2_ignition/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
-$ echo 'export GZ_SIM_RESOURCE_PATH=$HOME/pipeline_ws/src/remaro_worlds/models:$HOME/pipeline_ws/src/remaro_worlds/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
+echo 'export GZ_SIM_RESOURCE_PATH=$HOME/pipeline_ws/src/bluerov2_ignition/models:$HOME/pipeline_ws/src/bluerov2_ignition/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
+echo 'export GZ_SIM_RESOURCE_PATH=$HOME/pipeline_ws/src/remaro_worlds/models:$HOME/pipeline_ws/src/remaro_worlds/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
 ```
 
 Install deps:
 ```Bash
-$ source /opt/ros/humble/setup.bash
-$ cd ~/pipeline_ws/
-$ rosdep install --from-paths src --ignore-src -r -y
+source /opt/ros/humble/setup.bash
+cd ~/pipeline_ws/
+rosdep install --from-paths src --ignore-src -r -y
 ```
 
 Build project:
 ```Bash
-$  cd ~/pipeline_ws/
-$  colcon build --symlink-install
+cd ~/pipeline_ws/
+colcon build --symlink-install
 ```
 
 ## Run locally
 
 ArduSub:
 ```
-$ sim_vehicle.py -L RATBeach -v ArduSub  --map --console
+sim_vehicle.py -L RATBeach -v ArduSub  --model=JSON --console
 ```
 
 Start Simulation:
 ```
-$ ros2 launch pipeline_inspection simulation.launch.py x:=-17.0 y:=2.0
+ros2 launch pipeline_inspection simulation.launch.py x:=-17.0 y:=2.0
 ```
 
 Arguments:
@@ -147,7 +147,7 @@ Arguments (pass arguments as '<name>:=<value>'):
 
 Start all nodes except mission:
 ```
-$ ros2 launch pipeline_inspection_metacontrol pipeline_inspection_metacontrol.launch.py
+ros2 launch pipeline_inspection_metacontrol pipeline_inspection_metacontrol.launch.py
 ```
 
 Arguments:
@@ -175,7 +175,7 @@ Start Mission (select one of the missions to run):
 
 Time constrained mission:
 ```Bash
-$ ros2 launch pipeline_inspection_metacontrol time_constrained_mission.launch.py time_limit:=300
+ros2 launch pipeline_inspection_metacontrol time_constrained_mission.launch.py time_limit:=300
 ```
 
 Arguments:
@@ -198,7 +198,7 @@ Arguments (pass arguments as '<name>:=<value>'):
 
 Constant distance mission:
 ```
-$ ros2 launch pipeline_inspection_metacontrol const_distance_mission.launch.py
+ros2 launch pipeline_inspection_metacontrol const_distance_mission.launch.py
 ```
 
 Arguments:
