@@ -6,15 +6,28 @@ import threading
 from datetime import datetime
 from rclpy.executors import MultiThreadedExecutor
 from pipeline_inspection_metacontrol.mission_planner import MissionPlanner
+from system_modes_msgs.srv import ChangeMode
 
 
 class MissionConstDist(MissionPlanner):
     def __init__(self, node_name='const_dist_mission_node'):
         super().__init__(node_name)
-        self.mission_name = 'metacontrol - const distance'
+        self.mission_name = 'no adaptation - const distance'
         self.metrics_header = [
             'mission_name', 'datetime', 'initial pos (x,y)',
             'time_search (s)', 'time_mission (s)']
+
+        self.declare_parameter('f_generate_search_path_mode', 'fd_spiral_low')
+        self.declare_parameter(
+            'f_inspect_pipeline_mode', 'fd_inspect_pipeline')
+
+        self.generate_path_sm_cli = self.create_client(
+                ChangeMode,
+                '/f_generate_search_path/change_mode')
+
+        self.inspect_pipeline_sm_cli = self.create_client(
+                ChangeMode,
+                '/f_inspect_pipeline/change_mode')
 
     def perform_mission(self):
         self.get_logger().info("Pipeline inspection mission starting!!")
@@ -36,30 +49,34 @@ class MissionConstDist(MissionPlanner):
         self.get_logger().info('Starting Search Pipeline task')
 
         mission_start_time = self.get_clock().now()
-        generate_search_path_goal_future = self.send_adaptation_goal(
-            'generate_search_path')
+
+        req = ChangeMode.Request()
+        req.mode_name = self.get_parameter('f_generate_search_path_mode').value
+        self.generate_path_sm_cli.call(req)
 
         while not self.pipeline_detected:
             timer.sleep()
 
         pipeline_detected_time = self.get_clock().now()
 
-        generate_search_path_goal_handle = \
-            generate_search_path_goal_future.result()
-        generate_search_path_goal_handle.cancel_goal_async()
+        req = ChangeMode.Request()
+        req.mode_name = 'fd_unground'
+        self.generate_path_sm_cli.call(req)
         self.get_logger().info('Task Search Pipeline completed')
 
         self.get_logger().info('Starting Inspect Pipeline task')
-        inspect_pipeline_goal_future = self.send_adaptation_goal(
-            'inspect_pipeline')
+        req = ChangeMode.Request()
+        req.mode_name = self.get_parameter('f_inspect_pipeline_mode').value
+        self.inspect_pipeline_sm_cli.call(req)
 
         while not self.pipeline_inspected:
             timer.sleep()
 
         mission_completed_time = self.get_clock().now()
 
-        inspect_pipeline_goal_handle = inspect_pipeline_goal_future.result()
-        inspect_pipeline_goal_handle.cancel_goal_async()
+        req = ChangeMode.Request()
+        req.mode_name = 'fd_unground'
+        self.inspect_pipeline_sm_cli.call(req)
         self.get_logger().info('Task Inspect Pipeline completed')
 
         detection_time_delta = pipeline_detected_time - mission_start_time

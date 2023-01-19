@@ -8,12 +8,13 @@ from rclpy.executors import MultiThreadedExecutor
 from pipeline_inspection_metacontrol.mission_planner import MissionPlanner
 
 from std_msgs.msg import Float32
+from system_modes_msgs.srv import ChangeMode
 
 
 class MissionTimeConstrained(MissionPlanner):
     def __init__(self, node_name='time_contrained_mission_node'):
         super().__init__(node_name)
-        self.mission_name = 'metacontrol - time constrained'
+        self.mission_name = 'no adaptation - time constrained'
         self.metrics_header = [
             'mission_name', 'datetime', 'initial pos (x,y)', 'time budget (s)',
             'time search (s)', 'distance inspected (m)']
@@ -32,6 +33,18 @@ class MissionTimeConstrained(MissionPlanner):
         self.pipeline_detected_time = None
         self.distance_inspected = -1
 
+        self.declare_parameter('f_generate_search_path_mode', 'fd_spiral_low')
+        self.declare_parameter(
+            'f_inspect_pipeline_mode', 'fd_inspect_pipeline')
+
+        self.generate_path_sm_cli = self.create_client(
+                ChangeMode,
+                '/f_generate_search_path/change_mode')
+
+        self.inspect_pipeline_sm_cli = self.create_client(
+                ChangeMode,
+                '/f_inspect_pipeline/change_mode')
+
     def distance_inspected_cb(self, msg):
         self.distance_inspected = msg.data
 
@@ -46,7 +59,6 @@ class MissionTimeConstrained(MissionPlanner):
                 detection_time_delta = \
                     self.pipeline_detected_time - self.mission_start_time
                 detection_time_delta = detection_time_delta.to_msg().sec
-
             mission_metrics = [
                 self.mission_name,
                 datetime.now().strftime("%b-%d-%Y-%H-%M-%S"),
@@ -81,8 +93,10 @@ class MissionTimeConstrained(MissionPlanner):
         self.mission_start_time = self.get_clock().now()
         self.time_monitor_timer = self.create_timer(0.5, self.time_monitor_cb)
         if self.abort_mission is False:
-            self.current_goal_future = self.send_adaptation_goal(
-                'generate_search_path')
+            req = ChangeMode.Request()
+            req.mode_name = self.get_parameter(
+                'f_generate_search_path_mode').value
+            self.generate_path_sm_cli.call(req)
         else:
             return
 
@@ -93,13 +107,16 @@ class MissionTimeConstrained(MissionPlanner):
 
         self.pipeline_detected_time = self.get_clock().now()
 
-        self.cancel_current_goal()
+        req = ChangeMode.Request()
+        req.mode_name = 'fd_unground'
+        self.generate_path_sm_cli.call(req)
         self.get_logger().info('Task Search Pipeline completed')
 
         self.get_logger().info('Starting Inspect Pipeline task')
         if self.abort_mission is False:
-            self.current_goal_future = self.send_adaptation_goal(
-                'inspect_pipeline')
+            req = ChangeMode.Request()
+            req.mode_name = self.get_parameter('f_inspect_pipeline_mode').value
+            self.inspect_pipeline_sm_cli.call(req)
         else:
             return
 
@@ -108,16 +125,16 @@ class MissionTimeConstrained(MissionPlanner):
                 return
             timer.sleep()
 
-        self.cancel_current_goal()
+        req = ChangeMode.Request()
+        req.mode_name = 'fd_unground'
+        self.inspect_pipeline_sm_cli.call(req)
         self.get_logger().info('Task Inspect Pipeline completed')
 
     def cancel_current_goal(self):
-        if self.current_goal_future is not None:
-            self.current_goal_handle = self.current_goal_future.result()
-            self.current_goal_handle.cancel_goal_async()
-            self.current_goal_future = None
-            self.current_goal_handle = None
-
+        req = ChangeMode.Request()
+        req.mode_name = 'fd_unground'
+        self.generate_path_sm_cli.call_async(req)
+        self.inspect_pipeline_sm_cli.call_async(req)
 
 def main():
 
