@@ -33,7 +33,7 @@ def generate_launch_description():
     mission_node = Node(
         package='pipeline_inspection_metacontrol',
         executable='time_constrained_mission',
-        name='const_dist_mission_node',
+        name='time_constrained_mission_node',
         parameters=[{
             'result_path': result_path,
             'result_filename': result_filename,
