@@ -13,7 +13,7 @@ from std_msgs.msg import Float32
 class MissionTimeConstrained(MissionPlanner):
     def __init__(self, node_name='time_contrained_mission_node'):
         super().__init__(node_name)
-        self.mission_name = 'time_constrained_mission'
+        self.mission_name = 'metacontrol - time constrained'
         self.metrics_header = [
             'mission_name', 'datetime', 'initial pos (x,y)', 'time budget (s)',
             'time search (s)', 'distance inspected (m)']

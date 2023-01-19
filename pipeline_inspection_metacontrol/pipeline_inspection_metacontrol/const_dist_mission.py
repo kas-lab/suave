@@ -11,7 +11,7 @@ from pipeline_inspection_metacontrol.mission_planner import MissionPlanner
 class MissionConstDist(MissionPlanner):
     def __init__(self, node_name='const_dist_mission_node'):
         super().__init__(node_name)
-        self.mission_name = 'const_dist_mission'
+        self.mission_name = 'metacontrol - const distance'
         self.metrics_header = [
             'mission_name', 'datetime', 'initial pos (x,y)',
             'time_search (s)', 'time_mission (s)']
