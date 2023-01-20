@@ -1,5 +1,24 @@
-# pipeline_inspection
-Underwater pipeline inspection use case
+# SUAVE
+Underwater pipeline inspection self-adaptive exemplar
+
+## Run through docker
+
+You can pull and run the exemplar as a docker container using the following command. Keep in mind you need to have docker installed on your computer and running (https://docs.docker.com/get-docker/).
+
+```Bash
+docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password egalberts/suave:dev
+```
+
+Once it is up and running, you can interface with the container through your web browser. The container will be hosted locally at the port specified, in this case 6901.
+`https://<IP>:6901`
+
+You may receive a warning about the invalidity of the https certification. This is a known issue and can be safely ignored by just advancing through the warning.Then a dialog will request a username and password, these are shown below, with the password being specifiable in the run command. 
+
+ - **User** : `kasm_user`
+ - **Password**: `password`
+
+### Build docker images locally
+Should you want to make some changes to the docker container, you can also choose to build it locally. In the docker folder provided the build_images.sh script can be run to build the image locally which can then be run with the same command afterwards. Instead of pulling the image from dockerhub it will use the local image instead.
 
 ## Install locally
 
