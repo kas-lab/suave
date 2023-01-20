@@ -53,7 +53,7 @@ running it. Install ardupilot prerequisites:
 cd ardupilot
 cd Tools/environment_install/
 rm install-prereqs-ubuntu.sh
-wget wget https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/environment_install/install-prereqs-ubuntu.sh
+wget https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/environment_install/install-prereqs-ubuntu.sh
 cd ../../
 chmod +x Tools/environment_install/install-prereqs-ubuntu.sh
 Tools/environment_install/install-prereqs-ubuntu.sh -y
@@ -147,6 +147,7 @@ sim_vehicle.py -L RATBeach -v ArduSub  --model=JSON --console
 ```
 
 Start Simulation:
+Note: You should make sure to source the install before running ros2 commands. e.g. source pipeline_ws/install/setup.bash
 ```
 ros2 launch pipeline_inspection simulation.launch.py x:=-17.0 y:=2.0
 ```
