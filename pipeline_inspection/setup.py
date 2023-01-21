@@ -37,8 +37,8 @@ setup(
                 'pipeline_inspection.spiral_mission:main',
             'spiral_pattern_position = ' +
                 'pipeline_inspection.spiral_pattern_position:main',
-            'thruster_failures = ' +
-                'pipeline_inspection.thruster_failures:main',
+            'thruster_monitor = ' +
+                'pipeline_inspection.thruster_monitor:main',
         ],
     },
 )
