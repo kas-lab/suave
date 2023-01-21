@@ -50,7 +50,7 @@ setup(
                 'pipeline_inspection_metacontrol.' +
                 'pipeline_inspection_reasoner:main',
             'random_reasoner = '+
-                'random_reasoner:main',
+                'pipeline_inspection_metacontrol.random_reasoner:main',
         ],
     },
 )

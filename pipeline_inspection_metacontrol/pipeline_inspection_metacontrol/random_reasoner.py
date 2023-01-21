@@ -1,18 +1,18 @@
 import rclpy
 
-from mros2_reasoner.ros_reasoner import RosReasoner
+
 from rclpy.executors import MultiThreadedExecutor
+from rclpy.node import Node
 
 from system_modes_msgs.srv import ChangeMode, GetAvailableModes
 import threading
 import numpy as np
+from std_msgs.msg import Bool
+
 
 class RandomReasoner(Node):
     def __init__(self):
         super().__init__('random_reasoner')
-
-        timer_period = 5  # seconds
-        self.timer = self.create_timer(timer_period, self.timer_callback)
 
         self.generate_path_changemode_cli = self.create_client(
                 ChangeMode,
@@ -38,6 +38,25 @@ class RandomReasoner(Node):
         self.pipeline_inspected_sub = self.create_subscription(
             Bool, 'pipeline/inspected', self.pipeline_inspected_cb, 10)
 
+        self.dat_req = GetAvailableModes.Request()
+        print(self.dat_req)
+            #available_modes = self.generate_path_availmodes_cli.call(dat_req)
+
+        self.detect_modes = self.send_request(self.generate_path_availmodes_cli).available_modes
+        self.inspect_modes = self.send_request(self.inspect_pipeline_availmodes_cli).available_modes
+
+        self.get_logger().info('Available modes detect {}'.format(str(self.detect_modes)))
+        self.get_logger().info('Available modes inspect {}'.format(str(self.inspect_modes)))
+
+
+        
+
+    def send_request(self, cli):
+        while not cli.wait_for_service():
+            self.get_logger().info('service not available, waiting again...')
+        self.future = cli.call_async(self.dat_req)
+        rclpy.spin_until_future_complete(self, self.future)
+        return self.future.result()
 
     def pipeline_detected_cb(self, msg):
         self.pipeline_detected = msg.data
@@ -45,35 +64,33 @@ class RandomReasoner(Node):
     def pipeline_inspected_cb(self, msg):
         self.pipeline_inspected = msg.data
 
-    def timer_callback(self):
+    def change_mode_request(self):
         self.get_logger().info('\nCalled!!!\n')
+        #timer = self.create_rate(0.1)
+        #timer.sleep()
        
         if not self.pipeline_detected:
             self.get_logger().info('\Pipeline not detected!!!\n')
-
-            available_modes = self.generate_path_availmodes_cli.call(GetAvailableModes.Request())
-            
-            self.get_logger().info('Available modes {}'.format(str(available_modes)))
-            
-            new_mode = np.random.choice(available_modes)
-            
-            self.get_logger().info('Random mode {}'.format(str(new_mode)))
-
-            change_req = ChangeMode.Request()
-            req.mode_name = new_mode
-            is_success = self.generate_path_sm_cli.call(change_req)
-
-            self.get_logger().info('Mode change success?: {}'.format(str(is_success)))
-
+            change_client = self.generate_path_changemode_cli
+            modes = self.detect_modes
         
         if not self.pipeline_inspected:
-            available_modes = self.inspect_pipeline_availmodes_cli.call(GetAvailableModes.Request())
-            new_mode = np.random.choice(available_modes)
+            self.get_logger().info('\Pipeline detected!!!\n')
+            change_client = self.inspect_pipeline_changemode_cli
+            modes = self.inspect_modes
 
-            change_req = ChangeMode.Request()
-            req.mode_name = new_mode
-            self.inspect_pipeline_changemode_cli.call(change_req)
+
+        new_mode = np.random.choice(modes)
         
+        self.get_logger().info('Random mode {}'.format(str(new_mode)))
+
+        change_req = ChangeMode.Request()
+        change_req.mode_name = new_mode
+        self.future = change_client.call_async(change_req)
+
+        rclpy.spin_until_future_complete(self, self.future)            
+        return self.future.result()
+
 
 
 
@@ -84,7 +101,11 @@ def main(args=None):
 
     random_reasoner = RandomReasoner()
 
-    rclpy.spin(random_reasoner)
+
+    #while not random_reasoner.pipeline_inspected:
+    response = random_reasoner.change_mode_request()
+    random_reasoner.get_logger().info('Change mode success? {}'.format(str(response)))
+        
 
     # mt_executor = MultiThreadedExecutor() I don't know if it needs to multi-threaded or what
 
@@ -103,6 +124,7 @@ def main(args=None):
     
     random_reasoner.destroy_node()
     rclpy.shutdown()
+    #thread.join()
 
 
 if __name__ == '__main__':
