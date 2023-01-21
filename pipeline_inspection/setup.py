@@ -39,6 +39,8 @@ setup(
                 'pipeline_inspection.spiral_pattern_position:main',
             'thruster_monitor = ' +
                 'pipeline_inspection.thruster_monitor:main',
+            'recover_thrusters = ' +
+                'pipeline_inspection.recover_thrusters_lc:main',
         ],
     },
 )
