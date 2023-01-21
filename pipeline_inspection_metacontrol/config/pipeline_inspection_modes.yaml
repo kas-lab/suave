@@ -62,18 +62,10 @@ f_control_motion:
     modes:
       __DEFAULT__:
         f_control_motion_node: active.__DEFAULT__
-      fd_failure_thruster_1:
-        f_control_motion_node: active.fd_failure_thruster_1
-      fd_failure_thruster_2:
-        f_control_motion_node: active.fd_failure_thruster_2
-      fd_failure_thruster_3:
-        f_control_motion_node: active.fd_failure_thruster_3
-      fd_failure_thruster_4:
-        f_control_motion_node: active.fd_failure_thruster_4
-      fd_failure_thruster_5:
-        f_control_motion_node: active.fd_failure_thruster_5
-      fd_failure_thruster_6:
-        f_control_motion_node: active.fd_failure_thruster_6
+      fd_all_thrusters:
+        f_control_motion_node: inactive
+      fd_recover_thrusters:
+        f_control_motion_node: active.__DEFAULT__
       fd_unground:
         f_control_motion_node: inactive
 
@@ -83,57 +75,4 @@ f_control_motion_node:
     modes:
       __DEFAULT__:
         ros__parameters:
-          thruster1: 1
-          thruster2: 1
-          thruster3: 1
-          thruster4: 1
-          thruster5: 1
-          thruster6: 1
-      fd_failure_thruster_1:
-        ros__parameters:
-          thruster1: 0
-          thruster2: 1
-          thruster3: 1
-          thruster4: 1
-          thruster5: 1
-          thruster6: 1
-      fd_failure_thruster_2:
-        ros__parameters:
-          thruster1: 1
-          thruster2: 0
-          thruster3: 1
-          thruster4: 1
-          thruster5: 1
-          thruster6: 1
-      fd_failure_thruster_3:
-        ros__parameters:
-          thruster1: 1
-          thruster2: 1
-          thruster3: 0
-          thruster4: 1
-          thruster5: 1
-          thruster6: 1
-      fd_failure_thruster_4:
-        ros__parameters:
-          thruster1: 1
-          thruster2: 1
-          thruster3: 1
-          thruster4: 0
-          thruster5: 1
-          thruster6: 1
-      fd_failure_thruster_5:
-        ros__parameters:
-          thruster1: 1
-          thruster2: 1
-          thruster3: 1
-          thruster4: 1
-          thruster5: 0
-          thruster6: 1
-      fd_failure_thruster_6:
-        ros__parameters:
-          thruster1: 1
-          thruster2: 1
-          thruster3: 1
-          thruster4: 1
-          thruster5: 1
-          thruster6: 0
+          random_param: 2.0
