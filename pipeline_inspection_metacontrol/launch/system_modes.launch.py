@@ -17,7 +17,7 @@ def generate_launch_description():
         package='system_modes',
         executable='mode_manager',
         parameters=[{'modelfile': shm_model_path}],
-        output='screen')
+    )
 
     return LaunchDescription([
         mode_manager_node,
