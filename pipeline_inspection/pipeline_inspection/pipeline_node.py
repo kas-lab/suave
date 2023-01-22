@@ -8,7 +8,7 @@ from rclpy.node import Node
 from std_msgs.msg import Bool
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseArray
-from pipeline_inspection_msgs.srv import GetPath
+from suave_msgs.srv import GetPath
 
 
 class PipelineNode(Node):

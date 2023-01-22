@@ -11,7 +11,7 @@ from rclpy.lifecycle import State
 from rclpy.lifecycle import TransitionCallbackReturn
 from rclpy.timer import Timer
 
-from pipeline_inspection_msgs.srv import GetPath
+from suave_msgs.srv import GetPath
 from pipeline_inspection.bluerov_gazebo import BlueROVGazebo
 
 from std_msgs.msg import Bool
