@@ -1,4 +1,4 @@
-# pipeline_inspection
+# SUAVE: Self-adaptive Underwater Autonomous Vehicle Exemplar
 Underwater pipeline inspection use case
 
 ## Install locally
