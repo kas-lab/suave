@@ -21,15 +21,19 @@ def generate_launch_description():
         pkg_pipeline_inspection_metacontrol_path,
         'launch',
         'metacontrol.launch.py')
-    system_modes_launch_path = os.path.join(
-        pkg_pipeline_inspection_metacontrol_path,
-        'launch',
-        'system_modes.launch.py')
 
     metacontrol_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(metacontrol_launch_path))
-    system_modes_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(system_modes_launch_path))
+
+    mros2_system_modes_bridge_node = Node(
+        package='mros2_reasoner',
+        executable='mros2_system_modes_bridge',
+    )
+
+    recover_thrusters_node = Node(
+        package='pipeline_inspection',
+        executable='recover_thrusters'
+    )
 
     water_visibility_period = LaunchConfiguration('water_visibility_period')
     water_visibility_min = LaunchConfiguration('water_visibility_min')
@@ -61,51 +65,37 @@ def generate_launch_description():
         description='Water visibility seconds shift to left'
     )
 
-    water_visibility_node = Node(
-        package='pipeline_inspection_metacontrol',
-        executable='water_visibility_observer',
-        name='water_visibility_observer',
-        parameters=[{
+    thruster_events = LaunchConfiguration('thruster_events')
+    thruster_events_arg = DeclareLaunchArgument(
+        'thruster_events',
+        default_value=str(['(1, failure,30)', '(2, failure,30)']),
+        description='(thrusterN, failure/recovery, delta time in seconds ),' +
+        ' e.g. (1, failure, 50)'
+    )
+
+    pipeline_inspection_launch_path = os.path.join(
+        pkg_pipeline_inspection_path,
+        'launch',
+        'pipeline_inspection.launch.py')
+
+    pipeline_inspection_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(pipeline_inspection_launch_path),
+        launch_arguments={
             'water_visibility_period': water_visibility_period,
             'water_visibility_min': water_visibility_min,
             'water_visibility_max': water_visibility_max,
             'water_visibility_sec_shift': water_visibility_sec_shift,
-        }],
-    )
-
-    pipeline_metacontrol_node = Node(
-        package='pipeline_inspection_metacontrol',
-        executable='pipeline_metacontrol_node',
-        output='screen'
-    )
-
-    mros2_system_modes_bridge_node = Node(
-        package='mros2_reasoner',
-        executable='mros2_system_modes_bridge',
-    )
-
-    spiral_lc_node = Node(
-        package='pipeline_inspection_metacontrol',
-        executable='spiral_lc_node',
-        output='screen'
-    )
-
-    follow_pipeline_lc = Node(
-        package='pipeline_inspection_metacontrol',
-        executable='follow_pipeline_lc',
-        output='screen',
-    )
+            'thruster_events': thruster_events,
+        }.items())
 
     return LaunchDescription([
         water_visibility_period_arg,
         water_visibility_min_arg,
         water_visibility_max_arg,
         water_visibility_sec_shift_arg,
+        thruster_events_arg,
+        pipeline_inspection_launch,
         metacontrol_launch,
-        water_visibility_node,
-        pipeline_metacontrol_node,
         mros2_system_modes_bridge_node,
-        spiral_lc_node,
-        follow_pipeline_lc,
-        system_modes_launch,
+        recover_thrusters_node,
     ])

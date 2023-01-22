@@ -67,6 +67,23 @@ def generate_launch_description():
         }],
     )
 
+    thruster_events = LaunchConfiguration('thruster_events')
+    thruster_events_arg = DeclareLaunchArgument(
+        'thruster_events',
+        default_value=str(['(1, failure,30)', '(2, failure,30)']),
+        description='(thrusterN, failure/recovery, delta time in seconds ),' +
+        ' e.g. (1, failure, 50)'
+    )
+
+    thruster_monitor_node = Node(
+        package='pipeline_inspection',
+        executable='thruster_monitor',
+        name='thruster_monitor',
+        parameters=[{
+            'thruster_events': thruster_events,
+        }],
+    )
+
     pipeline_metacontrol_node = Node(
         package='pipeline_inspection_metacontrol',
         executable='pipeline_metacontrol_node',
@@ -91,6 +108,8 @@ def generate_launch_description():
         water_visibility_max_arg,
         water_visibility_sec_shift_arg,
         water_visibility_node,
+        thruster_events_arg,
+        thruster_monitor_node,
         pipeline_metacontrol_node,
         spiral_lc_node,
         follow_pipeline_lc,
