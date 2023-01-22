@@ -4,6 +4,7 @@ from pathlib import Path
 from datetime import datetime
 from rclpy.node import Node
 from rclpy.action import ActionClient
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from mros2_msgs.action import ControlQos
 from diagnostic_msgs.msg import DiagnosticArray
@@ -25,8 +26,12 @@ class MissionPlanner(BlueROVGazebo):
         self.pipeline_inspected_sub = self.create_subscription(
             Bool, 'pipeline/inspected', self.pipeline_inspected_cb, 10)
 
+        self.action_cb_group = ReentrantCallbackGroup()
         self.mros_action_client = ActionClient(
-            self, ControlQos, 'mros_objective')
+            self,
+            ControlQos,
+            'mros_objective',
+            callback_group=self.action_cb_group)
 
         self.declare_parameter('result_path', '~/pipeline_inspection/results')
         self.declare_parameter('result_filename', 'mission_results')

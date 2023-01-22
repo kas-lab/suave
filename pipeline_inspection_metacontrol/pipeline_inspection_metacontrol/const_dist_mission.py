@@ -33,6 +33,7 @@ class MissionConstDist(MissionPlanner):
             self.set_mode(guided_mode)
             timer.sleep()
 
+        motion_goal_future = self.send_adaptation_goal('control_motion')
         self.get_logger().info('Starting Search Pipeline task')
 
         mission_start_time = self.get_clock().now()
@@ -60,6 +61,8 @@ class MissionConstDist(MissionPlanner):
 
         inspect_pipeline_goal_handle = inspect_pipeline_goal_future.result()
         inspect_pipeline_goal_handle.cancel_goal_async()
+        motion_goal_handle = motion_goal_future.result()
+        motion_goal_handle.cancel_goal_async()
         self.get_logger().info('Task Inspect Pipeline completed')
 
         detection_time_delta = pipeline_detected_time - mission_start_time

@@ -41,6 +41,7 @@ class MissionTimeConstrained(MissionPlanner):
         if elapsed_time.to_msg().sec >= self.time_limit:
             self.abort_mission = True
             self.cancel_current_goal()
+            self.cancel_motion_goal()
             detection_time_delta = -1
             if self.pipeline_detected_time is not None:
                 detection_time_delta = \
@@ -76,6 +77,7 @@ class MissionTimeConstrained(MissionPlanner):
             self.set_mode(guided_mode)
             timer.sleep()
 
+        self.motion_future = self.send_adaptation_goal('control_motion')
         self.get_logger().info('Starting Search Pipeline task')
 
         self.mission_start_time = self.get_clock().now()
@@ -108,6 +110,7 @@ class MissionTimeConstrained(MissionPlanner):
                 return
             timer.sleep()
 
+        self.cancel_motion_goal()
         self.cancel_current_goal()
         self.get_logger().info('Task Inspect Pipeline completed')
 
@@ -117,6 +120,13 @@ class MissionTimeConstrained(MissionPlanner):
             self.current_goal_handle.cancel_goal_async()
             self.current_goal_future = None
             self.current_goal_handle = None
+
+    def cancel_motion_goal(self):
+        if self.motion_future is not None:
+            self.motion_goal_handle = self.motion_future.result()
+            self.motion_goal_handle.cancel_goal_async()
+            self.motion_future = None
+            self.motion_goal_handle = None
 
 
 def main():
