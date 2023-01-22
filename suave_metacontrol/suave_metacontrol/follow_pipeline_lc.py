@@ -36,7 +36,7 @@ class PipelineFollowerLC(Node):
 
         self.get_path_timer = self.create_rate(5)
         self.get_path_service = self.create_client(
-            GetPath, 'pipeline_inspection/get_path')
+            GetPath, 'pipeline/get_path')
 
         self.pipeline_inspected_pub = self.create_lifecycle_publisher(
             Bool, 'pipeline/inspected', 10)
@@ -49,7 +49,7 @@ class PipelineFollowerLC(Node):
         self.get_logger().info("on_activate() is called.")
         if not self.get_path_service.wait_for_service(timeout_sec=1.0):
             self.get_logger().info(
-                'pipeline_inspection/get_path service is not available')
+                'pipeline/get_path service is not available')
             return TransitionCallbackReturn.FAILURE
         if self.executor is None:
             self.get_logger().info('Executor is None')

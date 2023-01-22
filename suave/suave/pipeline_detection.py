@@ -11,7 +11,7 @@ from geometry_msgs.msg import PoseArray
 from suave_msgs.srv import GetPath
 
 
-class PipelineNode(Node):
+class PipelineDetection(Node):
 
     def __init__(self):
         super().__init__('pipeline')
@@ -39,7 +39,7 @@ class PipelineNode(Node):
 
         self.get_interpolated_path_srv = self.create_service(
             GetPath,
-            'pipeline_inspection/get_path',
+            'pipeline/get_path',
             self.get_interpolated_path_cb)
 
         self.sorted_path = PoseArray()
@@ -115,7 +115,7 @@ class PipelineNode(Node):
 def main():
     rclpy.init(args=sys.argv)
 
-    detect_pipeline_node = PipelineNode()
+    detect_pipeline_node = PipelineDetection()
     rclpy.spin(detect_pipeline_node)
 
     rclpy.shutdown()

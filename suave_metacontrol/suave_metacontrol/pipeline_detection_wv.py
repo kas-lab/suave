@@ -3,10 +3,10 @@ import sys
 
 import rclpy
 from diagnostic_msgs.msg import DiagnosticArray
-from suave.pipeline_node import PipelineNode
+from suave.pipeline_detection import PipelineDetection
 
 
-class PipelineNodeMC(PipelineNode):
+class PipelineDetectionWV(PipelineDetection):
     def __init__(self):
         super().__init__()
 
@@ -35,7 +35,7 @@ class PipelineNodeMC(PipelineNode):
 def main():
     rclpy.init(args=sys.argv)
 
-    detect_pipeline_node = PipelineNodeMC()
+    detect_pipeline_node = PipelineDetectionWV()
     rclpy.spin(detect_pipeline_node)
 
     rclpy.shutdown()

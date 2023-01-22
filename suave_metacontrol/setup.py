@@ -33,9 +33,9 @@ setup(
             'water_visibility_observer = ' +
                 'suave_metacontrol.' +
                 'water_visibility_observer:main',
-            'pipeline_metacontrol_node = ' +
+            'pipeline_detection_wv = ' +
                 'suave_metacontrol.' +
-                'pipeline_metacontrol_node:main',
+                'pipeline_detection_wv:main',
             'follow_pipeline_lc = ' +
                 'suave_metacontrol.follow_pipeline_lc:main',
             'const_dist_mission = ' +
