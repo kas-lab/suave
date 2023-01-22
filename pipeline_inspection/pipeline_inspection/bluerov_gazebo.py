@@ -18,12 +18,6 @@ class BlueROVGazebo(BlueROVArduSubWrapper):
         self.ground_depth_gz = -20
         self.altitude = 1.25
 
-        # TODO: REMOVE this
-        self.start_follow = False
-        # TODO: REMOVE this
-        self.start_follow_sub = self.create_subscription(
-            Bool, 'start_follow_pipe', self.follow_pipe_cb, 10)
-
     def gazebo_pos_cb(self, msg):
         self.gazebo_pos = msg
         if self.first_gz_pose is True:
@@ -74,7 +68,3 @@ class BlueROVGazebo(BlueROVArduSubWrapper):
             z = self.ground_depth_gz + self.altitude \
                 + self.gz_to_local_pose_delta[2]
         return super().setpoint_position_local(x, y, z)
-
-    # TODO: REMOVE this
-    def follow_pipe_cb(self, msg):
-        self.start_follow = msg.data
