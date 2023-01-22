@@ -27,18 +27,6 @@ setup(
         'console_scripts': [
             'pipeline_node = ' +
                 'pipeline_inspection.pipeline_node:main',
-            'follow_pipeline = ' +
-                'pipeline_inspection.follow_pipeline:main',
-            'follow_waypoints = ' +
-                'pipeline_inspection.follow_waypoints:main',
-            'mission = ' +
-                'pipeline_inspection.mission:mission',
-            'spiral_mission = ' +
-                'pipeline_inspection.spiral_mission:main',
-            'spiral_pattern_position = ' +
-                'pipeline_inspection.spiral_pattern_position:main',
-            'thruster_failures = ' +
-                'pipeline_inspection.thruster_failures:main',
         ],
     },
 )
