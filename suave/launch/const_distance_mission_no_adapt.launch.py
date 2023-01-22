@@ -39,7 +39,7 @@ def generate_launch_description():
     )
 
     mission_node = Node(
-        package='suave_metacontrol',
+        package='suave',
         executable='const_dist_mission_no_adapt',
         name='const_dist_mission_no_adapt_node',
         parameters=[{

@@ -12,19 +12,6 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    pkg_suave_path = get_package_share_directory(
-        'suave')
-    pkg_suave_metacontrol_path = get_package_share_directory(
-        'suave_metacontrol')
-
-    system_modes_launch_path = os.path.join(
-        pkg_suave_metacontrol_path,
-        'launch',
-        'system_modes.launch.py')
-
-    system_modes_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(system_modes_launch_path))
-
     water_visibility_period = LaunchConfiguration('water_visibility_period')
     water_visibility_min = LaunchConfiguration('water_visibility_min')
     water_visibility_max = LaunchConfiguration('water_visibility_max')
@@ -56,7 +43,7 @@ def generate_launch_description():
     )
 
     water_visibility_node = Node(
-        package='suave_metacontrol',
+        package='suave',
         executable='water_visibility_observer',
         name='water_visibility_observer',
         parameters=[{
@@ -67,23 +54,33 @@ def generate_launch_description():
         }],
     )
 
-    pipeline_metacontrol_node = Node(
-        package='suave_metacontrol',
-        executable='pipeline_metacontrol_node',
+    pipeline_detection_wv_node = Node(
+        package='suave',
+        executable='pipeline_detection_wv',
         output='screen'
     )
 
-    spiral_lc_node = Node(
-        package='suave_metacontrol',
-        executable='spiral_lc_node',
+    spiral_search_node = Node(
+        package='suave',
+        executable='spiral_search',
         output='screen'
     )
 
-    follow_pipeline_lc = Node(
+    follow_pipeline_node = Node(
         package='suave_metacontrol',
-        executable='follow_pipeline_lc',
+        executable='follow_pipeline',
         output='screen',
     )
+
+    pkg_suave_path = get_package_share_directory('suave')
+
+    system_modes_launch_path = os.path.join(
+        pkg_suave_path,
+        'launch',
+        'system_modes.launch.py')
+
+    system_modes_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(system_modes_launch_path))
 
     return LaunchDescription([
         water_visibility_period_arg,
@@ -91,8 +88,8 @@ def generate_launch_description():
         water_visibility_max_arg,
         water_visibility_sec_shift_arg,
         water_visibility_node,
-        pipeline_metacontrol_node,
-        spiral_lc_node,
-        follow_pipeline_lc,
+        pipeline_detection_wv_node,
+        spiral_search_node,
+        follow_pipeline_node,
         system_modes_launch,
     ])

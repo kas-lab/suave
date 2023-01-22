@@ -26,29 +26,13 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'spiral_lc_node = ' +
-                'suave_metacontrol.spiral_lc_node:main',
             'fake_managed_system = ' +
                 'suave_metacontrol.fake_managed_system:main',
-            'water_visibility_observer = ' +
-                'suave_metacontrol.' +
-                'water_visibility_observer:main',
-            'pipeline_detection_wv = ' +
-                'suave_metacontrol.' +
-                'pipeline_detection_wv:main',
-            'follow_pipeline_lc = ' +
-                'suave_metacontrol.follow_pipeline_lc:main',
+            'suave_reasoner = suave_metacontrol.suave_reasoner:main',
             'const_dist_mission = ' +
                 'suave_metacontrol.const_dist_mission:main',
-            'const_dist_mission_no_adapt = ' +
-                'suave_metacontrol.const_dist_mission_no_adapt:main',
             'time_constrained_mission = ' +
                 'suave_metacontrol.time_constrained_mission:main',
-            'time_constrained_mission_no_adapt = ' +
-                'suave_metacontrol.time_constrained_mission_no_adapt:main',
-            'suave_reasoner = ' +
-                'suave_metacontrol.' +
-                'suave_reasoner:main',
         ],
     },
 )

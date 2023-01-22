@@ -9,7 +9,7 @@ import os
 def generate_launch_description():
 
     shm_model_path = os.path.join(
-        get_package_share_directory('suave_metacontrol'),
+        get_package_share_directory('suave'),
         'config',
         'suave_modes.yaml')
 

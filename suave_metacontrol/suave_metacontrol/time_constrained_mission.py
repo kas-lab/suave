@@ -9,6 +9,13 @@ from suave_metacontrol.mission_planner import MissionPlanner
 
 from std_msgs.msg import Float32
 
+from rclpy.action import ActionClient
+from rclpy.executors import MultiThreadedExecutor
+from mros2_msgs.action import ControlQos
+from diagnostic_msgs.msg import DiagnosticArray
+from diagnostic_msgs.msg import DiagnosticStatus
+from diagnostic_msgs.msg import KeyValue
+
 
 class MissionTimeConstrained(MissionPlanner):
     def __init__(self, node_name='time_contrained_mission_node'):
@@ -117,6 +124,48 @@ class MissionTimeConstrained(MissionPlanner):
             self.current_goal_handle.cancel_goal_async()
             self.current_goal_future = None
             self.current_goal_handle = None
+
+    def send_adaptation_goal(self, adaptation_goal, nfrs=[]):
+        self.mros_action_client.wait_for_server()
+
+        goal_msg = ControlQos.Goal()
+
+        goal_msg.qos_expected.objective_type = "f_" + str(adaptation_goal)
+        goal_msg.qos_expected.objective_id = "obj_" + str(adaptation_goal) \
+            + "_{:.0f}".format(self.get_clock().now().to_msg().sec / 10)
+        goal_msg.qos_expected.selected_mode = ""
+        for required_nfr in nfrs:
+            nfr = KeyValue()
+            nfr.key = str(required_nfr[0])
+            nfr.value = str(required_nfr[1])
+            goal_msg.qos_expected.qos.append(nfr)
+
+        self.get_logger().info(
+            'Sending adaptation goal  {0}'.format(
+                goal_msg.qos_expected.objective_type))
+        action_future = self.mros_action_client.send_goal_async(
+            goal_msg, feedback_callback=self.feedback_callback)
+        self.get_logger().info('Adaptation goal Sent!!!')
+
+        return action_future
+
+    def feedback_callback(self, feedback_msg):
+        feedback = feedback_msg.feedback
+        self.get_logger().info(">> Feedback received:")
+        self.get_logger().info(
+            '    Solving: {0} of type {1}'.format(
+                feedback.qos_status.objective_id,
+                feedback.qos_status.objective_type))
+        self.get_logger().info(
+            '    Objective status: {0}'.format(
+                feedback.qos_status.objective_status))
+        self.get_logger().info('    QAs Status: ')
+        for qos in feedback.qos_status.qos:
+            self.get_logger().info(
+                '      Key: {0} - Value {1}'.format(qos.key, qos.value))
+        self.get_logger().info(
+            '    Current Function Grounding: {0}'.format(
+                feedback.qos_status.selected_mode))
 
 
 def main():

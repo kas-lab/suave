@@ -46,7 +46,7 @@ def generate_launch_description():
     )
 
     mission_node = Node(
-        package='suave_metacontrol',
+        package='suave',
         executable='time_constrained_mission_no_adapt',
         name='time_constrained_mission_no_adapt_node',
         parameters=[{

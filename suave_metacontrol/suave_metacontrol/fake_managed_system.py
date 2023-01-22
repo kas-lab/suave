@@ -50,29 +50,29 @@ class FakeManagedSystem(Node):
             mock_goal_msg, feedback_callback=self.feedback_callback)
         self.get_logger().info('Goal Sent!!!')
 
-        # timer = self.create_rate(0.1)
-        # timer.sleep()
+        timer = self.create_rate(0.1)
+        timer.sleep()
 
-        # self.get_logger().info('%%%%CANCEL GOAL')
-        # handle = future.result()
-        # cancel_future = handle.cancel_goal_async()
-        # rclpy.spin_until_future_complete(self, cancel_future)
-        # fake_goal_msg = ControlQos.Goal()
-        # fake_goal_msg.qos_expected.objective_type = "f_fake"
-        # fake_goal_msg.qos_expected.objective_id = "obj_fake_{:.0f}".format(
-        #     self.get_clock().now().to_msg().sec / 10)
-        # fake_goal_msg.qos_expected.selected_mode = ""
-        # nfr2 = KeyValue()
-        # nfr2.key = "mockiness"
-        # nfr2.value = str(0.8)
-        # fake_goal_msg.qos_expected.qos.append(nfr2)
-        #
-        # self.get_logger().info(
-        #     'Sending goal  {0}'.format(
-        #         fake_goal_msg.qos_expected.objective_type))
-        # self._action_client.send_goal_async(
-        #     fake_goal_msg, feedback_callback=self.feedback_callback)
-        # self.get_logger().info('Goal Sent!!!')
+        self.get_logger().info('%%%%CANCEL GOAL')
+        handle = future.result()
+        cancel_future = handle.cancel_goal_async()
+        rclpy.spin_until_future_complete(self, cancel_future)
+        fake_goal_msg = ControlQos.Goal()
+        fake_goal_msg.qos_expected.objective_type = "f_fake"
+        fake_goal_msg.qos_expected.objective_id = "obj_fake_{:.0f}".format(
+            self.get_clock().now().to_msg().sec / 10)
+        fake_goal_msg.qos_expected.selected_mode = ""
+        nfr2 = KeyValue()
+        nfr2.key = "mockiness"
+        nfr2.value = str(0.8)
+        fake_goal_msg.qos_expected.qos.append(nfr2)
+
+        self.get_logger().info(
+            'Sending goal  {0}'.format(
+                fake_goal_msg.qos_expected.objective_type))
+        self._action_client.send_goal_async(
+            fake_goal_msg, feedback_callback=self.feedback_callback)
+        self.get_logger().info('Goal Sent!!!')
 
     def feedback_callback(self, feedback_msg):
         feedback = feedback_msg.feedback
