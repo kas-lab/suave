@@ -8,9 +8,6 @@ from mros2_reasoner.tomasys import get_current_function_design
 from mros2_reasoner.tomasys import get_measured_qa
 
 
-import threading
-
-
 class PipelineInspectionReasoner(RosReasoner):
     def __init__(self):
         super().__init__()
@@ -19,6 +16,9 @@ class PipelineInspectionReasoner(RosReasoner):
         objectives_in_error = []
         try:
             objectives_in_error = super().analyze()
+        except Exception as err:
+            self.logger.info("In Analyze, exception returned: {}".format(err))
+        try:
             objectives = self.search_objectives()
             for objective in objectives:
                 if objective not in objectives_in_error and \
@@ -34,7 +34,8 @@ class PipelineInspectionReasoner(RosReasoner):
                                 objectives_in_error.append(objective)
                                 objective.o_status = "IN_ERROR_NFR"
         except Exception as err:
-            self.logger.info("In Analyze, exception returned: {}".format(err))
+            self.logger.info(
+                "In Custom Analyze, exception returned: {}".format(err))
         return objectives_in_error
 
 
@@ -51,14 +52,9 @@ def main(args=None):
             "There was an error in the reasoner initialization")
         return
 
-    thread = threading.Thread(
-        target=rclpy.spin,
-        args=[pipeline_inspection_reasoner, mt_executor],
-        daemon=True)
-    thread.start()
-
-    thread.join()
-    pipeline_inspection_reasoner.destroy_node()
+    # Spin until the process in terminated
+    rclpy.spin(pipeline_inspection_reasoner, executor=mt_executor)
+    ros_reasoner.destroy_node()
     rclpy.shutdown()
 
 
