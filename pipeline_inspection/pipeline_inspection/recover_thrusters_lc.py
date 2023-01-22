@@ -1,10 +1,12 @@
 import rclpy
 import sys
 
+from rclpy.executors import MultiThreadedExecutor
 from rclpy.lifecycle import Node
 from rclpy.lifecycle import Publisher
 from rclpy.lifecycle import State
 from rclpy.lifecycle import TransitionCallbackReturn
+
 
 from diagnostic_msgs.msg import DiagnosticArray
 from diagnostic_msgs.msg import DiagnosticStatus
@@ -50,6 +52,8 @@ class RecoverThrustersLC(Node):
         return future
 
     def recover_thrusters(self):
+        rate = self.create_rate(0.1)
+        rate.sleep()
         for thruster in range(1, 7):
             parameter = Parameter()
             parameter.name = 'SERVO' + str(thruster) + '_FUNCTION'
@@ -78,12 +82,14 @@ class RecoverThrustersLC(Node):
 
             # TODO: wait service to complete to send component state
             self.diagnostics_publisher.publish(diag_msg)
+        self.get_logger().info("Thrusters recovered!")
 
 
 def main():
     rclpy.init(args=sys.argv)
     recover_thrusters_node = RecoverThrustersLC('f_control_motion_node')
-    rclpy.spin(recover_thrusters_node)
+    mt_executor = MultiThreadedExecutor()
+    rclpy.spin(recover_thrusters_node, mt_executor)
     rclpy.shutdown()
 
 
