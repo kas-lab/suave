@@ -91,14 +91,14 @@ Reload your terminal with source ~/.bashrc
 
 More info about the plugin can be found in the [repo](https://github.com/ArduPilot/ardupilot_gazebo/)
 
-### Install pipeline_inspection workspace
+### Install suave workspace
 
 Create workspace and download required repositories:
 ```Bash
 mkdir -p ~/pipeline_ws/src/
 cd ~/pipeline_ws/
-wget https://raw.githubusercontent.com/kas-lab/pipeline_inspection/main/pipeline_inspection/pipeline_inspection.rosinstall
-vcs import src < pipeline_inspection.rosinstall --recursive
+wget https://raw.githubusercontent.com/kas-lab/suave/main/suave/suave.rosinstall
+vcs import src < suave.rosinstall --recursive
 ```
 
 Add required paths:
@@ -129,7 +129,7 @@ sim_vehicle.py -L RATBeach -v ArduSub  --model=JSON --console
 
 Start Simulation:
 ```
-ros2 launch pipeline_inspection simulation.launch.py x:=-17.0 y:=2.0
+ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
 ```
 
 Arguments:
@@ -147,7 +147,7 @@ Arguments (pass arguments as '<name>:=<value>'):
 
 Start all nodes except mission:
 ```
-ros2 launch pipeline_inspection_metacontrol pipeline_inspection_metacontrol.launch.py
+ros2 launch suave_metacontrol suave_metacontrol.launch.py
 ```
 
 Arguments:
@@ -175,7 +175,7 @@ Start Mission (select one of the missions to run):
 
 Time constrained mission:
 ```Bash
-ros2 launch pipeline_inspection_metacontrol time_constrained_mission.launch.py time_limit:=300
+ros2 launch suave_metacontrol time_constrained_mission.launch.py time_limit:=300
 ```
 
 Arguments:
@@ -184,7 +184,7 @@ Arguments (pass arguments as '<name>:=<value>'):
 
     'result_path':
         Path to save mission measured metrics
-        (default: '~/pipeline_inspection/results')
+        (default: '~/suave/results')
 
     'result_filename':
         Filename for the mission measured metrics
@@ -198,7 +198,7 @@ Arguments (pass arguments as '<name>:=<value>'):
 
 Constant distance mission:
 ```
-ros2 launch pipeline_inspection_metacontrol const_distance_mission.launch.py
+ros2 launch suave_metacontrol const_distance_mission.launch.py
 ```
 
 Arguments:
@@ -207,7 +207,7 @@ Arguments (pass arguments as '<name>:=<value>'):
 
     'result_path':
         Path to save mission measured metrics
-        (default: '~/pipeline_inspection/results')
+        (default: '~/suave/results')
 
     'result_filename':
         Filename for the mission measured metrics
