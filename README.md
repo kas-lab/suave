@@ -214,11 +214,50 @@ Arguments (pass arguments as '<name>:=<value>'):
         Time limit for the mission (seconds)
         (default: '300')
 ```
+Time constrained mission with no adaptation:
+```Bash
+ros2 launch suave time_constrained_mission_no_adapt.launch.py time_limit:=300
+```
 
+Arguments:
+```
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'result_path':
+        Path to save mission measured metrics
+        (default: '~/suave/results')
+
+    'result_filename':
+        Filename for the mission measured metrics
+        (default: 'time_constrained_mission_results')
+
+    'time_limit':
+        Time limit for the mission (seconds)
+        (default: '300')
+```
 
 Constant distance mission:
 ```
 ros2 launch suave_metacontrol const_distance_mission.launch.py
+```
+
+Arguments:
+```
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'result_path':
+        Path to save mission measured metrics
+        (default: '~/suave/results')
+
+    'result_filename':
+        Filename for the mission measured metrics
+        (default: 'const_distance_mission_results')
+
+```
+
+Constant distance mission with no adaptation:
+```
+ros2 launch suave const_distance_mission_no_adapt.launch.py
 ```
 
 Arguments:
