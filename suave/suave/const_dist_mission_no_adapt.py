@@ -6,6 +6,7 @@ import threading
 from datetime import datetime
 from rclpy.executors import MultiThreadedExecutor
 from system_modes_msgs.srv import ChangeMode
+from suave.mission_planner import MissionPlanner
 
 
 class MissionConstDist(MissionPlanner):
@@ -45,7 +46,6 @@ class MissionConstDist(MissionPlanner):
             self.set_mode(guided_mode)
             timer.sleep()
 
-        motion_goal_future = self.send_adaptation_goal('control_motion')
         self.get_logger().info('Starting Search Pipeline task')
 
         mission_start_time = self.get_clock().now()
