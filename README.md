@@ -1,4 +1,4 @@
-# SUAVE
+# SUAVE: Self-adaptive Underwater Autonomous Vehicle Exemplar
 Underwater pipeline inspection self-adaptive exemplar
 
 ## Run through docker
@@ -12,7 +12,7 @@ docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password egalberts/suave:d
 Once it is up and running, you can interface with the container through your web browser. The container will be hosted locally at the port specified, in this case 6901.
 `https://<IP>:6901`
 
-You may receive a warning about the invalidity of the https certification. This is a known issue and can be safely ignored by just advancing through the warning.Then a dialog will request a username and password, these are shown below, with the password being specifiable in the run command. 
+You may receive a warning about the invalidity of the https certification. This is a known issue and can be safely ignored by just advancing through the warning.Then a dialog will request a username and password, these are shown below, with the password being specifiable in the run command.
 
  - **User** : `kasm_user`
  - **Password**: `password`
@@ -110,32 +110,32 @@ Reload your terminal with source ~/.bashrc
 
 More info about the plugin can be found in the [repo](https://github.com/ArduPilot/ardupilot_gazebo/)
 
-### Install pipeline_inspection workspace
+### Install suave workspace
 
 Create workspace and download required repositories:
 ```Bash
-mkdir -p ~/pipeline_ws/src/
-cd ~/pipeline_ws/
-wget https://raw.githubusercontent.com/kas-lab/pipeline_inspection/main/pipeline_inspection/pipeline_inspection.rosinstall
-vcs import src < pipeline_inspection.rosinstall --recursive
+mkdir -p ~/suave_ws/src/
+cd ~/suave_ws/
+wget https://raw.githubusercontent.com/kas-lab/suave/main/suave/suave.rosinstall
+vcs import src < suave.rosinstall --recursive
 ```
 
 Add required paths:
 ```Bash
-echo 'export GZ_SIM_RESOURCE_PATH=$HOME/pipeline_ws/src/bluerov2_ignition/models:$HOME/pipeline_ws/src/bluerov2_ignition/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
-echo 'export GZ_SIM_RESOURCE_PATH=$HOME/pipeline_ws/src/remaro_worlds/models:$HOME/pipeline_ws/src/remaro_worlds/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
+echo 'export GZ_SIM_RESOURCE_PATH=$HOME/suave_ws/src/bluerov2_ignition/models:$HOME/suave_ws/src/bluerov2_ignition/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
+echo 'export GZ_SIM_RESOURCE_PATH=$HOME/suave_ws/src/remaro_worlds/models:$HOME/suave_ws/src/remaro_worlds/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
 ```
 
 Install deps:
 ```Bash
 source /opt/ros/humble/setup.bash
-cd ~/pipeline_ws/
+cd ~/suave_ws/
 rosdep install --from-paths src --ignore-src -r -y
 ```
 
 Build project:
 ```Bash
-cd ~/pipeline_ws/
+cd ~/suave_ws/
 colcon build --symlink-install
 ```
 
@@ -147,9 +147,9 @@ sim_vehicle.py -L RATBeach -v ArduSub  --model=JSON --console
 ```
 
 Start Simulation:
-Note: You should make sure to source the install before running ros2 commands. e.g. source pipeline_ws/install/setup.bash
+Note: You should make sure to source the install before running ros2 commands. e.g. source suave_ws/install/setup.bash
 ```
-ros2 launch pipeline_inspection simulation.launch.py x:=-17.0 y:=2.0
+ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
 ```
 
 Arguments:
@@ -167,7 +167,7 @@ Arguments (pass arguments as '<name>:=<value>'):
 
 Start all nodes except mission:
 ```
-ros2 launch pipeline_inspection_metacontrol pipeline_inspection_metacontrol.launch.py
+ros2 launch suave_metacontrol suave_metacontrol.launch.py
 ```
 
 Arguments:
@@ -189,13 +189,17 @@ Arguments (pass arguments as '<name>:=<value>'):
     'water_visibility_sec_shift':
         Water visibility seconds shift to left
         (default: '0.0')
+
+    'thruster_events':
+        (thrusterN, failure/recovery, delta time in seconds ), e.g. (1, failure, 50)
+        (default: '['(1, failure,30)', '(2, failure,30)']')
 ```
 
 Start Mission (select one of the missions to run):
 
 Time constrained mission:
 ```Bash
-ros2 launch pipeline_inspection_metacontrol time_constrained_mission.launch.py time_limit:=300
+ros2 launch suave_metacontrol time_constrained_mission.launch.py time_limit:=300
 ```
 
 Arguments:
@@ -204,7 +208,28 @@ Arguments (pass arguments as '<name>:=<value>'):
 
     'result_path':
         Path to save mission measured metrics
-        (default: '~/pipeline_inspection/results')
+        (default: '~/suave/results')
+
+    'result_filename':
+        Filename for the mission measured metrics
+        (default: 'time_constrained_mission_results')
+
+    'time_limit':
+        Time limit for the mission (seconds)
+        (default: '300')
+```
+Time constrained mission with no adaptation:
+```Bash
+ros2 launch suave time_constrained_mission_no_adapt.launch.py time_limit:=300
+```
+
+Arguments:
+```
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'result_path':
+        Path to save mission measured metrics
+        (default: '~/suave/results')
 
     'result_filename':
         Filename for the mission measured metrics
@@ -215,10 +240,9 @@ Arguments (pass arguments as '<name>:=<value>'):
         (default: '300')
 ```
 
-
 Constant distance mission:
 ```
-ros2 launch pipeline_inspection_metacontrol const_distance_mission.launch.py
+ros2 launch suave_metacontrol const_distance_mission.launch.py
 ```
 
 Arguments:
@@ -227,7 +251,26 @@ Arguments (pass arguments as '<name>:=<value>'):
 
     'result_path':
         Path to save mission measured metrics
-        (default: '~/pipeline_inspection/results')
+        (default: '~/suave/results')
+
+    'result_filename':
+        Filename for the mission measured metrics
+        (default: 'const_distance_mission_results')
+
+```
+
+Constant distance mission with no adaptation:
+```
+ros2 launch suave const_distance_mission_no_adapt.launch.py
+```
+
+Arguments:
+```
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'result_path':
+        Path to save mission measured metrics
+        (default: '~/suave/results')
 
     'result_filename':
         Filename for the mission measured metrics
