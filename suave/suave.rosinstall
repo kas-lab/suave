@@ -15,9 +15,9 @@ repositories:
     type: git
     url: https://github.com/remaro-network/remaro_worlds.git
     version: ign-garden
-  pipeline_inspection:
+  suave:
     type: git
-    url: https://github.com/kas-lab/pipeline_inspection.git
+    url: https://github.com/kas-lab/suave.git
     version: main
   mc_mdl_tomasys:
     type: git
