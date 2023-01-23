@@ -35,11 +35,6 @@
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#c_thruster_1">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#Component"/>
         <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_all_thrusters"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_2"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_3"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_4"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_5"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_6"/>
     </owl:NamedIndividual>
     
 
@@ -49,11 +44,6 @@
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#c_thruster_2">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#Component"/>
         <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_all_thrusters"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_1"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_3"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_4"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_5"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_6"/>
     </owl:NamedIndividual>
     
 
@@ -63,11 +53,6 @@
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#c_thruster_3">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#Component"/>
         <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_all_thrusters"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_1"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_2"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_4"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_5"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_6"/>
     </owl:NamedIndividual>
     
 
@@ -77,11 +62,6 @@
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#c_thruster_4">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#Component"/>
         <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_all_thrusters"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_1"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_2"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_3"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_5"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_6"/>
     </owl:NamedIndividual>
     
 
@@ -91,11 +71,6 @@
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#c_thruster_5">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#Component"/>
         <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_all_thrusters"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_1"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_2"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_3"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_4"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_6"/>
     </owl:NamedIndividual>
     
 
@@ -105,11 +80,6 @@
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#c_thruster_6">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#Component"/>
         <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_all_thrusters"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_1"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_2"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_3"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_4"/>
-        <mros:requiredBy rdf:resource="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_5"/>
     </owl:NamedIndividual>
     
 
@@ -148,72 +118,22 @@
     
 
 
-    <!-- http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_1 -->
-
-    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_1">
-        <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
-        <tomasys:hasQAestimation rdf:resource="http://www.metacontrol.org/pipeline_inspection#qa_motion_efficiency_degraded"/>
-        <tomasys:solvesF rdf:resource="http://www.metacontrol.org/pipeline_inspection#f_control_motion"/>
-    </owl:NamedIndividual>
-    
-
-
-    <!-- http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_2 -->
-
-    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_2">
-        <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
-        <tomasys:hasQAestimation rdf:resource="http://www.metacontrol.org/pipeline_inspection#qa_motion_efficiency_degraded"/>
-        <tomasys:solvesF rdf:resource="http://www.metacontrol.org/pipeline_inspection#f_control_motion"/>
-    </owl:NamedIndividual>
-    
-
-
-    <!-- http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_3 -->
-
-    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_3">
-        <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
-        <tomasys:hasQAestimation rdf:resource="http://www.metacontrol.org/pipeline_inspection#qa_motion_efficiency_degraded"/>
-        <tomasys:solvesF rdf:resource="http://www.metacontrol.org/pipeline_inspection#f_control_motion"/>
-    </owl:NamedIndividual>
-    
-
-
-    <!-- http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_4 -->
-
-    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_4">
-        <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
-        <tomasys:hasQAestimation rdf:resource="http://www.metacontrol.org/pipeline_inspection#qa_motion_efficiency_degraded"/>
-        <tomasys:solvesF rdf:resource="http://www.metacontrol.org/pipeline_inspection#f_control_motion"/>
-    </owl:NamedIndividual>
-    
-
-
-    <!-- http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_5 -->
-
-    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_5">
-        <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
-        <tomasys:hasQAestimation rdf:resource="http://www.metacontrol.org/pipeline_inspection#qa_motion_efficiency_degraded"/>
-        <tomasys:solvesF rdf:resource="http://www.metacontrol.org/pipeline_inspection#f_control_motion"/>
-    </owl:NamedIndividual>
-    
-
-
-    <!-- http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_6 -->
-
-    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#fd_failure_thruster_6">
-        <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
-        <tomasys:hasQAestimation rdf:resource="http://www.metacontrol.org/pipeline_inspection#qa_motion_efficiency_degraded"/>
-        <tomasys:solvesF rdf:resource="http://www.metacontrol.org/pipeline_inspection#f_control_motion"/>
-    </owl:NamedIndividual>
-    
-
-
     <!-- http://www.metacontrol.org/pipeline_inspection#fd_inspect_pipeline -->
 
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#fd_inspect_pipeline">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
         <tomasys:hasQAestimation rdf:resource="http://www.metacontrol.org/pipeline_inspection#qa_inspect_efficiency_high"/>
         <tomasys:solvesF rdf:resource="http://www.metacontrol.org/pipeline_inspection#f_inspect_pipeline"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.metacontrol.org/pipeline_inspection#fd_recover_thrusters -->
+
+    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/pipeline_inspection#fd_recover_thrusters">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
+        <tomasys:hasQAestimation rdf:resource="http://www.metacontrol.org/pipeline_inspection#qa_motion_efficiency_degraded"/>
+        <tomasys:solvesF rdf:resource="http://www.metacontrol.org/pipeline_inspection#f_control_motion"/>
     </owl:NamedIndividual>
     
 
