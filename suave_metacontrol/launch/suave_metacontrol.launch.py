@@ -21,15 +21,19 @@ def generate_launch_description():
         pkg_suave_metacontrol_path,
         'launch',
         'metacontrol.launch.py')
-    system_modes_launch_path = os.path.join(
-        pkg_suave_metacontrol_path,
-        'launch',
-        'system_modes.launch.py')
 
     metacontrol_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(metacontrol_launch_path))
-    system_modes_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(system_modes_launch_path))
+
+    mros2_system_modes_bridge_node = Node(
+        package='mros2_reasoner',
+        executable='mros2_system_modes_bridge',
+    )
+
+    recover_thrusters_node = Node(
+        package='suave',
+        executable='recover_thrusters'
+    )
 
     water_visibility_period = LaunchConfiguration('water_visibility_period')
     water_visibility_min = LaunchConfiguration('water_visibility_min')
@@ -61,39 +65,32 @@ def generate_launch_description():
         description='Water visibility seconds shift to left'
     )
 
-    water_visibility_node = Node(
-        package='suave_metacontrol',
-        executable='water_visibility_observer',
-        name='water_visibility_observer',
-        parameters=[{
+    thruster_events = LaunchConfiguration('thruster_events')
+    thruster_events_arg = DeclareLaunchArgument(
+        'thruster_events',
+        default_value=str(['(1, failure,30)', '(2, failure,30)']),
+        description='(thrusterN, failure/recovery, delta time in seconds ),' +
+        ' e.g. (1, failure, 50)'
+    )
+
+    suave_launch_path = os.path.join(
+        pkg_suave_path,
+        'launch',
+        'suave.launch.py')
+
+    suave_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(suave_launch_path),
+        launch_arguments={
             'water_visibility_period': water_visibility_period,
             'water_visibility_min': water_visibility_min,
             'water_visibility_max': water_visibility_max,
             'water_visibility_sec_shift': water_visibility_sec_shift,
-        }],
-    )
-
-    pipeline_metacontrol_node = Node(
-        package='suave_metacontrol',
-        executable='pipeline_metacontrol_node',
-        output='screen'
-    )
+            'thruster_events': thruster_events,
+        }.items())
 
     mros2_system_modes_bridge_node = Node(
         package='mros2_reasoner',
         executable='mros2_system_modes_bridge',
-    )
-
-    spiral_lc_node = Node(
-        package='suave_metacontrol',
-        executable='spiral_lc_node',
-        output='screen'
-    )
-
-    follow_pipeline_lc = Node(
-        package='suave_metacontrol',
-        executable='follow_pipeline_lc',
-        output='screen',
     )
 
     return LaunchDescription([
@@ -101,11 +98,9 @@ def generate_launch_description():
         water_visibility_min_arg,
         water_visibility_max_arg,
         water_visibility_sec_shift_arg,
+        thruster_events_arg,
+        suave_launch,
         metacontrol_launch,
-        water_visibility_node,
-        pipeline_metacontrol_node,
         mros2_system_modes_bridge_node,
-        spiral_lc_node,
-        follow_pipeline_lc,
-        system_modes_launch,
+        recover_thrusters_node,
     ])

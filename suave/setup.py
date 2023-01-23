@@ -26,9 +26,12 @@ setup(
     entry_points={
         'console_scripts': [
             'pipeline_detection = suave.pipeline_node:main',
-            'pipeline_detection_wv = suave_.pipeline_detection_wv:main',
+            'pipeline_detection_wv = suave.pipeline_detection_wv:main',
             'spiral_search = suave.spiral_search_lc:main',
             'follow_pipeline = suave.follow_pipeline_lc:main',
+            'thruster_monitor = suave.thruster_monitor:main',
+            'recover_thrusters = suave.recover_thrusters_lc:main',
+            'water_visibility_observer = suave.water_visibility_observer:main',
             'const_dist_mission_no_adapt = ' +
                 'suave.const_dist_mission_no_adapt:main',
             'time_constrained_mission_no_adapt = ' +
