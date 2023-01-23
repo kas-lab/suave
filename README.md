@@ -1,5 +1,24 @@
 # SUAVE: Self-adaptive Underwater Autonomous Vehicle Exemplar
-Underwater pipeline inspection use case
+Underwater pipeline inspection self-adaptive exemplar
+
+## Run through docker
+
+You can pull and run the exemplar as a docker container using the following command. Keep in mind you need to have docker installed on your computer and running (https://docs.docker.com/get-docker/).
+
+```Bash
+docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password egalberts/suave:dev
+```
+
+Once it is up and running, you can interface with the container through your web browser. The container will be hosted locally at the port specified, in this case 6901.
+`https://<IP>:6901`
+
+You may receive a warning about the invalidity of the https certification. This is a known issue and can be safely ignored by just advancing through the warning.Then a dialog will request a username and password, these are shown below, with the password being specifiable in the run command.
+
+ - **User** : `kasm_user`
+ - **Password**: `password`
+
+### Build docker images locally
+Should you want to make some changes to the docker container, you can also choose to build it locally. In the docker folder provided the build_images.sh script can be run to build the image locally which can then be run with the same command afterwards. Instead of pulling the image from dockerhub it will use the local image instead.
 
 ## Install locally
 
@@ -34,7 +53,7 @@ running it. Install ardupilot prerequisites:
 cd ardupilot
 cd Tools/environment_install/
 rm install-prereqs-ubuntu.sh
-wget wget https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/environment_install/install-prereqs-ubuntu.sh
+wget https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/environment_install/install-prereqs-ubuntu.sh
 cd ../../
 chmod +x Tools/environment_install/install-prereqs-ubuntu.sh
 Tools/environment_install/install-prereqs-ubuntu.sh -y
@@ -95,28 +114,28 @@ More info about the plugin can be found in the [repo](https://github.com/ArduPil
 
 Create workspace and download required repositories:
 ```Bash
-mkdir -p ~/pipeline_ws/src/
-cd ~/pipeline_ws/
+mkdir -p ~/suave_ws/src/
+cd ~/suave_ws/
 wget https://raw.githubusercontent.com/kas-lab/suave/main/suave/suave.rosinstall
 vcs import src < suave.rosinstall --recursive
 ```
 
 Add required paths:
 ```Bash
-echo 'export GZ_SIM_RESOURCE_PATH=$HOME/pipeline_ws/src/bluerov2_ignition/models:$HOME/pipeline_ws/src/bluerov2_ignition/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
-echo 'export GZ_SIM_RESOURCE_PATH=$HOME/pipeline_ws/src/remaro_worlds/models:$HOME/pipeline_ws/src/remaro_worlds/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
+echo 'export GZ_SIM_RESOURCE_PATH=$HOME/suave_ws/src/bluerov2_ignition/models:$HOME/suave_ws/src/bluerov2_ignition/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
+echo 'export GZ_SIM_RESOURCE_PATH=$HOME/suave_ws/src/remaro_worlds/models:$HOME/suave_ws/src/remaro_worlds/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
 ```
 
 Install deps:
 ```Bash
 source /opt/ros/humble/setup.bash
-cd ~/pipeline_ws/
+cd ~/suave_ws/
 rosdep install --from-paths src --ignore-src -r -y
 ```
 
 Build project:
 ```Bash
-cd ~/pipeline_ws/
+cd ~/suave_ws/
 colcon build --symlink-install
 ```
 
@@ -128,6 +147,7 @@ sim_vehicle.py -L RATBeach -v ArduSub  --model=JSON --console
 ```
 
 Start Simulation:
+Note: You should make sure to source the install before running ros2 commands. e.g. source suave_ws/install/setup.bash
 ```
 ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
 ```
