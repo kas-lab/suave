@@ -189,6 +189,10 @@ Arguments (pass arguments as '<name>:=<value>'):
     'water_visibility_sec_shift':
         Water visibility seconds shift to left
         (default: '0.0')
+
+    'thruster_events':
+        (thrusterN, failure/recovery, delta time in seconds ), e.g. (1, failure, 50)
+        (default: '['(1, failure,30)', '(2, failure,30)']')
 ```
 
 Start Mission (select one of the missions to run):
