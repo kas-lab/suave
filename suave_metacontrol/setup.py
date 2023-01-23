@@ -31,6 +31,8 @@ setup(
                 'suave_metacontrol.const_dist_mission:main',
             'time_constrained_mission = ' +
                 'suave_metacontrol.time_constrained_mission:main',
+            'random_reasoner = '+
+                'pipeline_inspection_metacontrol.random_reasoner:main',
         ],
     },
 )
