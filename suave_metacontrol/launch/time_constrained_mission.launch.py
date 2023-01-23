@@ -33,7 +33,7 @@ def generate_launch_description():
     mission_node = Node(
         package='suave_metacontrol',
         executable='time_constrained_mission',
-        name='time_constrained_mission_node',
+        name='time_constrained_mission',
         parameters=[{
             'result_path': result_path,
             'result_filename': result_filename,
@@ -46,4 +46,4 @@ def generate_launch_description():
         result_filename_arg,
         time_limit_arg,
         mission_node,
-    ])suave
+    ])

@@ -4,11 +4,12 @@ import rclpy
 import threading
 
 from datetime import datetime
+from rclpy.action import ActionClient
+from mros2_msgs.action import ControlQos
 from diagnostic_msgs.msg import DiagnosticArray
 from diagnostic_msgs.msg import DiagnosticStatus
 from diagnostic_msgs.msg import KeyValue
-from mros2_msgs.action import ControlQos
-from rclpy.action import ActionClient
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from suave.mission_planner import MissionPlanner
 
@@ -21,8 +22,12 @@ class MissionConstDist(MissionPlanner):
             'mission_name', 'datetime', 'initial pos (x,y)',
             'time_search (s)', 'time_mission (s)']
 
+        self.action_cb_group = ReentrantCallbackGroup()
         self.mros_action_client = ActionClient(
-            self, ControlQos, 'mros_objective')
+           self,
+           ControlQos,
+           'mros_objective',
+           callback_group=self.action_cb_group)
 
     def perform_mission(self):
         self.get_logger().info("Pipeline inspection mission starting!!")

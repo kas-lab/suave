@@ -8,7 +8,7 @@ from mros2_reasoner.tomasys import get_current_function_design
 from mros2_reasoner.tomasys import get_measured_qa
 
 
-class PipelineInspectionReasoner(RosReasoner):
+class SuaveReasoner(RosReasoner):
     def __init__(self):
         super().__init__()
 
@@ -43,7 +43,7 @@ def main(args=None):
 
     rclpy.init(args=args)
 
-    pipeline_inspection_reasoner = PipelineInspectionReasoner()
+    pipeline_inspection_reasoner = SuaveReasoner()
 
     mt_executor = MultiThreadedExecutor()
 

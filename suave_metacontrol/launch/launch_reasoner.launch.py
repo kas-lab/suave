@@ -43,8 +43,8 @@ def generate_launch_description():
 
     mros_reasoner_node = Node(
         package='suave_metacontrol',
-        executable='pipeline_inspection_reasoner',
-        name='pipeline_inspection_reasoner',
+        executable='suave_reasoner',
+        name='suave_reasoner',
         output='screen',
         parameters=[{
             'tomasys_file': tomasys_file,

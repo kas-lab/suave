@@ -52,6 +52,7 @@ class RecoverThrustersLC(Node):
         return future
 
     def recover_thrusters(self):
+        publish_rate = self.create_rate(4)
         rate = self.create_rate(0.1)
         rate.sleep()
         for thruster in range(1, 7):
@@ -82,6 +83,7 @@ class RecoverThrustersLC(Node):
 
             # TODO: wait service to complete to send component state
             self.diagnostics_publisher.publish(diag_msg)
+            publish_rate.sleep()
         self.get_logger().info("Thrusters recovered!")
 
 

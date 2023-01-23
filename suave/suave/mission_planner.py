@@ -19,9 +19,6 @@ class MissionPlanner(BlueROVGazebo):
         self.pipeline_inspected_sub = self.create_subscription(
             Bool, 'pipeline/inspected', self.pipeline_inspected_cb, 10)
 
-        self.mros_action_client = ActionClient(
-            self, ControlQos, 'mros_objective')
-
         self.declare_parameter('result_path', '~/suave/results')
         self.declare_parameter('result_filename', 'mission_results')
 
