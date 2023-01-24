@@ -5,7 +5,7 @@ import threading
 
 from datetime import datetime
 from rclpy.executors import MultiThreadedExecutor
-from suave.mission_planner import MissionPlanner
+from suave_missions.mission_planner import MissionPlanner
 
 from std_msgs.msg import Float32
 from system_modes_msgs.srv import ChangeMode
