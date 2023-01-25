@@ -1,26 +1,41 @@
-# SUAVE: Self-adaptive Underwater Autonomous Vehicle Exemplar
-Underwater pipeline inspection self-adaptive exemplar
+# SUAVE: An Exemplar for Self-Adaptive Underwater Vehicles
+This repository contains the exemplar SUAVE (Self-adaptive Underwater Autonomous Vehicle Exemplar), an exemplar focussing on an underwater robot searching for a pipeline and following it.
 
-## Run through docker
+It clearly separates between the mananged subsystem, implementing the basic functionalities of the robot, and the managing system that implements the adaptation logic. This ensures that this exemplar can be reused with several different managing subsystems, providing that they satisfy the necessary [requirements](#requirements-for-a-managing-subsystem). The usability of the exemplar is showcased with MROS2, the implementation of the self-adaptation framework Metacontrol.
 
-You can pull and run the exemplar as a docker container using the following command. Keep in mind you need to have docker installed on your computer and running (https://docs.docker.com/get-docker/).
+The exemplar can either be [run through docker](#use-the-exemplar-with-docker) or [installed locally](#install-the-exemplar-locally) to [run it](#run-the-exemplar).
 
+## Requirements for a managing subsystem
+TODO
+
+## Use the exemplar with docker
+
+You can pull and run the exemplar as a docker container using the following command. Keep in mind you need to have [docker](https://docs.docker.com/get-docker/) installed on your computer and running.
+
+On Windows and Linux, run
 ```Bash
 docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password egalberts/suave:dev
 ```
+On MacOS, run
+```Bash
+docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password --security-opt seccomp=unconfined egalberts/suave:dev
+```
 
-Once the container is up and running, you can interface with it through your web browser. The container will be hosted locally at the port specified, in this case 6901.
-`https://<IP>:6901`
+Once the container is up and running, you can interface with it through your web browser. The container will be hosted locally at the port specified, in this case 6901. So in your browser, go to
+`https://localhost:6901`.
 
-You may receive a warning about the invalidity of the https certification. This is a known issue and can be safely ignored by just advancing through the warning.Then a dialog will request a username and password, these are shown below, with the password being specifiable in the run command.
+You may receive a warning about the invalidity of the https certification. This is a known issue and can be safely ignored by just advancing through the warning. Then a dialog will request a username and password, these are shown below, with the password being specifiable in the run command.
 
  - **User** : `kasm_user`
  - **Password**: `password`
 
+Now you can proceed to [run the exemplar](#run-the-exemplar).
+
 ### Build docker images locally
 Should you want to make some changes to the docker container, you can also choose to build it locally. In the provided docker folder, the build_images.sh script can be run to build the image locally. The built image can then be run with the same command afterwards. Instead of pulling the image from dockerhub, it will use the local image instead.
 
-## Install locally
+## Install the exemplar locally
+To install the exemplar locally, you have to [install Gazebo Garden](#install-gazebo-garden), [install ROS2 Humble](#install-ros2-humble), [install ardusub](#install-ardusub), [install the ardusub plugin](#install-ardusub_plugin), and finally [install the suave workspace](#install-suave-workspace).
 
 #### Install Gazebo Garden
 
@@ -37,6 +52,8 @@ Instructions can be found [here](https://ardupilot.org/dev/docs/building-setup-l
 **Disclaimer:**
 Problems may occur with different combinations of ArduPilot and MavROS versions. This repo was tested with [ardupilot in commit c623ae8](https://github.com/ArduPilot/ardupilot/tree/9f1c4df5e744d58d3089671926bb964c924b2090) and [mavros 2.4.0](https://github.com/mavlink/mavros/tree/10569e626a36d8c69fc78749bb83c112a00e2be8). Unfortunately, at least at the time of writing this README, the releases available in Ubuntu 22.04 do not match.
 
+TODO: Describe what the commands below do. Difference between ardusub and ardupilot
+
 ```Bash
 cd ~/
 git clone https://github.com/ArduPilot/ardupilot.git
@@ -46,8 +63,8 @@ git submodule update --init --recursive
 ```
 
 Note that the script used to install prerequisites available in this
-version of ardusub doesn't work in Ubuntu 22.04. So you need to replace it before
-running it. Install ardupilot prerequisites:
+version of ardusub do not work in Ubuntu 22.04. So you need to replace them before
+running ardusub. Install the ardupilot prerequisites:
 
 ```Bash
 cd ardupilot
@@ -68,7 +85,7 @@ sim_vehicle.py -v ArduSub -L RATBeach --console --map
 
 Ardupilot SITL should open and a console plus a map should appear.
 
-**Troubleshooting**
+**Troubleshooting:**
 If you have problems with the `install-prereqs-ubuntu.sh` script, try to install the dependencies manually with the following commands.
 
 ```Bash
@@ -87,7 +104,7 @@ Install dependencies:
 sudo apt install libgz-sim7-dev rapidjson-dev
 ```
 
-Clone and build repo:
+Clone and build repository:
 
 ```Bash
 cd ~/
@@ -100,19 +117,19 @@ make -j4
 
 Add required paths:
 
-Assuming that you have clone the repository in `$HOME/ardupilot_gazebo`:
+Assuming that you have cloned the repository in `$HOME/ardupilot_gazebo`, run:
 ```bash
 echo 'export GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot_gazebo/build:${GZ_SIM_SYSTEM_PLUGIN_PATH}' >> ~/.bashrc
 echo 'export GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
 ```
 
-Reload your terminal with source ~/.bashrc
+Reload your terminal with source ~/.bashrc . TODO What does that mean? Concrete instructions.
 
-More info about the plugin can be found in the [repo](https://github.com/ArduPilot/ardupilot_gazebo/)
+More info about the plugin can be found in the [repository](https://github.com/ArduPilot/ardupilot_gazebo/).
 
 ### Install suave workspace
 
-Create workspace and download required repositories:
+Create the workspace and download required repositories:
 ```Bash
 mkdir -p ~/suave_ws/src/
 cd ~/suave_ws/
@@ -126,27 +143,30 @@ echo 'export GZ_SIM_RESOURCE_PATH=$HOME/suave_ws/src/bluerov2_ignition/models:$H
 echo 'export GZ_SIM_RESOURCE_PATH=$HOME/suave_ws/src/remaro_worlds/models:$HOME/suave_ws/src/remaro_worlds/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
 ```
 
-Install deps:
+Install dependencies:
 ```Bash
 source /opt/ros/humble/setup.bash
 cd ~/suave_ws/
 rosdep install --from-paths src --ignore-src -r -y
 ```
 
-Build project:
+Build the project:
 ```Bash
 cd ~/suave_ws/
 colcon build --symlink-install
 ```
 
-## Run locally
+Now you can proceed to [run the exemplar](#run-the-exemplar).
+
+## Run the exemplar
+TODO: What exactly happens here? Maybe write short sentences. What are arguments and what do I do with them? Which things do I have to run in separate terminals?
 
 ArduSub:
 ```
 sim_vehicle.py -L RATBeach -v ArduSub  --model=JSON --console
 ```
 
-Start Simulation:
+Start the simulation:
 Note: You should make sure to source the install before running ros2 commands, e.g., source suave_ws/install/setup.bash
 ```
 ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
@@ -195,9 +215,11 @@ Arguments (pass arguments as '<name>:=<value>'):
         (default: '['(1, failure,30)', '(2, failure,30)']')
 ```
 
-Start Mission (select one of the missions to run):
+### Start the Mission
+Now it is possible to start the mission. Select one of the missions below. The mission results will be save in `<result_path>/<result_filename>.csv`.
 
-Time constrained mission:
+**Time constrained mission:**
+The mission is time constrained, the time limit can be set with `time_limit`.
 ```Bash
 ros2 launch suave_metacontrol time_constrained_mission.launch.py time_limit:=300
 ```
@@ -218,7 +240,7 @@ Arguments (pass arguments as '<name>:=<value>'):
         Time limit for the mission (seconds)
         (default: '300')
 ```
-Time constrained mission with no adaptation:
+**Time constrained mission with no adaptation:** The mission is time constrained and no adaptation is performend. The time limit can be set with `time_limit`.
 ```Bash
 ros2 launch suave time_constrained_mission_no_adapt.launch.py time_limit:=300
 ```
@@ -240,7 +262,7 @@ Arguments (pass arguments as '<name>:=<value>'):
         (default: '300')
 ```
 
-Constant distance mission:
+**Constant distance mission:** The mission is to follow the whole pipeline without a time constraint.
 ```
 ros2 launch suave_metacontrol const_distance_mission.launch.py
 ```
@@ -259,7 +281,7 @@ Arguments (pass arguments as '<name>:=<value>'):
 
 ```
 
-Constant distance mission with no adaptation:
+**Constant distance mission with no adaptation:** The mission is to follow the whole pipeline without a time constraint and without adapting the robot.
 ```
 ros2 launch suave const_distance_mission_no_adapt.launch.py
 ```
@@ -278,4 +300,10 @@ Arguments (pass arguments as '<name>:=<value>'):
 
 ```
 
-Mission results will be save in `<result_path>/<result_filename>.csv`
+## Acknowledgments
+
+This project has received funding from the European Union’s Horizon 2020 research and innovation programme under the Marie Skłodowska-Curie grant agreement No. 956200.
+
+Pleave visit [our website](https://remaro.eu/) for more info on our project.
+
+![REMARO Logo](https://remaro.eu/wp-content/uploads/2020/09/remaro1-right-1024.png)
