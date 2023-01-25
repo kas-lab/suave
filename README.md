@@ -9,7 +9,7 @@ You can pull and run the exemplar as a docker container using the following comm
 docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password egalberts/suave:dev
 ```
 
-Once it is up and running, you can interface with the container through your web browser. The container will be hosted locally at the port specified, in this case 6901.
+Once the container is up and running, you can interface with it through your web browser. The container will be hosted locally at the port specified, in this case 6901.
 `https://<IP>:6901`
 
 You may receive a warning about the invalidity of the https certification. This is a known issue and can be safely ignored by just advancing through the warning.Then a dialog will request a username and password, these are shown below, with the password being specifiable in the run command.
@@ -18,7 +18,7 @@ You may receive a warning about the invalidity of the https certification. This 
  - **Password**: `password`
 
 ### Build docker images locally
-Should you want to make some changes to the docker container, you can also choose to build it locally. In the docker folder provided the build_images.sh script can be run to build the image locally which can then be run with the same command afterwards. Instead of pulling the image from dockerhub it will use the local image instead.
+Should you want to make some changes to the docker container, you can also choose to build it locally. In the provided docker folder, the build_images.sh script can be run to build the image locally. The built image can then be run with the same command afterwards. Instead of pulling the image from dockerhub, it will use the local image instead.
 
 ## Install locally
 
@@ -45,8 +45,8 @@ git checkout 9f1c4df
 git submodule update --init --recursive
 ```
 
-Unfortunately, the script used to install prerequisites available in this
-version of ardusub don't work in Ubuntu 22.04. So you need to replace it before
+Note that the script used to install prerequisites available in this
+version of ardusub doesn't work in Ubuntu 22.04. So you need to replace it before
 running it. Install ardupilot prerequisites:
 
 ```Bash
@@ -68,8 +68,8 @@ sim_vehicle.py -v ArduSub -L RATBeach --console --map
 
 Ardupilot SITL should open and a console plus a map should appear.
 
-**Troubleshoot**
-If you have problems with the `install-prereqs-ubuntu.sh` script try to install the dependencies manually with the following commands.
+**Troubleshooting**
+If you have problems with the `install-prereqs-ubuntu.sh` script, try to install the dependencies manually with the following commands.
 
 ```Bash
 pip3 install --user -U future lxml pymavlink MAVProxy pexpect flake8 geocoder empy dronecan pygame intelhex
@@ -147,7 +147,7 @@ sim_vehicle.py -L RATBeach -v ArduSub  --model=JSON --console
 ```
 
 Start Simulation:
-Note: You should make sure to source the install before running ros2 commands. e.g. source suave_ws/install/setup.bash
+Note: You should make sure to source the install before running ros2 commands, e.g., source suave_ws/install/setup.bash
 ```
 ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
 ```
