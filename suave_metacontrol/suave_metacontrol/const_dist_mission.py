@@ -26,7 +26,7 @@ class MissionConstDist(MissionPlanner):
         self.mros_action_client = ActionClient(
            self,
            ControlQos,
-           'mros_objective',
+           '/mros/objective',
            callback_group=self.action_cb_group)
 
     def perform_mission(self):

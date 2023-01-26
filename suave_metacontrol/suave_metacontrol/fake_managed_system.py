@@ -17,7 +17,7 @@ class FakeManagedSystem(Node):
     def __init__(self):
         super().__init__('mock')
 
-        self._action_client = ActionClient(self, ControlQos, 'mros_objective')
+        self._action_client = ActionClient(self, ControlQos, '/mros/objective')
 
         self.diagnostics_publisher = self.create_publisher(
             DiagnosticArray, '/diagnostics', 10)

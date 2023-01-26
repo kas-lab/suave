@@ -40,7 +40,7 @@ class MissionTimeConstrained(MissionPlanner):
         self.distance_inspected = -1
 
         self.mros_action_client = ActionClient(
-            self, ControlQos, 'mros_objective')
+            self, ControlQos, '/mros/objective')
 
     def distance_inspected_cb(self, msg):
         self.distance_inspected = msg.data
