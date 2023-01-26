@@ -32,7 +32,7 @@ setup(
             'time_constrained_mission = ' +
                 'suave_metacontrol.time_constrained_mission:main',
             'random_reasoner = '+
-                'pipeline_inspection_metacontrol.random_reasoner:main',
+                'suave_metacontrol.random_reasoner:main',
         ],
     },
 )

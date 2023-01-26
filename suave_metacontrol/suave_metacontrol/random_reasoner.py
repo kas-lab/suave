@@ -16,6 +16,9 @@ class RandomReasoner(Node):
     def __init__(self):
         super().__init__('random_reasoner')
 
+        self.declare_parameter('adaptation_period', 15)
+        self.adaptation_period = self.get_parameter('adaptation_period').value
+
         client_cb_group = MutuallyExclusiveCallbackGroup()
         timer_cb_group = MutuallyExclusiveCallbackGroup()
         sub_cp_group = MutuallyExclusiveCallbackGroup()
@@ -52,7 +55,7 @@ class RandomReasoner(Node):
         self.get_logger().info('Available modes detect {}'.format(str(self.detect_modes)))
         self.get_logger().info('Available modes inspect {}'.format(str(self.inspect_modes)))
 
-        self.time_monitor_timer = self.create_timer(2, self.change_mode_request, callback_group=timer_cb_group)
+        self.time_monitor_timer = self.create_timer(self.adaptation_period, self.change_mode_request, callback_group=timer_cb_group)
 
 
     def send_request(self, cli):
