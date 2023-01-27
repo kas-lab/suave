@@ -17,10 +17,6 @@ def generate_launch_description():
     pkg_suave_metacontrol_path = get_package_share_directory(
         'suave_metacontrol')
     time_limit = LaunchConfiguration('time_limit')
-    mros2_system_modes_bridge_node = Node(
-        package='mros2_reasoner',
-        executable='mros2_system_modes_bridge',
-    )
 
     recover_thrusters_node = Node(
         package='suave',
@@ -87,11 +83,6 @@ def generate_launch_description():
             'thruster_events': thruster_events,
         }.items())
 
-    mros2_system_modes_bridge_node = Node(
-        package='mros2_reasoner',
-        executable='mros2_system_modes_bridge',
-    )
-
     random_reasoner_node = Node(
         package='suave_metacontrol',
         executable='random_reasoner',
@@ -109,6 +100,5 @@ def generate_launch_description():
         thruster_events_arg,
         suave_launch,
         random_reasoner_node,
-        mros2_system_modes_bridge_node,
         recover_thrusters_node,
     ])
