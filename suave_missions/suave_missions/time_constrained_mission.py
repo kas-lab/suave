@@ -58,7 +58,23 @@ class Mission(MissionPlanner):
         self.pipeline_detected_time = None
         self.distance_inspected = -1
 
-
+    def feedback_callback(self, feedback_msg):
+        feedback = feedback_msg.feedback
+        self.get_logger().info(">> Feedback received:")
+        self.get_logger().info(
+            '    Solving: {0} of type {1}'.format(
+                feedback.qos_status.objective_id,
+                feedback.qos_status.objective_type))
+        self.get_logger().info(
+            '    Objective status: {0}'.format(
+                feedback.qos_status.objective_status))
+        self.get_logger().info('    QAs Status: ')
+        for qos in feedback.qos_status.qos:
+            self.get_logger().info(
+                '      Key: {0} - Value {1}'.format(qos.key, qos.value))
+        self.get_logger().info(
+            '    Current Function Grounding: {0}'.format(
+                feedback.qos_status.selected_mode))
 
     def distance_inspected_cb(self, msg):
         self.distance_inspected = msg.data
@@ -187,24 +203,6 @@ class Mission(MissionPlanner):
         self.get_logger().info('Adaptation goal Sent!!!')
 
         return action_future
-
-    def feedback_callback(self, feedback_msg):
-        feedback = feedback_msg.feedback
-        self.get_logger().info(">> Feedback received:")
-        self.get_logger().info(
-            '    Solving: {0} of type {1}'.format(
-                feedback.qos_status.objective_id,
-                feedback.qos_status.objective_type))
-        self.get_logger().info(
-            '    Objective status: {0}'.format(
-                feedback.qos_status.objective_status))
-        self.get_logger().info('    QAs Status: ')
-        for qos in feedback.qos_status.qos:
-            self.get_logger().info(
-                '      Key: {0} - Value {1}'.format(qos.key, qos.value))
-        self.get_logger().info(
-            '    Current Function Grounding: {0}'.format(
-                feedback.qos_status.selected_mode))
 
 
 def main():
