@@ -42,8 +42,9 @@ class ThrusterMonitor(Node):
         thruster_events = []
         if events != '':
             for event in events:
-                thruster_events.append(
-                    [e.strip() for e in event.strip('()').split(',')])
+                if event != '':
+                    thruster_events.append(
+                        [e.strip() for e in event.strip('()').split(',')])
         return thruster_events
 
     def thruster_event_cb(self):
