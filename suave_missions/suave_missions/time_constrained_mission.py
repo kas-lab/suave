@@ -27,11 +27,9 @@ class MissionTimeConstrained(MissionPlanner):
             'mission_name', 'datetime', 'initial pos (x,y)', 'time budget (s)',
             'time search (s)', 'distance inspected (m)']
 
-        # if self.mission_metric == 'time':
-        #     self.declare_parameter('time_limit', 300)
-        #     self.time_limit = self.get_parameter('time_limit').value
-        # elif self.mission_metric == "distance":
-        #     pass
+ 
+        self.declare_parameter('time_limit', 300)
+        self.time_limit = self.get_parameter('time_limit').value
 
         # if self.adaptation_manager == "metacontrol":
         #     self.mros_action_client = ActionClient(
