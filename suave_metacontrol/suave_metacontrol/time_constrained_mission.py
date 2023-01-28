@@ -87,7 +87,7 @@ class MissionTimeConstrained(MissionPlanner):
             self.set_mode(guided_mode)
             timer.sleep()
 
-        self.motion_future = self.send_adaptation_goal('control_motion')
+        self.motion_future = self.send_adaptation_goal('maintain_motion')
         self.get_logger().info('Starting Search Pipeline task')
 
         self.mission_start_time = self.get_clock().now()
@@ -111,7 +111,7 @@ class MissionTimeConstrained(MissionPlanner):
         self.get_logger().info('Starting Inspect Pipeline task')
         if self.abort_mission is False:
             self.current_goal_future = self.send_adaptation_goal(
-                'inspect_pipeline')
+                'follow_pipeline')
         else:
             return
 

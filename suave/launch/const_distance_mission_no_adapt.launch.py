@@ -12,7 +12,7 @@ def generate_launch_description():
     result_filename = LaunchConfiguration('result_filename')
     f_generate_search_path_mode = LaunchConfiguration(
         'f_generate_search_path_mode')
-    f_inspect_pipeline_mode = LaunchConfiguration('f_inspect_pipeline_mode')
+    f_follow_pipeline_mode = LaunchConfiguration('f_follow_pipeline_mode')
 
     result_path_arg = DeclareLaunchArgument(
         'result_path',
@@ -32,10 +32,10 @@ def generate_launch_description():
         description='Desired mode for f_generate_search_path_mode'
     )
 
-    f_inspect_pipeline_mode_arg = DeclareLaunchArgument(
-        'f_inspect_pipeline_mode',
-        default_value='fd_inspect_pipeline',
-        description='Desired mode for f_inspect_pipeline_mode'
+    f_follow_pipeline_mode_arg = DeclareLaunchArgument(
+        'f_follow_pipeline_mode',
+        default_value='fd_follow_pipeline',
+        description='Desired mode for f_follow_pipeline_mode'
     )
 
     mission_node = Node(
@@ -46,7 +46,7 @@ def generate_launch_description():
             'result_path': result_path,
             'result_filename': result_filename,
             'f_generate_search_path_mode': f_generate_search_path_mode,
-            'f_inspect_pipeline_mode': f_inspect_pipeline_mode,
+            'f_follow_pipeline_mode': f_follow_pipeline_mode,
         }]
     )
 
@@ -54,6 +54,6 @@ def generate_launch_description():
         result_path_arg,
         result_filename_arg,
         f_generate_search_path_mode_arg,
-        f_inspect_pipeline_mode_arg,
+        f_follow_pipeline_mode_arg,
         mission_node,
     ])

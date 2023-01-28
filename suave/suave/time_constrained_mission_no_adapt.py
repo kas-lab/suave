@@ -35,7 +35,7 @@ class MissionTimeConstrained(MissionPlanner):
 
         self.declare_parameter('f_generate_search_path_mode', 'fd_spiral_low')
         self.declare_parameter(
-            'f_inspect_pipeline_mode', 'fd_inspect_pipeline')
+            'f_follow_pipeline_mode', 'fd_follow_pipeline')
 
         self.generate_path_sm_cli = self.create_client(
                 ChangeMode,
@@ -43,7 +43,7 @@ class MissionTimeConstrained(MissionPlanner):
 
         self.inspect_pipeline_sm_cli = self.create_client(
                 ChangeMode,
-                '/f_inspect_pipeline/change_mode')
+                '/f_follow_pipeline/change_mode')
 
     def distance_inspected_cb(self, msg):
         self.distance_inspected = msg.data
@@ -115,7 +115,7 @@ class MissionTimeConstrained(MissionPlanner):
         self.get_logger().info('Starting Inspect Pipeline task')
         if self.abort_mission is False:
             req = ChangeMode.Request()
-            req.mode_name = self.get_parameter('f_inspect_pipeline_mode').value
+            req.mode_name = self.get_parameter('f_follow_pipeline_mode').value
             self.inspect_pipeline_sm_cli.call(req)
         else:
             return

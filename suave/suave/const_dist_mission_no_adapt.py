@@ -19,7 +19,7 @@ class MissionConstDist(MissionPlanner):
 
         self.declare_parameter('f_generate_search_path_mode', 'fd_spiral_low')
         self.declare_parameter(
-            'f_inspect_pipeline_mode', 'fd_inspect_pipeline')
+            'f_follow_pipeline_mode', 'fd_follow_pipeline')
 
         self.generate_path_sm_cli = self.create_client(
                 ChangeMode,
@@ -27,7 +27,7 @@ class MissionConstDist(MissionPlanner):
 
         self.inspect_pipeline_sm_cli = self.create_client(
                 ChangeMode,
-                '/f_inspect_pipeline/change_mode')
+                '/f_follow_pipeline/change_mode')
 
     def perform_mission(self):
         self.get_logger().info("Pipeline inspection mission starting!!")
@@ -66,7 +66,7 @@ class MissionConstDist(MissionPlanner):
 
         self.get_logger().info('Starting Inspect Pipeline task')
         req = ChangeMode.Request()
-        req.mode_name = self.get_parameter('f_inspect_pipeline_mode').value
+        req.mode_name = self.get_parameter('f_follow_pipeline_mode').value
         self.inspect_pipeline_sm_cli.call(req)
 
         while not self.pipeline_inspected:

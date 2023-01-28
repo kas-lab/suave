@@ -89,7 +89,7 @@ class RecoverThrustersLC(Node):
 
 def main():
     rclpy.init(args=sys.argv)
-    recover_thrusters_node = RecoverThrustersLC('f_control_motion_node')
+    recover_thrusters_node = RecoverThrustersLC('f_maintain_motion_node')
     mt_executor = MultiThreadedExecutor()
     rclpy.spin(recover_thrusters_node, mt_executor)
     rclpy.shutdown()

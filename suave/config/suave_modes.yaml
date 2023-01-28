@@ -33,20 +33,20 @@ f_generate_search_path_node:
         ros__parameters:
           spiral_altitude: 1.0
 
-f_inspect_pipeline:
+f_follow_pipeline:
   ros__parameters:
     type: system
     parts:
-      f_inspect_pipeline_node
+      f_follow_pipeline_node
     modes:
       __DEFAULT__:
-        f_inspect_pipeline_node: inactive
-      fd_inspect_pipeline:
-        f_inspect_pipeline_node: active.__DEFAULT__
+        f_follow_pipeline_node: inactive
+      fd_follow_pipeline:
+        f_follow_pipeline_node: active.__DEFAULT__
       fd_unground:
-        f_inspect_pipeline_node: inactive
+        f_follow_pipeline_node: inactive
 
-f_inspect_pipeline_node:
+f_follow_pipeline_node:
   ros__parameters:
     type: node
     modes:
@@ -54,22 +54,22 @@ f_inspect_pipeline_node:
         ros__parameters:
           random_param: 2.0
 
-f_control_motion:
+f_maintain_motion:
   ros__parameters:
     type: system
     parts:
-      f_control_motion_node
+      f_maintain_motion_node
     modes:
       __DEFAULT__:
-        f_control_motion_node: active.__DEFAULT__
+        f_maintain_motion_node: active.__DEFAULT__
       fd_all_thrusters:
-        f_control_motion_node: inactive
+        f_maintain_motion_node: inactive
       fd_recover_thrusters:
-        f_control_motion_node: active.__DEFAULT__
+        f_maintain_motion_node: active.__DEFAULT__
       fd_unground:
-        f_control_motion_node: inactive
+        f_maintain_motion_node: inactive
 
-f_control_motion_node:
+f_maintain_motion_node:
   ros__parameters:
     type: node
     modes:

@@ -29,7 +29,7 @@ class RandomReasoner(Node):
 
         self.inspect_pipeline_changemode_cli = self.create_client(
             ChangeMode,
-            '/f_inspect_pipeline/change_mode',
+            '/f_follow_pipeline/change_mode',
             callback_group=client_cb_group)
 
         self.generate_path_availmodes_cli = self.create_client(
@@ -39,7 +39,7 @@ class RandomReasoner(Node):
 
         self.inspect_pipeline_availmodes_cli = self.create_client(
             GetAvailableModes,
-            '/f_inspect_pipeline/get_available_modes',
+            '/f_follow_pipeline/get_available_modes',
             callback_group=client_cb_group)
 
         self.pipeline_detected = False
