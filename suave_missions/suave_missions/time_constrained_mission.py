@@ -87,7 +87,7 @@ class MissionTimeConstrained(MissionPlanner):
             while not self.pipeline_detected:
                 if self.abort_mission is True:
                     return
-                timer.sleep()
+                self.timer.sleep()
         else:
             return
 
@@ -101,7 +101,7 @@ class MissionTimeConstrained(MissionPlanner):
             while not self.pipeline_inspected:
                 if self.abort_mission is True:
                     return
-                timer.sleep()
+                self.timer.sleep()
         else:
             return
 
@@ -109,20 +109,20 @@ class MissionTimeConstrained(MissionPlanner):
 
     def perform_mission(self):
         self.get_logger().info("Pipeline inspection mission starting!!")
-        timer = self.create_rate(1)
+        self.timer = self.create_rate(1)
 
         while not self.status.armed:
             self.get_logger().info(
                 'BlueROV is armed: {}'.format(self.status.armed))
             self.arm_motors(True)
-            timer.sleep()
+            self.timer.sleep()
 
         guided_mode = 'GUIDED'
         while self.status.mode != guided_mode:
             self.get_logger().info(
                 'BlueROV mode is : {}'.format(self.status.mode))
             self.set_mode(guided_mode)
-            timer.sleep()
+            self.timer.sleep()
 
         self.get_logger().info('Starting Search Pipeline task')
 

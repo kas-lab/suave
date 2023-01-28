@@ -26,12 +26,12 @@ class MissionConstDist(MissionPlanner):
     def detect_task(self):
         self.get_logger().info('Starting Search Pipeline task')
 
-        mission_start_time = self.get_clock().now()
+        self.mission_start_time = self.get_clock().now()
 
         while not self.pipeline_detected:
-            timer.sleep()
+            self.timer.sleep()
 
-        pipeline_detected_time = self.get_clock().now()
+        self.pipeline_detected_time = self.get_clock().now()
 
         self.get_logger().info('Task Search Pipeline completed')
 
@@ -39,34 +39,34 @@ class MissionConstDist(MissionPlanner):
         self.get_logger().info('Starting Inspect Pipeline task')
 
         while not self.pipeline_inspected:
-            timer.sleep()
+            self.timer.sleep()
 
-        mission_completed_time = self.get_clock().now()
+        self.mission_completed_time = self.get_clock().now()
 
         self.get_logger().info('Task Inspect Pipeline completed')
 
     def perform_mission(self):
         self.get_logger().info("Pipeline inspection mission starting!!")
-        timer = self.create_rate(1)
+        self.timer = self.create_rate(1)
 
         while not self.status.armed:
             self.get_logger().info(
                 'BlueROV is armed: {}'.format(self.status.armed))
             self.arm_motors(True)
-            timer.sleep()
+            self.timer.sleep()
 
         guided_mode = 'GUIDED'
         while self.status.mode != guided_mode:
             self.get_logger().info(
                 'BlueROV mode is : {}'.format(self.status.mode))
             self.set_mode(guided_mode)
-            timer.sleep()
+            self.timer.sleep()
 
         self.detect_task()
         self.inspect_task()
 
-        detection_time_delta = pipeline_detected_time - mission_start_time
-        mission_time_delta = mission_completed_time - mission_start_time
+        detection_time_delta = self.pipeline_detected_time - self.mission_start_time
+        mission_time_delta = self.mission_completed_time - self.mission_start_time
 
         self.get_logger().info(
             'Time elapsed to detect pipeline {}'.format(
