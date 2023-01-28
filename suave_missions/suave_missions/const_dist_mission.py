@@ -11,23 +11,39 @@ from diagnostic_msgs.msg import DiagnosticStatus
 from diagnostic_msgs.msg import KeyValue
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
-from suave.mission_planner import MissionPlanner
+from suave_missions.mission_planner import MissionPlanner
 
 
 class MissionConstDist(MissionPlanner):
     def __init__(self, node_name='const_dist_mission_node'):
         super().__init__(node_name)
-        self.mission_name = 'metacontrol - const distance'
+        self.mission_name = 'const distance'
         self.metrics_header = [
             'mission_name', 'datetime', 'initial pos (x,y)',
             'time_search (s)', 'time_mission (s)']
+        self.get_logger().info('DISTANCE MISSION')
+        
+    def detect_task(self):
+        self.get_logger().info('Starting Search Pipeline task')
 
-        self.action_cb_group = ReentrantCallbackGroup()
-        self.mros_action_client = ActionClient(
-           self,
-           ControlQos,
-           'mros_objective',
-           callback_group=self.action_cb_group)
+        mission_start_time = self.get_clock().now()
+
+        while not self.pipeline_detected:
+            timer.sleep()
+
+        pipeline_detected_time = self.get_clock().now()
+
+        self.get_logger().info('Task Search Pipeline completed')
+
+    def inspect_task(self):
+        self.get_logger().info('Starting Inspect Pipeline task')
+
+        while not self.pipeline_inspected:
+            timer.sleep()
+
+        mission_completed_time = self.get_clock().now()
+
+        self.get_logger().info('Task Inspect Pipeline completed')
 
     def perform_mission(self):
         self.get_logger().info("Pipeline inspection mission starting!!")
@@ -46,37 +62,8 @@ class MissionConstDist(MissionPlanner):
             self.set_mode(guided_mode)
             timer.sleep()
 
-        motion_goal_future = self.send_adaptation_goal('control_motion')
-        self.get_logger().info('Starting Search Pipeline task')
-
-        mission_start_time = self.get_clock().now()
-        generate_search_path_goal_future = self.send_adaptation_goal(
-            'generate_search_path')
-
-        while not self.pipeline_detected:
-            timer.sleep()
-
-        pipeline_detected_time = self.get_clock().now()
-
-        generate_search_path_goal_handle = \
-            generate_search_path_goal_future.result()
-        generate_search_path_goal_handle.cancel_goal_async()
-        self.get_logger().info('Task Search Pipeline completed')
-
-        self.get_logger().info('Starting Inspect Pipeline task')
-        inspect_pipeline_goal_future = self.send_adaptation_goal(
-            'inspect_pipeline')
-
-        while not self.pipeline_inspected:
-            timer.sleep()
-
-        mission_completed_time = self.get_clock().now()
-
-        inspect_pipeline_goal_handle = inspect_pipeline_goal_future.result()
-        inspect_pipeline_goal_handle.cancel_goal_async()
-        motion_goal_handle = motion_goal_future.result()
-        motion_goal_handle.cancel_goal_async()
-        self.get_logger().info('Task Inspect Pipeline completed')
+        self.detect_task()
+        self.inspect_task()
 
         detection_time_delta = pipeline_detected_time - mission_start_time
         mission_time_delta = mission_completed_time - mission_start_time
@@ -97,49 +84,6 @@ class MissionConstDist(MissionPlanner):
             mission_time_delta.to_msg().sec]
 
         self.save_metrics(mission_data)
-
-    def send_adaptation_goal(self, adaptation_goal, nfrs=[]):
-        self.mros_action_client.wait_for_server()
-
-        goal_msg = ControlQos.Goal()
-
-        goal_msg.qos_expected.objective_type = "f_" + str(adaptation_goal)
-        goal_msg.qos_expected.objective_id = "obj_" + str(adaptation_goal) \
-            + "_{:.0f}".format(self.get_clock().now().to_msg().sec / 10)
-        goal_msg.qos_expected.selected_mode = ""
-        for required_nfr in nfrs:
-            nfr = KeyValue()
-            nfr.key = str(required_nfr[0])
-            nfr.value = str(required_nfr[1])
-            goal_msg.qos_expected.qos.append(nfr)
-
-        self.get_logger().info(
-            'Sending adaptation goal  {0}'.format(
-                goal_msg.qos_expected.objective_type))
-        action_future = self.mros_action_client.send_goal_async(
-            goal_msg, feedback_callback=self.feedback_callback)
-        self.get_logger().info('Adaptation goal Sent!!!')
-
-        return action_future
-
-    def feedback_callback(self, feedback_msg):
-        feedback = feedback_msg.feedback
-        self.get_logger().info(">> Feedback received:")
-        self.get_logger().info(
-            '    Solving: {0} of type {1}'.format(
-                feedback.qos_status.objective_id,
-                feedback.qos_status.objective_type))
-        self.get_logger().info(
-            '    Objective status: {0}'.format(
-                feedback.qos_status.objective_status))
-        self.get_logger().info('    QAs Status: ')
-        for qos in feedback.qos_status.qos:
-            self.get_logger().info(
-                '      Key: {0} - Value {1}'.format(qos.key, qos.value))
-        self.get_logger().info(
-            '    Current Function Grounding: {0}'.format(
-                feedback.qos_status.selected_mode))
-
 
 def main():
 

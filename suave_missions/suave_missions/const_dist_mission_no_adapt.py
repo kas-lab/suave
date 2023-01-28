@@ -6,7 +6,7 @@ import threading
 from datetime import datetime
 from rclpy.executors import MultiThreadedExecutor
 from system_modes_msgs.srv import ChangeMode
-from suave.mission_planner import MissionPlanner
+from suave_missions.mission_planner import MissionPlanner
 
 
 class MissionConstDist(MissionPlanner):

@@ -17,31 +17,29 @@ from diagnostic_msgs.msg import DiagnosticStatus
 from diagnostic_msgs.msg import KeyValue
 
 
-class Mission(MissionPlanner):
-    def __init__(self, node_name='any_mission_node'):
+class MissionTimeConstrained(MissionPlanner):
+    def __init__(self, node_name='time_contrained_mission_node'):
         super().__init__(node_name)
+        self.get_logger().info('New log')
 
-        # factory_dict = {
-        #     "time":  
-        # }
         self.mission_name = 'metacontrol - time constrained'
         self.metrics_header = [
             'mission_name', 'datetime', 'initial pos (x,y)', 'time budget (s)',
             'time search (s)', 'distance inspected (m)']
 
-        if self.mission_metric == 'time':
-            self.declare_parameter('time_limit', 300)
-            self.time_limit = self.get_parameter('time_limit').value
-        elif self.mission_metric == "distance":
-            pass
+        # if self.mission_metric == 'time':
+        #     self.declare_parameter('time_limit', 300)
+        #     self.time_limit = self.get_parameter('time_limit').value
+        # elif self.mission_metric == "distance":
+        #     pass
 
-        if self.adaptation_manager == "metacontrol":
-            self.mros_action_client = ActionClient(
-            self, ControlQos, 'mros_objective')
-        elif self.adaptation_manager == "none":
-            pass
-        elif self.adaptation_manager == "random":
-            pass
+        # if self.adaptation_manager == "metacontrol":
+        #     self.mros_action_client = ActionClient(
+        #     self, ControlQos, 'mros_objective')
+        # elif self.adaptation_manager == "none":
+        #     pass
+        # elif self.adaptation_manager == "random":
+        #     pass
 
         
         self.pipeline_distance_inspected_sub = self.create_subscription(
@@ -57,24 +55,8 @@ class Mission(MissionPlanner):
         self.mission_start_time = None
         self.pipeline_detected_time = None
         self.distance_inspected = -1
+        self.get_logger().info('TIME MISSION')
 
-    def feedback_callback(self, feedback_msg):
-        feedback = feedback_msg.feedback
-        self.get_logger().info(">> Feedback received:")
-        self.get_logger().info(
-            '    Solving: {0} of type {1}'.format(
-                feedback.qos_status.objective_id,
-                feedback.qos_status.objective_type))
-        self.get_logger().info(
-            '    Objective status: {0}'.format(
-                feedback.qos_status.objective_status))
-        self.get_logger().info('    QAs Status: ')
-        for qos in feedback.qos_status.qos:
-            self.get_logger().info(
-                '      Key: {0} - Value {1}'.format(qos.key, qos.value))
-        self.get_logger().info(
-            '    Current Function Grounding: {0}'.format(
-                feedback.qos_status.selected_mode))
 
     def distance_inspected_cb(self, msg):
         self.distance_inspected = msg.data
@@ -84,8 +66,6 @@ class Mission(MissionPlanner):
         elapsed_time = current_time - self.mission_start_time
         if elapsed_time.to_msg().sec >= self.time_limit:
             self.abort_mission = True
-            self.cancel_current_goal()
-            self.cancel_motion_goal()
             detection_time_delta = -1
             if self.pipeline_detected_time is not None:
                 detection_time_delta = \
@@ -106,37 +86,27 @@ class Mission(MissionPlanner):
     
     def detect_task(self):
         if self.abort_mission is False:
-            self.current_goal_future = self.send_adaptation_goal(
-                'generate_search_path')
+            while not self.pipeline_detected:
+                if self.abort_mission is True:
+                    return
+                timer.sleep()
         else:
             return
 
-        while not self.pipeline_detected:
-            if self.abort_mission is True:
-                return
-            timer.sleep()
-
         self.pipeline_detected_time = self.get_clock().now()
-
-        self.cancel_current_goal()
         
         self.get_logger().info('Task Search Pipeline completed')
 
     def inspect_task(self):
         self.get_logger().info('Starting Inspect Pipeline task')
         if self.abort_mission is False:
-            self.current_goal_future = self.send_adaptation_goal(
-                'inspect_pipeline')
+            while not self.pipeline_inspected:
+                if self.abort_mission is True:
+                    return
+                timer.sleep()
         else:
             return
 
-        while not self.pipeline_inspected:
-            if self.abort_mission is True:
-                return
-            timer.sleep()
-
-        #self.cancel_motion_goal()
-        self.cancel_current_goal()
         self.get_logger().info('Task Inspect Pipeline completed')
 
     def perform_mission(self):
@@ -156,7 +126,6 @@ class Mission(MissionPlanner):
             self.set_mode(guided_mode)
             timer.sleep()
 
-        # self.motion_future = self.send_adaptation_goal('control_motion')
         self.get_logger().info('Starting Search Pipeline task')
 
         self.mission_start_time = self.get_clock().now()
@@ -165,45 +134,6 @@ class Mission(MissionPlanner):
         self.detect_task()
 
         self.inspect_task()
-
-    def cancel_current_goal(self):
-        if self.current_goal_future is not None:
-            self.current_goal_handle = self.current_goal_future.result()
-            self.current_goal_handle.cancel_goal_async()
-            self.current_goal_future = None
-            self.current_goal_handle = None
-
-    def cancel_motion_goal(self):
-        if self.motion_future is not None:
-            self.motion_goal_handle = self.motion_future.result()
-            self.motion_goal_handle.cancel_goal_async()
-            self.motion_future = None
-            self.motion_goal_handle = None
-
-    def send_adaptation_goal(self, adaptation_goal, nfrs=[]):
-        self.mros_action_client.wait_for_server()
-
-        goal_msg = ControlQos.Goal()
-
-        goal_msg.qos_expected.objective_type = "f_" + str(adaptation_goal)
-        goal_msg.qos_expected.objective_id = "obj_" + str(adaptation_goal) \
-            + "_{:.0f}".format(self.get_clock().now().to_msg().sec / 10)
-        goal_msg.qos_expected.selected_mode = ""
-        for required_nfr in nfrs:
-            nfr = KeyValue()
-            nfr.key = str(required_nfr[0])
-            nfr.value = str(required_nfr[1])
-            goal_msg.qos_expected.qos.append(nfr)
-
-        self.get_logger().info(
-            'Sending adaptation goal  {0}'.format(
-                goal_msg.qos_expected.objective_type))
-        action_future = self.mros_action_client.send_goal_async(
-            goal_msg, feedback_callback=self.feedback_callback)
-        self.get_logger().info('Adaptation goal Sent!!!')
-
-        return action_future
-
 
 def main():
 

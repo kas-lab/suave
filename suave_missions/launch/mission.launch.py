@@ -8,6 +8,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    mission_type = LaunchConfiguration('mission_type')
     result_path = LaunchConfiguration('result_path')
     result_filename = LaunchConfiguration('result_filename')
     time_limit = LaunchConfiguration('time_limit')
@@ -30,14 +31,16 @@ def generate_launch_description():
         description='Time limit for the mission (seconds)'
     )
 
-    executable_name = 'time_constrained_mission'
-    node_name = 'time_constrained_mission'
+    mission_type_arg = DeclareLaunchArgument(
+        'mission_type',
+        default_value='time_constrained_mission',
+        description='Which type of mission to have, time or distance'
+    )
 
-    
     mission_node = Node(
         package='suave_missions',
-        executable=executable_name,
-        name=node_name,
+        executable=mission_type,
+        name=mission_type,
         parameters=[{
             'result_path': result_path,
             'result_filename': result_filename,
@@ -46,6 +49,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        mission_type_arg,
         result_path_arg,
         result_filename_arg,
         time_limit_arg,
