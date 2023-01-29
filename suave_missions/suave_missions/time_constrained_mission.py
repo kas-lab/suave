@@ -31,6 +31,8 @@ class MissionTimeConstrained(MissionPlanner):
  
         self.declare_parameter('time_limit', 300)
         self.time_limit = self.get_parameter('time_limit').value
+        self.get_logger().info('\n\n\n!!!TIME LIMIT:' + str(self.time_limit))
+
         self.declare_parameter('f_generate_search_path_mode', 'fd_spiral_low')
         self.declare_parameter('f_inspect_pipeline_mode', 'fd_inspect_pipeline')
 
