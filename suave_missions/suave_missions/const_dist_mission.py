@@ -32,6 +32,9 @@ class MissionConstDist(MissionPlanner):
                 ChangeMode,
                 '/f_inspect_pipeline/change_mode')
 
+        self.declare_parameter('f_generate_search_path_mode', 'fd_spiral_low')
+        self.declare_parameter('f_inspect_pipeline_mode', 'fd_inspect_pipeline')
+        
         self.chosen_search_mode = self.get_parameter('f_generate_search_path_mode').value
         self.chosen_inspect_mode = self.get_parameter('f_inspect_pipeline_mode').value
         self.using_no_adaptation = self.adaptation_manager == 'none'

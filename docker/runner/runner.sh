@@ -35,13 +35,10 @@ done
 
 for j in 1 2 3
 do
-    cd ~/Desktop/
     xfce4-terminal --execute './start_ardusub.sh'
-    cd $CURDIR
     xfce4-terminal --execute './scripts/launch_sim.sh'
     xfce4-terminal --execute './scripts/launch_mc.sh'
     xfce4-terminal --execute './scripts/launch_mission.sh'
-
     sleep 30
     kill_running_nodes
 done

@@ -59,7 +59,7 @@ def generate_launch_description():
         }]
     )
 
-    goal_bride_node = Node(
+    goal_bridge_node = Node(
         package='suave_metacontrol',
         executable='metacontrol_goal_update',
         name='metacontrol_goal_update_node',
@@ -71,5 +71,5 @@ def generate_launch_description():
         time_limit_arg,
         mission_type_arg,
         mission_node,
-        goal_bride_node,
+        goal_bridge_node,
     ])

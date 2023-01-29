@@ -31,6 +31,8 @@ class MissionTimeConstrained(MissionPlanner):
  
         self.declare_parameter('time_limit', 300)
         self.time_limit = self.get_parameter('time_limit').value
+        self.declare_parameter('f_generate_search_path_mode', 'fd_spiral_low')
+        self.declare_parameter('f_inspect_pipeline_mode', 'fd_inspect_pipeline')
 
         self.chosen_search_mode = self.get_parameter('f_generate_search_path_mode').value
         self.chosen_inspect_mode = self.get_parameter('f_inspect_pipeline_mode').value
@@ -101,6 +103,8 @@ class MissionTimeConstrained(MissionPlanner):
     def search_task(self):
         if self.abort_mission is False:
             if self.using_no_adaptation: 
+                self.get_logger().info('Sanity check, should be none as adaptation')
+
                 self.manual_sysmode_change(self.chosen_search_mode,self.generate_path_sm_cli)
             while not self.pipeline_detected:
                 if self.abort_mission is True:

@@ -12,7 +12,6 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    print("\n\n\n\n LAUNCHED WHAT YOU WERE LOOKING FOR")
     pkg_suave_path = get_package_share_directory(
         'suave')
     pkg_suave_metacontrol_path = get_package_share_directory(
