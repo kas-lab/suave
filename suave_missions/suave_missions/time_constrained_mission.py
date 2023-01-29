@@ -38,7 +38,8 @@ class MissionTimeConstrained(MissionPlanner):
         #     pass
         # elif self.adaptation_manager == "random":
         #     pass
-
+        self.get_logger().info('\n\n\n!!!Adaptation Manager:' + str(self.adaptation_manager))
+        
         
         self.pipeline_distance_inspected_sub = self.create_subscription(
             Float32,

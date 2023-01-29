@@ -13,7 +13,15 @@ def generate_launch_description():
     time_limit = LaunchConfiguration('time_limit')
     mission_type = LaunchConfiguration('mission_type')
     adapt_period = LaunchConfiguration("adaptation_period")
-    print("RANDOM!!!\n\n")
+    adapt_manager = LaunchConfiguration('adapt_manager')
+
+
+    
+    adapt_manager_arg = DeclareLaunchArgument(
+        'adapt_manager',
+        default_value='none',
+        description='Which adaptation manager is in charge, none/metacontrol/random'
+    )
 
     adapt_period_arg = DeclareLaunchArgument(
         'adaptation_period',
@@ -54,6 +62,7 @@ def generate_launch_description():
             'result_path': result_path,
             'result_filename': result_filename,
             'time_limit': time_limit,
+            'adapt_manager': adapt_manager,
         }]
     )
 
@@ -66,6 +75,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        adapt_manager_arg,
         adapt_period_arg,
         result_path_arg,
         result_filename_arg,

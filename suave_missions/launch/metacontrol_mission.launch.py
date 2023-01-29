@@ -12,6 +12,15 @@ def generate_launch_description():
     result_filename = LaunchConfiguration('result_filename')
     time_limit = LaunchConfiguration('time_limit')
     mission_type = LaunchConfiguration('mission_type')
+    adapt_manager = LaunchConfiguration('adapt_manager')
+
+
+    
+    adapt_manager_arg = DeclareLaunchArgument(
+        'adapt_manager',
+        default_value='none',
+        description='Which adaptation manager is in charge, none/metacontrol/random'
+    )
 
     result_path_arg = DeclareLaunchArgument(
         'result_path',
@@ -46,6 +55,7 @@ def generate_launch_description():
             'result_path': result_path,
             'result_filename': result_filename,
             'time_limit': time_limit,
+            'adapt_manager': adapt_manager,
         }]
     )
 
@@ -55,6 +65,7 @@ def generate_launch_description():
         name='metacontrol_goal_update_node',
     )
     return LaunchDescription([
+        adapt_manager_arg,
         result_path_arg,
         result_filename_arg,
         time_limit_arg,

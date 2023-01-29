@@ -72,13 +72,6 @@ def generate_launch_description():
     pkg_suave_path = get_package_share_directory(
         'suave_missions')
 
-    print("SOMETHING\n\n\n\n")
-    # mission_launch_str = [adapt_manager, '_mission.launch.py']
-    # mission_launch_path = os.path.join(
-    # pkg_suave_path,
-    # 'launch',
-    # ''.join(mission_launch_str)
-    # )
 
     mission_launch_path = [PathJoinSubstitution([pkg_suave_path, 'launch', adapt_manager]), TextSubstitution(text='_mission.launch.py')]
     LogInfo(msg=mission_launch_path)
@@ -94,6 +87,8 @@ def generate_launch_description():
             'f_generate_search_path_mode': f_generate_search_path_mode,
             'f_inspect_pipeline_mode': f_inspect_pipeline_mode,
             'adapt_period': adapt_period,
+            'adapt_manager': adapt_manager,
+
         }.items())
 
     return LaunchDescription([
