@@ -6,6 +6,7 @@ import threading
 from datetime import datetime
 from rclpy.executors import MultiThreadedExecutor
 from suave_missions.mission_planner import MissionPlanner
+from system_modes_msgs.srv import ChangeMode
 
 from std_msgs.msg import Float32
 
@@ -31,6 +32,9 @@ class MissionTimeConstrained(MissionPlanner):
         self.declare_parameter('time_limit', 300)
         self.time_limit = self.get_parameter('time_limit').value
 
+        self.chosen_search_mode = self.get_parameter('f_generate_search_path_mode').value
+        self.chosen_inspect_mode = self.get_parameter('f_inspect_pipeline_mode').value
+
         # if self.adaptation_manager == "metacontrol":
         #     self.mros_action_client = ActionClient(
         #     self, ControlQos, 'mros_objective')
@@ -49,11 +53,20 @@ class MissionTimeConstrained(MissionPlanner):
 
         self.abort_mission = False
 
-        self.adapt = None
-
+        self.using_no_adaptation = self.adaptation_manager == 'none'
         self.mission_start_time = None
         self.pipeline_detected_time = None
         self.distance_inspected = -1
+
+
+        self.generate_path_sm_cli = self.create_client(
+                ChangeMode,
+                '/f_generate_search_path/change_mode')
+
+        self.inspect_pipeline_sm_cli = self.create_client(
+                ChangeMode,
+                '/f_inspect_pipeline/change_mode')
+
         self.get_logger().info('TIME MISSION')
 
 
@@ -65,6 +78,8 @@ class MissionTimeConstrained(MissionPlanner):
         elapsed_time = current_time - self.mission_start_time
         if elapsed_time.to_msg().sec >= self.time_limit:
             self.abort_mission = True
+            if self.using_no_adaptation: 
+                self.manual_sysmode_change("fd_unground", [self.generate_path_sm_cli, self.inspect_pipeline_sm_cli])
             detection_time_delta = -1
             if self.pipeline_detected_time is not None:
                 detection_time_delta = \
@@ -83,8 +98,10 @@ class MissionTimeConstrained(MissionPlanner):
             self.get_logger().info('Time limited reached. Mission aborted!')
             self.time_monitor_timer.destroy()
     
-    def detect_task(self):
+    def search_task(self):
         if self.abort_mission is False:
+            if self.using_no_adaptation: 
+                self.manual_sysmode_change(self.chosen_search_mode,self.generate_path_sm_cli)
             while not self.pipeline_detected:
                 if self.abort_mission is True:
                     return
@@ -99,12 +116,15 @@ class MissionTimeConstrained(MissionPlanner):
     def inspect_task(self):
         self.get_logger().info('Starting Inspect Pipeline task')
         if self.abort_mission is False:
+            if self.using_no_adaptation: 
+                self.manual_sysmode_change(self.chosen_inspect_mode,self.inspect_pipeline_sm_cli)
             while not self.pipeline_inspected:
                 if self.abort_mission is True:
                     return
                 self.timer.sleep()
         else:
             return
+            
 
         self.get_logger().info('Task Inspect Pipeline completed')
 
@@ -130,9 +150,13 @@ class MissionTimeConstrained(MissionPlanner):
         self.mission_start_time = self.get_clock().now()
         self.time_monitor_timer = self.create_timer(0.5, self.time_monitor_cb)
         
-        self.detect_task()
+        self.search_task()
+        if self.using_no_adaptation: 
+            self.manual_sysmode_change('fd_unground',self.generate_path_sm_cli)
 
         self.inspect_task()
+        if self.using_no_adaptation: 
+            self.manual_sysmode_change('fd_unground',self.inspect_pipeline_sm_cli)
 
 def main():
 

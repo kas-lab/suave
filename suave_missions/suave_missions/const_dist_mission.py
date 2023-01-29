@@ -11,6 +11,8 @@ from diagnostic_msgs.msg import DiagnosticStatus
 from diagnostic_msgs.msg import KeyValue
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
+from system_modes_msgs.srv import ChangeMode
+
 from suave_missions.mission_planner import MissionPlanner
 
 
@@ -21,12 +23,27 @@ class MissionConstDist(MissionPlanner):
         self.metrics_header = [
             'mission_name', 'datetime', 'initial pos (x,y)',
             'time_search (s)', 'time_mission (s)']
+
+        self.generate_path_sm_cli = self.create_client(
+                ChangeMode,
+                '/f_generate_search_path/change_mode')
+
+        self.inspect_pipeline_sm_cli = self.create_client(
+                ChangeMode,
+                '/f_inspect_pipeline/change_mode')
+
+        self.chosen_search_mode = self.get_parameter('f_generate_search_path_mode').value
+        self.chosen_inspect_mode = self.get_parameter('f_inspect_pipeline_mode').value
+        self.using_no_adaptation = self.adaptation_manager == 'none'
+
         self.get_logger().info('DISTANCE MISSION')
         
-    def detect_task(self):
+    def search_task(self):
         self.get_logger().info('Starting Search Pipeline task')
 
         self.mission_start_time = self.get_clock().now()
+        if self.using_no_adaptation: 
+            self.manual_sysmode_change(self.chosen_search_mode,self.generate_path_sm_cli)
 
         while not self.pipeline_detected:
             self.timer.sleep()
@@ -37,7 +54,8 @@ class MissionConstDist(MissionPlanner):
 
     def inspect_task(self):
         self.get_logger().info('Starting Inspect Pipeline task')
-
+        if self.using_no_adaptation: 
+            self.manual_sysmode_change(self.chosen_inspect_mode,self.inspect_pipeline_sm_cli)
         while not self.pipeline_inspected:
             self.timer.sleep()
 
@@ -62,8 +80,16 @@ class MissionConstDist(MissionPlanner):
             self.set_mode(guided_mode)
             self.timer.sleep()
 
-        self.detect_task()
+        self.search_task()
+        if self.using_no_adaptation: 
+            self.manual_sysmode_change('fd_unground',self.generate_path_sm_cli)
+
         self.inspect_task()
+
+        if self.using_no_adaptation: 
+            self.manual_sysmode_change('fd_unground',self.inspect_pipeline_sm_cli)
+
+
 
         detection_time_delta = self.pipeline_detected_time - self.mission_start_time
         mission_time_delta = self.mission_completed_time - self.mission_start_time

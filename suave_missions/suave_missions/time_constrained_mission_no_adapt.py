@@ -53,7 +53,8 @@ class MissionTimeConstrained(MissionPlanner):
         elapsed_time = current_time - self.mission_start_time
         if elapsed_time.to_msg().sec >= self.time_limit:
             self.abort_mission = True
-            self.manual_sysmode_change("fd_unground", [self.generate_path_sm_cli, self.inspect_pipeline_sm_cli])
+            if self.adaptation_manager == 'none': 
+                self.manual_sysmode_change("fd_unground", [self.generate_path_sm_cli, self.inspect_pipeline_sm_cli])
             detection_time_delta = -1
             if self.pipeline_detected_time is not None:
                 detection_time_delta = \
@@ -93,7 +94,8 @@ class MissionTimeConstrained(MissionPlanner):
         self.mission_start_time = self.get_clock().now()
         self.time_monitor_timer = self.create_timer(0.5, self.time_monitor_cb)
         if self.abort_mission is False:
-            self.manual_sysmode_change(self.get_parameter('f_generate_search_path_mode').value,self.generate_path_sm_cli)
+            if self.adaptation_manager == 'none': 
+                self.manual_sysmode_change(self.get_parameter('f_generate_search_path_mode').value,self.generate_path_sm_cli)
 
         else:
             return
@@ -104,14 +106,15 @@ class MissionTimeConstrained(MissionPlanner):
             timer.sleep()
 
         self.pipeline_detected_time = self.get_clock().now()
-
-        self.manual_sysmode_change('fd_unground',self.generate_path_sm_cli)
+        if self.adaptation_manager == 'none': 
+            self.manual_sysmode_change('fd_unground',self.generate_path_sm_cli)
 
         self.get_logger().info('Task Search Pipeline completed')
 
         self.get_logger().info('Starting Inspect Pipeline task')
         if self.abort_mission is False:
-            self.manual_sysmode_change(self.get_parameter('f_inspect_pipeline_mode').value,self.inspect_pipeline_sm_cli)
+            if self.adaptation_manager == 'none': 
+                self.manual_sysmode_change(self.get_parameter('f_inspect_pipeline_mode').value,self.inspect_pipeline_sm_cli)
         else:
             return
 
@@ -119,8 +122,8 @@ class MissionTimeConstrained(MissionPlanner):
             if self.abort_mission is True:
                 return
             timer.sleep()
-
-        self.manual_sysmode_change('fd_unground',self.inspect_pipeline_sm_cli)
+        if self.adaptation_manager == 'none': 
+            self.manual_sysmode_change('fd_unground',self.inspect_pipeline_sm_cli)
 
         self.get_logger().info('Task Inspect Pipeline completed')
 
