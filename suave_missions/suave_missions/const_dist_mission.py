@@ -2,7 +2,7 @@
 import sys
 import rclpy
 import threading
-
+import os
 from datetime import datetime
 from rclpy.action import ActionClient
 from mros2_msgs.action import ControlQos
@@ -68,6 +68,7 @@ class MissionConstDist(MissionPlanner):
 
     def perform_mission(self):
         self.get_logger().info("Pipeline inspection mission starting!!")
+    
         self.timer = self.create_rate(1)
 
         while not self.status.armed:
@@ -113,6 +114,8 @@ class MissionConstDist(MissionPlanner):
             mission_time_delta.to_msg().sec]
 
         self.save_metrics(mission_data)
+
+        os.system("touch ~/suave_ws/mission.done")
 
 def main():
 

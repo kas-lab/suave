@@ -2,7 +2,7 @@
 import sys
 import rclpy
 import threading
-
+import os
 from datetime import datetime
 from rclpy.executors import MultiThreadedExecutor
 from suave_missions.mission_planner import MissionPlanner
@@ -163,6 +163,9 @@ class MissionTimeConstrained(MissionPlanner):
         self.inspect_task()
         if self.using_no_adaptation: 
             self.manual_sysmode_change('fd_unground',self.inspect_pipeline_sm_cli)
+        
+        os.system("touch ~/suave_ws/mission.done")
+
 
 def main():
 

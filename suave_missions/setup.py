@@ -26,10 +26,6 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'const_dist_mission_no_adapt = ' +
-                'suave_missions.const_dist_mission_no_adapt:main',
-            'time_constrained_mission_no_adapt = ' +
-                'suave_missions.time_constrained_mission_no_adapt:main',
             'const_dist_mission = ' +
                 'suave_missions.const_dist_mission:main',
             'time_constrained_mission = ' +
