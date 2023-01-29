@@ -3,7 +3,7 @@ import os
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, LogInfo, IncludeLaunchDescription
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, TextSubstitution
-
+from launch.conditions import LaunchConfigurationEquals
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 from launch_ros.actions import Node
@@ -91,6 +91,19 @@ def generate_launch_description():
 
         }.items())
 
+    pkg_suave_metacontrol_path = get_package_share_directory(
+        'suave_metacontrol')
+
+    metacontrol_launch_path = os.path.join(
+        pkg_suave_metacontrol_path,
+        'launch',
+        'suave_metacontrol.launch.py')
+
+    metacontrol_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(metacontrol_launch_path),
+        condition=LaunchConfigurationEquals('adapt_manager','metacontrol'),)
+
+
     return LaunchDescription([
         adapt_manager_arg,
         adapt_period_arg,
@@ -101,4 +114,5 @@ def generate_launch_description():
         f_generate_search_path_mode_arg,
         f_inspect_pipeline_mode_arg,
         mission_launch,
+        metacontrol_launch
     ])

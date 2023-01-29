@@ -12,6 +12,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    print("\n\n\n\n LAUNCHED WHAT YOU WERE LOOKING FOR")
     pkg_suave_path = get_package_share_directory(
         'suave')
     pkg_suave_metacontrol_path = get_package_share_directory(
@@ -93,6 +94,13 @@ def generate_launch_description():
         executable='mros2_system_modes_bridge',
     )
 
+    
+    goal_bride_node = Node(
+        package='suave_metacontrol',
+        executable='metacontrol_goal_update',
+        name='metacontrol_goal_update_node',
+    )
+
     return LaunchDescription([
         water_visibility_period_arg,
         water_visibility_min_arg,
@@ -103,4 +111,5 @@ def generate_launch_description():
         metacontrol_launch,
         mros2_system_modes_bridge_node,
         recover_thrusters_node,
+        goal_bride_node,
     ])

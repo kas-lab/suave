@@ -6,9 +6,9 @@ import threading
 from datetime import datetime
 from rclpy.executors import MultiThreadedExecutor
 from suave_missions.mission_planner import MissionPlanner
+from system_modes_msgs.srv import ChangeMode
 
 from std_msgs.msg import Float32
-from system_modes_msgs.srv import ChangeMode
 
 
 class MissionTimeConstrained(MissionPlanner):
@@ -53,7 +53,7 @@ class MissionTimeConstrained(MissionPlanner):
         elapsed_time = current_time - self.mission_start_time
         if elapsed_time.to_msg().sec >= self.time_limit:
             self.abort_mission = True
-            self.cancel_current_goal()
+            self.manual_sysmode_change("fd_unground", [self.generate_path_sm_cli, self.inspect_pipeline_sm_cli])
             detection_time_delta = -1
             if self.pipeline_detected_time is not None:
                 detection_time_delta = \
@@ -93,10 +93,8 @@ class MissionTimeConstrained(MissionPlanner):
         self.mission_start_time = self.get_clock().now()
         self.time_monitor_timer = self.create_timer(0.5, self.time_monitor_cb)
         if self.abort_mission is False:
-            req = ChangeMode.Request()
-            req.mode_name = self.get_parameter(
-                'f_generate_search_path_mode').value
-            self.generate_path_sm_cli.call(req)
+            self.manual_sysmode_change(self.get_parameter('f_generate_search_path_mode').value,self.generate_path_sm_cli)
+
         else:
             return
 
@@ -107,16 +105,13 @@ class MissionTimeConstrained(MissionPlanner):
 
         self.pipeline_detected_time = self.get_clock().now()
 
-        req = ChangeMode.Request()
-        req.mode_name = 'fd_unground'
-        self.generate_path_sm_cli.call(req)
+        self.manual_sysmode_change('fd_unground',self.generate_path_sm_cli)
+
         self.get_logger().info('Task Search Pipeline completed')
 
         self.get_logger().info('Starting Inspect Pipeline task')
         if self.abort_mission is False:
-            req = ChangeMode.Request()
-            req.mode_name = self.get_parameter('f_inspect_pipeline_mode').value
-            self.inspect_pipeline_sm_cli.call(req)
+            self.manual_sysmode_change(self.get_parameter('f_inspect_pipeline_mode').value,self.inspect_pipeline_sm_cli)
         else:
             return
 
@@ -125,16 +120,9 @@ class MissionTimeConstrained(MissionPlanner):
                 return
             timer.sleep()
 
-        req = ChangeMode.Request()
-        req.mode_name = 'fd_unground'
-        self.inspect_pipeline_sm_cli.call(req)
-        self.get_logger().info('Task Inspect Pipeline completed')
+        self.manual_sysmode_change('fd_unground',self.inspect_pipeline_sm_cli)
 
-    def cancel_current_goal(self):
-        req = ChangeMode.Request()
-        req.mode_name = 'fd_unground'
-        self.generate_path_sm_cli.call_async(req)
-        self.inspect_pipeline_sm_cli.call_async(req)
+        self.get_logger().info('Task Inspect Pipeline completed')
 
 
 def main():

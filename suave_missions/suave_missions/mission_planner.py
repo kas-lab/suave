@@ -5,6 +5,8 @@ from datetime import datetime
 from rclpy.node import Node
 from suave.bluerov_gazebo import BlueROVGazebo
 from std_msgs.msg import Bool
+from system_modes_msgs.srv import ChangeMode
+
 
 
 class MissionPlanner(BlueROVGazebo):
@@ -60,3 +62,14 @@ class MissionPlanner(BlueROVGazebo):
 
     def perform_mission(self):
         self.get_logger().warning("No mission defined!!!")
+
+    def manual_sysmode_change(self, mode_name, cli):
+        req = ChangeMode.Request()
+        req.mode_name = mode_name
+
+        if(type(cli) == list):
+            for client in cli:
+                client.call_async(req)
+        else:
+            cli.call_async(req)
+
