@@ -34,18 +34,11 @@ class MissionTimeConstrained(MissionPlanner):
         self.get_logger().info('\n\n\n!!!TIME LIMIT:' + str(self.time_limit))
 
         self.declare_parameter('f_generate_search_path_mode', 'fd_spiral_low')
-        self.declare_parameter('f_inspect_pipeline_mode', 'fd_inspect_pipeline')
+        self.declare_parameter('f_follow_pipeline_mode', 'fd_follow_pipeline')
 
         self.chosen_search_mode = self.get_parameter('f_generate_search_path_mode').value
-        self.chosen_inspect_mode = self.get_parameter('f_inspect_pipeline_mode').value
+        self.chosen_inspect_mode = self.get_parameter('f_follow_pipeline_mode').value
 
-        # if self.adaptation_manager == "metacontrol":
-        #     self.mros_action_client = ActionClient(
-        #     self, ControlQos, 'mros_objective')
-        # elif self.adaptation_manager == "none":
-        #     pass
-        # elif self.adaptation_manager == "random":
-        #     pass
         self.get_logger().info('\n\n\n!!!Adaptation Manager:' + str(self.adaptation_manager))
         
         
@@ -62,14 +55,13 @@ class MissionTimeConstrained(MissionPlanner):
         self.pipeline_detected_time = None
         self.distance_inspected = -1
 
-
         self.generate_path_sm_cli = self.create_client(
                 ChangeMode,
                 '/f_generate_search_path/change_mode')
 
         self.inspect_pipeline_sm_cli = self.create_client(
                 ChangeMode,
-                '/f_inspect_pipeline/change_mode')
+                '/f_follow_pipeline/change_mode')
 
         self.get_logger().info('TIME MISSION')
 
@@ -165,7 +157,6 @@ class MissionTimeConstrained(MissionPlanner):
             self.manual_sysmode_change('fd_unground',self.inspect_pipeline_sm_cli)
         
         os.system("touch ~/suave_ws/mission.done")
-
 
 def main():
 

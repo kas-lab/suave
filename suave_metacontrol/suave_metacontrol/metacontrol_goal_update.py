@@ -87,16 +87,16 @@ class MetacontrolGoalUpdate(Node):
     def goal_timer_cb(self):
         if (not self.pipeline_detected and self.last_goal_sent != "generate_search_path"):
             self.get_logger().info('\n\n Not Pipeline Detected and Not same goal as last time')
-            self.motion_future = self.send_adaptation_goal('control_motion')
+            self.motion_future = self.send_adaptation_goal('maintain_motion')
             self.get_logger().info('!!!Motion goal sent!!!')
             adaptation_goal = "generate_search_path"
         elif (self.pipeline_detected and not self.pipeline_inspected and self.last_goal_sent !="inspect_pipeline"):
             self.get_logger().info('\n\n Yes Pipeline Detected and Not same goal as last time')
             self.cancel_current_goal()
             self.get_logger().info('\n\n Cancelling the previous goal' )
-            adaptation_goal = "inspect_pipeline"
+            adaptation_goal = "follow_pipeline"
         elif (self.pipeline_detected and self.pipeline_inspected):
-            if(self.last_goal_sent == 'inspect_pipeline'):
+            if(self.last_goal_sent == 'follow_pipeline'):
                 self.cancel_motion_goal()
                 self.cancel_current_goal()
                 self.last_goal_sent = 'no goal'

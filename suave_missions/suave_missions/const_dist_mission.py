@@ -30,13 +30,13 @@ class MissionConstDist(MissionPlanner):
 
         self.inspect_pipeline_sm_cli = self.create_client(
                 ChangeMode,
-                '/f_inspect_pipeline/change_mode')
+                '/f_follow_pipeline/change_mode')
 
         self.declare_parameter('f_generate_search_path_mode', 'fd_spiral_low')
-        self.declare_parameter('f_inspect_pipeline_mode', 'fd_inspect_pipeline')
+        self.declare_parameter('f_follow_pipeline_mode', 'fd_follow_pipeline')
         
         self.chosen_search_mode = self.get_parameter('f_generate_search_path_mode').value
-        self.chosen_inspect_mode = self.get_parameter('f_inspect_pipeline_mode').value
+        self.chosen_inspect_mode = self.get_parameter('f_follow_pipeline_mode').value
         self.using_no_adaptation = self.adaptation_manager == 'none'
 
         self.get_logger().info('DISTANCE MISSION')
@@ -92,8 +92,6 @@ class MissionConstDist(MissionPlanner):
 
         if self.using_no_adaptation: 
             self.manual_sysmode_change('fd_unground',self.inspect_pipeline_sm_cli)
-
-
 
         detection_time_delta = self.pipeline_detected_time - self.mission_start_time
         mission_time_delta = self.mission_completed_time - self.mission_start_time
