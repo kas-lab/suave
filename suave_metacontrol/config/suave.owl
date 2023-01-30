@@ -84,9 +84,9 @@
 
 
 
-    <!-- http://www.metacontrol.org/suave#f_control_motion -->
+    <!-- http://www.metacontrol.org/suave#f_maintain_motion -->
 
-    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/suave#f_control_motion">
+    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/suave#f_maintain_motion">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#Function"/>
     </owl:NamedIndividual>
 
@@ -100,9 +100,9 @@
 
 
 
-    <!-- http://www.metacontrol.org/suave#f_inspect_pipeline -->
+    <!-- http://www.metacontrol.org/suave#f_follow_pipeline -->
 
-    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/suave#f_inspect_pipeline">
+    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/suave#f_follow_pipeline">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#Function"/>
     </owl:NamedIndividual>
 
@@ -113,17 +113,17 @@
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/suave#fd_all_thrusters">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
         <tomasys:hasQAestimation rdf:resource="http://www.metacontrol.org/suave#qa_motion_efficiency_normal"/>
-        <tomasys:solvesF rdf:resource="http://www.metacontrol.org/suave#f_control_motion"/>
+        <tomasys:solvesF rdf:resource="http://www.metacontrol.org/suave#f_maintain_motion"/>
     </owl:NamedIndividual>
 
 
 
-    <!-- http://www.metacontrol.org/suave#fd_inspect_pipeline -->
+    <!-- http://www.metacontrol.org/suave#fd_follow_pipeline -->
 
-    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/suave#fd_inspect_pipeline">
+    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/suave#fd_follow_pipeline">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
         <tomasys:hasQAestimation rdf:resource="http://www.metacontrol.org/suave#qa_inspect_efficiency_high"/>
-        <tomasys:solvesF rdf:resource="http://www.metacontrol.org/suave#f_inspect_pipeline"/>
+        <tomasys:solvesF rdf:resource="http://www.metacontrol.org/suave#f_follow_pipeline"/>
     </owl:NamedIndividual>
 
 
@@ -133,7 +133,7 @@
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/suave#fd_recover_thrusters">
         <rdf:type rdf:resource="http://metacontrol.org/tomasys#FunctionDesign"/>
         <tomasys:hasQAestimation rdf:resource="http://www.metacontrol.org/suave#qa_motion_efficiency_degraded"/>
-        <tomasys:solvesF rdf:resource="http://www.metacontrol.org/suave#f_control_motion"/>
+        <tomasys:solvesF rdf:resource="http://www.metacontrol.org/suave#f_maintain_motion"/>
     </owl:NamedIndividual>
 
 
