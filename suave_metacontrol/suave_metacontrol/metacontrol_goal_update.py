@@ -43,7 +43,7 @@ class MetacontrolGoalUpdate(Node):
             self.pipeline_inspected_cb,
             10, callback_group= subscriber_cb_group)
 
-        self.mros_action_client = ActionClient(self, ControlQos, 'mros_objective', callback_group=client_cb_group)
+        self.mros_action_client = ActionClient(self, ControlQos, '/mros/objective', callback_group=client_cb_group)
 
         self.pipeline_detected = False
         self.pipeline_detected_sub = self.create_subscription(
@@ -90,7 +90,7 @@ class MetacontrolGoalUpdate(Node):
             self.motion_future = self.send_adaptation_goal('maintain_motion')
             self.get_logger().info('!!!Motion goal sent!!!')
             adaptation_goal = "generate_search_path"
-        elif (self.pipeline_detected and not self.pipeline_inspected and self.last_goal_sent !="inspect_pipeline"):
+        elif (self.pipeline_detected and not self.pipeline_inspected and self.last_goal_sent !="follow_pipeline"):
             self.get_logger().info('\n\n Yes Pipeline Detected and Not same goal as last time')
             self.cancel_current_goal()
             self.get_logger().info('\n\n Cancelling the previous goal' )
