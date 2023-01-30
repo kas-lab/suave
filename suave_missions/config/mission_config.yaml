@@ -5,7 +5,6 @@
     result_path: "~/pipeline_inspection/results"
     f_generate_search_path_mode: "fd_spiral_low"
     f_inspect_pipeline_mode: "fd_inspect_pipeline"
-    adapt_period: 15
 
 /water_visibility_observer_node:
   ros__parameters:
@@ -13,3 +12,7 @@
     water_visibility_min: 1.25 #Minimum value for water visibility
     water_visibility_max: 3.75 #Maximum value for water visibility
     water_visibility_sec_shift: 0.0 #Water visibility seconds shift to left
+
+/random_reasoner_node:
+  ros__parameters:
+    adapt_period: 15

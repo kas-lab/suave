@@ -54,6 +54,7 @@ do
             echo "mission done"
             break;
         fi
+        sleep 5 #sustainability!
     done
 
     

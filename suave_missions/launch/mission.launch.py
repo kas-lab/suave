@@ -72,20 +72,14 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(metacontrol_launch_path),
         condition=LaunchConfigurationEquals('adapt_manager','metacontrol'),)
 
-    # random_launch_path = os.path.join( #this is future-proofing, in a newer commit this would already work.
-    #     pkg_suave_metacontrol_path,
-    #     'launch',
-    #     'suave_random.launch.py')
+    random_launch_path = os.path.join( 
+        pkg_suave_metacontrol_path,
+        'launch',
+        'suave_random.launch.py')
 
-    # random_launch = IncludeLaunchDescription(
-    #     PythonLaunchDescriptionSource(random_launch_path),
-        # metacontrol_launch = IncludeLaunchDescription(
-        # PythonLaunchDescriptionSource(metacontrol_launch_path),
-        # launch_arguments={
-        #     'adapt_period': something...dothislater
-
-        # }.items(),
-    #     condition=LaunchConfigurationEquals('adapt_manager','random'),)
+    random_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(random_launch_path),
+        condition=LaunchConfigurationEquals('adapt_manager','random'))
 
 
     return LaunchDescription([
