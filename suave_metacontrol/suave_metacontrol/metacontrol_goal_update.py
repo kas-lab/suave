@@ -18,13 +18,11 @@ from diagnostic_msgs.msg import DiagnosticStatus
 from diagnostic_msgs.msg import KeyValue
 
 
-
 class MetacontrolGoalUpdate(Node):
 
     def __init__(self):
         super().__init__('metacontrol_goal_node')
         self.get_logger().info('\n\n Beginning of Node init \n\n')
-
 
         self.last_goal_sent = None
         subscriber_cb_group = MutuallyExclusiveCallbackGroup()
@@ -35,25 +33,36 @@ class MetacontrolGoalUpdate(Node):
             Bool,
             'pipeline/detected',
             self.pipeline_detected_cb,
-            10, callback_group= subscriber_cb_group)
+            10, callback_group=subscriber_cb_group)
 
         self.detect_subscription = self.create_subscription(
             Bool,
             'pipeline/inspected',
             self.pipeline_inspected_cb,
-            10, callback_group= subscriber_cb_group)
+            10, callback_group=subscriber_cb_group)
 
-        self.mros_action_client = ActionClient(self, ControlQos, '/mros/objective', callback_group=client_cb_group)
+        self.mros_action_client = ActionClient(
+            self, ControlQos, '/mros/objective',
+            callback_group=client_cb_group)
 
         self.pipeline_detected = False
         self.pipeline_detected_sub = self.create_subscription(
-            Bool, 'pipeline/detected', self.pipeline_detected_cb, 10, callback_group=subscriber_cb_group)
+            Bool,
+            'pipeline/detected',
+            self.pipeline_detected_cb,
+            10,
+            callback_group=subscriber_cb_group)
 
         self.pipeline_inspected = False
         self.pipeline_inspected_sub = self.create_subscription(
-            Bool, 'pipeline/inspected', self.pipeline_inspected_cb, 10, callback_group=subscriber_cb_group)
+            Bool,
+            'pipeline/inspected',
+            self.pipeline_inspected_cb,
+            10,
+            callback_group=subscriber_cb_group)
 
-        self.time_monitor_timer = self.create_timer(2, self.goal_timer_cb, callback_group=timer_cb_group)
+        self.time_monitor_timer = self.create_timer(
+            2, self.goal_timer_cb, callback_group=timer_cb_group)
         self.get_logger().info('\n\n End of Node init \n\n')
 
     def feedback_callback(self, feedback_msg):
@@ -68,47 +77,47 @@ class MetacontrolGoalUpdate(Node):
         #         feedback.qos_status.objective_status))
         # self.get_logger().info('    QAs Status: ')
         for qos in feedback.qos_status.qos:
-            do = "something" 
+            do = "something"
             # self.get_logger().info(
             #     '      Key: {0} - Value {1}'.format(qos.key, qos.value))
         # self.get_logger().info(
         #     '    Current Function Grounding: {0}'.format(
         #         feedback.qos_status.selected_mode))
-    
-    
-    
+
     def pipeline_detected_cb(self, msg):
         self.pipeline_detected = msg.data
 
     def pipeline_inspected_cb(self, msg):
         self.pipeline_inspected = msg.data
 
-    
     def goal_timer_cb(self):
-        if (not self.pipeline_detected and self.last_goal_sent != "generate_search_path"):
-            self.get_logger().info('\n\n Not Pipeline Detected and Not same goal as last time')
+        if (not self.pipeline_detected and self.last_goal_sent !=
+                "generate_search_path"):
+            self.get_logger().info(
+                '\n\n Not Pipeline Detected and Not same goal as last time')
             self.motion_future = self.send_adaptation_goal('maintain_motion')
             self.get_logger().info('!!!Motion goal sent!!!')
             adaptation_goal = "generate_search_path"
-        elif (self.pipeline_detected and not self.pipeline_inspected and self.last_goal_sent !="follow_pipeline"):
-            self.get_logger().info('\n\n Yes Pipeline Detected and Not same goal as last time')
+        elif (self.pipeline_detected and not self.pipeline_inspected and
+                self.last_goal_sent != "follow_pipeline"):
+            self.get_logger().info(
+                '\n\n Yes Pipeline Detected and Not same goal as last time')
             self.cancel_current_goal()
-            self.get_logger().info('\n\n Cancelling the previous goal' )
+            self.get_logger().info('\n\n Cancelling the previous goal')
             adaptation_goal = "follow_pipeline"
         elif (self.pipeline_detected and self.pipeline_inspected):
-            if(self.last_goal_sent == 'follow_pipeline'):
+            if (self.last_goal_sent == 'follow_pipeline'):
                 self.cancel_motion_goal()
                 self.cancel_current_goal()
                 self.last_goal_sent = 'no goal'
-            #It will just kind of hang here unless the pipeline becomes undetected or uninspected.
+            # It will just kind of hang here unless the pipeline becomes
+            # undetected or uninspected.
         else:
             self.get_logger().info('\n\n No need \n\n')
             return
-        #still need to change the action client to not be async I believe
+        # still need to change the action client to not be async I believe
         self.last_goal_sent = adaptation_goal
         self.send_adaptation_goal(adaptation_goal)
-
-
 
     def send_adaptation_goal(self, adaptation_goal, nfrs=[]):
         goal_msg = ControlQos.Goal()
@@ -128,21 +137,20 @@ class MetacontrolGoalUpdate(Node):
         self.current_goal_future = self.mros_action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback)
         self.get_logger().info('Adaptation goal Sent!!!')
-    
+
     def cancel_current_goal(self):
         if self.current_goal_future is not None:
             self.current_goal_handle = self.current_goal_future.result()
             self.current_goal_handle.cancel_goal_async()
             self.current_goal_future = None
             self.current_goal_handle = None
-        
+
     def cancel_motion_goal(self):
         if self.motion_future is not None:
             self.motion_goal_handle = self.motion_future.result()
             self.motion_goal_handle.cancel_goal_async()
             self.motion_future = None
             self.motion_goal_handle = None
-
 
 
 def main(args=None):
@@ -154,9 +162,6 @@ def main(args=None):
     executor.add_node(metacontrol_goal_node)
 
     executor.spin()
-
-
-
 
     metacontrol_goal_node.destroy_node()
     rclpy.shutdown()
