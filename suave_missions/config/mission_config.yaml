@@ -1,6 +1,6 @@
 /parent_mission_node:
   ros__parameters:
-    time_limit: 150 #Time limit for a time_constrained mission
+    time_limit: 200 #Time limit for a time_constrained mission
     result_path: "~/suave/results" #Path to save results
     f_generate_search_path_mode: "fd_spiral_low" #Default mode for f_generate_search_path when no manager is used
     f_follow_pipeline_mode: "fd_follow_pipeline" #Default mode for f_follow_pipeline when no manager is used

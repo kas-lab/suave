@@ -3,7 +3,7 @@
 if [ $# -lt 1 ]; then
 	echo "usage: $0 gui adaptation_manager mission_type"
 	echo example:
-	echo "  "$0 "[true | false] [metacontrol | random | none] [time | distance]"
+	echo "  "$0 "[true | false]"
 	exit 1
 fi
 
@@ -56,11 +56,73 @@ done
 }
 
 cd ~/ardupilot
-./waf build --targets bin/ardusub
+./waf configure && make sub
 cd $CURDIR
 
 MANAGER="metacontrol"
 MTYPE="time"
+for j in 1
+do
+    FILENAME="${MANAGER}_${MTYPE}"
+    echo $FILENAME
+    #should add some geometry to this so they don't stack on top of each other
+    xfce4-terminal --execute ./scripts/start_ardusub.sh $GUI
+    sleep 5 #let it boot up
+    xfce4-terminal --execute ./scripts/launch_sim.sh $GUI
+    sleep 30 #let it boot up
+    xfce4-terminal --execute ./scripts/launch_mission.sh $MANAGER $MTYPE $FILENAME
+
+    echo "start waiting for mission to finish"
+    while [ ! -f ~/suave_ws/mission.done ]
+    do
+        if [ -f ~/suave_ws/mission.done ]
+        then
+            echo "mission done"
+            break;
+        fi
+        sleep 5 #sustainability!
+    done
+
+
+    echo "killing nodes"
+    kill_running_nodes
+
+    rm ~/suave_ws/mission.done
+done
+
+MANAGER="metacontrol"
+MTYPE="random"
+for j in 1
+do
+    FILENAME="${MANAGER}_${MTYPE}"
+    echo $FILENAME
+    #should add some geometry to this so they don't stack on top of each other
+    xfce4-terminal --execute ./scripts/start_ardusub.sh $GUI
+    sleep 5 #let it boot up
+    xfce4-terminal --execute ./scripts/launch_sim.sh $GUI
+    sleep 30 #let it boot up
+    xfce4-terminal --execute ./scripts/launch_mission.sh $MANAGER $MTYPE $FILENAME
+
+    echo "start waiting for mission to finish"
+    while [ ! -f ~/suave_ws/mission.done ]
+    do
+        if [ -f ~/suave_ws/mission.done ]
+        then
+            echo "mission done"
+            break;
+        fi
+        sleep 5 #sustainability!
+    done
+
+
+    echo "killing nodes"
+    kill_running_nodes
+
+    rm ~/suave_ws/mission.done
+done
+
+MANAGER="metacontrol"
+MTYPE="none"
 for j in 1
 do
     FILENAME="${MANAGER}_${MTYPE}"
