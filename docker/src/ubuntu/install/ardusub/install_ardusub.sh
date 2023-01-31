@@ -24,4 +24,3 @@ sudo chmod +x ~/ardupilot/Tools/environment_install/install-prereqs-ubuntu.sh
 
 cd ~/ardupilot
 ./waf configure && make sub
-./waf clean
