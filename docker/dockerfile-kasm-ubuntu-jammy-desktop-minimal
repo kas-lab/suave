@@ -69,16 +69,18 @@ RUN mkdir -p $HOME && chown -R 1000:0 $HOME
 
 USER 1000
 
-### Install Ardusub and Arduplugin and Hackathon
+### Install Ardusub and Arduplugin and suave
 WORKDIR $INST_SCRIPTS
 COPY ./src/ubuntu/install/ardusub $INST_SCRIPTS/ardusub/
-COPY ./src/ubuntu/install/hackathon $INST_SCRIPTS/hackathon/
 RUN bash $INST_SCRIPTS/ardusub/install_ardusub.sh
 #RUN bash $INST_SCRIPTS/ardusub/install_ardusub_two.sh
 
-RUN bash $INST_SCRIPTS/ardusub/install_arduplugin.sh  
+RUN bash $INST_SCRIPTS/ardusub/install_arduplugin.sh
 
-RUN bash $INST_SCRIPTS/hackathon/install_hackathon.sh
+COPY ./src/ubuntu/install/suave/install_suave_deps.sh $INST_SCRIPTS/suave/install_suave_deps.sh
+RUN bash $INST_SCRIPTS/suave/install_suave_deps.sh
+COPY ./src/ubuntu/install/suave/install_suave.sh $INST_SCRIPTS/suave/install_suave.sh
+RUN bash $INST_SCRIPTS/suave/install_suave.sh
 
 # WORKDIR $HOME
 # USER 0
