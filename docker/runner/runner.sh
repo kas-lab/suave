@@ -27,17 +27,12 @@ else
     exit 1
 fi
 
-if [ "$3" == "time" ];
+if [ "$3" == "time" ] || [ "$3" == "distance" ];
 then
-    MTYPE="time_constrained_mission"
+    MTYPE=$3
 else
-    if [ "$3" == "distance" ];
-    then
-        MTYPE="const_dist_mission"
-    else
-        echo "mission_type invalid or missing"
-        exit 1
-    fi
+    echo "mission_type invalid or missing"
+    exit 1
 fi
 
 
@@ -80,10 +75,11 @@ done
 
 for j in 1
 do
-    FILENAME=$MANAGER+"_"+$MTYPE
+    FILENAME="${MANAGER}_${MTYPE}"
+    echo $FILENAME
     #should add some geometry to this so they don't stack on top of each other
     xfce4-terminal --execute ./scripts/start_ardusub.sh $GUI
-    sleep 30 #let it boot up
+    sleep 1 #let it boot up
     xfce4-terminal --execute ./scripts/launch_sim.sh $GUI
     sleep 30 #let it boot up
     xfce4-terminal --execute ./scripts/launch_mission.sh $MANAGER $MTYPE $FILENAME
