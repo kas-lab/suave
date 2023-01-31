@@ -1,16 +1,16 @@
 # SUAVE: An Exemplar for Self-Adaptive Underwater Vehicles
 This repository contains the exemplar SUAVE (Self-adaptive Underwater Autonomous Vehicle Exemplar), an exemplar focussing on an underwater robot searching for a pipeline and following it.
 
-It clearly separates between the mananged subsystem, implementing the basic functionalities of the robot, and the managing system that implements the adaptation logic. This ensures that this exemplar can be reused with several different managing subsystems, providing that they satisfy the necessary [requirements](#requirements-for-a-managing-subsystem). The usability of the exemplar is showcased with MROS2, the implementation of the self-adaptation framework Metacontrol.
+It clearly separates between the mananged subsystem, implementing the basic functionalities of the robot, and the managing system that implements the adaptation logic. This ensures that this exemplar can be reused with several different managing subsystems, providing that they satisfy the necessary [requirements](#requirements-for-a-managing-subsystem). The usability of the exemplar is showcased with [MROS2](https://github.com/meta-control/mc_mros_reasoner), the implementation of the self-adaptation framework [Metacontrol](https://research.tudelft.nl/en/publications/model-based-self-awareness-patterns-for-autonomy).
 
-The exemplar can either be [run through docker](#use-the-exemplar-with-docker) or [installed locally](#install-the-exemplar-locally) to [run it](#run-the-exemplar).
+The exemplar can either be [run through Docker](#use-the-exemplar-with-docker) or [installed locally](#install-the-exemplar-locally) to [run it](#run-the-exemplar).
 
 ## Requirements for a managing subsystem
 TODO
 
-## Use the exemplar with docker
+## Use the exemplar with Docker
 
-You can pull and run the exemplar as a docker container using the following command. Keep in mind you need to have [docker](https://docs.docker.com/get-docker/) installed on your computer and running.
+You can pull and run the exemplar as a Docker container using the following command. Keep in mind you need to have [Docker](https://docs.docker.com/get-docker/) installed on your computer and running.
 
 On Windows and Linux, run
 ```Bash
@@ -31,11 +31,11 @@ You may receive a warning about the invalidity of the https certification. This 
 
 Now you can proceed to [run the exemplar](#run-the-exemplar).
 
-### Build docker images locally
-Should you want to make some changes to the docker container, you can also choose to build it locally. In the provided docker folder, the build_images.sh script can be run to build the image locally. The built image can then be run with the same command afterwards. Instead of pulling the image from dockerhub, it will use the local image instead.
+### Build Docker images locally
+Should you want to make some changes to the Docker container, you can also choose to build it locally. In the provided Docker folder, the `build_images.sh` script can be run to build the image locally. The built image can then be run with the same command afterwards. Instead of pulling the image from Dockerhub, it will use the local image.
 
 ## Install the exemplar locally
-To install the exemplar locally, you have to [install Gazebo Garden](#install-gazebo-garden), [install ROS2 Humble](#install-ros2-humble), [install ardusub](#install-ardusub), [install the ardusub plugin](#install-ardusub_plugin), and finally [install the suave workspace](#install-suave-workspace).
+To install the exemplar locally, you have to [install Gazebo Garden](#install-gazebo-garden), [install ROS2 Humble](#install-ros2-humble), [install ArduSub](#install-ardusub), [install the ArduSub plugin](#install-ardusub_plugin), and finally [install the SUAVE workspace](#install-suave-workspace).
 
 #### Install Gazebo Garden
 
@@ -45,14 +45,14 @@ Follow the [official instructions](https://gazebosim.org/docs/garden/install_ubu
 
 Follow the [official instructions](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html) for installing ROS2 Humble.
 
-#### Install ardusub
+#### Install ArduSub
 
-Instructions can be found [here](https://ardupilot.org/dev/docs/building-setup-linux.html#building-setup-linux)
+Instructions can be found [here](https://ardupilot.org/dev/docs/building-setup-linux.html#building-setup-linux).
 
 **Disclaimer:**
-Problems may occur with different combinations of ArduPilot and MavROS versions. This repo was tested with [ardupilot in commit c623ae8](https://github.com/ArduPilot/ardupilot/tree/9f1c4df5e744d58d3089671926bb964c924b2090) and [mavros 2.4.0](https://github.com/mavlink/mavros/tree/10569e626a36d8c69fc78749bb83c112a00e2be8). Unfortunately, at least at the time of writing this README, the releases available in Ubuntu 22.04 do not match.
+Problems may occur with different combinations of ArduPilot and MavROS versions. This repo was tested with [ArduPilot in commit c623ae8](https://github.com/ArduPilot/ardupilot/tree/9f1c4df5e744d58d3089671926bb964c924b2090) and [mavros 2.4.0](https://github.com/mavlink/mavros/tree/10569e626a36d8c69fc78749bb83c112a00e2be8). Unfortunately, at least at the time of writing this README, the releases available in Ubuntu 22.04 do not match.
 
-TODO: Describe what the commands below do. Difference between ardusub and ardupilot
+TODO: Describe what the commands below do. Difference between ArduSub and ArduPilot
 
 ```Bash
 cd ~/
@@ -62,9 +62,11 @@ git checkout 9f1c4df
 git submodule update --init --recursive
 ```
 
-Note that the script used to install prerequisites available in this
-version of ardusub do not work in Ubuntu 22.04. So you need to replace them before
-running ardusub. Install the ardupilot prerequisites:
+Note that the script used to install prerequisites available for this
+version of ArduSub does not work in Ubuntu 22.04. Therefore, you need to replace them before
+running ArduSub. To install the ArduPilot prerequisites, do the following.
+
+TODO: also `cd ~/` in the beginning?
 
 ```Bash
 cd ardupilot
@@ -82,8 +84,7 @@ To test if the installation worked, run:
 ```Bash
 sim_vehicle.py -v ArduSub -L RATBeach --console --map
 ```
-
-Ardupilot SITL should open and a console plus a map should appear.
+ArduPilot SITL should open and a console plus a map should appear.
 
 **Troubleshooting:**
 If you have problems with the `install-prereqs-ubuntu.sh` script, try to install the dependencies manually with the following commands.
@@ -96,15 +97,15 @@ pip3 install --user -U future lxml pymavlink MAVProxy pexpect flake8 geocoder em
 sudo apt-get --assume-yes install build-essential ccache g++ gawk git make wget python-is-python3 libtool libxml2-dev libxslt1-dev python3-dev python3-pip python3-setuptools python3-numpy python3-pyparsing python3-psutil xterm python3-matplotlib python3-serial python3-scipy python3-opencv libcsfml-dev libcsfml-audio2.5 libcsfml-dev libcsfml-graphics2.5 libcsfml-network2.5 libcsfml-system2.5 libcsfml-window2.5 libsfml-audio2.5 libsfml-dev libsfml-graphics2.5 libsfml-network2.5 libsfml-system2.5 libsfml-window2.5 python3-yaml libpython3-stdlib python3-wxgtk4.0 fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev libtool-bin g++-arm-linux-gnueabihf lcov gcovr
 ```
 
-#### Install ardusub_plugin
+#### Install the ArduSub plugin
 
-Install dependencies:
+Install the dependencies:
 
 ```Bash
 sudo apt install libgz-sim7-dev rapidjson-dev
 ```
 
-Clone and build repository:
+Clone and build the repository:
 
 ```Bash
 cd ~/
@@ -115,7 +116,7 @@ cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
 make -j4
 ```
 
-Add required paths:
+Add the required paths:
 
 Assuming that you have cloned the repository in `$HOME/ardupilot_gazebo`, run:
 ```bash
@@ -123,13 +124,13 @@ echo 'export GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot_gazebo/build:${GZ_SIM_SYS
 echo 'export GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
 ```
 
-Reload your terminal with source ~/.bashrc . TODO What does that mean? Concrete instructions.
+Reload your terminal with source `~/.bashrc` . TODO What does that mean? Concrete instructions.
 
-More info about the plugin can be found in the [repository](https://github.com/ArduPilot/ardupilot_gazebo/).
+More info about the plugin can be found in the corresponding [repository](https://github.com/ArduPilot/ardupilot_gazebo/).
 
-### Install suave workspace
+### Install the SUAVE workspace
 
-Create the workspace and download required repositories:
+Create the workspace and download the required repositories:
 ```Bash
 mkdir -p ~/suave_ws/src/
 cd ~/suave_ws/
@@ -137,13 +138,13 @@ wget https://raw.githubusercontent.com/kas-lab/suave/main/suave/suave.rosinstall
 vcs import src < suave.rosinstall --recursive
 ```
 
-Add required paths:
+Add the required paths:
 ```Bash
 echo 'export GZ_SIM_RESOURCE_PATH=$HOME/suave_ws/src/bluerov2_ignition/models:$HOME/suave_ws/src/bluerov2_ignition/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
 echo 'export GZ_SIM_RESOURCE_PATH=$HOME/suave_ws/src/remaro_worlds/models:$HOME/suave_ws/src/remaro_worlds/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
 ```
 
-Install dependencies:
+Install the dependencies:
 ```Bash
 source /opt/ros/humble/setup.bash
 cd ~/suave_ws/
@@ -304,6 +305,6 @@ Arguments (pass arguments as '<name>:=<value>'):
 
 This project has received funding from the European Union’s Horizon 2020 research and innovation programme under the Marie Skłodowska-Curie grant agreement No. 956200.
 
-Pleave visit [our website](https://remaro.eu/) for more info on our project.
+Pleave visit [our website](https://remaro.eu/) for more information on our project.
 
 ![REMARO Logo](https://remaro.eu/wp-content/uploads/2020/09/remaro1-right-1024.png)
