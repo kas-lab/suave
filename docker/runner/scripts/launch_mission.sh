@@ -32,4 +32,4 @@ else
     fi
 fi
 
-ros2 launch suave_missions mission.launch.py adapt_manager:=$MANAGER mission_type:=$MTYPE
+ros2 launch suave_missions mission.launch.py adaptation_manager:=$MANAGER mission_type:=$MTYPE

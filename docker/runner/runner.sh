@@ -40,6 +40,7 @@ else
     fi
 fi
 
+
 CURDIR=`pwd`
 DIR=`dirname $0`
 
@@ -79,12 +80,13 @@ done
 
 for j in 1
 do
+    FILENAME=$MANAGER+"_"+$MTYPE
     #should add some geometry to this so they don't stack on top of each other
     xfce4-terminal --execute ./scripts/start_ardusub.sh $GUI
     sleep 30 #let it boot up
     xfce4-terminal --execute ./scripts/launch_sim.sh $GUI
     sleep 30 #let it boot up
-    xfce4-terminal --execute ./scripts/launch_mission.sh $MANAGER $MTYPE
+    xfce4-terminal --execute ./scripts/launch_mission.sh $MANAGER $MTYPE $FILENAME
 
     echo "start waiting for mission to finish"
     while [ ! -f ~/suave_ws/mission.done ]
