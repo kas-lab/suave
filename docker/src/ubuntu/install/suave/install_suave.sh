@@ -2,6 +2,6 @@
 set -ex
 
 source /opt/ros/humble/setup.bash
-cd ~/pipeline_ws/
+cd ~/suave_ws/
 colcon build --symlink-install --executor sequential --parallel-workers 1
-echo 'source ~/pipeline_ws/install/setup.bash' >> ~/.bashrc
+echo 'source ~/suave_ws/install/setup.bash' >> ~/.bashrc

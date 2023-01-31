@@ -85,7 +85,7 @@ RUN bash $INST_SCRIPTS/suave/install_suave.sh
 
 RUN sudo apt autoremove -y && sudo rm -rf /var/lib/apt/lists/
 
-WORKDIR /home/kasm-user/pipeline_ws
+WORKDIR /home/kasm-user/suave_ws
 
 # WORKDIR $HOME
 # USER 0
