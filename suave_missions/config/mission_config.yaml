@@ -1,10 +1,9 @@
 /parent_mission_node:
   ros__parameters:
     time_limit: 150 #Time limit for a time_constrained mission
-    result_filename: "time_constrained_mission_results"
-    result_path: "~/pipeline_inspection/results"
-    f_generate_search_path_mode: "fd_spiral_low"
-    f_inspect_pipeline_mode: "fd_inspect_pipeline"
+    result_path: "~/suave/results" #Path to save results
+    f_generate_search_path_mode: "fd_spiral_low" #Default mode for f_generate_search_path when no manager is used
+    f_inspect_pipeline_mode: "fd_inspect_pipeline" #Default mode for f_inspect_pipeline_mode when no manager is used
 
 /water_visibility_observer_node:
   ros__parameters:
@@ -15,10 +14,10 @@
 
 /thruster_monitor:
   ros__parameters:
-    thruster_events:
+    thruster_events: # Thruster events, format: (thruster number (1 to 6), failure or recovery, delta time in seconds(from the last event))
     - (1,failure,30)
     - (2,failure,30)
 
 /random_reasoner_node:
   ros__parameters:
-    adapt_period: 15
+    adapt_period: 15 #Period to perform random adaptation in seconds
