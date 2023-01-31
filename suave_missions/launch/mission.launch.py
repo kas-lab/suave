@@ -13,12 +13,12 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    adapt_manager = LaunchConfiguration('adapt_manager')
+    adaptation_manager = LaunchConfiguration('adaptation_manager')
     mission_type = LaunchConfiguration('mission_type')
     result_filename = LaunchConfiguration('result_filename')
 
-    adapt_manager_arg = DeclareLaunchArgument(
-        'adapt_manager',
+    adaptation_manager_arg = DeclareLaunchArgument(
+        'adaptation_manager',
         default_value='none',
         description='Adaptation manager in charge, none/metacontrol/random')
 
@@ -48,7 +48,7 @@ def generate_launch_description():
         name='parent_mission_node',
         parameters=[mission_config, {
             'mission_type': mission_type,
-            'adapt_manager': adapt_manager,
+            'adaptation_manager': adaptation_manager,
             'result_filename': result_filename,
         }],
         condition=LaunchConfigurationNotEquals('result_filename', '')
@@ -60,7 +60,7 @@ def generate_launch_description():
         name='parent_mission_node',
         parameters=[mission_config, {
             'mission_type': mission_type,
-            'adapt_manager': adapt_manager,
+            'adaptation_manager': adaptation_manager,
         }],
         condition=LaunchConfigurationEquals('result_filename', '')
     )
@@ -74,7 +74,8 @@ def generate_launch_description():
 
     suave_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(suave_launch_path),
-        condition=LaunchConfigurationNotEquals('adapt_manager', 'metacontrol'))
+        condition=LaunchConfigurationNotEquals(
+            'adaptation_manager', 'metacontrol'))
 
     pkg_suave_metacontrol_path = get_package_share_directory(
         'suave_metacontrol')
@@ -86,7 +87,8 @@ def generate_launch_description():
 
     metacontrol_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(metacontrol_launch_path),
-        condition=LaunchConfigurationEquals('adapt_manager', 'metacontrol'),)
+        condition=LaunchConfigurationEquals(
+            'adaptation_manager', 'metacontrol'),)
 
     random_launch_path = os.path.join(
         pkg_suave_metacontrol_path,
@@ -95,10 +97,10 @@ def generate_launch_description():
 
     random_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(random_launch_path),
-        condition=LaunchConfigurationEquals('adapt_manager', 'random'))
+        condition=LaunchConfigurationEquals('adaptation_manager', 'random'))
 
     return LaunchDescription([
-        adapt_manager_arg,
+        adaptation_manager_arg,
         mission_type_arg,
         result_filename_arg,
         mission_node,
