@@ -23,7 +23,7 @@ class MissionTimeConstrained(MissionPlanner):
         super().__init__(node_name)
         self.get_logger().info('New log')
 
-        self.mission_name = 'metacontrol - time constrained'
+        self.mission_name = 'time constrained ' + str(self.adaptation_manager)
         self.metrics_header = [
             'mission_name', 'datetime', 'initial pos (x,y)', 'time budget (s)',
             'time search (s)', 'distance inspected (m)']

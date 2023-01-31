@@ -19,7 +19,7 @@ from suave_missions.mission_planner import MissionPlanner
 class MissionConstDist(MissionPlanner):
     def __init__(self, node_name='const_dist_mission_node'):
         super().__init__(node_name)
-        self.mission_name = 'const distance'
+        self.mission_name = 'const distance ' + str(self.adaptation_manager)
         self.metrics_header = [
             'mission_name', 'datetime', 'initial pos (x,y)',
             'time_search (s)', 'time_mission (s)']
@@ -39,7 +39,7 @@ class MissionConstDist(MissionPlanner):
             'f_generate_search_path_mode').value
         self.chosen_inspect_mode = self.get_parameter(
             'f_follow_pipeline_mode').value
-        self.using_no_adaptation = self.adaptation_manager == 'none'
+        self.using_no_adaptation = (self.adaptation_manager == 'none')
 
         self.get_logger().info('DISTANCE MISSION')
 
