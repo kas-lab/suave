@@ -30,22 +30,13 @@ def generate_launch_description():
         executable='pipeline_detection_wv',
     )
 
-    thruster_events = LaunchConfiguration('thruster_events')
-    thruster_events_arg = DeclareLaunchArgument(
-        'thruster_events',
-        default_value=str(['(1, failure,30)', '(2, failure,30)']),
-        description='(thrusterN, failure/recovery, delta time in seconds ),' +
-        ' e.g. (1, failure, 50)'
-    )
-
     thruster_monitor_node = Node(
         package='suave',
         executable='thruster_monitor',
         name='thruster_monitor',
-        parameters=[{
-            'thruster_events': thruster_events,
-        }],
+        parameters=[mission_config]
     )
+
     spiral_search_node = Node(
         package='suave',
         executable='spiral_search',
@@ -71,7 +62,6 @@ def generate_launch_description():
     return LaunchDescription([
         water_visibility_node,
         pipeline_detection_wv_node,
-        thruster_events_arg,
         thruster_monitor_node,
         spiral_search_node,
         follow_pipeline_node,

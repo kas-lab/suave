@@ -13,6 +13,12 @@
     water_visibility_max: 3.75 #Maximum value for water visibility
     water_visibility_sec_shift: 0.0 #Water visibility seconds shift to left
 
+/thruster_monitor:
+  ros__parameters:
+    thruster_events:
+    - (1,failure,30)
+    - (2,failure,30)
+
 /random_reasoner_node:
   ros__parameters:
     adapt_period: 15
