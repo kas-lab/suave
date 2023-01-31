@@ -56,13 +56,13 @@ done
 }
 
 run_missions(){
-  for j in 1
+  for j in {1..20}
   do
       FILENAME="${MANAGER}_${MTYPE}"
       echo $FILENAME
       #should add some geometry to this so they don't stack on top of each other
       xfce4-terminal --execute ./scripts/start_ardusub.sh $GUI
-      sleep 5 #let it boot up
+      sleep 10 #let it boot up
       xfce4-terminal --execute ./scripts/launch_sim.sh $GUI
       sleep 30 #let it boot up
       xfce4-terminal --execute ./scripts/launch_mission.sh $MANAGER $MTYPE $FILENAME
@@ -74,9 +74,9 @@ run_missions(){
           if [ -f ~/suave_ws/mission.done ]
           then
               echo "mission done"
+              rm ~/suave_ws/mission.done
               break;
           fi
-          #current_time="$(date -u +%s)"
           current_time=$SECONDS
           elapsed="$(($current_time-$start_time))"
           if (($elapsed>350))
@@ -89,8 +89,6 @@ run_missions(){
 
       echo "killing nodes"
       kill_running_nodes
-
-      rm ~/suave_ws/mission.done
   done
 }
 
