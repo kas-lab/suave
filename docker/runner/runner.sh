@@ -19,23 +19,6 @@ else
     exit 1
 fi
 
-if [ "$2" == "metacontrol" ] || [ "$2" == "random" ] || [[ "$2" == "none" ]];
-then
-    MANAGER=$2
-else
-    echo "adaptation_manager invalid or missing"
-    exit 1
-fi
-
-if [ "$3" == "time" ] || [ "$3" == "distance" ];
-then
-    MTYPE=$3
-else
-    echo "mission_type invalid or missing"
-    exit 1
-fi
-
-
 CURDIR=`pwd`
 DIR=`dirname $0`
 
@@ -76,7 +59,8 @@ cd ~/ardupilot
 ./waf build --targets bin/ardusub
 cd $CURDIR
 
-
+MANAGER="metacontrol"
+MTYPE="time"
 for j in 1
 do
     FILENAME="${MANAGER}_${MTYPE}"
