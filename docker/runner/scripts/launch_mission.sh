@@ -11,7 +11,7 @@ fi
 MANAGER=""
 MTYPE=""
 
-if [ "$1" == "metacontrol" ] || [ "$1" == "random" ] || [[ "$1" == "none" ]]; 
+if [ "$1" == "metacontrol" ] || [ "$1" == "random" ] || [[ "$1" == "none" ]];
 then
     MANAGER=$1
 else
