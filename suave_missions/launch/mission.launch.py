@@ -15,6 +15,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     adapt_manager = LaunchConfiguration('adapt_manager')
     mission_type = LaunchConfiguration('mission_type')
+    result_filename = LaunchConfiguration('result_filename')
 
     adapt_manager_arg = DeclareLaunchArgument(
         'adapt_manager',
@@ -27,6 +28,12 @@ def generate_launch_description():
         description='Which type of mission to have, time or distance'
     )
 
+    result_filename_arg = DeclareLaunchArgument(
+        'result_filename',
+        default_value='',
+        description='Name of the results file'
+    )
+
     pkg_suave_path = get_package_share_directory(
         'suave_missions')
 
@@ -35,6 +42,18 @@ def generate_launch_description():
         'config',
         'mission_config.yaml')
 
+    mission_node_filename_override = Node(
+        package='suave_missions',
+        executable=mission_type,
+        name='parent_mission_node',
+        parameters=[mission_config, {
+            'mission_type': mission_type,
+            'adapt_manager': adapt_manager,
+            'result_filename': result_filename,
+        }],
+        condition=LaunchConfigurationNotEquals('result_filename', '')
+    )
+
     mission_node = Node(
         package='suave_missions',
         executable=mission_type,
@@ -42,7 +61,8 @@ def generate_launch_description():
         parameters=[mission_config, {
             'mission_type': mission_type,
             'adapt_manager': adapt_manager,
-        }]
+        }],
+        condition=LaunchConfigurationEquals('result_filename', '')
     )
 
     pkg_suave_path = get_package_share_directory(
@@ -54,9 +74,6 @@ def generate_launch_description():
 
     suave_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(suave_launch_path),
-        # launch_arguments={
-        #     'thruster_events': thruster_events,
-        # }.items(),
         condition=LaunchConfigurationNotEquals('adapt_manager', 'metacontrol'))
 
     pkg_suave_metacontrol_path = get_package_share_directory(
@@ -83,7 +100,9 @@ def generate_launch_description():
     return LaunchDescription([
         adapt_manager_arg,
         mission_type_arg,
+        result_filename_arg,
         mission_node,
+        mission_node_filename_override,
         metacontrol_launch,
         suave_launch,
     ])
