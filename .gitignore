@@ -1,3 +1,6 @@
+docker/install/
+docker/log/
+
 *catalog-*.xml
 
 *.swp
