@@ -3,11 +3,13 @@ import os
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.actions import DeclareLaunchArgument
-from launch_ros.actions import Node
+from launch.actions import IncludeLaunchDescription
+from launch.conditions import LaunchConfigurationEquals
+from launch.conditions import LaunchConfigurationNotEquals
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 
 
 def generate_launch_description():
@@ -16,8 +18,18 @@ def generate_launch_description():
     min_pipes_launch_path = os.path.join(
         remaro_worlds_path, 'launch', 'small_min_pipes.launch.py')
 
+    gui = LaunchConfiguration('gui')
+    gui_arg = DeclareLaunchArgument(
+        'gui',
+        default_value='true',
+        description='Run with gui (true/false)')
+
     min_pipes_sim = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(min_pipes_launch_path))
+        PythonLaunchDescriptionSource(min_pipes_launch_path),
+        launch_arguments={
+           'gui': gui
+        }.items()
+    )
 
     suave_path = get_package_share_directory(
         'suave')
@@ -42,14 +54,6 @@ def generate_launch_description():
     x = LaunchConfiguration('x')
     y = LaunchConfiguration('y')
     z = LaunchConfiguration('z')
-    gui = LaunchConfiguration('gui')
-
-    gui_arg = DeclareLaunchArgument(
-        'gui',
-        default_value='-g',
-        description='Run gazebo with a gui (-g) or without (-s)'
-    )
-
 
     x_arg = DeclareLaunchArgument(
         'x',
