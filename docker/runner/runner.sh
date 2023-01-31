@@ -72,6 +72,10 @@ do
 done
 }
 
+cd ~/ardupilot
+./waf build --targets bin/ardusub
+cd $CURDIR
+
 
 for j in 1
 do
@@ -79,7 +83,7 @@ do
     echo $FILENAME
     #should add some geometry to this so they don't stack on top of each other
     xfce4-terminal --execute ./scripts/start_ardusub.sh $GUI
-    sleep 1 #let it boot up
+    sleep 5 #let it boot up
     xfce4-terminal --execute ./scripts/launch_sim.sh $GUI
     sleep 30 #let it boot up
     xfce4-terminal --execute ./scripts/launch_mission.sh $MANAGER $MTYPE $FILENAME
