@@ -3,7 +3,7 @@
     time_limit: 150 #Time limit for a time_constrained mission
     result_path: "~/suave/results" #Path to save results
     f_generate_search_path_mode: "fd_spiral_low" #Default mode for f_generate_search_path when no manager is used
-    f_inspect_pipeline_mode: "fd_inspect_pipeline" #Default mode for f_inspect_pipeline_mode when no manager is used
+    f_follow_pipeline_mode: "fd_follow_pipeline" #Default mode for f_follow_pipeline when no manager is used
 
 /water_visibility_observer_node:
   ros__parameters:
