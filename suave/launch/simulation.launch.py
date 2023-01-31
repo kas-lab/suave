@@ -42,6 +42,15 @@ def generate_launch_description():
     x = LaunchConfiguration('x')
     y = LaunchConfiguration('y')
     z = LaunchConfiguration('z')
+    gui = LaunchConfiguration('gui')
+
+    gui_arg = DeclareLaunchArgument(
+        'gui',
+        default_value='-g',
+        description='Run gazebo with a gui (-g) or without (-s)'
+    )
+
+
     x_arg = DeclareLaunchArgument(
         'x',
         default_value='-17.0',
@@ -84,6 +93,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        gui_arg,
         x_arg,
         y_arg,
         z_arg,

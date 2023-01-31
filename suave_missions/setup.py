@@ -2,11 +2,11 @@ import os
 from glob import glob
 from setuptools import setup
 
-package_name = 'suave_metacontrol'
+package_name = 'suave_missions'
 
 setup(
     name=package_name,
-    version='0.23.0',
+    version='0.0.0',
     packages=[package_name],
     data_files=[
         ('share/ament_index/resource_index/packages',
@@ -19,20 +19,17 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='jeroen',
-    maintainer_email='j.zwanepol@hotmail.com',
+    maintainer='ega',
+    maintainer_email='e.g.alberts@',
     description='TODO: Package description',
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'fake_managed_system = ' +
-                'suave_metacontrol.fake_managed_system:main',
-            'suave_reasoner = suave_metacontrol.suave_reasoner:main',
-            'metacontrol_goal_update = ' +
-                'suave_metacontrol.metacontrol_goal_update:main',
-            'random_reasoner = '+
-                'suave_metacontrol.random_reasoner:main',
+            'const_dist_mission = ' +
+                'suave_missions.const_dist_mission:main',
+            'time_constrained_mission = ' +
+                'suave_missions.time_constrained_mission:main',
         ],
     },
 )

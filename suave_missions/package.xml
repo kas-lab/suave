@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>suave_missions</name>
+  <version>0.0.0</version>
+  <description>TODO: Package description</description>
+  <maintainer email="e.g.alberts@vu.nl">ega</maintainer>
+  <license>Apache-2.0</license>
+
+  <exec_depend>mavros</exec_depend>
+  <exec_depend>suave_msgs</exec_depend>
+  <exec_depend>mavros_msgs</exec_depend>
+  <exec_depend>mavros_wrapper</exec_depend>
+  <exec_depend>ros_gz</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>lifecycle_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>system_modes_msgs</exec_depend>
+  <exec_depend>system_modes</exec_depend>
+  <exec_depend>mros2_msgs</exec_depend>
+  <exec_depend>mros2_reasoner</exec_depend>
+  <exec_depend>mc_mdl_tomasys</exec_depend>
+  <exec_depend>mros_ontology</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+
+  <depend>geometry_msgs</depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

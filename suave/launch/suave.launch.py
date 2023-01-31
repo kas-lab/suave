@@ -12,46 +12,17 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    water_visibility_period = LaunchConfiguration('water_visibility_period')
-    water_visibility_min = LaunchConfiguration('water_visibility_min')
-    water_visibility_max = LaunchConfiguration('water_visibility_max')
-    water_visibility_sec_shift = LaunchConfiguration(
-        'water_visibility_sec_shift')
 
-    water_visibility_period_arg = DeclareLaunchArgument(
-        'water_visibility_period',
-        default_value='100',
-        description='Water visibility period in seconds'
-    )
-
-    water_visibility_min_arg = DeclareLaunchArgument(
-        'water_visibility_min',
-        default_value='1.25',
-        description='Minimum value for water visibility'
-    )
-
-    water_visibility_max_arg = DeclareLaunchArgument(
-        'water_visibility_max',
-        default_value='3.75',
-        description='Maximum value for water visibility'
-    )
-
-    water_visibility_sec_shift_arg = DeclareLaunchArgument(
-        'water_visibility_sec_shift',
-        default_value='0.0',
-        description='Water visibility seconds shift to left'
-    )
+    mission_config = os.path.join(
+        get_package_share_directory('suave_missions'),
+        'config',
+        'mission_config.yaml')
 
     water_visibility_node = Node(
         package='suave',
         executable='water_visibility_observer',
-        name='water_visibility_observer',
-        parameters=[{
-            'water_visibility_period': water_visibility_period,
-            'water_visibility_min': water_visibility_min,
-            'water_visibility_max': water_visibility_max,
-            'water_visibility_sec_shift': water_visibility_sec_shift,
-        }],
+        name='water_visibility_observer_node',
+        parameters=[mission_config],
     )
 
     pipeline_detection_wv_node = Node(
@@ -98,10 +69,6 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(system_modes_launch_path))
 
     return LaunchDescription([
-        water_visibility_period_arg,
-        water_visibility_min_arg,
-        water_visibility_max_arg,
-        water_visibility_sec_shift_arg,
         water_visibility_node,
         pipeline_detection_wv_node,
         thruster_events_arg,

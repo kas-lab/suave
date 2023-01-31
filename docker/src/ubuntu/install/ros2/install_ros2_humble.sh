@@ -9,7 +9,7 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-a
 apt update
 
 #sudo apt install -y ros-humble-desktop=0.10.0-1jammy.20220922.190042
-sudo apt install -y ros-humble-desktop
+sudo apt install -y ros-humble-ros-base
 
 sudo apt install -y python3-colcon-common-extensions=0.3.0-1
 

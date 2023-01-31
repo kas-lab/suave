@@ -156,6 +156,12 @@ cd ~/suave_ws/
 colcon build --symlink-install
 ```
 
+If you have memory problems while building the package, run the following command instead, it is slower but uses less memory:
+
+```Bash
+colcon build --symlink-install --executor sequential --parallel-workers 1
+```
+
 Now you can proceed to [run the exemplar](#run-the-exemplar).
 
 ## Run the exemplar

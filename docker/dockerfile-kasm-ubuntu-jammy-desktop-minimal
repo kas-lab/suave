@@ -33,12 +33,12 @@ COPY ./src/ubuntu/install/misc $INST_SCRIPTS/misc/
 RUN bash $INST_SCRIPTS/misc/install_tools.sh && rm -rf $INST_SCRIPTS/misc/
 
 # Install Google Chrome
-COPY ./src/ubuntu/install/chrome $INST_SCRIPTS/chrome/
-RUN bash $INST_SCRIPTS/chrome/install_chrome.sh  && rm -rf $INST_SCRIPTS/chrome/
+#COPY ./src/ubuntu/install/chrome $INST_SCRIPTS/chrome/
+#RUN bash $INST_SCRIPTS/chrome/install_chrome.sh  && rm -rf $INST_SCRIPTS/chrome/
 
 # Install Chromium
-COPY ./src/ubuntu/install/chromium $INST_SCRIPTS/chromium/
-RUN if [ "$(uname -m)" = "aarch64" ]; then bash $INST_SCRIPTS/chromium/install_chromium.sh; fi && rm -rf $INST_SCRIPTS/chromium/
+#COPY ./src/ubuntu/install/chromium $INST_SCRIPTS/chromium/
+#RUN if [ "$(uname -m)" = "aarch64" ]; then bash $INST_SCRIPTS/chromium/install_chromium.sh; fi && rm -rf $INST_SCRIPTS/chromium/
 
 # Install Firefox
 COPY ./src/ubuntu/install/firefox/ $INST_SCRIPTS/firefox/
@@ -69,16 +69,23 @@ RUN mkdir -p $HOME && chown -R 1000:0 $HOME
 
 USER 1000
 
-### Install Ardusub and Arduplugin and Hackathon
+### Install Ardusub and Arduplugin and suave
 WORKDIR $INST_SCRIPTS
 COPY ./src/ubuntu/install/ardusub $INST_SCRIPTS/ardusub/
-COPY ./src/ubuntu/install/hackathon $INST_SCRIPTS/hackathon/
 RUN bash $INST_SCRIPTS/ardusub/install_ardusub.sh
 #RUN bash $INST_SCRIPTS/ardusub/install_ardusub_two.sh
 
-RUN bash $INST_SCRIPTS/ardusub/install_arduplugin.sh  
+RUN bash $INST_SCRIPTS/ardusub/install_arduplugin.sh
 
-RUN bash $INST_SCRIPTS/hackathon/install_hackathon.sh
+COPY ./src/ubuntu/install/suave/install_suave_deps.sh $INST_SCRIPTS/suave/install_suave_deps.sh
+RUN bash $INST_SCRIPTS/suave/install_suave_deps.sh
+ENV GZ_VERSION="garden"
+COPY ./src/ubuntu/install/suave/install_suave.sh $INST_SCRIPTS/suave/install_suave.sh
+RUN bash $INST_SCRIPTS/suave/install_suave.sh
+
+RUN sudo apt autoremove -y && sudo rm -rf /var/lib/apt/lists/
+
+WORKDIR /home/kasm-user/suave_ws
 
 # WORKDIR $HOME
 # USER 0

@@ -35,36 +35,6 @@ def generate_launch_description():
         executable='recover_thrusters'
     )
 
-    water_visibility_period = LaunchConfiguration('water_visibility_period')
-    water_visibility_min = LaunchConfiguration('water_visibility_min')
-    water_visibility_max = LaunchConfiguration('water_visibility_max')
-    water_visibility_sec_shift = LaunchConfiguration(
-        'water_visibility_sec_shift')
-
-    water_visibility_period_arg = DeclareLaunchArgument(
-        'water_visibility_period',
-        default_value='100',
-        description='Water visibility period in seconds'
-    )
-
-    water_visibility_min_arg = DeclareLaunchArgument(
-        'water_visibility_min',
-        default_value='1.25',
-        description='Minimum value for water visibility'
-    )
-
-    water_visibility_max_arg = DeclareLaunchArgument(
-        'water_visibility_max',
-        default_value='3.75',
-        description='Maximum value for water visibility'
-    )
-
-    water_visibility_sec_shift_arg = DeclareLaunchArgument(
-        'water_visibility_sec_shift',
-        default_value='0.0',
-        description='Water visibility seconds shift to left'
-    )
-
     thruster_events = LaunchConfiguration('thruster_events')
     thruster_events_arg = DeclareLaunchArgument(
         'thruster_events',
@@ -81,10 +51,6 @@ def generate_launch_description():
     suave_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(suave_launch_path),
         launch_arguments={
-            'water_visibility_period': water_visibility_period,
-            'water_visibility_min': water_visibility_min,
-            'water_visibility_max': water_visibility_max,
-            'water_visibility_sec_shift': water_visibility_sec_shift,
             'thruster_events': thruster_events,
         }.items())
 
@@ -93,14 +59,18 @@ def generate_launch_description():
         executable='mros2_system_modes_bridge',
     )
 
+    
+    goal_bride_node = Node(
+        package='suave_metacontrol',
+        executable='metacontrol_goal_update',
+        name='metacontrol_goal_update_node',
+    )
+
     return LaunchDescription([
-        water_visibility_period_arg,
-        water_visibility_min_arg,
-        water_visibility_max_arg,
-        water_visibility_sec_shift_arg,
         thruster_events_arg,
         suave_launch,
         metacontrol_launch,
         mros2_system_modes_bridge_node,
         recover_thrusters_node,
+        goal_bride_node,
     ])

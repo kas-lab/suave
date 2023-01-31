@@ -34,10 +34,6 @@ setup(
             'thruster_monitor = suave.thruster_monitor:main',
             'recover_thrusters = suave.recover_thrusters_lc:main',
             'water_visibility_observer = suave.water_visibility_observer:main',
-            'const_dist_mission_no_adapt = ' +
-                'suave.const_dist_mission_no_adapt:main',
-            'time_constrained_mission_no_adapt = ' +
-                'suave.time_constrained_mission_no_adapt:main',
         ],
     },
 )
