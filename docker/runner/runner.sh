@@ -55,99 +55,57 @@ do
 done
 }
 
+run_missions(){
+  for j in 1
+  do
+      FILENAME="${MANAGER}_${MTYPE}"
+      echo $FILENAME
+      #should add some geometry to this so they don't stack on top of each other
+      xfce4-terminal --execute ./scripts/start_ardusub.sh $GUI
+      sleep 5 #let it boot up
+      xfce4-terminal --execute ./scripts/launch_sim.sh $GUI
+      sleep 30 #let it boot up
+      xfce4-terminal --execute ./scripts/launch_mission.sh $MANAGER $MTYPE $FILENAME
+
+      echo "start waiting for mission to finish"
+      start_time=$SECONDS
+      while [ ! -f ~/suave_ws/mission.done ]
+      do
+          if [ -f ~/suave_ws/mission.done ]
+          then
+              echo "mission done"
+              break;
+          fi
+          #current_time="$(date -u +%s)"
+          current_time=$SECONDS
+          elapsed="$(($current_time-$start_time))"
+          if (($elapsed>350))
+          then
+            echo "mission aborted"
+            break;
+            sleep 5 #sustainability!
+          fi
+      done
+
+      echo "killing nodes"
+      kill_running_nodes
+
+      rm ~/suave_ws/mission.done
+  done
+}
+
 cd ~/ardupilot
 ./waf configure && make sub
 cd $CURDIR
 
 MANAGER="metacontrol"
 MTYPE="time"
-for j in 1
-do
-    FILENAME="${MANAGER}_${MTYPE}"
-    echo $FILENAME
-    #should add some geometry to this so they don't stack on top of each other
-    xfce4-terminal --execute ./scripts/start_ardusub.sh $GUI
-    sleep 5 #let it boot up
-    xfce4-terminal --execute ./scripts/launch_sim.sh $GUI
-    sleep 30 #let it boot up
-    xfce4-terminal --execute ./scripts/launch_mission.sh $MANAGER $MTYPE $FILENAME
-
-    echo "start waiting for mission to finish"
-    while [ ! -f ~/suave_ws/mission.done ]
-    do
-        if [ -f ~/suave_ws/mission.done ]
-        then
-            echo "mission done"
-            break;
-        fi
-        sleep 5 #sustainability!
-    done
-
-
-    echo "killing nodes"
-    kill_running_nodes
-
-    rm ~/suave_ws/mission.done
-done
+run_missions
 
 MANAGER="metacontrol"
 MTYPE="random"
-for j in 1
-do
-    FILENAME="${MANAGER}_${MTYPE}"
-    echo $FILENAME
-    #should add some geometry to this so they don't stack on top of each other
-    xfce4-terminal --execute ./scripts/start_ardusub.sh $GUI
-    sleep 5 #let it boot up
-    xfce4-terminal --execute ./scripts/launch_sim.sh $GUI
-    sleep 30 #let it boot up
-    xfce4-terminal --execute ./scripts/launch_mission.sh $MANAGER $MTYPE $FILENAME
-
-    echo "start waiting for mission to finish"
-    while [ ! -f ~/suave_ws/mission.done ]
-    do
-        if [ -f ~/suave_ws/mission.done ]
-        then
-            echo "mission done"
-            break;
-        fi
-        sleep 5 #sustainability!
-    done
-
-
-    echo "killing nodes"
-    kill_running_nodes
-
-    rm ~/suave_ws/mission.done
-done
+run_missions
 
 MANAGER="metacontrol"
 MTYPE="none"
-for j in 1
-do
-    FILENAME="${MANAGER}_${MTYPE}"
-    echo $FILENAME
-    #should add some geometry to this so they don't stack on top of each other
-    xfce4-terminal --execute ./scripts/start_ardusub.sh $GUI
-    sleep 5 #let it boot up
-    xfce4-terminal --execute ./scripts/launch_sim.sh $GUI
-    sleep 30 #let it boot up
-    xfce4-terminal --execute ./scripts/launch_mission.sh $MANAGER $MTYPE $FILENAME
-
-    echo "start waiting for mission to finish"
-    while [ ! -f ~/suave_ws/mission.done ]
-    do
-        if [ -f ~/suave_ws/mission.done ]
-        then
-            echo "mission done"
-            break;
-        fi
-        sleep 5 #sustainability!
-    done
-
-
-    echo "killing nodes"
-    kill_running_nodes
-
-    rm ~/suave_ws/mission.done
-done
+run_missions
