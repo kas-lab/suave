@@ -1,14 +1,15 @@
 import os
 
-from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, LogInfo, IncludeLaunchDescription
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, TextSubstitution
-from launch.conditions import LaunchConfigurationEquals, LaunchConfigurationNotEquals
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-
-from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.actions import IncludeLaunchDescription
+from launch.conditions import LaunchConfigurationEquals
+from launch.conditions import LaunchConfigurationNotEquals
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 
 
 def generate_launch_description():
@@ -18,15 +19,14 @@ def generate_launch_description():
     adapt_manager_arg = DeclareLaunchArgument(
         'adapt_manager',
         default_value='none',
-        description='Which adaptation manager is in charge, none/metacontrol/random'
-    )
+        description='Adaptation manager in charge, none/metacontrol/random')
 
     mission_type_arg = DeclareLaunchArgument(
         'mission_type',
         default_value='time_constrained_mission',
         description='Which type of mission to have, time or distance'
     )
-    
+
     pkg_suave_path = get_package_share_directory(
         'suave_missions')
 
@@ -34,7 +34,6 @@ def generate_launch_description():
         get_package_share_directory('suave_missions'),
         'config',
         'mission_config.yaml')
-
 
     mission_node = Node(
         package='suave_missions',
@@ -58,7 +57,7 @@ def generate_launch_description():
         # launch_arguments={
         #     'thruster_events': thruster_events,
         # }.items(),
-        condition=LaunchConfigurationNotEquals('adapt_manager','metacontrol'))
+        condition=LaunchConfigurationNotEquals('adapt_manager', 'metacontrol'))
 
     pkg_suave_metacontrol_path = get_package_share_directory(
         'suave_metacontrol')
@@ -70,17 +69,16 @@ def generate_launch_description():
 
     metacontrol_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(metacontrol_launch_path),
-        condition=LaunchConfigurationEquals('adapt_manager','metacontrol'),)
+        condition=LaunchConfigurationEquals('adapt_manager', 'metacontrol'),)
 
-    random_launch_path = os.path.join( 
+    random_launch_path = os.path.join(
         pkg_suave_metacontrol_path,
         'launch',
         'suave_random.launch.py')
 
     random_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(random_launch_path),
-        condition=LaunchConfigurationEquals('adapt_manager','random'))
-
+        condition=LaunchConfigurationEquals('adapt_manager', 'random'))
 
     return LaunchDescription([
         adapt_manager_arg,
