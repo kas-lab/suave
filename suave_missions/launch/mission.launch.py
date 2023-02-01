@@ -107,4 +107,5 @@ def generate_launch_description():
         mission_node_filename_override,
         metacontrol_launch,
         suave_launch,
+        random_launch,
     ])
