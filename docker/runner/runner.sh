@@ -53,11 +53,13 @@ do
     echo "kill -2 $i"
     kill -2 $i;
 done
+sleep 15 #let it finish the killing spree
 }
 
 run_missions(){
   for j in {1..20}
   do
+      kill_running_nodes
       FILENAME="${MANAGER}_${MTYPE}"
       echo $FILENAME
       #should add some geometry to this so they don't stack on top of each other
@@ -65,7 +67,10 @@ run_missions(){
       sleep 10 #let it boot up
       xfce4-terminal --execute ./scripts/launch_sim.sh $GUI
       sleep 30 #let it boot up
+
+      rm -f ~/suave_ws/mission.done
       xfce4-terminal --execute ./scripts/launch_mission.sh $MANAGER $MTYPE $FILENAME
+      sleep 30 #let it boot up
 
       echo "start waiting for mission to finish"
       start_time=$SECONDS
@@ -100,10 +105,8 @@ MANAGER="metacontrol"
 MTYPE="time"
 run_missions
 
-MANAGER="metacontrol"
-MTYPE="random"
+MANAGER="random"
 run_missions
 
-MANAGER="metacontrol"
-MTYPE="none"
+MANAGER="none"
 run_missions
