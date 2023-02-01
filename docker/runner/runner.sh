@@ -62,6 +62,9 @@ run_missions(){
   for j in {1..20}
   do
       kill_running_nodes
+      source /opt/ros/humble.sh
+      ros2 daemon stop
+      ros2 daemon start
       FILENAME="${MANAGER}_${MTYPE}_${NOW}"
       echo $FILENAME
       #should add some geometry to this so they don't stack on top of each other
