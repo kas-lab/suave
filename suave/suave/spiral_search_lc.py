@@ -94,8 +94,8 @@ class SpiralSearcherLC(Node):
                 self.ardusub.altitude = self.spiral_altitude + self.z_delta
                 self.goal_setpoint = self.ardusub.setpoint_position_local(
                     x, y, fixed_altitude=True)
-                self.goal_setpoint.pose.position.z -= self.z_delta
                 if self.goal_setpoint is not None:
+                    self.goal_setpoint.pose.position.z -= self.z_delta
                     self.spiral_count += 1
                     self.spiral_x = x
                     self.spiral_y = y
