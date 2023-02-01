@@ -8,7 +8,6 @@ from std_msgs.msg import Bool
 from system_modes_msgs.srv import ChangeMode
 
 
-
 class MissionPlanner(BlueROVGazebo):
     def __init__(self, node_name='mission_node'):
         super().__init__(node_name)
@@ -23,16 +22,15 @@ class MissionPlanner(BlueROVGazebo):
 
         self.declare_parameter('result_path', '~/suave/results')
         self.declare_parameter('result_filename', 'mission_results')
-        self.declare_parameter('adapt_manager', 'none')
+        self.declare_parameter('adaptation_manager', 'none')
         self.declare_parameter('mission_type', 'time_constrained_mission')
-
 
         self.result_path = self.get_parameter('result_path').value
         self.result_filename = self.get_parameter('result_filename').value
 
-        self.adaptation_manager = self.get_parameter('adapt_manager').value
+        self.adaptation_manager = self.get_parameter(
+            'adaptation_manager').value
         self.mission_metric = self.get_parameter('mission_type').value
-
 
         self.metrics_header = ['mission_name', 'datetime', 'metric']
 
@@ -67,9 +65,8 @@ class MissionPlanner(BlueROVGazebo):
         req = ChangeMode.Request()
         req.mode_name = mode_name
 
-        if(type(cli) == list):
+        if (isinstance(cli, list)):
             for client in cli:
                 client.call_async(req)
         else:
             cli.call_async(req)
-

@@ -11,7 +11,7 @@ fi
 MANAGER=""
 MTYPE=""
 
-if [ "$1" == "metacontrol" ] || [ "$1" == "random" ] || [[ "$1" == "none" ]]; 
+if [ "$1" == "metacontrol" ] || [ "$1" == "random" ] || [[ "$1" == "none" ]];
 then
     MANAGER=$1
 else
@@ -32,4 +32,4 @@ else
     fi
 fi
 
-ros2 launch suave_missions mission.launch.py adapt_manager:=$MANAGER mission_type:=$MTYPE
+ros2 launch suave_missions mission.launch.py adaptation_manager:=$MANAGER mission_type:=$MTYPE result_filename:=$3

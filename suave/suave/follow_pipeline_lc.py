@@ -29,7 +29,6 @@ class PipelineFollowerLC(Node):
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info("on_configure() is called.")
         self.ardusub = BlueROVGazebo('bluerov_pipeline_follower')
-
         self.thread = threading.Thread(
             target=rclpy.spin, args=(self.ardusub, ), daemon=True)
         self.thread.start()
@@ -99,7 +98,7 @@ class PipelineFollowerLC(Node):
                 gz_pose, fixed_altitude=True)
 
             count = 0
-            while not self.ardusub.check_setpoint_reached(setpoint, 0.4):
+            while not self.ardusub.check_setpoint_reached_xy(setpoint, 0.4):
                 if self.abort_follow is True:
                     self.distance_inspected += self.calc_distance(
                         last_point, self.ardusub.local_pos)

@@ -36,6 +36,8 @@ class SpiralSearcherLC(Node):
         self.spiral_y: float = 0.0
         self.timer_period = 1.0
         self._timer: Optional[Timer] = None
+        self.count = 0
+        self.z_delta = 0
 
         super().__init__(node_name, **kwargs)
 
@@ -70,6 +72,12 @@ class SpiralSearcherLC(Node):
             fov = math.pi/3
             pipe_z = 0.5
             spiral_width = 2.0*self.spiral_altitude*math.tan(fov/2)
+            if self.count > 10:
+                self.z_delta -= 0.5
+                self.ardusub.altitude = self.spiral_altitude + self.z_delta
+                self.ardusub.setpoint_position_local(
+                    self.spiral_x, self.spiral_y, fixed_altitude=True)
+                self.count = 0
 
             if self.goal_setpoint is None or \
                self.ardusub.check_setpoint_reached(self.goal_setpoint, 0.4):
@@ -80,17 +88,20 @@ class SpiralSearcherLC(Node):
                     self.spiral_y,
                     resolution=0.1,
                     spiral_width=spiral_width)
-
                 self.get_logger().info(
                         'setpoint_postion_local value {0}, {1}'.format(x, y))
 
-                self.ardusub.altitude = self.spiral_altitude
+                self.ardusub.altitude = self.spiral_altitude + self.z_delta
                 self.goal_setpoint = self.ardusub.setpoint_position_local(
                     x, y, fixed_altitude=True)
                 if self.goal_setpoint is not None:
+                    self.goal_setpoint.pose.position.z -= self.z_delta
                     self.spiral_count += 1
                     self.spiral_x = x
                     self.spiral_y = y
+                self.count = 0
+            else:
+                self.count += 1
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info('on_configure() is called.')
