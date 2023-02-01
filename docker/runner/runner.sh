@@ -103,7 +103,7 @@ cd ~/ardupilot
 ./waf configure && make sub
 cd $CURDIR
 
-NOW=$(date +"_%d_%m_%y_%H_%M_%S")
+NOW=$(date +"%d_%m_%y_%H_%M_%S")
 MTYPE="time"
 
 MANAGER="none"
