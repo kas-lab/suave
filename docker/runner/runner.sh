@@ -24,13 +24,13 @@ DIR=`dirname $0`
 
 kill_running_nodes(){
 # Kill all ros nodes that may be running
-for i in $(ps ax | grep ros | grep -v vscode | grep -v grep | awk '{print $1}')
+for i in $(ps ax | grep -w 'ros' | grep -v 'ros2cli' | grep -v 'vscode' | grep -v 'grep' | awk '{print $1}')
 do
     echo "kill -2 $i"
     kill -2 $i;
 done
 sleep 1
-for i in $(ps -aux | grep reasoner_node | grep -v /ros/ | grep -v grep | awk '{print $2}')
+for i in $(ps -aux | grep suave_reasoner | grep -v /ros/ | grep -v grep | awk '{print $2}')
 do
     echo "kill -2 $i"
     kill -2 $i;
