@@ -72,7 +72,7 @@ class SpiralSearcherLC(Node):
             fov = math.pi/3
             pipe_z = 0.5
             spiral_width = 2.0*self.spiral_altitude*math.tan(fov/2)
-            if self.count > 5:
+            if self.count > 10:
                 self.z_delta -= 0.5
                 self.ardusub.altitude = self.spiral_altitude + self.z_delta
                 self.ardusub.setpoint_position_local(

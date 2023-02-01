@@ -105,7 +105,8 @@ cd $CURDIR
 
 NOW=$(date +"%d_%m_%y_%H_%M_%S")
 MTYPE="time"
-
+MISSONCONFIG=${NOW}"_mission_config.yaml"
+cp ~/suave_ws/install/suave_missions/share/suave_missions/config/mission_config.yaml ~/suave/results/${MISSONCONFIG}
 MANAGER="none"
 run_missions
 
