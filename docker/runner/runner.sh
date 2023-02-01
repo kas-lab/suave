@@ -10,6 +10,8 @@ fi
 GUI=""
 MANAGER=""
 MTYPE=""
+FILENAME=""
+NOW=""
 
 if [ "$1" == "true" ] || [ "$1" == "false" ];
 then
@@ -60,7 +62,7 @@ run_missions(){
   for j in {1..20}
   do
       kill_running_nodes
-      FILENAME="${MANAGER}_${MTYPE}"
+      FILENAME="${MANAGER}_${MTYPE}_${NOW}"
       echo $FILENAME
       #should add some geometry to this so they don't stack on top of each other
       xfce4-terminal --execute ./scripts/start_ardusub.sh $GUI
@@ -88,8 +90,8 @@ run_missions(){
           then
             echo "mission aborted"
             break;
-            sleep 5 #sustainability!
           fi
+          sleep 5 #sustainability!
       done
 
       echo "killing nodes"
@@ -101,12 +103,14 @@ cd ~/ardupilot
 ./waf configure && make sub
 cd $CURDIR
 
-MANAGER="metacontrol"
+NOW=$(date +"_%d_%m_%y_%H_%M_%S")
 MTYPE="time"
+
+MANAGER="none"
+run_missions
+
+MANAGER="metacontrol"
 run_missions
 
 MANAGER="random"
-run_missions
-
-MANAGER="none"
 run_missions
