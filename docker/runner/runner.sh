@@ -59,10 +59,9 @@ sleep 15 #let it finish the killing spree
 }
 
 run_missions(){
-  for j in {1..20}
+  for j in {1..10}
   do
       kill_running_nodes
-      source /opt/ros/humble.sh
       ros2 daemon stop
       ros2 daemon start
       FILENAME="${MANAGER}_${MTYPE}_${NOW}"
