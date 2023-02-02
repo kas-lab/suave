@@ -12,19 +12,15 @@ TODO
 
 You can pull and run the exemplar as a Docker container using the following command. Keep in mind you need to have [Docker](https://docs.docker.com/get-docker/) installed on your computer and running.
 
-On Windows and Linux, run
+In a terminal on your computer run:
 ```Bash
-docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password egalberts/suave:dev
-```
-On MacOS, run
-```Bash
-docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password --security-opt seccomp=unconfined egalberts/suave:dev
+docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password --security-opt seccomp=unconfined egalberts/suave:1.0
 ```
 
 Once the container is up and running, you can interface with it through your web browser. The container will be hosted locally at the port specified, in this case 6901. So in your browser, go to
-`https://localhost:6901`.
+`http://localhost:6901`.
 
-You may receive a warning about the invalidity of the https certification. This is a known issue and can be safely ignored by just advancing through the warning. Then a dialog will request a username and password, these are shown below, with the password being specifiable in the run command.
+A dialog will request a username and password, these are shown below, with the password being specifiable in the run command.
 
  - **User** : `kasm_user`
  - **Password**: `password`
@@ -32,7 +28,8 @@ You may receive a warning about the invalidity of the https certification. This 
 Now you can proceed to [run the exemplar](#run-the-exemplar).
 
 ### Build Docker images locally
-Should you want to make some changes to the Docker container, you can also choose to build it locally. In the provided Docker folder, the `build_images.sh` script can be run to build the image locally. The built image can then be run with the same command afterwards. Instead of pulling the image from Dockerhub, it will use the local image.
+As it stands right now due to a bug in the newer versions of Gazebo Garden, newly built images will not work. In the future when this is resolved we will update the README to reflect how this can be done.
+<!-- Should you want to make some changes to the Docker container, you can also choose to build it locally. In the provided Docker folder, the `build_images.sh` script can be run to build the image locally. The built image can then be run with the same command afterwards. Instead of pulling the image from Dockerhub, it will use the local image. -->
 
 ## Install the exemplar locally
 To install the exemplar locally, you have to [install Gazebo Garden](#install-gazebo-garden), [install ROS2 Humble](#install-ros2-humble), [install ArduSub](#install-ardusub), [install the ArduSub plugin](#install-ardusub_plugin), and finally [install the SUAVE workspace](#install-suave-workspace).
@@ -46,13 +43,11 @@ Follow the [official instructions](https://gazebosim.org/docs/garden/install_ubu
 Follow the [official instructions](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html) for installing ROS2 Humble.
 
 #### Install ArduSub
-
+ArduSub is a subproject within ArduPilot for piloting underwater vehicles.
 Instructions can be found [here](https://ardupilot.org/dev/docs/building-setup-linux.html#building-setup-linux).
 
 **Disclaimer:**
 Problems may occur with different combinations of ArduPilot and MavROS versions. This repo was tested with [ArduPilot in commit c623ae8](https://github.com/ArduPilot/ardupilot/tree/9f1c4df5e744d58d3089671926bb964c924b2090) and [mavros 2.4.0](https://github.com/mavlink/mavros/tree/10569e626a36d8c69fc78749bb83c112a00e2be8). Unfortunately, at least at the time of writing this README, the releases available in Ubuntu 22.04 do not match.
-
-TODO: Describe what the commands below do. Difference between ArduSub and ArduPilot
 
 ```Bash
 cd ~/
@@ -66,10 +61,8 @@ Note that the script used to install prerequisites available for this
 version of ArduSub does not work in Ubuntu 22.04. Therefore, you need to replace them before
 running ArduSub. To install the ArduPilot prerequisites, do the following.
 
-TODO: also `cd ~/` in the beginning?
-
 ```Bash
-cd ardupilot
+cd ~/ardupilot
 cd Tools/environment_install/
 rm install-prereqs-ubuntu.sh
 wget https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/environment_install/install-prereqs-ubuntu.sh
@@ -124,8 +117,10 @@ echo 'export GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot_gazebo/build:${GZ_SIM_SYS
 echo 'export GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
 ```
 
-Reload your terminal with source `~/.bashrc` . TODO What does that mean? Concrete instructions.
-
+Now that new environmental variables have been added to your terminal, you need to reload it with 
+```bash
+source `~/.bashrc` 
+```
 More info about the plugin can be found in the corresponding [repository](https://github.com/ArduPilot/ardupilot_gazebo/).
 
 ### Install the SUAVE workspace
@@ -166,15 +161,16 @@ colcon build --symlink-install --executor sequential --parallel-workers 1
 Now you can proceed to [run the exemplar](#run-the-exemplar).
 
 ## Run the exemplar
-TODO: What exactly happens here? Maybe write short sentences. What are arguments and what do I do with them? Which things do I have to run in separate terminals?
+TODO: Update for runner scripts.
 
-ArduSub:
+ArduSub: To start the autopiloting software for the simulated AUV run the following command in a terminal outside of the installed ROS packages.
 ```
 sim_vehicle.py -L RATBeach -v ArduSub  --model=JSON --console
 ```
 
 Start the simulation:
-Note: You should make sure to source the install before running ros2 commands, e.g., source suave_ws/install/setup.bash
+Note: You should make sure to source the install before running ros2 commands, e.g., source suave_ws/install/setup.bash. If you are using the dockerized version this is already done for you.
+To start the Gazebo simulator with the simulated AUV and surrounding underwater pipeline scenario run the following command in its own terminal.
 ```
 ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
 ```
