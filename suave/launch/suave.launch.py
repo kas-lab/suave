@@ -56,7 +56,7 @@ def generate_launch_description():
 
     task_bridge_node = Node(
         package='suave',
-        executable='task_bridge',
+        executable='task_bridge_none',
     )
 
     pkg_suave_path = get_package_share_directory('suave')
