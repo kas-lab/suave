@@ -31,8 +31,9 @@ setup(
             'suave_reasoner = suave_metacontrol.suave_reasoner:main',
             'metacontrol_goal_update = ' +
                 'suave_metacontrol.metacontrol_goal_update:main',
-            'random_reasoner = '+
-                'suave_metacontrol.random_reasoner:main',
+            'random_reasoner = suave_metacontrol.random_reasoner:main',
+            'task_bridge_metacontrol = ' +
+                ' suave_metacontrol.task_bridge_metacontrol:main',
         ],
     },
 )

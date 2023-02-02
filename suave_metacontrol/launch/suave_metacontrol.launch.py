@@ -39,15 +39,15 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(suave_launch_path),
     )
 
-    goal_bride_node = Node(
-        package='suave_metacontrol',
-        executable='metacontrol_goal_update',
-        name='metacontrol_goal_update_node',
-    )
+    # goal_bride_node = Node(
+    #     package='suave_metacontrol',
+    #     executable='metacontrol_goal_update',
+    #     name='metacontrol_goal_update_node',
+    # )
 
     return LaunchDescription([
         suave_launch,
         metacontrol_launch,
         mros2_system_modes_bridge_node,
-        goal_bride_node,
+        # goal_bride_node,
     ])
