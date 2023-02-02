@@ -54,6 +54,11 @@ def generate_launch_description():
         executable='recover_thrusters'
     )
 
+    task_bridge_node = Node(
+        package='suave',
+        executable='task_bridge',
+    )
+
     pkg_suave_path = get_package_share_directory('suave')
 
     system_modes_launch_path = os.path.join(
@@ -71,5 +76,6 @@ def generate_launch_description():
         spiral_search_node,
         follow_pipeline_node,
         recover_thrusters_node,
+        task_bridge_node,
         system_modes_launch,
     ])
