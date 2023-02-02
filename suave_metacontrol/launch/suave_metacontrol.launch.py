@@ -39,11 +39,6 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(suave_launch_path),
     )
 
-    mros2_system_modes_bridge_node = Node(
-        package='mros2_reasoner',
-        executable='mros2_system_modes_bridge',
-    )
-
     goal_bride_node = Node(
         package='suave_metacontrol',
         executable='metacontrol_goal_update',

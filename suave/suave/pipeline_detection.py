@@ -14,7 +14,7 @@ from suave_msgs.srv import GetPath
 class PipelineDetection(Node):
 
     def __init__(self):
-        super().__init__('pipeline')
+        super().__init__('detect_pipeline')
         self.min_pipes_pipeline_pose_subscription = self.create_subscription(
             PoseArray,
             '/model/min_pipes_pipeline/pose',
