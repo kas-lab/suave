@@ -27,7 +27,7 @@ class RandomReasoner(Node):
             '/f_generate_search_path/change_mode',
             callback_group=client_cb_group)
 
-        self.inspect_pipeline_changemode_cli = self.create_client(
+        self.follow_pipeline_changemode_cli = self.create_client(
             ChangeMode,
             '/f_follow_pipeline/change_mode',
             callback_group=client_cb_group)
@@ -37,7 +37,7 @@ class RandomReasoner(Node):
             '/f_generate_search_path/get_available_modes',
             callback_group=client_cb_group)
 
-        self.inspect_pipeline_availmodes_cli = self.create_client(
+        self.follow_pipeline_availmodes_cli = self.create_client(
             GetAvailableModes,
             '/f_follow_pipeline/get_available_modes',
             callback_group=client_cb_group)
@@ -62,13 +62,13 @@ class RandomReasoner(Node):
 
         self.detect_modes = self.send_request(
             self.generate_path_availmodes_cli).available_modes
-        self.inspect_modes = self.send_request(
-            self.inspect_pipeline_availmodes_cli).available_modes
-        self.client = self.inspect_pipeline_availmodes_cli
+        self.follow_modes = self.send_request(
+            self.follow_pipeline_availmodes_cli).available_modes
+        self.client = self.follow_pipeline_availmodes_cli
         self.get_logger().info(
             'Available modes detect {}'.format(str(self.detect_modes)))
         self.get_logger().info(
-            'Available modes inspect {}'.format(str(self.inspect_modes)))
+            'Available modes inspect {}'.format(str(self.follow_modes)))
 
         self.time_monitor_timer = self.create_timer(
             self.adaptation_period,
@@ -97,8 +97,8 @@ class RandomReasoner(Node):
             modes = self.detect_modes
         elif (self.pipeline_detected and not self.pipeline_inspected):
             self.get_logger().info('Pipeline detected not inspected (yet)')
-            change_client = self.inspect_pipeline_changemode_cli
-            modes = self.inspect_modes
+            change_client = self.follow_pipeline_changemode_cli
+            modes = self.follow_modes
         else:
             self.get_logger().info('Mission done, why am I still running?')
             return
