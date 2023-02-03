@@ -84,9 +84,19 @@ class RandomReasoner(Node):
 
     def pipeline_detected_cb(self, msg):
         self.pipeline_detected = msg.data
+        if self.pipeline_detected is True:
+            change_req = ChangeMode.Request()
+            change_req.mode_name = 'fd_unground'
+            self.generate_path_changemode_cli.call(change_req)
+            self.destroy_subscription(self.pipeline_detected)
 
     def pipeline_inspected_cb(self, msg):
         self.pipeline_inspected = msg.data
+        if self.pipeline_detected is True:
+            change_req = ChangeMode.Request()
+            change_req.mode_name = 'fd_unground'
+            self.follow_pipeline_changemode_cli.call(change_req)
+            self.destroy_subscription(self.pipeline_inspected)
 
     def change_mode_request(self):
         self.get_logger().info('Start ChangeMode request')
