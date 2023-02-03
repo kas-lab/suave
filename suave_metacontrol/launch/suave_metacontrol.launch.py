@@ -25,11 +25,6 @@ def generate_launch_description():
     metacontrol_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(metacontrol_launch_path))
 
-    mros2_system_modes_bridge_node = Node(
-        package='mros2_reasoner',
-        executable='mros2_system_modes_bridge',
-    )
-
     recover_thrusters_node = Node(
         package='suave',
         executable='recover_thrusters'
