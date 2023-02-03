@@ -14,7 +14,7 @@ The adaptation logic needs to be implemented as a separate node. Adaptation is d
 
 In order to launch the new managing subsystem using mission.launch.py as explained in the [run the exemplar](#run-the-exemplar) section, the launch argument needs to be linked to the executable of the managing subsystem node by replacing \[new_managing_subsystem\] with the given name:
 ```
-random_launch_path = os.path.join(
+[new_managing_subsystem]_launch_path = os.path.join(
         pkg_suave_metacontrol_path,
         'launch',
         '[new_managing_subsystem].launch.py')
@@ -206,12 +206,12 @@ ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
 **Note:** It is possible to pass arguments to specify the x and y coordinates of where the UUV spawns, by changing the values. In the above launch command the initial coordinates are set to (-17.0,2.0).
 
 ### Start the Mission
-Now it is possible to start the mission. Select the desired type of missions through the command line arguments. The mission results will be save in `results/<result_filename>.csv`. TODO: This is the correct path to where the results are saved right?
+Now it is possible to start the mission. Select the desired type of missions through the command line arguments. The mission results will be saved in `results/<result_filename>.csv`. TODO: This is the correct path to where the results are saved right?
 
 Launching the mission file without launch arguments will start a time-constrained mission without a managing subsystem. This can be done by running the following command:
 
 ```Bash
-ros2 launch suave_metacontrol mission.launch.py
+ros2 launch suave_missions mission.launch.py
 ```
 
 The arguments can be defined by adding the below arguments with the notation `<name>:=<value>` to the end of the command line. The available arguments are:
@@ -235,7 +235,7 @@ The arguments can be defined by adding the below arguments with the notation `<n
 An example of running the constant distance mission with metacontrol saving to a file called 'measurement_1' is as follows:
 
 ```Bash
-ros2 launch suave_metacontrol mission.launch.py adaptation_manager:=metacontrol mission_type:=const_dist_mission result_filename:=measurement_1
+ros2 launch suave_missions mission.launch.py adaptation_manager:=metacontrol mission_type:=const_dist_mission result_filename:=measurement_1
 ```
 
 ## Acknowledgments
