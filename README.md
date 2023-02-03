@@ -187,6 +187,8 @@ ArduSub: To start the autopiloting software for the simulated AUV run the follow
 ```
 sim_vehicle.py -L RATBeach -v ArduSub  --model=JSON --console
 ```
+Configuring SUAVE:
+SUAVE has a number of parameters that may be of interest when running experiments with its missions, such as the time limit of a time constrained mission or the frequency of thruster failure. These can be found in the [mission_config.yaml](https://github.com/kas-lab/suave/blob/main/suave_missions/config/mission_config.yaml) file. TODO: explain whether you need to rebuild or not after changing them.
 
 Start the simulation:
 Note: You should make sure to source the install before running ros2 commands. If you are using the dockerized version this is already done for you, therefore sourcing the workspace is not necessary.
@@ -206,7 +208,7 @@ ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
 **Note:** It is possible to pass arguments to specify the x and y coordinates of where the UUV spawns, by changing the values. In the above launch command the initial coordinates are set to (-17.0,2.0).
 
 ### Start the Mission
-Now it is possible to start the mission. Select the desired type of missions through the command line arguments. The mission results will be saved in `results/<result_filename>.csv`. TODO: This is the correct path to where the results are saved right?
+Now it is possible to start the mission. Select the desired type of missions through the command line arguments. The mission results will be saved in the path specified in the mission_config.yaml file.
 
 Launching the mission file without launch arguments will start a time-constrained mission without a managing subsystem. This can be done by running the following command:
 
