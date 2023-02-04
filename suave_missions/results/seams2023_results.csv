@@ -1,0 +1,72 @@
+,mission_name,datetime,"initial pos (x,y)",time budget (s),time search (s),distance inspected (m)
+1,time constrained none,Feb-04-2023-00-56-36,"(-17.0, 2.59)",300,204,27.1139621734619
+2,time constrained none,Feb-04-2023-01-03-15,"(-17.0, 2.57)",300,202,27.1139621734619
+3,time constrained none,Feb-04-2023-01-09-54,"(-17.0, 2.57)",300,211,24.1122932434082
+4,time constrained none,Feb-04-2023-01-16-34,"(-17.0, 2.57)",300,177,35.6140403747559
+5,time constrained none,Feb-04-2023-01-23-13,"(-17.0, 2.57)",300,127,50.6118507385254
+6,time constrained none,Feb-04-2023-01-29-52,"(-17.0, 2.59)",300,185,31.1146469116211
+7,time constrained none,Feb-04-2023-01-36-31,"(-17.0, 2.57)",300,224,19.9787712097168
+8,time constrained none,Feb-04-2023-01-50-54,"(-17.0, 2.57)",300,222,19.6960010528564
+9,time constrained none,Feb-04-2023-01-57-34,"(-17.0, 2.57)",300,190,30.6144943237305
+10,time constrained none,Feb-04-2023-06-09-38,"(-17.0, 2.59)",300,124,51.6123313903809
+11,time constrained none,Feb-04-2023-06-16-18,"(-17.0, 2.57)",300,151,41.6130599975586
+12,time constrained none,Feb-04-2023-06-22-57,"(-17.0, 2.57)",300,300,0
+13,time constrained none,Feb-04-2023-06-29-36,"(-17.0, 2.57)",300,191,31.1144199371338
+14,time constrained none,Feb-04-2023-06-43-59,"(-17.0, 2.57)",300,225,19.9569244384766
+15,time constrained none,Feb-04-2023-15-30-07,"(-17.0, 2.57)",300,127,51.1117782592774
+16,time constrained none,Feb-04-2023-15-36-48,"(-17.0, 2.56)",300,200,28.6147975921631
+17,time constrained none,Feb-04-2023-15-43-26,"(-17.0, 2.57)",300,191,31.6143436431885
+18,time constrained none,Feb-04-2023-15-50-05,"(-17.0, 2.57)",300,128,50.6117782592773
+19,time constrained none,Feb-04-2023-15-56-45,"(-17.0, 2.57)",300,188,32.6141929626465
+20,time constrained none,Feb-04-2023-16-03-24,"(-17.0, 2.57)",300,190,23.1117362976074
+,,,,Mean,187.85,31.3972692489624
+,,,,Std,42.3969648864037,12.9985436039512
+,,,,,,
+,,,,,,
+,mission_name,datetime,"initial pos (x,y)",time budget (s),time search (s),distance inspected (m)
+1,time constrained metacontrol,Feb-04-2023-02-04-13,"(-17.0, 2.57)",300,237,16.5
+2,time constrained metacontrol,Feb-04-2023-02-10-52,"(-17.0, 2.57)",300,124,51.6134452819824
+3,time constrained metacontrol,Feb-04-2023-02-17-31,"(-17.0, 2.57)",300,83,51.1117782592774
+4,time constrained metacontrol,Feb-04-2023-02-31-54,"(-17.0, 2.57)",300,125,45.1123046875
+5,time constrained metacontrol,Feb-04-2023-02-38-34,"(-17.0, 2.57)",300,77,60.1162261962891
+6,time constrained metacontrol,Feb-04-2023-02-45-13,"(-17.0, 2.57)",300,125,46.6120796203613
+7,time constrained metacontrol,Feb-04-2023-02-51-52,"(-17.0, 2.57)",300,90,59.1165046691895
+8,time constrained metacontrol,Feb-04-2023-02-58-31,"(-17.0, 2.57)",300,125,51.113166809082
+9,time constrained metacontrol,Feb-04-2023-03-05-10,"(-17.0, 2.57)",300,73,58.1153945922852
+10,time constrained metacontrol,Feb-04-2023-08-00-11,"(-17.0, 2.57)",300,125,53.1142807006836
+11,time constrained metacontrol,Feb-04-2023-08-06-50,"(-17.0, 2.57)",300,128,38.1133613586426
+12,time constrained metacontrol,Feb-04-2023-08-13-29,"(-17.0, 2.57)",300,74,64.2265701293945
+13,time constrained metacontrol,Feb-04-2023-08-20-08,"(-17.0, 2.57)",300,69,63.552417755127
+14,time constrained metacontrol,Feb-04-2023-08-26-48,"(-17.0, 2.57)",300,126,47.6119270324707
+15,time constrained metacontrol,Feb-04-2023-13-42-32,"(-17.0, 2.57)",300,127,39.6131362915039
+16,time constrained metacontrol,Feb-04-2023-14-46-33,"(-17.0, 2.57)",300,77,62.3782653808594
+17,time constrained metacontrol,Feb-04-2023-14-53-12,"(-17.0, 2.57)",300,83,46.1125335693359
+18,time constrained metacontrol,Feb-04-2023-14-59-52,"(-17.0, 2.57)",300,128,39.6131362915039
+19,time constrained metacontrol,Feb-04-2023-15-06-31,"(-17.0, 2.57)",300,71,64.4656524658203
+20,time constrained metacontrol,Feb-04-2023-15-13-09,"(-17.0, 2.57)",300,72,64.7265701293945
+,,,,Mean,106.95,51.1469375610352
+,,,,Std,39.4561382056742,12.0102736808437
+,,,,,,
+,mission_name,datetime,"initial pos (x,y)",time budget (s),time search (s),distance inspected (m)
+1,time constrained random,Feb-04-2023-03-19-33,"(-17.0, 2.57)",300,83,4.5
+2,time constrained random,Feb-04-2023-03-26-12,"(-17.0, 2.57)",300,61,3.7631573677063
+3,time constrained random,Feb-04-2023-03-32-51,"(-17.0, 2.57)",300,63,9
+4,time constrained random,Feb-04-2023-03-39-30,"(-17.0, 2.57)",300,300,0
+5,time constrained random,Feb-04-2023-03-53-54,"(-17.0, 2.57)",300,212,8.5
+6,time constrained random,Feb-04-2023-04-08-17,"(-17.0, 2.57)",300,161,0
+7,time constrained random,Feb-04-2023-08-33-26,"(-17.0, 2.59)",300,230,2.70802474021912
+8,time constrained random,Feb-04-2023-08-40-06,"(-17.0, 2.57)",300,221,5
+9,time constrained random,Feb-04-2023-08-46-45,"(-17.0, 2.57)",300,300,0
+10,time constrained random,Feb-04-2023-08-53-25,"(-17.0, 2.57)",300,300,0
+11,time constrained random,Feb-04-2023-09-00-04,"(-17.0, 2.57)",300,98,4.02150344848633
+12,time constrained random,Feb-04-2023-09-06-43,"(-17.0, 2.57)",300,211,0
+13,time constrained random,Feb-04-2023-09-13-21,"(-17.0, 2.57)",300,138,4.02032041549683
+14,time constrained random,Feb-04-2023-09-20-01,"(-17.0, 2.57)",300,145,8.58754253387451
+15,time constrained random,Feb-04-2023-09-26-40,"(-17.0, 2.58)",300,156,4.04097509384155
+16,time constrained random,Feb-04-2023-09-33-20,"(-17.0, 2.57)",300,66,4
+17,time constrained random,Feb-04-2023-12-18-42,"(-17.0, 2.57)",300,300,0
+18,time constrained random,Feb-04-2023-12-25-21,"(-17.0, 2.57)",300,175,6.67509269714356
+19,time constrained random,Feb-04-2023-12-55-06,"(-17.0, 2.57)",300,230,4.26782608032227
+20,time constrained random,Feb-04-2023-13-01-47,"(-17.0, 2.57)",300,153,8.56197643280029
+,,,,Mean,180.15,3.88232094049454
+,,,,Std,82.0540739551156,3.187441712825

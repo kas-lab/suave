@@ -1,0 +1,22 @@
+/parent_mission_node:
+  ros__parameters:
+    time_limit: 300 #Time limit for a time_constrained mission
+    result_path: "~/suave/results" #Path to save results
+    f_generate_search_path_mode: "fd_spiral_low" #Default mode for f_generate_search_path when no manager is used
+    f_follow_pipeline_mode: "fd_follow_pipeline" #Default mode for f_follow_pipeline when no manager is used
+
+/water_visibility_observer_node:
+  ros__parameters:
+    water_visibility_period: 80 #Water visibility period in seconds
+    water_visibility_min: 1.25 #Minimum value for water visibility
+    water_visibility_max: 3.75 #Maximum value for water visibility
+    water_visibility_sec_shift: 0.0 #Water visibility seconds shift to left
+
+/thruster_monitor:
+  ros__parameters:
+    thruster_events: # Thruster events, format: (thruster number (1 to 6), failure or recovery, delta time in seconds(from the last event))
+    - (1,failure,35)
+
+/random_reasoner_node:
+  ros__parameters:
+    adapt_period: 30 #Period to perform random adaptation in seconds
