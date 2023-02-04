@@ -187,7 +187,27 @@ colcon build --symlink-install --executor sequential --parallel-workers 1
 Now you can proceed to [run the exemplar](#run-the-exemplar).
 
 ## Run the exemplar
-TODO: Update for runner scripts.
+
+### Runner
+To run the exemplar with the runner from within the docker image, simply run:
+
+Without gui:
+```
+./runner false
+```
+
+With gui:
+```
+./runner true
+```
+
+To run it from a local installation, navigate to the folder `docker/runner/` first:
+```
+cd docker/runner/
+./runner true
+```
+
+### Without runner
 
 ArduSub: To start the autopiloting software for the simulated AUV run the following command in a terminal.
 ```
