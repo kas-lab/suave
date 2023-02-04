@@ -15,8 +15,7 @@
 /thruster_monitor:
   ros__parameters:
     thruster_events: # Thruster events, format: (thruster number (1 to 6), failure or recovery, delta time in seconds(from the last event))
-    - (1,failure,45)
-    - (2,failure,45)
+    - (1,failure,35)
 
 /random_reasoner_node:
   ros__parameters:
