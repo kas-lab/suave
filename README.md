@@ -6,7 +6,24 @@ It clearly separates between the mananged subsystem, implementing the basic func
 The exemplar can either be [run through Docker](#use-the-exemplar-with-docker) or [installed locally](#install-the-exemplar-locally) to [run it](#run-the-exemplar).
 
 ## Requirements for a managing subsystem
-TODO
+The interface for interacting with the managed subsystem is handle by the ROS2 system modes package. For easy integration with another managing subsystem, this package can be used to apply reconfiguration. The nodes which handle searching for and following the pipeline, as well as motion control are implemented using Lifecycle Nodes. This allows for these nodes to be reconfigured using the system modes package.
+
+The adaptation scenarios need to be described in a yaml file such as done in [suave_modes.yaml](https://github.com/kas-lab/suave/blob/main/suave/config/suave_modes.yaml) within the same folder. This file should then be added in the [system_modes.launch.py](https://github.com/kas-lab/suave/blob/main/suave/launch/system_modes.launch.py) file, replacing the suave_modes.yaml.
+
+The adaptation logic needs to be implemented as a separate node. Adaptation is done by calling the system_modes services for each Lifecycle Node. The [random_reasoner.py](https://github.com/kas-lab/suave/blob/main/suave_metacontrol/suave_metacontrol/random_reasoner.py) node can be used as a reference for applying the adaptation logic.
+
+In order to launch the new managing subsystem using mission.launch.py as explained in the [run the exemplar](#run-the-exemplar) section, the launch argument needs to be linked to the executable of the managing subsystem node by replacing \[new_managing_subsystem\] with the given name:
+```
+[new_managing_subsystem]_launch_path = os.path.join(
+        pkg_suave_metacontrol_path,
+        'launch',
+        '[new_managing_subsystem].launch.py')
+
+[new_managing_subsystem]_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([new_managing_subsystem]_launch_path),
+        condition=LaunchConfigurationEquals('adaptation_manager',
+                    '[new_managing_subsystem]'))
+```
 
 ## Use the exemplar with Docker
 
@@ -44,10 +61,9 @@ Follow the [official instructions](https://docs.ros.org/en/humble/Installation/U
 
 #### Install ArduSub
 ArduSub is a subproject within ArduPilot for piloting underwater vehicles.
-Instructions can be found [here](https://ardupilot.org/dev/docs/building-setup-linux.html#building-setup-linux).
 
 **Disclaimer:**
-Problems may occur with different combinations of ArduPilot and MavROS versions. This repo was tested with [ArduPilot in commit c623ae8](https://github.com/ArduPilot/ardupilot/tree/9f1c4df5e744d58d3089671926bb964c924b2090) and [mavros 2.4.0](https://github.com/mavlink/mavros/tree/10569e626a36d8c69fc78749bb83c112a00e2be8). Unfortunately, at least at the time of writing this README, the releases available in Ubuntu 22.04 do not match.
+Problems may occur with different combinations of ArduPilot and MavROS versions. This repo was tested with [this ArduPilot commit](https://github.com/ArduPilot/ardupilot/tree/9f1c4df5e744d58d3089671926bb964c924b2090) and [mavros 2.4.0](https://github.com/mavlink/mavros/tree/10569e626a36d8c69fc78749bb83c112a00e2be8). Unfortunately, at least at the time of writing this README, the releases available in Ubuntu 22.04 do not match.
 
 ```Bash
 cd ~/
@@ -66,7 +82,7 @@ cd ~/ardupilot
 cd Tools/environment_install/
 rm install-prereqs-ubuntu.sh
 wget https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/environment_install/install-prereqs-ubuntu.sh
-cd ../../
+cd ~/ardupilot
 chmod +x Tools/environment_install/install-prereqs-ubuntu.sh
 Tools/environment_install/install-prereqs-ubuntu.sh -y
 . ~/.profile
@@ -119,7 +135,7 @@ echo 'export GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_
 
 Now that new environmental variables have been added to your terminal, you need to reload it with 
 ```bash
-source `~/.bashrc` 
+source ~/.bashrc
 ```
 More info about the plugin can be found in the corresponding [repository](https://github.com/ArduPilot/ardupilot_gazebo/).
 
@@ -137,6 +153,10 @@ Add the required paths:
 ```Bash
 echo 'export GZ_SIM_RESOURCE_PATH=$HOME/suave_ws/src/bluerov2_ignition/models:$HOME/suave_ws/src/bluerov2_ignition/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
 echo 'export GZ_SIM_RESOURCE_PATH=$HOME/suave_ws/src/remaro_worlds/models:$HOME/suave_ws/src/remaro_worlds/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
+```
+Source the terminal again:
+```bash
+source ~/.bashrc
 ```
 
 Install the dependencies:
@@ -163,144 +183,61 @@ Now you can proceed to [run the exemplar](#run-the-exemplar).
 ## Run the exemplar
 TODO: Update for runner scripts.
 
-ArduSub: To start the autopiloting software for the simulated AUV run the following command in a terminal outside of the installed ROS packages.
+ArduSub: To start the autopiloting software for the simulated AUV run the following command in a terminal.
 ```
 sim_vehicle.py -L RATBeach -v ArduSub  --model=JSON --console
 ```
+Configuring SUAVE:
+SUAVE has a number of parameters that may be of interest when running experiments with its missions, such as the time limit of a time constrained mission or the frequency of thruster failure. These can be found in the [mission_config.yaml](https://github.com/kas-lab/suave/blob/main/suave_missions/config/mission_config.yaml) file. TODO: explain whether you need to rebuild or not after changing them.
 
 Start the simulation:
-Note: You should make sure to source the install before running ros2 commands, e.g., source suave_ws/install/setup.bash. If you are using the dockerized version this is already done for you.
-To start the Gazebo simulator with the simulated AUV and surrounding underwater pipeline scenario run the following command in its own terminal.
+Note: You should make sure to source the install before running ros2 commands. If you are using the dockerized version this is already done for you, therefore sourcing the workspace is not necessary.
+To start the Gazebo simulator with the simulated AUV and surrounding underwater pipeline scenario run the following commands in a new terminal.
+
+Navigate to the workspace and source it:
+```Bash
+cd ~/suave_ws/
+source install/setup.bash
+```
+
+Launch the simulation environment:
 ```
 ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
 ```
 
-Arguments:
-```
-Arguments (pass arguments as '<name>:=<value>'):
-
-    'x':
-        Initial x coordinate for bluerov2
-        (default: '-17.0')
-
-    'y':
-        Initial y coordinate for bluerov2
-        (default: '2.0')
-```
-
-Start all nodes except mission:
-```
-ros2 launch suave_metacontrol suave_metacontrol.launch.py
-```
-
-Arguments:
-```
-Arguments (pass arguments as '<name>:=<value>'):
-
-    'water_visibility_period':
-        Water visibility period in seconds
-        (default: '100')
-
-    'water_visibility_min':
-        Minimum value for water visibility
-        (default: '1.25')
-
-    'water_visibility_max':
-        Maximum value for water visibility
-        (default: '3.75')
-
-    'water_visibility_sec_shift':
-        Water visibility seconds shift to left
-        (default: '0.0')
-
-    'thruster_events':
-        (thrusterN, failure/recovery, delta time in seconds ), e.g. (1, failure, 50)
-        (default: '['(1, failure,30)', '(2, failure,30)']')
-```
+**Note:** It is possible to pass arguments to specify the x and y coordinates of where the UUV spawns, by changing the values. In the above launch command the initial coordinates are set to (-17.0,2.0).
 
 ### Start the Mission
-Now it is possible to start the mission. Select one of the missions below. The mission results will be save in `<result_path>/<result_filename>.csv`.
+Now it is possible to start the mission. Select the desired type of missions through the command line arguments. The mission results will be saved in the path specified in the mission_config.yaml file.
 
-**Time constrained mission:**
-The mission is time constrained, the time limit can be set with `time_limit`.
+Launching the mission file without launch arguments will start a time-constrained mission without a managing subsystem. This can be done by running the following command:
+
 ```Bash
-ros2 launch suave_metacontrol time_constrained_mission.launch.py time_limit:=300
+ros2 launch suave_missions mission.launch.py
 ```
 
-Arguments:
+The arguments can be defined by adding the below arguments with the notation `<name>:=<value>` to the end of the command line. The available arguments are:
 ```
-Arguments (pass arguments as '<name>:=<value>'):
+'adaptation_manager':
+    Managing subsystem to be used
+    available values: none/metacontrol/random
+    (default: 'none')
 
-    'result_path':
-        Path to save mission measured metrics
-        (default: '~/suave/results')
+'mission_type':
+    Type of mission to be executed
+    available values: time_constrained_mission/const_dist_mission
+    (default: 'time_constrained_mission')
 
-    'result_filename':
-        Filename for the mission measured metrics
-        (default: 'time_constrained_mission_results')
-
-    'time_limit':
-        Time limit for the mission (seconds)
-        (default: '300')
+'result_filename':
+    Filename for the mission measured metrics
+    available values: any name
+    (default: 'time_constrained_mission_results')
 ```
-**Time constrained mission with no adaptation:** The mission is time constrained and no adaptation is performend. The time limit can be set with `time_limit`.
+
+An example of running the constant distance mission with metacontrol saving to a file called 'measurement_1' is as follows:
+
 ```Bash
-ros2 launch suave time_constrained_mission_no_adapt.launch.py time_limit:=300
-```
-
-Arguments:
-```
-Arguments (pass arguments as '<name>:=<value>'):
-
-    'result_path':
-        Path to save mission measured metrics
-        (default: '~/suave/results')
-
-    'result_filename':
-        Filename for the mission measured metrics
-        (default: 'time_constrained_mission_results')
-
-    'time_limit':
-        Time limit for the mission (seconds)
-        (default: '300')
-```
-
-**Constant distance mission:** The mission is to follow the whole pipeline without a time constraint.
-```
-ros2 launch suave_metacontrol const_distance_mission.launch.py
-```
-
-Arguments:
-```
-Arguments (pass arguments as '<name>:=<value>'):
-
-    'result_path':
-        Path to save mission measured metrics
-        (default: '~/suave/results')
-
-    'result_filename':
-        Filename for the mission measured metrics
-        (default: 'const_distance_mission_results')
-
-```
-
-**Constant distance mission with no adaptation:** The mission is to follow the whole pipeline without a time constraint and without adapting the robot.
-```
-ros2 launch suave const_distance_mission_no_adapt.launch.py
-```
-
-Arguments:
-```
-Arguments (pass arguments as '<name>:=<value>'):
-
-    'result_path':
-        Path to save mission measured metrics
-        (default: '~/suave/results')
-
-    'result_filename':
-        Filename for the mission measured metrics
-        (default: 'const_distance_mission_results')
-
+ros2 launch suave_missions mission.launch.py adaptation_manager:=metacontrol mission_type:=const_dist_mission result_filename:=measurement_1
 ```
 
 ## Acknowledgments
