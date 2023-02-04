@@ -31,7 +31,13 @@ You can pull and run the exemplar as a Docker container using the following comm
 
 In a terminal on your computer run:
 ```Bash
-docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password --security-opt seccomp=unconfined egalberts/suave:1.0
+docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password --security-opt seccomp=unconfined rezenders/suave:seams
+```
+
+Optionally you can add the parameter `-v <absolute_path_host_compute>:/home/kasm-user/suave/results` to save the results into your computer, replace `<absolute_path_host_compute>` with the absolute path of where you want the data to be saved in your computer, e.g:
+
+```Bash
+docker run -it --shm-size=512m -v $HOME/suave_results:/home/kasm-user/suave/results -p 6901:6901 -e VNC_PW=password rezenders/suave:seams
 ```
 
 Once the container is up and running, you can interface with it through your web browser. The container will be hosted locally at the port specified, in this case 6901. So in your browser, go to
@@ -133,7 +139,7 @@ echo 'export GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot_gazebo/build:${GZ_SIM_SYS
 echo 'export GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
 ```
 
-Now that new environmental variables have been added to your terminal, you need to reload it with 
+Now that new environmental variables have been added to your terminal, you need to reload it with
 ```bash
 source ~/.bashrc
 ```

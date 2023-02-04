@@ -18,11 +18,6 @@ def generate_launch_description():
         'suave_metacontrol')
     time_limit = LaunchConfiguration('time_limit')
 
-    recover_thrusters_node = Node(
-        package='suave',
-        executable='recover_thrusters'
-    )
-
     adapt_period_arg = DeclareLaunchArgument(
         'adaptation_period',
         default_value='15',
@@ -46,5 +41,4 @@ def generate_launch_description():
     return LaunchDescription([
         adapt_period_arg,
         random_reasoner_node,
-        recover_thrusters_node,
     ])

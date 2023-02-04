@@ -59,7 +59,7 @@ sleep 15 #let it finish the killing spree
 }
 
 run_missions(){
-  for j in {1..10}
+  for j in {1..6}
   do
       kill_running_nodes
       ros2 daemon stop

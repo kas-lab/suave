@@ -25,9 +25,9 @@ def generate_launch_description():
     metacontrol_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(metacontrol_launch_path))
 
-    recover_thrusters_node = Node(
-        package='suave',
-        executable='recover_thrusters'
+    mros2_system_modes_bridge_node = Node(
+        package='mros2_reasoner',
+        executable='mros2_system_modes_bridge',
     )
 
     suave_launch_path = os.path.join(
@@ -37,11 +37,6 @@ def generate_launch_description():
 
     suave_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(suave_launch_path),
-    )
-
-    mros2_system_modes_bridge_node = Node(
-        package='mros2_reasoner',
-        executable='mros2_system_modes_bridge',
     )
 
     goal_bride_node = Node(
@@ -54,6 +49,5 @@ def generate_launch_description():
         suave_launch,
         metacontrol_launch,
         mros2_system_modes_bridge_node,
-        recover_thrusters_node,
         goal_bride_node,
     ])

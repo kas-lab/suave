@@ -38,6 +38,7 @@ class SpiralSearcherLC(Node):
         self._timer: Optional[Timer] = None
         self.count = 0
         self.z_delta = 0
+        self.old_spiral_altitude = -1
 
         super().__init__(node_name, **kwargs)
 
@@ -65,15 +66,25 @@ class SpiralSearcherLC(Node):
 
     def publish(self):
         if self._enabled is True:
-
             self.spiral_altitude = self.get_parameter(
                     'spiral_altitude').get_parameter_value().double_value
 
+            if self.old_spiral_altitude != self.spiral_altitude:
+                self.spiral_count += 1
+
+            self.old_spiral_altitude = self.spiral_altitude
             fov = math.pi/3
             pipe_z = 0.5
             spiral_width = 2.0*self.spiral_altitude*math.tan(fov/2)
+
+            altitude_bug = False
+            if self.goal_setpoint is not None and self.count > 10:
+                altitude_bug = self.ardusub.check_setpoint_reached_xy(self.goal_setpoint, 0.4) \
+                    and (not self.ardusub.check_setpoint_reached(self.goal_setpoint, 0.4))
+
             if self.count > 10:
-                self.z_delta -= 0.5
+                if altitude_bug is True:
+                    self.z_delta -= 0.5
                 self.ardusub.altitude = self.spiral_altitude + self.z_delta
                 self.ardusub.setpoint_position_local(
                     self.spiral_x, self.spiral_y, fixed_altitude=True)

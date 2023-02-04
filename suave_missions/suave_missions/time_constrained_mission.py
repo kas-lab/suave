@@ -54,7 +54,7 @@ class MissionTimeConstrained(MissionPlanner):
         self.using_no_adaptation = self.adaptation_manager == 'none'
         self.mission_start_time = None
         self.pipeline_detected_time = None
-        self.distance_inspected = -1
+        self.distance_inspected = 0.0
 
         self.generate_path_sm_cli = self.create_client(
             ChangeMode,

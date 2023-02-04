@@ -49,6 +49,11 @@ def generate_launch_description():
         output='screen',
     )
 
+    recover_thrusters_node = Node(
+        package='suave',
+        executable='recover_thrusters'
+    )
+
     pkg_suave_path = get_package_share_directory('suave')
 
     system_modes_launch_path = os.path.join(
@@ -65,5 +70,6 @@ def generate_launch_description():
         thruster_monitor_node,
         spiral_search_node,
         follow_pipeline_node,
+        recover_thrusters_node,
         system_modes_launch,
     ])
