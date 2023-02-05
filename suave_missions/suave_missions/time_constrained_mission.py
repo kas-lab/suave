@@ -94,6 +94,7 @@ class MissionTimeConstrained(MissionPlanner):
                 self.distance_inspected]
             self.save_metrics(mission_metrics)
             self.get_logger().info('Time limited reached. Mission aborted!')
+            os.system("touch ~/suave_ws/mission.done")
             self.time_monitor_timer.destroy()
 
     def search_task(self):
@@ -144,7 +145,7 @@ class MissionTimeConstrained(MissionPlanner):
         guided_mode = 'GUIDED'
         while self.status.mode != guided_mode:
             self.get_logger().info(
-                'BlueROV mode is : {}'.format(self.status.mode))
+                'BlueROV mode is : {} waiting for mode change to register'.format(self.status.mode))
             self.set_mode(guided_mode)
             self.timer.sleep()
 
