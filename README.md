@@ -31,13 +31,13 @@ You can pull and run the exemplar as a Docker container using the following comm
 
 In a terminal on your computer run:
 ```Bash
-docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password --security-opt seccomp=unconfined rezenders/suave:seams
+docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password --security-opt seccomp=unconfined egalberts/suave:1.0
 ```
 
 Optionally you can add the parameter `-v <absolute_path_host_compute>:/home/kasm-user/suave/results` to save the results into your computer, replace `<absolute_path_host_compute>` with the absolute path of where you want the data to be saved in your computer, e.g:
 
 ```Bash
-docker run -it --shm-size=512m -v $HOME/suave_results:/home/kasm-user/suave/results -p 6901:6901 -e VNC_PW=password rezenders/suave:seams
+docker run -it --shm-size=512m -v $HOME/suave_results:/home/kasm-user/suave/results -p 6901:6901 -e VNC_PW=password egalberts/suave:1.0
 ```
 
 Once the container is up and running, you can interface with it through your web browser. The container will be hosted locally at the port specified, in this case 6901. So in your browser, go to
@@ -187,9 +187,22 @@ colcon build --symlink-install --executor sequential --parallel-workers 1
 Now you can proceed to [run the exemplar](#run-the-exemplar).
 
 ## Run the exemplar
+### Trying it out!
+If you simply want to try out the exemplar while running the docker image, simply enter the following commands in a terminal:
+```Bash
+cd ~/suave_ws/
+./example_run.sh
+```
+Within a couple of minutes, some new terminals should open as well as the Gazebo simulator. 
+A default mission is executed of inspecting the pipeline with a time limit. 
+To follow the robot as it progesses along its mission make sure to right click and follow it in the entity tree of Gazebo as shown below:
+![BLUEROV Follow](https://github.com/kas-lab/suave/blob/652db0676ec2995c4cc0653ef5de0fc49edd00ac/docker/follow_bluerov.PNG)
 
-### Runner
-To run the exemplar with the runner from within the docker image, simply run:
+**Please note**: It can take a little while for the robot to get moving, it is an issue we are aware of. Once it does get a move on you should see it perform its mission for about 5 minutes. 
+
+### Full Runner
+To run the exemplar with the runner from within the docker image, make sure you are in the ~/suave_ws/ directory and simply run:
+
 
 Without gui:
 ```
@@ -270,6 +283,6 @@ ros2 launch suave_missions mission.launch.py adaptation_manager:=metacontrol mis
 
 This project has received funding from the European Union’s Horizon 2020 research and innovation programme under the Marie Skłodowska-Curie grant agreement No. 956200.
 
-Pleave visit [our website](https://remaro.eu/) for more information on our project.
+Please visit [our website](https://remaro.eu/) for more information on our project.
 
 ![REMARO Logo](https://remaro.eu/wp-content/uploads/2020/09/remaro1-right-1024.png)

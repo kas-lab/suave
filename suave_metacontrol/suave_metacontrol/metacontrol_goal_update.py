@@ -113,7 +113,7 @@ class MetacontrolGoalUpdate(Node):
             # It will just kind of hang here unless the pipeline becomes
             # undetected or uninspected.
         else:
-            self.get_logger().info('\n\n No need \n\n')
+            #self.get_logger().info('\n\n No need to send goal \n\n')
             return
         # still need to change the action client to not be async I believe
         self.last_goal_sent = adaptation_goal
