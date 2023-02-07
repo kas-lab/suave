@@ -10,7 +10,7 @@ The exemplar can either be [run through Docker](#use-the-exemplar-with-docker) o
 - [Install the exemplar locally](https://github.com/kas-lab/suave#install-the-exemplar-locally)
 - [Install the SUAVE workspace](https://github.com/kas-lab/suave#install-the-suave-workspace)
 - [Run the exemplar](https://github.com/kas-lab/suave#run-the-exemplar)
-- [Requirements for a managing subsystem](https://github.com/kas-lab/suave#extending-and-connecting-managing-subsystems)
+- [Extending and connecting managing subsystems](https://github.com/kas-lab/suave#extending-and-connecting-managing-subsystems)
 - [Acknowledgments](https://github.com/kas-lab/suave#acknowledgments)
 
 ## Use the exemplar with Docker
