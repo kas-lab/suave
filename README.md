@@ -5,25 +5,13 @@ It clearly separates between the mananged subsystem, implementing the basic func
 
 The exemplar can either be [run through Docker](#use-the-exemplar-with-docker) or [installed locally](#install-the-exemplar-locally) to [run it](#run-the-exemplar).
 
-## Requirements for a managing subsystem
-The interface for interacting with the managed subsystem is handle by the ROS2 system modes package. For easy integration with another managing subsystem, this package can be used to apply reconfiguration. The nodes which handle searching for and following the pipeline, as well as motion control are implemented using Lifecycle Nodes. This allows for these nodes to be reconfigured using the system modes package.
-
-The adaptation scenarios need to be described in a yaml file such as done in [suave_modes.yaml](https://github.com/kas-lab/suave/blob/main/suave/config/suave_modes.yaml) within the same folder. This file should then be added in the [system_modes.launch.py](https://github.com/kas-lab/suave/blob/main/suave/launch/system_modes.launch.py) file, replacing the suave_modes.yaml.
-
-The adaptation logic needs to be implemented as a separate node. Adaptation is done by calling the system_modes services for each Lifecycle Node. The [random_reasoner.py](https://github.com/kas-lab/suave/blob/main/suave_metacontrol/suave_metacontrol/random_reasoner.py) node can be used as a reference for applying the adaptation logic.
-
-In order to launch the new managing subsystem using mission.launch.py as explained in the [run the exemplar](#run-the-exemplar) section, the launch argument needs to be linked to the executable of the managing subsystem node by replacing \[new_managing_subsystem\] with the given name:
-```
-[new_managing_subsystem]_launch_path = os.path.join(
-        pkg_suave_metacontrol_path,
-        'launch',
-        '[new_managing_subsystem].launch.py')
-
-[new_managing_subsystem]_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([new_managing_subsystem]_launch_path),
-        condition=LaunchConfigurationEquals('adaptation_manager',
-                    '[new_managing_subsystem]'))
-```
+## Navigate the README
+- [Use the exemplar with Docker](https://github.com/kas-lab/suave#use-the-exemplar-with-docker)
+- [Install the exemplar locally](https://github.com/kas-lab/suave#install-the-exemplar-locally)
+- [Install the SUAVE workspace](https://github.com/kas-lab/suave#install-the-suave-workspace)
+- [Run the exemplar](https://github.com/kas-lab/suave#run-the-exemplar)
+- [Requirements for a managing subsystem](https://github.com/kas-lab/suave#extending-and-connecting-managing-subsystems)
+- [Acknowledgments](https://github.com/kas-lab/suave#acknowledgments)
 
 ## Use the exemplar with Docker
 
@@ -69,7 +57,7 @@ Follow the [official instructions](https://docs.ros.org/en/humble/Installation/U
 ArduSub is a subproject within ArduPilot for piloting underwater vehicles.
 
 **Disclaimer:**
-Problems may occur with different combinations of ArduPilot and MavROS versions. This repo was tested with [this ArduPilot commit](https://github.com/ArduPilot/ardupilot/tree/9f1c4df5e744d58d3089671926bb964c924b2090) and [mavros 2.4.0](https://github.com/mavlink/mavros/tree/10569e626a36d8c69fc78749bb83c112a00e2be8). Unfortunately, at least at the time of writing this README, the releases available in Ubuntu 22.04 do not match.
+Problems may occur with different combinations of ArduPilot and MavROS versions. This repo was tested with [this ArduPilot commit](https://github.com/ArduPilot/ardupilot/tree/9f1c4df5e744d58d3089671926bb964c924b2090) and [mavros 2.4.0](https://github.com/mavlink/mavros/tree/9f1c4df). Unfortunately, at least at the time of writing this README, the releases available in Ubuntu 22.04 do not match.
 
 ```Bash
 cd ~/
@@ -151,18 +139,19 @@ Create the workspace and download the required repositories:
 ```Bash
 mkdir -p ~/suave_ws/src/
 cd ~/suave_ws/
+```
+
+If you want to get the most updated version of the repo:
+
+```Bash
 wget https://raw.githubusercontent.com/kas-lab/suave/main/suave/suave.rosinstall
 vcs import src < suave.rosinstall --recursive
 ```
+**SEAMS2023:** If you want to get the version submitted to SEAMS 2023 instead of the most updated version get the following dependencies instead:
 
-Add the required paths:
 ```Bash
-echo 'export GZ_SIM_RESOURCE_PATH=$HOME/suave_ws/src/bluerov2_ignition/models:$HOME/suave_ws/src/bluerov2_ignition/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
-echo 'export GZ_SIM_RESOURCE_PATH=$HOME/suave_ws/src/remaro_worlds/models:$HOME/suave_ws/src/remaro_worlds/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
-```
-Source the terminal again:
-```bash
-source ~/.bashrc
+wget https://github.com/kas-lab/suave/blob/35d482b85190a15894461bd17748e3e5a36f576b/suave/suave.rosinstall
+vcs import src < suave.rosinstall --recursive
 ```
 
 Install the dependencies:
@@ -171,6 +160,13 @@ source /opt/ros/humble/setup.bash
 cd ~/suave_ws/
 rosdep install --from-paths src --ignore-src -r -y
 ```
+
+Before building the `ros_gz` package (one of the dependencies), you need to export the gazebo version:
+
+```
+export GZ_VERSION="garden"
+```
+You can also add this to your `~/.bashrc` to make this process easier.
 
 Build the project:
 ```Bash
@@ -193,12 +189,12 @@ If you simply want to try out the exemplar while running the docker image, simpl
 cd ~/suave_ws/
 ./example_run.sh
 ```
-Within a couple of minutes, some new terminals should open as well as the Gazebo simulator. 
-A default mission is executed of inspecting the pipeline with a time limit. 
+Within a couple of minutes, some new terminals should open as well as the Gazebo simulator.
+A default mission is executed of inspecting the pipeline with a time limit.
 To follow the robot as it progesses along its mission make sure to right click and follow it in the entity tree of Gazebo as shown below:
 ![BLUEROV Follow](https://github.com/kas-lab/suave/blob/652db0676ec2995c4cc0653ef5de0fc49edd00ac/docker/follow_bluerov.PNG)
 
-**Please note**: It can take a little while for the robot to get moving, it is an issue we are aware of. Once it does get a move on you should see it perform its mission for about 5 minutes. 
+**Please note**: It can take a little while for the robot to get moving, it is an issue we are aware of. Once it does get a move on you should see it perform its mission for about 5 minutes.
 
 ### Full Runner
 To run the exemplar with the runner from within the docker image, make sure you are in the ~/suave_ws/ directory and simply run:
@@ -277,6 +273,27 @@ An example of running the constant distance mission with metacontrol saving to a
 
 ```Bash
 ros2 launch suave_missions mission.launch.py adaptation_manager:=metacontrol mission_type:=const_dist_mission result_filename:=measurement_1
+```
+
+## Extending and connecting managing subsystems
+
+The interface for interacting with the managed subsystem is handle by the ROS2 system modes package. For easy integration with another managing subsystem, this package can be used to apply reconfiguration. The nodes which handle searching for and following the pipeline, as well as motion control are implemented using Lifecycle Nodes. This allows for these nodes to be reconfigured using the system modes package.
+
+The adaptation scenarios need to be described in a yaml file such as done in [suave_modes.yaml](https://github.com/kas-lab/suave/blob/main/suave/config/suave_modes.yaml) within the same folder. This file should then be added in the [system_modes.launch.py](https://github.com/kas-lab/suave/blob/main/suave/launch/system_modes.launch.py) file, replacing the suave_modes.yaml.
+
+The adaptation logic needs to be implemented as a separate node. Adaptation is done by calling the system_modes services for each Lifecycle Node. The [random_reasoner.py](https://github.com/kas-lab/suave/blob/main/suave_metacontrol/suave_metacontrol/random_reasoner.py) node can be used as a reference for applying the adaptation logic.
+
+In order to launch the new managing subsystem using mission.launch.py as explained in the [run the exemplar](#run-the-exemplar) section, the launch argument needs to be linked to the executable of the managing subsystem node by replacing \[new_managing_subsystem\] with the given name:
+```
+[new_managing_subsystem]_launch_path = os.path.join(
+        pkg_suave_metacontrol_path,
+        'launch',
+        '[new_managing_subsystem].launch.py')
+
+[new_managing_subsystem]_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([new_managing_subsystem]_launch_path),
+        condition=LaunchConfigurationEquals('adaptation_manager',
+                    '[new_managing_subsystem]'))
 ```
 
 ## Acknowledgments
