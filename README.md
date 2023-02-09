@@ -296,6 +296,11 @@ In order to launch the new managing subsystem using mission.launch.py as explain
                     '[new_managing_subsystem]'))
 ```
 
+## Related repository
+
+[REMARO Summer School Delft 2022](https://github.com/remaro-network/tudelft_hackathon) - Underwater robotics hackathon
+
+
 ## Acknowledgments
 
 This project has received funding from the European Union’s Horizon 2020 research and innovation programme under the Marie Skłodowska-Curie grant agreement No. 956200.
