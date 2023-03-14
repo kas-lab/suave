@@ -16,7 +16,6 @@
   <exec_depend>mros2_reasoner</exec_depend>
   <exec_depend>mc_mdl_tomasys</exec_depend>
   <exec_depend>mros_ontology</exec_depend>
-  <exec_depend>python-numpy</exec_depend>
   <exec_depend>python3-numpy</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
