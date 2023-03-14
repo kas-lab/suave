@@ -18,7 +18,7 @@ repositories:
   suave:
     type: git
     url: https://github.com/kas-lab/suave.git
-    version: 23e3115
+    version: main
   mc_mdl_tomasys:
     type: git
     url: https://github.com/meta-control/mc_mdl_tomasys.git
