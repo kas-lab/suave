@@ -14,16 +14,16 @@ class TaskBridgeNone(TaskBridge):
         self.declare_parameter('f_generate_search_path_mode', 'fd_spiral_low')
         self.declare_parameter('f_follow_pipeline_mode', 'fd_follow_pipeline')
 
-        client_cb_group = MutuallyExclusiveCallbackGroup()
+        self.client_cb_group = MutuallyExclusiveCallbackGroup()
         self.generate_path_sm_cli = self.create_client(
             ChangeMode,
             '/f_generate_search_path/change_mode',
-            callback_group=client_cb_group)
+            callback_group=self.client_cb_group)
 
         self.follow_pipeline_sm_cli = self.create_client(
             ChangeMode,
             '/f_follow_pipeline/change_mode',
-            callback_group=client_cb_group)
+            callback_group=self.client_cb_group)
 
         self.sm_cli_dict = {
             'f_generate_search_path': self.generate_path_sm_cli,
@@ -44,14 +44,10 @@ class TaskBridgeNone(TaskBridge):
         return self.call_sysmode_change_mode(function, mode_name)
 
     def call_sysmode_change_mode(self, function, mode_name):
-        cli = self.sm_cli_dict[function]
-        while not cli.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info(
-               'service not available, waiting again...')
-
         mode_req = ChangeMode.Request()
         mode_req.mode_name = mode_name
-        response = cli.call(mode_req)
+        cli = self.sm_cli_dict[function]
+        response = self.call_service(cli, mode_req)
         return response.success
 
 

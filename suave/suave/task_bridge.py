@@ -57,3 +57,12 @@ class TaskBridge(Node):
         self.get_logger().info(
             "forward_task_cancel_request method not defined")
         return False
+
+    def call_service(self, cli, request):
+        while not cli.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('service not available, waiting again...')
+        future = cli.call_async(request)
+        while self.executor.spin_until_future_complete(
+                future, timeout_sec=1.0):
+            self.get_logger().info("Waiting for future to complete")
+        return future.result()
