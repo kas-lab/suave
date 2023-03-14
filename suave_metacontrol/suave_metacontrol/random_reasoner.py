@@ -1,3 +1,4 @@
+import random
 import rclpy
 
 
@@ -7,7 +8,6 @@ from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.callback_groups import ReentrantCallbackGroup
 from system_modes_msgs.srv import ChangeMode, GetAvailableModes
 import threading
-import numpy as np
 from std_msgs.msg import Bool
 from std_srvs.srv import Empty
 
@@ -113,7 +113,7 @@ class RandomReasoner(Node):
             self.get_logger().info('Mission done, why am I still running?')
             return
 
-        new_mode = np.random.choice(modes)
+        new_mode = random.choice(modes)
 
         self.get_logger().info('Random mode {}'.format(str(new_mode)))
 
