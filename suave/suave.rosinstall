@@ -6,7 +6,7 @@ repositories:
   mavros:
     type: git
     url: https://github.com/mavlink/mavros.git
-    version: 10569e6
+    version: 01eccd8
   mavros_wrapper:
     type: git
     url: https://github.com/remaro-network/mavros_wrapper.git
@@ -22,7 +22,7 @@ repositories:
   mc_mdl_tomasys:
     type: git
     url: https://github.com/meta-control/mc_mdl_tomasys.git
-    version: 8494645
+    version: 1a491bb
   mros_ontology:
     type: git
     url: https://github.com/meta-control/mros_ontology.git
