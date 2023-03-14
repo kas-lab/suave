@@ -1,11 +1,20 @@
 #!/bin/bash
 
 if [ $# -lt 1 ]; then
-	echo "usage: $0 gui adaptation_manager mission_type"
+	echo "usage: $0 gui adaptation_manager mission_type runs"
 	echo example:
-	echo "  "$0 "[true | false]"
+	echo "  "$0 "[true | false] [metacontrol | random | none] [time | distance] runs(integer)"
 	exit 1
 fi
+
+trap ctrl_c INT
+
+function ctrl_c() {
+        echo "Cleaning up.."
+        kill_running_nodes
+        echo "Shutting down"
+        exit 0
+}
 
 GUI=""
 MANAGER=""
@@ -18,6 +27,30 @@ then
     GUI=$1
 else
     echo "gui argument invalid"
+    exit 1
+fi
+
+if [ "$2" == "metacontrol" ] || [ "$2" == "random" ] || [[ "$2" == "none" ]];
+then
+    MANAGER=$2
+else
+    echo "adaptation_manager invalid or missing"
+    exit 1
+fi
+
+if [ "$3" == "time" ] || [ "$3" == "distance" ];
+then
+    MTYPE=$3
+else
+    echo "mission_type invalid or missing"
+    exit 1
+fi
+
+if [ "$4" != "" ];
+then
+    RUNS=$4
+else
+    echo "number of runs invalid or missing"
     exit 1
 fi
 
@@ -59,7 +92,7 @@ sleep 15 #let it finish the killing spree
 }
 
 run_missions(){
-  for j in {1..10}
+  for j in {0..$RUNS}
   do
       kill_running_nodes
       ros2 daemon stop
@@ -86,13 +119,6 @@ run_missions(){
               rm ~/suave_ws/mission.done
               break;
           fi
-          current_time=$SECONDS
-          elapsed="$(($current_time-$start_time))"
-          if (($elapsed>350))
-          then
-            echo "mission aborted"
-            break;
-          fi
           sleep 5 #sustainability!
       done
 
@@ -106,14 +132,8 @@ cd ~/ardupilot
 cd $CURDIR
 
 NOW=$(date +"%d_%m_%y_%H_%M_%S")
-MTYPE="time"
-MISSONCONFIG=${NOW}"_mission_config.yaml"
-cp ~/suave_ws/install/suave_missions/share/suave_missions/config/mission_config.yaml ~/suave/results/${MISSONCONFIG}
-MANAGER="none"
-run_missions
+MISSIONCONFIG=${NOW}"_mission_config.yaml"
+mkdir -p ~/suave/results
+cp ~/suave_ws/install/suave_missions/share/suave_missions/config/mission_config.yaml ~/suave/results/${MISSIONCONFIG}
 
-MANAGER="metacontrol"
-run_missions
-
-MANAGER="random"
 run_missions

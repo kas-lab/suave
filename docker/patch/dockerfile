@@ -1,0 +1,15 @@
+FROM rezenders/suave:dev
+
+RUN sudo apt purge firefox google-chrome-stable vlc* -y \
+    && sudo apt autoremove -y && sudo rm -rf /var/lib/apt/lists/
+
+ENV STARTUPDIR /dockerstartup
+COPY vnc_startup.sh $STARTUPDIR
+
+WORKDIR /home/kasm-user/ardupilot
+RUN ["/bin/bash", "-c", "./waf configure && make sub"]
+
+WORKDIR /home/kasm-user/
+COPY patch.sh /home/kasm-user/
+RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash && sh patch.sh"]
+WORKDIR /home/kasm-user/suave_ws/src/suave/docker/runner
