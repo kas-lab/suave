@@ -193,12 +193,12 @@ If you simply want to try out the exemplar while running the docker image, simpl
 cd ~/suave_ws/
 ./example_run.sh
 ```
-Within a couple of minutes, some new terminals should open as well as the Gazebo simulator. 
-A default mission is executed of inspecting the pipeline with a time limit. 
+Within a couple of minutes, some new terminals should open as well as the Gazebo simulator.
+A default mission is executed of inspecting the pipeline with a time limit.
 To follow the robot as it progesses along its mission make sure to right click and follow it in the entity tree of Gazebo as shown below:
 ![BLUEROV Follow](https://github.com/kas-lab/suave/blob/652db0676ec2995c4cc0653ef5de0fc49edd00ac/docker/follow_bluerov.PNG)
 
-**Please note**: It can take a little while for the robot to get moving, it is an issue we are aware of. Once it does get a move on you should see it perform its mission for about 5 minutes. 
+**Please note**: It can take a little while for the robot to get moving, it is an issue we are aware of. Once it does get a move on you should see it perform its mission for about 5 minutes.
 
 ### Full Runner
 To run the exemplar with the runner from within the docker image, make sure you are in the ~/suave_ws/ directory and simply run:
@@ -244,7 +244,7 @@ Launch the simulation environment:
 ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
 ```
 
-**Note:** It is possible to pass arguments to specify the x and y coordinates of where the UUV spawns, by changing the values. In the above launch command the initial coordinates are set to (-17.0,2.0).
+**Note:** It is possible to pass arguments to specify the x and y coordinates of where the UUV spawns, by changing the values. In the above launch command the initial coordinates are set to (-17.0, 2.0).
 
 ### Start the Mission
 Now it is possible to start the mission. Select the desired type of missions through the command line arguments. The mission results will be saved in the path specified in the mission_config.yaml file.
