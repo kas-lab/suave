@@ -32,7 +32,8 @@ class TaskBridgeMetacontrol(TaskBridge):
     def forward_task_request(self, function):
         self.get_logger().info("Waiting for future to complete")
         future = self.send_mros_objective(function)
-        while rclpy.spin_until_future_complete(self, future, timeout_sec=1.0):
+        while self.executor.spin_until_future_complete(
+                future, timeout_sec=1.0):
             self.get_logger().info("Waiting for future to complete")
         self.current_objectives_handle[function] = future.result()
         return self.current_objectives_handle[function].accepted
@@ -43,10 +44,14 @@ class TaskBridgeMetacontrol(TaskBridge):
             goal_handle = self.current_objectives_handle[function]
             future = goal_handle.cancel_goal_async()
             self.get_logger().info('cancel requested {}'.format(function))
-            while rclpy.spin_until_future_complete(self, future, timeout_sec=1.0):
+            while self.executor.spin_until_future_complete(
+                    future, timeout_sec=1.0):
                 self.get_logger().info("Waiting for future to complete")
             del function
-            return future.result().accepted
+            if future is not None and goal_handle.status == 3:
+                return True
+            else:
+                return False
         else:
             self.get_logger().info(
                 'Function {} is not active'.format(function))
