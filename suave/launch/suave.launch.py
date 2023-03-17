@@ -5,6 +5,7 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.actions import IncludeLaunchDescription
+from launch.conditions import LaunchConfigurationEquals
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 
@@ -12,6 +13,12 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    task_bridge = LaunchConfiguration('task_bridge')
+    task_bridge_arg = DeclareLaunchArgument(
+        'task_bridge',
+        default_value='True',
+        description='Indicates if task_bridge should be launched [True/False]'
+    )
 
     mission_config = os.path.join(
         get_package_share_directory('suave_missions'),
@@ -57,6 +64,7 @@ def generate_launch_description():
     task_bridge_node = Node(
         package='suave',
         executable='task_bridge_none',
+        condition=LaunchConfigurationEquals('task_bridge', 'True')
     )
 
     pkg_suave_path = get_package_share_directory('suave')
@@ -70,6 +78,7 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(system_modes_launch_path))
 
     return LaunchDescription([
+        task_bridge_arg,
         water_visibility_node,
         pipeline_detection_wv_node,
         thruster_monitor_node,

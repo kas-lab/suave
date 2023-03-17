@@ -37,6 +37,8 @@ def generate_launch_description():
 
     suave_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(suave_launch_path),
+        launch_arguments={
+            'task_bridge': 'False'}.items()
     )
 
     task_bridge_node = Node(
