@@ -64,7 +64,8 @@ class MissionPlanner(Node):
 
         self.metrics_header = ['mission_name', 'datetime', 'metric']
 
-        self.pipeline_detected_time = -1
+        self.mission_start_time = None
+        self.pipeline_detected_time = None
         self.abort_mission = False
 
     def status_cb(self, msg):
@@ -140,5 +141,7 @@ class MissionPlanner(Node):
                     task_status = "aborted"
                     break
                 self.task_timer.sleep()
+        else:
+            task_status = "aborted"
         self.get_logger().info('Task {0} {1}'.format(task_name, task_status))
         self.cancel_task(task_name)
