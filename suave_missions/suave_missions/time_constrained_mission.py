@@ -11,7 +11,7 @@ from suave_missions.inspection_mission import InspectionMission
 
 
 class MissionTimeConstrained(InspectionMission):
-    def __init__(self, node_name='time_contrained_mission_node'):
+    def __init__(self, node_name='time_contrained_mission'):
         super().__init__(node_name)
         if self.result_filename == 'mission_results':
             self.result_filename = 'time_mission_results'

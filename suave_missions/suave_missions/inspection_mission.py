@@ -1,11 +1,21 @@
 import os
 from datetime import datetime
+from geometry_msgs.msg import Pose
+from mavros_msgs.msg import State
+from mavros_msgs.srv import CommandBool
+from mavros_msgs.srv import SetMode
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from std_msgs.msg import Bool
 from suave_missions.mission_planner import MissionPlanner
 
 
 class InspectionMission(MissionPlanner):
-    def __init__(self, node_name='inspection_mission_node'):
+    def __init__(self, node_name='inspection_mission'):
         super().__init__(node_name)
+        self.declare_parameter('adaptation_manager', 'none')
+        self.adaptation_manager = self.get_parameter(
+            'adaptation_manager').value
+
         self.mission_name = 'inspection mission ' + str(
             self.adaptation_manager)
         self.metrics_header = [
@@ -16,8 +26,48 @@ class InspectionMission(MissionPlanner):
             'time_search (s)']
 
         # TODO: get this automatically
-        self.initial_x = 1.0
-        self.initial_y = 1.0
+        self.initial_x = 0.0
+        self.initial_y = 0.0
+
+        self.status = State()
+        self.state_sub = self.create_subscription(
+            State,
+            'mavros/state',
+            self.status_cb,
+            10,
+            callback_group=MutuallyExclusiveCallbackGroup()
+        )
+
+        self.pipeline_detected = False
+        self.pipeline_detected_sub = self.create_subscription(
+            Bool,
+            'pipeline/detected',
+            self.pipeline_detected_cb,
+            10,
+            callback_group=MutuallyExclusiveCallbackGroup())
+
+        self.pipeline_inspected = False
+        self.pipeline_inspected_sub = self.create_subscription(
+            Bool,
+            'pipeline/inspected',
+            self.pipeline_inspected_cb,
+            10,
+            callback_group=MutuallyExclusiveCallbackGroup())
+
+        self.arm_motors_service = self.create_client(
+            CommandBool, 'mavros/cmd/arming')
+        self.set_mode_service = self.create_client(
+            SetMode, 'mavros/set_mode')
+
+        self.gazebo_pos_sub = self.create_subscription(
+            Pose,
+            'model/bluerov2/pose',
+            self.gazebo_pos_cb,
+            10,
+            callback_group=MutuallyExclusiveCallbackGroup())
+
+        self.pipeline_detected_time = None
+        self.first_gz_pose = True
 
     def perform_mission(self):
         self.get_logger().info("Pipeline inspection mission starting!!")
@@ -73,3 +123,34 @@ class InspectionMission(MissionPlanner):
         self.save_metrics(mission_data)
         # TODO: make this a parameter
         os.system("touch ~/suave_ws/mission.done")
+
+    def status_cb(self, msg):
+        self.status = msg
+
+    def pipeline_detected_cb(self, msg):
+        self.pipeline_detected = msg.data
+        if self.pipeline_detected is True:
+            self.pipeline_detected_time = self.get_clock().now()
+        self.destroy_subscription(self.pipeline_detected_sub)
+
+    def pipeline_inspected_cb(self, msg):
+        self.pipeline_inspected = msg.data
+
+    def arm_motors(self, arm_motors_bool):
+        req = CommandBool.Request()
+        req.value = arm_motors_bool
+        return self.call_service(self.arm_motors_service, req)
+
+    def set_mode(self, mode):
+        req = SetMode.Request()
+        req.custom_mode = mode
+        return self.call_service(self.set_mode_service, req)
+
+    def gazebo_pos_cb(self, msg):
+        self.gazebo_pos = msg
+        if self.first_gz_pose is True:
+            self.first_gz_pose = False
+            self.initial_x = msg.position.x
+            self.initial_y = msg.position.y
+
+        self.destroy_subscription(self.gazebo_pos_sub)
