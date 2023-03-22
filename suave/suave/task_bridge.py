@@ -7,21 +7,22 @@ class TaskBridge(Node):
     def __init__(self):
         super().__init__('task_bridge')
 
-        task_cb_group = MutuallyExclusiveCallbackGroup()
+        self.task_cb_group = MutuallyExclusiveCallbackGroup()
         self.task_request_service = self.create_service(
             Task,
             'task/request',
             self.task_request_cb,
-            callback_group=task_cb_group
+            callback_group=self.task_cb_group
         )
 
         self.task_cancel_service = self.create_service(
             Task,
             'task/cancel',
             self.task_cancel_cb,
-            callback_group=task_cb_group
+            callback_group=self.task_cb_group
         )
 
+        self.current_tasks = set()
         self.task_functions_dict = dict()
 
     def task_request(self, req, forward_request):
@@ -44,10 +45,16 @@ class TaskBridge(Node):
         return response
 
     def task_request_cb(self, req, res):
-        return self.task_request(req, self.forward_task_request)
+        response = self.task_request(req, self.forward_task_request)
+        if response.success is True:
+            self.current_tasks.add(req.task_name)
+        return response
 
     def task_cancel_cb(self, req, response):
-        return self.task_request(req, self.forward_task_cancel_request)
+        response = self.task_request(req, self.forward_task_cancel_request)
+        if response.success is True:
+            self.current_tasks.remove(req.task_name)
+        return response
 
     def forward_task_request(self, function):
         self.get_logger().info("forward_task_request method not defined")
