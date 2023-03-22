@@ -7,7 +7,7 @@ from launch.actions import DeclareLaunchArgument
 from launch.actions import IncludeLaunchDescription
 from launch.conditions import LaunchConfigurationEquals
 from launch.conditions import LaunchConfigurationNotEquals
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.launch_description_sources import AnyLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
@@ -25,19 +25,26 @@ def generate_launch_description():
         description='Run with gui (true/false)')
 
     min_pipes_sim = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(min_pipes_launch_path),
+        AnyLaunchDescriptionSource(min_pipes_launch_path),
         launch_arguments={
            'gui': gui
         }.items()
     )
 
-    suave_path = get_package_share_directory(
-        'suave')
-
+    mavros_path = get_package_share_directory('mavros')
     mavros_launch_path = os.path.join(
-        suave_path, 'launch', 'mavros.launch.py')
+        mavros_path, 'launch', 'apm.launch')
     mavros_node = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(mavros_launch_path))
+        AnyLaunchDescriptionSource(mavros_launch_path),
+        launch_arguments={
+            'fcu_url': 'udp://127.0.0.1:14551@14555',
+            'gcs_url': 'udp://@localhost:14550',
+            'system_id': '255',
+            'component_id': '240',
+            'target_system_id': '1',
+            'target_component_id': '1'
+            }.items()
+        )
 
     bluerov2_ignition_path = get_package_share_directory('bluerov2_ignition')
     bluerov2_path = os.path.join(

@@ -240,7 +240,7 @@ Launch the simulation environment:
 ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
 ```
 
-**Note:** It is possible to pass arguments to specify the x and y coordinates of where the UUV spawns, by changing the values. In the above launch command the initial coordinates are set to (-17.0,2.0).
+**Note:** It is possible to pass arguments to specify the x and y coordinates of where the UUV spawns, by changing the values. In the above launch command the initial coordinates are set to (-17.0, 2.0).
 
 ### Start the Mission
 Now it is possible to start the mission. Select the desired type of missions through the command line arguments. The mission results will be saved in the path specified in the mission_config.yaml file.
