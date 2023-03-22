@@ -105,5 +105,5 @@ def generate_launch_description():
         bluerov_spawn,
         gz_pipe_pose_bridge,
         gz_bluerov_pose_bridge,
-        mavros_node
+        mavros_node,
     ])
