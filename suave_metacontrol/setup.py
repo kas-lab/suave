@@ -29,9 +29,6 @@ setup(
             'fake_managed_system = ' +
                 'suave_metacontrol.fake_managed_system:main',
             'suave_reasoner = suave_metacontrol.suave_reasoner:main',
-            'metacontrol_goal_update = ' +
-                'suave_metacontrol.metacontrol_goal_update:main',
-            'random_reasoner = suave_metacontrol.random_reasoner:main',
             'task_bridge_metacontrol = ' +
                 ' suave_metacontrol.task_bridge_metacontrol:main',
             'task_bridge_random = ' +
