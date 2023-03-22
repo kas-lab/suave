@@ -10,7 +10,7 @@ repositories:
   mavros_wrapper:
     type: git
     url: https://github.com/remaro-network/mavros_wrapper.git
-    version: 4861d56
+    version: 72b9743
   remaro_worlds:
     type: git
     url: https://github.com/remaro-network/remaro_worlds.git

@@ -12,33 +12,36 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    pkg_suave_path = get_package_share_directory(
-        'suave')
-    pkg_suave_metacontrol_path = get_package_share_directory(
-        'suave_metacontrol')
     time_limit = LaunchConfiguration('time_limit')
-
-    adapt_period_arg = DeclareLaunchArgument(
-        'adaptation_period',
-        default_value='15',
-        description='How often the random adaptation happens every x (seconds)'
-    )
-
-    adapt_period = LaunchConfiguration("adaptation_period")
 
     mission_config = os.path.join(
         get_package_share_directory('suave_missions'),
         'config',
         'mission_config.yaml')
 
-    random_reasoner_node = Node(
+    pkg_suave_path = get_package_share_directory(
+        'suave')
+    pkg_suave_metacontrol_path = get_package_share_directory(
+        'suave_metacontrol')
+
+    suave_launch_path = os.path.join(
+        pkg_suave_path,
+        'launch',
+        'suave.launch.py')
+
+    suave_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(suave_launch_path),
+        launch_arguments={
+            'task_bridge': 'False'}.items()
+    )
+
+    task_bridge_node = Node(
         package='suave_metacontrol',
-        executable='random_reasoner',
-        name='random_reasoner_node',
-        parameters=[mission_config]
+        executable='task_bridge_random',
+        parameters=[mission_config],
     )
 
     return LaunchDescription([
-        adapt_period_arg,
-        random_reasoner_node,
+        suave_launch,
+        task_bridge_node,
     ])

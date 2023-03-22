@@ -34,6 +34,7 @@ setup(
             'thruster_monitor = suave.thruster_monitor:main',
             'recover_thrusters = suave.recover_thrusters_lc:main',
             'water_visibility_observer = suave.water_visibility_observer:main',
+            'task_bridge_none = suave.task_bridge_none:main',
         ],
     },
 )

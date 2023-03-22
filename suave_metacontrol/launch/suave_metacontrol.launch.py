@@ -37,17 +37,18 @@ def generate_launch_description():
 
     suave_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(suave_launch_path),
+        launch_arguments={
+            'task_bridge': 'False'}.items()
     )
 
-    goal_bride_node = Node(
+    task_bridge_node = Node(
         package='suave_metacontrol',
-        executable='metacontrol_goal_update',
-        name='metacontrol_goal_update_node',
+        executable='task_bridge_metacontrol',
     )
 
     return LaunchDescription([
         suave_launch,
         metacontrol_launch,
         mros2_system_modes_bridge_node,
-        goal_bride_node,
+        task_bridge_node,
     ])
