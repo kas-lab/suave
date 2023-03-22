@@ -14,6 +14,9 @@ class TaskBridgeRandom(TaskBridgeNone):
     def __init__(self):
         super().__init__()
 
+        self.declare_parameter('adaptation_period', 15)
+        self.adaptation_period = self.get_parameter('adaptation_period').value
+
         self.generate_path_modes_cli = self.create_client(
             GetAvailableModes,
             '/f_generate_search_path/get_available_modes',
@@ -29,6 +32,18 @@ class TaskBridgeRandom(TaskBridgeNone):
             'f_follow_pipeline': self.follow_pipeline_modes_cli,
         }
 
+        self.reasoner_timer = self.create_timer(
+            self.adaptation_period,
+            self.reasoner_cb,
+            callback_group=self.task_cb_group
+        )
+
+    def reasoner_cb(self):
+        for task_name in self.current_tasks:
+            function_names = self.task_functions_dict[task_name]
+            for function in function_names:
+                self.forward_task_request(function)
+
     def forward_task_request(self, function):
         modes_cli = self.available_modes_cli[function]
         mode_name = random.choice(
@@ -41,7 +56,7 @@ class TaskBridgeRandom(TaskBridgeNone):
 
 
 def main():
-    print('Starting task bridge node')
+    print('Starting random task bridge node')
 
     rclpy.init(args=sys.argv)
 
