@@ -1,4 +1,4 @@
-/parent_mission_node:
+/mission_node:
   ros__parameters:
     time_limit: 300 #Time limit for a time_constrained mission
     result_path: "~/suave/results" #Path to save results
@@ -17,6 +17,6 @@
     thruster_events: # Thruster events, format: (thruster number (1 to 6), failure or recovery, delta time in seconds(from the last event))
     - (1,failure,35)
 
-/random_reasoner_node:
+/task_bridge:
   ros__parameters:
     adapt_period: 30 #Period to perform random adaptation in seconds
