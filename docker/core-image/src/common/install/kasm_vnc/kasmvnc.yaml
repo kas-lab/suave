@@ -1,4 +1,0 @@
-network:
-  ssl:
-    pem_certificate: ${HOME}/.vnc/self.pem
-    pem_key: ${HOME}/.vnc/self.pem

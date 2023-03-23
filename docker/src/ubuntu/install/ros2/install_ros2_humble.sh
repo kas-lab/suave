@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 set -ex
 
-apt update && sudo apt install curl gnupg lsb-release
+apt update && apt install -y curl gnupg lsb-release
 curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
 
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(source /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
 
 apt update
+apt upgrade -y
 
-#sudo apt install -y ros-humble-desktop=0.10.0-1jammy.20220922.190042
-sudo apt install -y ros-humble-ros-base
+apt install -y ros-humble-ros-base
 
-sudo apt install -y python3-colcon-common-extensions=0.3.0-1
+apt install -y python3-colcon-common-extensions
 
-sudo apt install -y python3-rosdep=0.22.1-1
+apt install -y python3-rosdep
 
-sudo apt install -y python3-vcstool=0.3.0-1
+apt install -y python3-vcstool
