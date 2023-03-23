@@ -9,8 +9,6 @@ git checkout 9f1c4df
 
 git submodule update --init --recursive
 
-#install-prereqs-ubuntu.sh from ardupilot
-
 sudo apt install python-is-python3
 
 sudo pip3 install future
