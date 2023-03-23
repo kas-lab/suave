@@ -50,7 +50,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: docker/
-          file: dockerfile-kasm-core-jammy
+          file: docker/dockerfile-kasm-core-jammy
           push: true
           tags: ${{ env.REGISTRY }}/kasm-jammy
           labels: ${{ steps.meta.outputs.labels }}
@@ -59,7 +59,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: docker/
-          file: dockerfile-kasm-ubuntu-jammy-desktop-minimal
+          file: docker/dockerfile-kasm-ubuntu-jammy-desktop-minimal
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
