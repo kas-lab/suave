@@ -10,13 +10,13 @@
 name: Create and publish a Docker image
 
 on:
+  release:
+      types: [published, released, edited]
   push:
     branches:
       - main
     tags:
       - 'v*'
-    release:
-      types: [published, released, edited]
 
 env:
   REGISTRY: ghcr.io
@@ -46,8 +46,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+      - name: Build and push kasm-jammy image
+        uses: docker/build-push-action@v4
         with:
           context: docker/
           file: dockerfile-kasm-core-jammy
@@ -55,7 +55,7 @@ jobs:
           tags: ${{ env.REGISTRY }}/kasm-jammy
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Build and push Docker image
+      - name: Build and push suave image
         uses: docker/build-push-action@v4
         with:
           context: docker/
