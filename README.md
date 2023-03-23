@@ -1,4 +1,9 @@
 # SUAVE: An Exemplar for Self-Adaptive Underwater Vehicles
+
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/kas-lab/suave)](https://github.com/kas-lab/suave/releases)
+[![Main](https://github.com/kas-lab/suave/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/kas-lab/suave/actions/workflows/main.yml)
+[![Docker Images](https://github.com/kas-lab/suave/actions/workflows/container.yml/badge.svg)](https://github.com/kas-lab/suave/actions/workflows/container.yml)
+
 This repository contains SUAVE (Self-adaptive Underwater Autonomous Vehicle Exemplar). SUAVE focuses on the scenario of pipeline inspection
 for a single autonomous underwater vehicle (AUV). The AUV’s mission is to first search for a pipeline on the seabed, then follow and inspect the pipeline.
 
