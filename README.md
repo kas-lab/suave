@@ -1,17 +1,29 @@
 # SUAVE: An Exemplar for Self-Adaptive Underwater Vehicles
-This repository contains the exemplar SUAVE (Self-adaptive Underwater Autonomous Vehicle Exemplar), an exemplar focussing on an underwater robot searching for a pipeline and following it.
+This repository contains SUAVE (Self-adaptive Underwater Autonomous Vehicle Exemplar). SUAVE focuses on the scenario of pipeline inspection
+for a single autonomous underwater vehicle (AUV). The AUV’s mission is to first search for a pipeline on the seabed, then follow and inspect the pipeline.
 
-It clearly separates between the mananged subsystem, implementing the basic functionalities of the robot, and the managing system that implements the adaptation logic. This ensures that this exemplar can be reused with several different managing subsystems, providing that they satisfy the necessary [requirements](#requirements-for-a-managing-subsystem). The usability of the exemplar is showcased with [MROS2](https://github.com/meta-control/mc_mros_reasoner), the implementation of the self-adaptation framework [Metacontrol](https://research.tudelft.nl/en/publications/model-based-self-awareness-patterns-for-autonomy).
+It clearly separates the system into two subsystems: the managed subsystem and the managing subsystem. The managed subsystem implements the functionalities required by the AUV to perform the pipeline inspection mission, and the managing subsystem implements the adaptation logic.  This ensures that this exemplar can be reused with several different managing subsystems, providing that they satisfy the necessary [requirements](#requirements-for-a-managing-subsystem). The usability of the exemplar is showcased with [MROS2](https://github.com/meta-control/mc_mros_reasoner), the implementation of the self-adaptation framework [Metacontrol](https://research.tudelft.nl/en/publications/model-based-self-awareness-patterns-for-autonomy).
 
-The exemplar can either be [run through Docker](#use-the-exemplar-with-docker) or [installed locally](#install-the-exemplar-locally) to [run it](#run-the-exemplar).
+This repository is organized as following:
+- The package [suave](https://github.com/kas-lab/suave/tree/main/suave) contains the managed subsystem functionalities
+- The package [suave_missions](https://github.com/kas-lab/suave/tree/main/suave_missions) contains the AUV's missions
+- The package [suave_metacontrol](https://github.com/kas-lab/suave/tree/main/suave_metacontrol) contains the metacontrol implementation of the managing subsystems, and a random managing subsystem
+- The package [suave_msgs](https://github.com/kas-lab/suave/tree/main/suave_msgs) contains suave's specific ros msgs
+- The folder [docker](https://github.com/kas-lab/suave/tree/main/docker) contains the dockerfiles and scripts used to package this repository
+
+The exemplar can either be used with [Docker](#use-the-exemplar-with-docker) or [installed locally](#install-the-exemplar-locally). The exemplar can be executed following this [instructions](#run-the-exemplar). 
+
+A paper describing this exemplar was submitted and accepted at SEAMS 2023 artifact track, and it will be published later. A pre-print can be found [here](https://arxiv.org/abs/2303.09220).
 
 ## Navigate the README
-- [Use the exemplar with Docker](https://github.com/kas-lab/suave#use-the-exemplar-with-docker)
-- [Install the exemplar locally](https://github.com/kas-lab/suave#install-the-exemplar-locally)
-- [Install the SUAVE workspace](https://github.com/kas-lab/suave#install-the-suave-workspace)
-- [Run the exemplar](https://github.com/kas-lab/suave#run-the-exemplar)
-- [Extending and connecting managing subsystems](https://github.com/kas-lab/suave#extending-and-connecting-managing-subsystems)
-- [Acknowledgments](https://github.com/kas-lab/suave#acknowledgments)
+- [Use the exemplar with Docker](#use-the-exemplar-with-docker)
+- [Install the exemplar locally](#install-the-exemplar-locally)
+- [Install the SUAVE workspace](#install-the-suave-workspace)
+- [Run the exemplar](#run-the-exemplar)
+- [Extending and connecting managing subsystems](#extending-and-connecting-managing-subsystems)
+- [Related repository](#related-repository)
+- [Citation](#citation)
+- [Acknowledgments](#acknowledgments)
 
 ## Use the exemplar with Docker
 
@@ -300,6 +312,20 @@ In order to launch the new managing subsystem using mission.launch.py as explain
 
 [REMARO Summer School Delft 2022](https://github.com/remaro-network/tudelft_hackathon) - Underwater robotics hackathon
 
+## Citation
+
+If you find this repository useful, please consider citing:
+
+```
+@misc{silva2023suave,
+      title={SUAVE: An Exemplar for Self-Adaptive Underwater Vehicles}, 
+      author={Gustavo Rezende Silva and Juliane Päßler and Jeroen Zwanepol and Elvin Alberts and S. Lizeth Tapia Tarifa and Ilias Gerostathopoulos and Einar Broch Johnsen and Carlos Hernández Corbato},
+      year={2023},
+      eprint={2303.09220},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO}
+}
+```
 
 ## Acknowledgments
 
