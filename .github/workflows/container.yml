@@ -52,7 +52,7 @@ jobs:
           context: docker/
           file: docker/dockerfile-kasm-core-jammy
           push: true
-          tags: ${{ env.REGISTRY }}/kasm-jammy
+          tags: ${{ env.REGISTRY }}/kas-lab/kasm-jammy
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Build and push suave image
@@ -63,4 +63,4 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: BASE_IMAGE=${{ env.REGISTRY }}/kasm-jammy:${{ steps.meta.outputs.labels }}
+          build-args: BASE_IMAGE=${{ env.REGISTRY }}/kas-lab/kasm-jammy:${{ steps.meta.outputs.labels }}
