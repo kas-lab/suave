@@ -84,7 +84,7 @@ class SpiralSearcherLC(Node):
 
             if self.count > 10:
                 if altitude_bug is True:
-                    self.z_delta -= 0.5
+                    self.z_delta -= 0.25
                 self.ardusub.altitude = self.spiral_altitude + self.z_delta
                 self.ardusub.setpoint_position_local(
                     self.spiral_x, self.spiral_y, fixed_altitude=True)
