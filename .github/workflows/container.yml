@@ -54,7 +54,7 @@ jobs:
       - name: Build and push kasm-jammy image
         uses: docker/build-push-action@v4
         with:
-          context: docker/
+          context: .
           file: docker/dockerfile-kasm-core-jammy
           push: true
           tags: ${{ env.REGISTRY }}/kas-lab/kasm-jammy
@@ -63,7 +63,7 @@ jobs:
       - name: Build and push suave image
         uses: docker/build-push-action@v4
         with:
-          context: docker/
+          context: .
           file: docker/dockerfile-kasm-ubuntu-jammy-desktop-minimal
           push: true
           tags: ${{ steps.meta.outputs.tags }}
