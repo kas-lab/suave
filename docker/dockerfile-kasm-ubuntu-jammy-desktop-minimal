@@ -53,6 +53,10 @@ WORKDIR $INST_SCRIPTS
 COPY ./docker/src/ubuntu/install/ardusub $INST_SCRIPTS/ardusub/
 RUN bash $INST_SCRIPTS/ardusub/install_ardusub.sh
 
+WORKDIR $HOME/ardupilot/
+RUN ["/bin/bash", "-c", "echo 'source /home/kasm-user/ardupilot/Tools/completion/completion.bash' >> /home/kasm-user/.bashrc"] 
+RUN ./waf configure && make sub
+
 RUN bash $INST_SCRIPTS/ardusub/install_arduplugin.sh
 
 ENV GZ_VERSION="garden"
