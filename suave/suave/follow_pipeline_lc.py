@@ -98,7 +98,7 @@ class PipelineFollowerLC(Node):
                 gz_pose, fixed_altitude=True)
 
             count = 0
-            while not self.ardusub.check_setpoint_reached_xy(setpoint, 0.4):
+            while not self.ardusub.check_setpoint_reached_xy(setpoint, 0.5):
                 if self.abort_follow is True:
                     self.distance_inspected += self.calc_distance(
                         last_point, self.ardusub.local_pos)
