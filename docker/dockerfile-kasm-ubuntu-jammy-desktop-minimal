@@ -62,19 +62,23 @@ WORKDIR $HOME/suave_ws/
 RUN vcs import src < suave.rosinstall --recursive
 
 RUN rm -rf $HOME/suave_ws/src/suave/
-COPY runner/ $HOME/suave_ws/src/suave/runner/
 COPY suave/ $HOME/suave_ws/src/suave/suave/
 COPY suave_missions/ $HOME/suave_ws/src/suave/suave_missions/
 COPY suave_metacontrol/ $HOME/suave_ws/src/suave/suave_metacontrol/
 COPY suave_msgs/ $HOME/suave_ws/src/suave/suave_msgs/
+RUN sudo chown -R kasm-user $HOME/suave_ws
 
 COPY ./docker/src/ubuntu/install/suave/install_suave_deps.sh $INST_SCRIPTS/suave/install_suave_deps.sh
 RUN bash $INST_SCRIPTS/suave/install_suave_deps.sh
+
 COPY ./docker/src/ubuntu/install/suave/install_suave.sh $INST_SCRIPTS/suave/install_suave.sh
 RUN bash $INST_SCRIPTS/suave/install_suave.sh
 
 RUN sudo apt autoremove -y && sudo rm -rf /var/lib/apt/lists/
 
-WORKDIR /home/kasm-user/suave_ws/src/suave/runner/
+COPY runner/ $HOME/suave_ws/src/suave/runner/
+RUN sudo chown -R kasm-user $HOME/suave_ws/src/suave/runner
+
+WORKDIR $HOME/suave_ws/src/suave/runner/
 
 CMD ["--tail-log"]

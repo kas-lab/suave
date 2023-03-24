@@ -48,7 +48,7 @@ fi
 
 if [ "$4" != "" ];
 then
-    RUNS=$(($4 + 1))
+    RUNS=$4
 else
     echo "number of runs invalid or missing"
     exit 1
@@ -92,8 +92,9 @@ sleep 15 #let it finish the killing spree
 }
 
 run_missions(){
-  for j in {0..$RUNS}
+  for ((j=0; j < $RUNS; j++));
   do
+      echo "starting run"
       kill_running_nodes
       ros2 daemon stop
       ros2 daemon start
@@ -118,6 +119,13 @@ run_missions(){
               echo "mission done"
               rm ~/suave_ws/mission.done
               break;
+          fi
+          current_time=$SECONDS
+          elapsed="$(($current_time-$start_time))"
+          if (($elapsed>600))
+          then
+            echo "mission aborted"
+            break;
           fi
           sleep 5 #sustainability!
       done

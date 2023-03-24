@@ -15,6 +15,21 @@ This repository is organized as following:
 - The package [suave_metacontrol](https://github.com/kas-lab/suave/tree/main/suave_metacontrol) contains the metacontrol implementation of the managing subsystems, and a random managing subsystem
 - The package [suave_msgs](https://github.com/kas-lab/suave/tree/main/suave_msgs) contains suave's specific ros msgs
 - The folder [docker](https://github.com/kas-lab/suave/tree/main/docker) contains the dockerfiles and scripts used to package this repository
+- The folder [docker](https://github.com/kas-lab/suave/tree/main/runner) contains the bash scripts to run the exemplar
+
+A video of the SUAVE running (click in the image to open the video):
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=X8yUZjM5bfk"/>
+  <img src="https://user-images.githubusercontent.com/20564040/227582421-6f96300d-9042-4743-8f30-9e6aecda8340.png" width="500">
+</p>
+
+
+An overview of the system:
+
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/20564040/227582678-e1494c89-1b44-4bac-aef6-bdd77127dfa6.png" width="500">
+</p>
 
 The exemplar can either be used with [Docker](#use-the-exemplar-with-docker) or [installed locally](#install-the-exemplar-locally). The exemplar can be executed following this [instructions](#run-the-exemplar).
 
@@ -22,7 +37,7 @@ A paper describing this exemplar was submitted and accepted at SEAMS 2023 artifa
 
 ## Navigate the README
 - [Use SUAVE with Docker](#use-suave-with-docker)
-- [Install SUAVE locally](#install-SUAVE-locally)
+- [Install SUAVE locally](#install-suave-locally)
 - [Run SUAVE](#run-suave)
 - [Extending SUAVE and connecting managing subsystems](#extending-suave-and-connecting-managing-subsystems)
 - [Related repository](#related-repository)
@@ -160,7 +175,7 @@ vcs import src < suave.rosinstall --recursive
 **SEAMS2023:** If you want to get the version submitted to SEAMS 2023 instead of the most updated version get the following dependencies instead:
 
 ```Bash
-wget https://raw.githubusercontent.com/kas-lab/suave/35d482b85190a15894461bd17748e3e5a36f576b/suave/suave.rosinstall
+wget https://raw.githubusercontent.com/kas-lab/suave/1658d95dbc62d246811f03451d6e7c42281cce0d/suave.rosinstall
 vcs import src < suave.rosinstall --recursive
 ```
 
