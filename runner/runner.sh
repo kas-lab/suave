@@ -48,7 +48,7 @@ fi
 
 if [ "$4" != "" ];
 then
-    RUNS=$4
+    RUNS=$(($4 + 1))
 else
     echo "number of runs invalid or missing"
     exit 1

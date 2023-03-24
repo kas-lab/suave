@@ -22,23 +22,19 @@ RUN apt-get update \
 RUN echo 'USER=whoami; export USER' >> $HOME/.bashrc
 
 ### Install Tools
-COPY ./src/ubuntu/install/tools $INST_SCRIPTS/tools/
+COPY ./docker/src/ubuntu/install/tools $INST_SCRIPTS/tools/
 RUN bash $INST_SCRIPTS/tools/install_tools_deluxe.sh  && rm -rf $INST_SCRIPTS/tools/
 
-# Install Utilities
-# COPY ./src/ubuntu/install/misc $INST_SCRIPTS/misc/
-# RUN bash $INST_SCRIPTS/misc/install_tools.sh && rm -rf $INST_SCRIPTS/misc/
-
 ### Install Visual Studio Code
-COPY ./src/ubuntu/install/vs_code $INST_SCRIPTS/vs_code/
+COPY ./docker/src/ubuntu/install/vs_code $INST_SCRIPTS/vs_code/
 RUN bash $INST_SCRIPTS/vs_code/install_vs_code.sh  && rm -rf $INST_SCRIPTS/vs_code/
 
 ### Install Gazebo
-COPY ./src/ubuntu/install/gazebo $INST_SCRIPTS/gazebo/
+COPY ./docker/src/ubuntu/install/gazebo $INST_SCRIPTS/gazebo/
 RUN bash $INST_SCRIPTS/gazebo/install_gazebo_ignition.sh  && rm -rf $INST_SCRIPTS/gazebo/
 
 ### Install ROS2
-COPY ./src/ubuntu/install/ros2 $INST_SCRIPTS/ros2/
+COPY ./docker/src/ubuntu/install/ros2 $INST_SCRIPTS/ros2/
 RUN bash $INST_SCRIPTS/ros2/install_ros2_humble.sh  && rm -rf $INST_SCRIPTS/ros2/
 
 
@@ -54,19 +50,31 @@ USER 1000
 
 ### Install Ardusub and Arduplugin and suave
 WORKDIR $INST_SCRIPTS
-COPY ./src/ubuntu/install/ardusub $INST_SCRIPTS/ardusub/
+COPY ./docker/src/ubuntu/install/ardusub $INST_SCRIPTS/ardusub/
 RUN bash $INST_SCRIPTS/ardusub/install_ardusub.sh
 
 RUN bash $INST_SCRIPTS/ardusub/install_arduplugin.sh
 
 ENV GZ_VERSION="garden"
-COPY ./src/ubuntu/install/suave/install_suave_deps.sh $INST_SCRIPTS/suave/install_suave_deps.sh
+RUN mkdir -p $HOME/suave_ws/src
+COPY suave.rosinstall $HOME/suave_ws/suave.rosinstall
+WORKDIR $HOME/suave_ws/
+RUN vcs import src < suave.rosinstall --recursive
+
+RUN rm -rf $HOME/suave_ws/src/suave/
+COPY runner/ $HOME/suave_ws/src/suave/runner/
+COPY suave/ $HOME/suave_ws/src/suave/suave/
+COPY suave_missions/ $HOME/suave_ws/src/suave/suave_missions/
+COPY suave_metacontrol/ $HOME/suave_ws/src/suave/suave_metacontrol/
+COPY suave_msgs/ $HOME/suave_ws/src/suave/suave_msgs/
+
+COPY ./docker/src/ubuntu/install/suave/install_suave_deps.sh $INST_SCRIPTS/suave/install_suave_deps.sh
 RUN bash $INST_SCRIPTS/suave/install_suave_deps.sh
-COPY ./src/ubuntu/install/suave/install_suave.sh $INST_SCRIPTS/suave/install_suave.sh
+COPY ./docker/src/ubuntu/install/suave/install_suave.sh $INST_SCRIPTS/suave/install_suave.sh
 RUN bash $INST_SCRIPTS/suave/install_suave.sh
 
 RUN sudo apt autoremove -y && sudo rm -rf /var/lib/apt/lists/
 
-WORKDIR /home/kasm-user/suave_ws/src/suave/docker/runner/
+WORKDIR /home/kasm-user/suave_ws/src/suave/runner/
 
 CMD ["--tail-log"]

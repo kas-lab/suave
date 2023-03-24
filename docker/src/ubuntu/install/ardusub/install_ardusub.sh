@@ -5,7 +5,7 @@ git clone https://github.com/ArduPilot/ardupilot.git
 
 cd ardupilot
 
-git checkout 9f1c4df
+git checkout 94ba4ece5f9ccdf632b95938f8e644a622f5ee75
 
 git submodule update --init --recursive
 

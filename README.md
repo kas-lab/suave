@@ -16,34 +16,35 @@ This repository is organized as following:
 - The package [suave_msgs](https://github.com/kas-lab/suave/tree/main/suave_msgs) contains suave's specific ros msgs
 - The folder [docker](https://github.com/kas-lab/suave/tree/main/docker) contains the dockerfiles and scripts used to package this repository
 
-The exemplar can either be used with [Docker](#use-the-exemplar-with-docker) or [installed locally](#install-the-exemplar-locally). The exemplar can be executed following this [instructions](#run-the-exemplar). 
+The exemplar can either be used with [Docker](#use-the-exemplar-with-docker) or [installed locally](#install-the-exemplar-locally). The exemplar can be executed following this [instructions](#run-the-exemplar).
 
 A paper describing this exemplar was submitted and accepted at SEAMS 2023 artifact track, and it will be published later. A pre-print can be found [here](https://arxiv.org/abs/2303.09220).
 
 ## Navigate the README
-- [Use the exemplar with Docker](#use-the-exemplar-with-docker)
-- [Install the exemplar locally](#install-the-exemplar-locally)
-- [Install the SUAVE workspace](#install-the-suave-workspace)
-- [Run the exemplar](#run-the-exemplar)
-- [Extending and connecting managing subsystems](#extending-and-connecting-managing-subsystems)
+- [Use SUAVE with Docker](#use-suave-with-docker)
+- [Install SUAVE locally](#install-SUAVE-locally)
+- [Run SUAVE](#run-suave)
+- [Extending SUAVE and connecting managing subsystems](#extending-suave-and-connecting-managing-subsystems)
 - [Related repository](#related-repository)
 - [Citation](#citation)
 - [Acknowledgments](#acknowledgments)
 
-## Use the exemplar with Docker
+## Use SUAVE with Docker
 
 You can pull and run the exemplar as a Docker container using the following command. Keep in mind you need to have [Docker](https://docs.docker.com/get-docker/) installed on your computer and running.
 
 In a terminal on your computer run:
 ```Bash
-docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password --security-opt seccomp=unconfined egalberts/suave:1.0
+docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password --security-opt seccomp=unconfined ghcr.io/kas-lab/suave:main
 ```
 
 Optionally you can add the parameter `-v <absolute_path_host_compute>:/home/kasm-user/suave/results` to save the results into your computer, replace `<absolute_path_host_compute>` with the absolute path of where you want the data to be saved in your computer, e.g:
 
 ```Bash
-docker run -it --shm-size=512m -v $HOME/suave_results:/home/kasm-user/suave/results -p 6901:6901 -e VNC_PW=password egalberts/suave:1.0
+docker run -it --shm-size=512m -v $HOME/suave_results:/home/kasm-user/suave/results -p 6901:6901 -e VNC_PW=password --security-opt seccomp=unconfined ghcr.io/kas-lab/suave:main
 ```
+
+**SEAMS2023:** To use the docker image used in the SEAMS2023 paper, replace `ghcr.io/kas-lab/suave:main` to `ghcr.io/kas-lab/suave:seams2023`.
 
 Once the container is up and running, you can interface with it through your web browser. The container will be hosted locally at the port specified, in this case 6901. So in your browser, go to
 `http://localhost:6901`.
@@ -56,10 +57,13 @@ A dialog will request a username and password, these are shown below, with the p
 Now you can proceed to [run the exemplar](#run-the-exemplar).
 
 ### Build Docker images locally
-As it stands right now due to a bug in the newer versions of Gazebo Garden, newly built images will not work. In the future when this is resolved we will update the README to reflect how this can be done.
-<!-- Should you want to make some changes to the Docker container, you can also choose to build it locally. In the provided Docker folder, the `build_images.sh` script can be run to build the image locally. The built image can then be run with the same command afterwards. Instead of pulling the image from Dockerhub, it will use the local image. -->
+To build the docker images locally, run:
 
-## Install the exemplar locally
+```Bash
+./build_docker_images.sh
+```
+
+## Install SUAVE locally
 To install the exemplar locally, you have to [install Gazebo Garden](#install-gazebo-garden), [install ROS2 Humble](#install-ros2-humble), [install ArduSub](#install-ardusub), [install the ArduSub plugin](#install-ardusub_plugin), and finally [install the SUAVE workspace](#install-suave-workspace).
 
 #### Install Gazebo Garden
@@ -74,13 +78,13 @@ Follow the [official instructions](https://docs.ros.org/en/humble/Installation/U
 ArduSub is a subproject within ArduPilot for piloting underwater vehicles.
 
 **Disclaimer:**
-Problems may occur with different combinations of ArduPilot and MavROS versions. This repo was tested with [this ArduPilot commit](https://github.com/ArduPilot/ardupilot/tree/9f1c4df5e744d58d3089671926bb964c924b2090) and [mavros 2.4.0](https://github.com/mavlink/mavros/tree/9f1c4df). Unfortunately, at least at the time of writing this README, the releases available in Ubuntu 22.04 do not match.
+Problems may occur with different combinations of ArduPilot and MavROS versions. This repo was tested with [this ArduPilot commit](https://github.com/ArduPilot/ardupilot/tree/94ba4ece5f9ccdf632b95938f8e644a622f5ee75) and [mavros 2.4.0](https://github.com/mavlink/mavros/tree/01eccd8). Unfortunately, at least at the time of writing this README, the releases available in Ubuntu 22.04 do not match.
 
 ```Bash
 cd ~/
 git clone https://github.com/ArduPilot/ardupilot.git
 cd ardupilot
-git checkout 9f1c4df
+git checkout 94ba4ec
 git submodule update --init --recursive
 ```
 
@@ -105,17 +109,6 @@ To test if the installation worked, run:
 sim_vehicle.py -v ArduSub -L RATBeach --console --map
 ```
 ArduPilot SITL should open and a console plus a map should appear.
-
-**Troubleshooting:**
-If you have problems with the `install-prereqs-ubuntu.sh` script, try to install the dependencies manually with the following commands.
-
-```Bash
-pip3 install --user -U future lxml pymavlink MAVProxy pexpect flake8 geocoder empy dronecan pygame intelhex
-```
-
-```Bash
-sudo apt-get --assume-yes install build-essential ccache g++ gawk git make wget python-is-python3 libtool libxml2-dev libxslt1-dev python3-dev python3-pip python3-setuptools python3-numpy python3-pyparsing python3-psutil xterm python3-matplotlib python3-serial python3-scipy python3-opencv libcsfml-dev libcsfml-audio2.5 libcsfml-dev libcsfml-graphics2.5 libcsfml-network2.5 libcsfml-system2.5 libcsfml-window2.5 libsfml-audio2.5 libsfml-dev libsfml-graphics2.5 libsfml-network2.5 libsfml-system2.5 libsfml-window2.5 python3-yaml libpython3-stdlib python3-wxgtk4.0 fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev libtool-bin g++-arm-linux-gnueabihf lcov gcovr
-```
 
 #### Install the ArduSub plugin
 
@@ -161,7 +154,7 @@ cd ~/suave_ws/
 If you want to get the most updated version of the repo:
 
 ```Bash
-wget https://raw.githubusercontent.com/kas-lab/suave/main/suave/suave.rosinstall
+wget https://raw.githubusercontent.com/kas-lab/suave/main/suave.rosinstall
 vcs import src < suave.rosinstall --recursive
 ```
 **SEAMS2023:** If you want to get the version submitted to SEAMS 2023 instead of the most updated version get the following dependencies instead:
@@ -171,19 +164,19 @@ wget https://raw.githubusercontent.com/kas-lab/suave/35d482b85190a15894461bd1774
 vcs import src < suave.rosinstall --recursive
 ```
 
-Install the dependencies:
-```Bash
-source /opt/ros/humble/setup.bash
-cd ~/suave_ws/
-rosdep install --from-paths src --ignore-src -r -y
-```
-
 Before building the `ros_gz` package (one of the dependencies), you need to export the gazebo version:
 
 ```
 export GZ_VERSION="garden"
 ```
 You can also add this to your `~/.bashrc` to make this process easier.
+
+Install the dependencies:
+```Bash
+source /opt/ros/humble/setup.bash
+cd ~/suave_ws/
+rosdep install --from-paths src --ignore-src -r -y
+```
 
 Build the project:
 ```Bash
@@ -197,54 +190,56 @@ If you have memory problems while building the package, run the following comman
 colcon build --symlink-install --executor sequential --parallel-workers 1
 ```
 
-Now you can proceed to [run the exemplar](#run-the-exemplar).
+Now you can proceed to [run the exemplar](#run-suave).
 
-## Run the exemplar
-### Trying it out!
-If you simply want to try out the exemplar while running the docker image, simply enter the following commands in a terminal:
+## Run SUAVE
+
+### Runner [Docker only]
+#### Trying it out!
+If you simply want to try out the exemplar, simply enter the following commands in a terminal:
 ```Bash
-cd ~/suave_ws/
+cd ~/suave_ws/src/suave/runner/
 ./example_run.sh
 ```
 Within a couple of minutes, some new terminals should open as well as the Gazebo simulator.
 A default mission is executed of inspecting the pipeline with a time limit.
-To follow the robot as it progesses along its mission make sure to right click and follow it in the entity tree of Gazebo as shown below:
+To follow the robot as it progresses along its mission make sure to right click and follow it in the entity tree of Gazebo as shown below:
 ![BLUEROV Follow](https://github.com/kas-lab/suave/blob/652db0676ec2995c4cc0653ef5de0fc49edd00ac/docker/follow_bluerov.PNG)
 
 **Please note**: It can take a little while for the robot to get moving, it is an issue we are aware of. Once it does get a move on you should see it perform its mission for about 5 minutes.
 
-### Full Runner
-To run the exemplar with the runner from within the docker image, make sure you are in the ~/suave_ws/ directory and simply run:
+#### Full Runner
 
+To run the exemplar with the runner, first make sure you are in the suave workspace:
+
+```Bash
+cd ~/suave_ws
+```
+
+Then run:
 
 Without gui:
-```
-./runner false
+```Bash
+./runner false metacontrol time 2
 ```
 
 With gui:
-```
-./runner true
-```
-
-To run it from a local installation, navigate to the folder `docker/runner/` first:
-```
-cd docker/runner/
-./runner true
+```Bash
+./runner true metacontrol time 2
 ```
 
-### Without runner
+The runner script takes 4 positional parameters:
+1. true or false -> indicates if the gui should be used
+2. metacontrol or random or none -> indicates which managing subsystem to use
+3. time or distance -> indicates which mission to run
+4. number of runs
 
-ArduSub: To start the autopiloting software for the simulated AUV run the following command in a terminal.
-```
-sim_vehicle.py -L RATBeach -v ArduSub  --model=JSON --console
-```
-Configuring SUAVE:
-SUAVE has a number of parameters that may be of interest when running experiments with its missions, such as the time limit of a time constrained mission or the frequency of thruster failure. These can be found in the [mission_config.yaml](https://github.com/kas-lab/suave/blob/main/suave_missions/config/mission_config.yaml) file. TODO: explain whether you need to rebuild or not after changing them.
+### Without the runner
 
-Start the simulation:
-Note: You should make sure to source the install before running ros2 commands. If you are using the dockerized version this is already done for you, therefore sourcing the workspace is not necessary.
-To start the Gazebo simulator with the simulated AUV and surrounding underwater pipeline scenario run the following commands in a new terminal.
+**Configuring SUAVE:**
+SUAVE has a number of parameters that may be of interest when running experiments with its missions, such as the time limit of a time constrained mission or the frequency of thruster failure. These can be found in the [mission_config.yaml](https://github.com/kas-lab/suave/blob/main/suave_missions/config/mission_config.yaml) file. **Note:** When you change the mission_config file, you need to rebuild the suave_ws with `colcon build --symlink-install`
+
+**Note:** Before starting the simulation or the ros nodes, remember that you have to source SUAVE's workspace. If you are using the dockerized version this is already done for you, therefore sourcing the workspace is not necessary.
 
 Navigate to the workspace and source it:
 ```Bash
@@ -252,23 +247,36 @@ cd ~/suave_ws/
 source install/setup.bash
 ```
 
-Launch the simulation environment:
+With SUAVE configured and sourced, start ArduSub, the simulation, and the SUAVE's nodes with the following instructions.
+
+#### Start ArduSub
+
+Run:
+```Bash
+sim_vehicle.py -L RATBeach -v ArduSub  --model=JSON --console
 ```
+
+#### Start the simulation
+
+Run:
+```Bash
 ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
 ```
 
 **Note:** It is possible to pass arguments to specify the x and y coordinates of where the UUV spawns, by changing the values. In the above launch command the initial coordinates are set to (-17.0, 2.0).
 
-### Start the Mission
-Now it is possible to start the mission. Select the desired type of missions through the command line arguments. The mission results will be saved in the path specified in the mission_config.yaml file.
+#### Start SUAVE's nodes
 
-Launching the mission file without launch arguments will start a time-constrained mission without a managing subsystem. This can be done by running the following command:
-
+Run:
 ```Bash
 ros2 launch suave_missions mission.launch.py
 ```
 
-The arguments can be defined by adding the below arguments with the notation `<name>:=<value>` to the end of the command line. The available arguments are:
+**Mission results:** The mission results will be saved in the path specified in the [mission_config.yaml](https://github.com/kas-lab/suave/blob/main/suave_missions/config/mission_config.yaml) file.
+
+**Selecting the manging system and mission type:**
+Launching the mission file without launch arguments will start a time-constrained mission without a managing subsystem. To select a different managing subsystem or a different type of mission, the following launch arguments can be used:
+
 ```
 'adaptation_manager':
     Managing subsystem to be used
@@ -286,22 +294,51 @@ The arguments can be defined by adding the below arguments with the notation `<n
     (default: 'time_constrained_mission_results')
 ```
 
-An example of running the constant distance mission with metacontrol saving to a file called 'measurement_1' is as follows:
+The arguments can be defined by adding the above arguments with the notation `<name>:=<value>` to the end of the command line.
+
+An example of running the constant distance mission with metacontrol saving to a file called 'measurement_1':
 
 ```Bash
 ros2 launch suave_missions mission.launch.py adaptation_manager:=metacontrol mission_type:=const_dist_mission result_filename:=measurement_1
 ```
 
-## Extending and connecting managing subsystems
+## Extending SUAVE and connecting managing subsystems
 
-The interface for interacting with the managed subsystem is handle by the ROS2 system modes package. For easy integration with another managing subsystem, this package can be used to apply reconfiguration. The nodes which handle searching for and following the pipeline, as well as motion control are implemented using Lifecycle Nodes. This allows for these nodes to be reconfigured using the system modes package.
+### Connecting managing subsystems
 
-The adaptation scenarios need to be described in a yaml file such as done in [suave_modes.yaml](https://github.com/kas-lab/suave/blob/main/suave/config/suave_modes.yaml) within the same folder. This file should then be added in the [system_modes.launch.py](https://github.com/kas-lab/suave/blob/main/suave/launch/system_modes.launch.py) file, replacing the suave_modes.yaml.
+SUAVE is designed to allow for different managing subsystems to be used, as long as they adhere to the correct ROS 2 interfaces.
+SUAVE's ROS2 interfaces are:
 
-The adaptation logic needs to be implemented as a separate node. Adaptation is done by calling the system_modes services for each Lifecycle Node. The [random_reasoner.py](https://github.com/kas-lab/suave/blob/main/suave_metacontrol/suave_metacontrol/random_reasoner.py) node can be used as a reference for applying the adaptation logic.
+1. The `/diagnostics` topic, which is where monitoring information is published. This topic uses the [diagnostic_msgs/DiagnosticArray](https://docs.ros2.org/foxy/api/diagnostic_msgs/msg/DiagnosticArray.html) message type
+2. The `/task/request` and `/task/cancel` services, which are used to request and cancel tasks, respectively. Both services use the [suave_msgs/Task](https://github.com/kas-lab/suave/blob/main/suave_msgs/srv/Task.srv) service type
+3. Three [system_modes](https://github.com/micro-ROS/system_modes) services to change SUAVE's LifeCycle nodes mode. These services use the [system_modes_msgs/ChangeMode](https://github.com/micro-ROS/system_modes/blob/master/system_modes_msgs/srv/ChangeMode.srv) service type:
+    1. Service `/f_maintain_motion/change_mode` to change the Maintain Motion node modes
+    2. Service `/f_generate_search_path/change_mode` to change the Generate Search Path node modes
+    3. Service `/f_follow_pipeline/change_mode` to change the Follow Pipeline node modes
 
-In order to launch the new managing subsystem using mission.launch.py as explained in the [run the exemplar](#run-the-exemplar) section, the launch argument needs to be linked to the executable of the managing subsystem node by replacing \[new_managing_subsystem\] with the given name:
+Thus, to connect a different managing subsystem to SUAVE, it must subscribe to `/diagnostics` to get monitoring information, send adaptation goals (task) requests via `/task/request` and `/task/cancel`, and send reconfiguration requests via `/f_maintain_motion/change_mode`, `/f_generate_search_path/change_mode`, or `/f_follow_pipeline/change_mode`.
+
+
+In order to use the new managing subsystem with the launchfile [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_missions/launch/mission.launch.py) as explained in the [run suave](#run-suave) section, a new launchfile must be created for the new managing subsystem (check [suave_metacontrol.launch.py](https://github.com/kas-lab/suave/blob/main/suave_metacontrol/launch/suave_metacontrol.launch.py) for an example), and the new launch file must be included in the [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_missions/launch/mission.launch.py) file.
+
+
+The new launch file must include SUAVE's base launch:
+```python
+suave_launch_path = os.path.join(
+        pkg_suave_path,
+        'launch',
+        'suave.launch.py')
+
+suave_launch = IncludeLaunchDescription(
+    PythonLaunchDescriptionSource(suave_launch_path),
+    launch_arguments={
+        'task_bridge': 'False'}.items()
+)
 ```
+
+To include it in [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_missions/launch/mission.launch.py), add the following code replacing \[new_managing_subsystem\] with the proper name:
+
+```python
 [new_managing_subsystem]_launch_path = os.path.join(
         pkg_suave_metacontrol_path,
         'launch',
@@ -313,6 +350,11 @@ In order to launch the new managing subsystem using mission.launch.py as explain
                     '[new_managing_subsystem]'))
 ```
 
+### Extend SUAVE
+
+To extend SUAVE with new functionalities, it is only required to add new LifeCycle nodes that implement the new functionalities (check [spiral_search_lc.py](https://github.com/kas-lab/suave/blob/main/suave/suave/spiral_search_lc.py) for an example), and add its different modes to the [system_modes](https://github.com/micro-ROS/system_modes) configuration file [suave_modes.yaml](https://github.com/kas-lab/suave/blob/main/suave/config/suave_modes.yaml). Note, that if you create a new configuration file, you should replace the [suave_modes.yaml](https://github.com/kas-lab/suave/blob/main/suave/config/suave_modes.yaml) path with the new file path.
+
+
 ## Related repository
 
 [REMARO Summer School Delft 2022](https://github.com/remaro-network/tudelft_hackathon) - Underwater robotics hackathon
@@ -323,7 +365,7 @@ If you find this repository useful, please consider citing:
 
 ```
 @misc{silva2023suave,
-      title={SUAVE: An Exemplar for Self-Adaptive Underwater Vehicles}, 
+      title={SUAVE: An Exemplar for Self-Adaptive Underwater Vehicles},
       author={Gustavo Rezende Silva and Juliane Päßler and Jeroen Zwanepol and Elvin Alberts and S. Lizeth Tapia Tarifa and Ilias Gerostathopoulos and Einar Broch Johnsen and Carlos Hernández Corbato},
       year={2023},
       eprint={2303.09220},

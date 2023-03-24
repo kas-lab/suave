@@ -19,4 +19,4 @@ jobs:
         with:
           package-name: suave
           target-ros2-distro: humble
-          vcs-repo-file-url: https://raw.githubusercontent.com/kas-lab/suave/main/suave/suave.rosinstall
+          vcs-repo-file-url: https://raw.githubusercontent.com/kas-lab/suave/main/suave.rosinstall

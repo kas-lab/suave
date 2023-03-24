@@ -5,7 +5,7 @@ from suave_msgs.srv import Task
 
 class TaskBridge(Node):
     def __init__(self):
-        super().__init__('task_bridge')
+        super().__init__('adpatation_goal_bridge')
 
         self.task_cb_group = MutuallyExclusiveCallbackGroup()
         self.task_request_service = self.create_service(
