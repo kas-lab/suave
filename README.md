@@ -209,7 +209,7 @@ Now you can proceed to [run the exemplar](#run-suave).
 
 ## Run SUAVE
 
-### Runner [Docker only]
+### Runner
 #### Trying it out!
 If you simply want to try out the exemplar, simply enter the following commands in a terminal:
 ```Bash
