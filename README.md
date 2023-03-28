@@ -175,7 +175,7 @@ vcs import src < suave.rosinstall --recursive
 **SEAMS2023:** If you want to get the version submitted to SEAMS 2023 instead of the most updated version get the following dependencies instead:
 
 ```Bash
-wget https://raw.githubusercontent.com/kas-lab/suave/1658d95dbc62d246811f03451d6e7c42281cce0d/suave.rosinstall
+wget https://raw.githubusercontent.com/kas-lab/suave/67fdb8a883a1331a2da8800839f633158432e43e/suave.rosinstall
 vcs import src < suave.rosinstall --recursive
 ```
 
