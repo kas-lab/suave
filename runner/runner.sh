@@ -101,13 +101,13 @@ run_missions(){
       FILENAME="${MANAGER}_${MTYPE}_${NOW}"
       echo $FILENAME
       #should add some geometry to this so they don't stack on top of each other
-      xfce4-terminal --execute ./scripts/start_ardusub.sh $GUI
+      xfce4-terminal --execute ./scripts/start_ardusub.sh $GUI &
       sleep 10 #let it boot up
-      xfce4-terminal --execute ./scripts/launch_sim.sh $GUI
+      xfce4-terminal --execute ./scripts/launch_sim.sh $GUI &
       sleep 30 #let it boot up
 
       rm -f ~/suave_ws/mission.done
-      xfce4-terminal --execute ./scripts/launch_mission.sh $MANAGER $MTYPE $FILENAME
+      xfce4-terminal --execute ./scripts/launch_mission.sh $MANAGER $MTYPE $FILENAME &
       sleep 30 #let it boot up
 
       echo "start waiting for mission to finish"

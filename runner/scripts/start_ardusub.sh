@@ -22,7 +22,5 @@ else
   fi
 fi
 
-CURDIR=`pwd`
-cd ~/Desktop/
+cd /tmp
 sim_vehicle.py -L RATBeach -v ArduSub  --model=JSON $GUI
-cd $CURDIR
