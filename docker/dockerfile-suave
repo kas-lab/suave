@@ -3,12 +3,6 @@ FROM $BASE_IMAGE
 
 USER root
 
-# Set the locale
-RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
-    locale-gen
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:en
-ENV LC_ALL en_US.UTF-8
 
 ### Envrionment config
 ENV DEBIAN_FRONTEND noninteractive
@@ -33,6 +27,12 @@ RUN add-apt-repository ppa:kisak/kisak-mesa \
     && rm -rf /var/lib/apt/list/
 
 
+# Set the locale
+RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
+    locale-gen
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
 ### Install Visual Studio Code
 # COPY ./docker/src/ubuntu/install/vs_code $INST_SCRIPTS/vs_code/
 # RUN bash $INST_SCRIPTS/vs_code/install_vs_code.sh  && rm -rf $INST_SCRIPTS/vs_code/

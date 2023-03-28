@@ -1,5 +1,6 @@
 #!/bin/bash
 source ~/.bashrc
+source ~/suave_ws/install/setup.bash
 
 if [ $# -lt 1 ]; then
 	echo "usage: $0 adaptation_manager mission_type"
