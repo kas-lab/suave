@@ -1,6 +1,7 @@
 # SUAVE: An Exemplar for Self-Adaptive Underwater Vehicles
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/kas-lab/suave)](https://github.com/kas-lab/suave/releases)
+[![DOI](https://zenodo.org/badge/530141277.svg)](https://zenodo.org/badge/latestdoi/530141277)
 [![Main](https://github.com/kas-lab/suave/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/kas-lab/suave/actions/workflows/main.yml)
 [![Docker Images](https://github.com/kas-lab/suave/actions/workflows/container.yml/badge.svg)](https://github.com/kas-lab/suave/actions/workflows/container.yml)
 
