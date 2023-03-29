@@ -16,7 +16,7 @@ This repository is organized as following:
 - The package [suave_metacontrol](https://github.com/kas-lab/suave/tree/main/suave_metacontrol) contains the metacontrol implementation of the managing subsystems, and a random managing subsystem
 - The package [suave_msgs](https://github.com/kas-lab/suave/tree/main/suave_msgs) contains suave's specific ros msgs
 - The folder [docker](https://github.com/kas-lab/suave/tree/main/docker) contains the dockerfiles and scripts used to package this repository
-- The folder [docker](https://github.com/kas-lab/suave/tree/main/runner) contains the bash scripts to run the exemplar
+- The folder [runner](https://github.com/kas-lab/suave/tree/main/runner) contains the bash scripts to run the exemplar
 
 A video of the SUAVE running (click in the image to open the video):
 
