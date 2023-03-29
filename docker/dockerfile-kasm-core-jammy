@@ -120,12 +120,12 @@ COPY ./docker/src/ubuntu/install/virtualgl $INST_SCRIPTS/virtualgl/
 RUN bash $INST_SCRIPTS/virtualgl/install_virtualgl.sh && rm -rf $INST_SCRIPTS/virtualgl/
 
 ### Create user and home directory for base images that don't already define it
-RUN (groupadd -g 1000 kasm-user \
-    && useradd -M -u 1000 -g 1000 kasm-user \
-    && usermod -a -G kasm-user kasm-user) ; exit 0
+RUN groupadd -g 1000 kasm-user \
+    && adduser --disabled-password --gid 1000 --uid 1000 --gecos '' kasm-user \
+    && adduser kasm-user sudo
+
 ENV HOME /home/kasm-user
 WORKDIR $HOME
-RUN mkdir -p $HOME && chown -R 1000:0 $HOME
 
 ### FIX PERMISSIONS ## Objective is to change the owner of non-home paths to root, remove write permissions, and set execute where required
 # these files are created on container first exec, by the default user, so we have to create them since default will not have write perm
@@ -149,7 +149,7 @@ RUN touch $STARTUPDIR/wm.log \
     && chown -R root:root /usr/local/bin \
     && rm -Rf /home/kasm-default-profile/.launchpadlib
 
-USER 1000
+USER kasm-user
 
 ENTRYPOINT ["/dockerstartup/kasm_default_profile.sh", "/dockerstartup/vnc_startup.sh", "/dockerstartup/kasm_startup.sh"]
 CMD ["--wait"]

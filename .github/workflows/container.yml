@@ -10,8 +10,6 @@
 name: Docker Images
 
 on:
-  release:
-      types: [published, released, edited]
   push:
     branches:
       - main
@@ -64,7 +62,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: docker/dockerfile-kasm-ubuntu-jammy-desktop-minimal
+          file: docker/dockerfile-suave
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
