@@ -60,7 +60,7 @@ Optionally you can add the parameter `-v <absolute_path_host_compute>:/home/kasm
 docker run -it --shm-size=512m -v $HOME/suave_results:/home/kasm-user/suave/results -p 6901:6901 -e VNC_PW=password --security-opt seccomp=unconfined ghcr.io/kas-lab/suave:main
 ```
 
-**SEAMS2023:** To use the docker image used in the SEAMS2023 paper, replace `ghcr.io/kas-lab/suave:main` to `egalberts/suave:1.0`.
+**SEAMS2023:** To use the docker image used in the SEAMS2023 paper, replace `ghcr.io/kas-lab/suave:main` to `ghcr.io/kas-lab/suave:seams2023`.
 
 Once the container is up and running, you can interface with it through your web browser. The container will be hosted locally at the port specified, in this case 6901. So in your browser, go to
 `http://localhost:6901`.
