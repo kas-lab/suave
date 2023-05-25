@@ -206,6 +206,12 @@ If you have memory problems while building the package, run the following comman
 colcon build --symlink-install --executor sequential --parallel-workers 1
 ```
 
+Install a MAVROS dependency:
+```Bash
+wget https://raw.githubusercontent.com/mavlink/mavros/master/mavros/scripts/install_geographiclib_datasets.sh
+sudo bash ./install_geographiclib_datasets.sh 
+```
+
 Now you can proceed to [run the exemplar](#run-suave).
 
 ## Run SUAVE
