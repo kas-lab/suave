@@ -34,7 +34,7 @@ An overview of the system:
 
 The exemplar can either be used with [Docker](#use-the-exemplar-with-docker) or [installed locally](#install-the-exemplar-locally). The exemplar can be executed following this [instructions](#run-the-exemplar).
 
-A paper describing this exemplar was submitted and accepted at SEAMS 2023 artifact track, and it will be published later. A pre-print can be found [here](https://arxiv.org/abs/2303.09220).
+A paper describing this exemplar was presented at SEAMS 2023 artifact track, you can find it [here](https://ieeexplore.ieee.org/abstract/document/10173938). And an open access pre-print can be found [here](https://arxiv.org/abs/2303.09220).
 
 ## Navigate the README
 - [Use SUAVE with Docker](#use-suave-with-docker)
@@ -386,14 +386,15 @@ To extend SUAVE with new functionalities, it is only required to add new LifeCyc
 If you find this repository useful, please consider citing:
 
 ```
-@misc{silva2023suave,
-      title={SUAVE: An Exemplar for Self-Adaptive Underwater Vehicles},
-      author={Gustavo Rezende Silva and Juliane Päßler and Jeroen Zwanepol and Elvin Alberts and S. Lizeth Tapia Tarifa and Ilias Gerostathopoulos and Einar Broch Johnsen and Carlos Hernández Corbato},
-      year={2023},
-      eprint={2303.09220},
-      archivePrefix={arXiv},
-      primaryClass={cs.RO}
-}
+@INPROCEEDINGS{10173938,
+  author={Silva, Gustavo Rezende and Päßler, Juliane and Zwanepol, Jeroen and Alberts, Elvin and Tarifa, S. Lizeth Tapia and Gerostathopoulos, Ilias and Johnsen, Einar Broch and Corbato, Carlos Hernández},
+  booktitle={2023 IEEE/ACM 18th Symposium on Software Engineering for Adaptive and Self-Managing Systems (SEAMS)}, 
+  title={SUAVE: An Exemplar for Self-Adaptive Underwater Vehicles}, 
+  year={2023},
+  volume={},
+  number={},
+  pages={181-187},
+  doi={10.1109/SEAMS59076.2023.00031}}
 ```
 
 ## Acknowledgments
