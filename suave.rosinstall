@@ -6,7 +6,7 @@ repositories:
   mavros:
     type: git
     url: https://github.com/mavlink/mavros.git
-    version: 01eccd8
+    version: 3e1adc7
   mavros_wrapper:
     type: git
     url: https://github.com/remaro-network/mavros_wrapper.git
@@ -38,4 +38,4 @@ repositories:
   ros_gz:
     type: git
     url: https://github.com/gazebosim/ros_gz.git
-    version: 74dcf50
+    version: 4a5972b
