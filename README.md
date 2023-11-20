@@ -32,7 +32,7 @@ An overview of the system:
   <img src="https://user-images.githubusercontent.com/20564040/227582678-e1494c89-1b44-4bac-aef6-bdd77127dfa6.png" width="500">
 </p>
 
-The exemplar can either be used with [Docker](#use-the-exemplar-with-docker) or [installed locally](#install-the-exemplar-locally). The exemplar can be executed following this [instructions](#run-the-exemplar).
+The exemplar can either be used with [Docker](#use-suave-with-docker) or [installed locally](#install-suave-locally). The exemplar can be executed following this [instructions](#run-suave).
 
 A paper describing this exemplar was presented at SEAMS 2023 artifact track, you can find it [here](https://ieeexplore.ieee.org/abstract/document/10173938). And an open access pre-print can be found [here](https://arxiv.org/abs/2303.09220).
 
@@ -60,7 +60,7 @@ Optionally you can add the parameter `-v <absolute_path_host_compute>:/home/kasm
 docker run -it --shm-size=512m -v $HOME/suave_results:/home/kasm-user/suave/results -p 6901:6901 -e VNC_PW=password --security-opt seccomp=unconfined ghcr.io/kas-lab/suave:main
 ```
 
-**SEAMS2023:** To use the docker image used in the SEAMS2023 paper, replace `ghcr.io/kas-lab/suave:main` to `ghcr.io/kas-lab/suave:seams2023`.
+**SEAMS2023:** To use the docker image used in the SEAMS2023 paper, replace `ghcr.io/kas-lab/suave:main` with `ghcr.io/kas-lab/suave:seams2023`.
 
 Once the container is up and running, you can interface with it through your web browser. The container will be hosted locally at the port specified, in this case 6901. So in your browser, go to
 `http://localhost:6901`.
@@ -70,7 +70,7 @@ A dialog will request a username and password, these are shown below, with the p
  - **User** : `kasm_user`
  - **Password**: `password`
 
-Now you can proceed to [run the exemplar](#run-the-exemplar).
+Now you can proceed to [run the exemplar](#run-suave).
 
 ### Build Docker images locally
 To build the docker images locally, run:
@@ -209,7 +209,7 @@ colcon build --symlink-install --executor sequential --parallel-workers 1
 Install a MAVROS dependency:
 ```Bash
 wget https://raw.githubusercontent.com/mavlink/mavros/master/mavros/scripts/install_geographiclib_datasets.sh
-sudo bash ./install_geographiclib_datasets.sh 
+sudo bash ./install_geographiclib_datasets.sh
 ```
 
 Now you can proceed to [run the exemplar](#run-suave).
@@ -433,8 +433,8 @@ If you find this repository useful, please consider citing:
 ```
 @INPROCEEDINGS{10173938,
   author={Silva, Gustavo Rezende and Päßler, Juliane and Zwanepol, Jeroen and Alberts, Elvin and Tarifa, S. Lizeth Tapia and Gerostathopoulos, Ilias and Johnsen, Einar Broch and Corbato, Carlos Hernández},
-  booktitle={2023 IEEE/ACM 18th Symposium on Software Engineering for Adaptive and Self-Managing Systems (SEAMS)}, 
-  title={SUAVE: An Exemplar for Self-Adaptive Underwater Vehicles}, 
+  booktitle={2023 IEEE/ACM 18th Symposium on Software Engineering for Adaptive and Self-Managing Systems (SEAMS)},
+  title={SUAVE: An Exemplar for Self-Adaptive Underwater Vehicles},
   year={2023},
   volume={},
   number={},
