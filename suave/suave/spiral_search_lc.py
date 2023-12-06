@@ -99,8 +99,6 @@ class SpiralSearcherLC(Node):
                     self.spiral_y,
                     resolution=0.1,
                     spiral_width=spiral_width)
-                self.get_logger().info(
-                        'setpoint_postion_local value {0}, {1}'.format(x, y))
 
                 self.ardusub.altitude = self.spiral_altitude + self.z_delta
                 self.goal_setpoint = self.ardusub.setpoint_position_local(

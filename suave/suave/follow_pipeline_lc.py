@@ -1,15 +1,11 @@
 #!/usr/bin/env python
-from typing import Optional
-
 import math
 import rclpy
 import threading
 
 from rclpy.lifecycle import Node
-from rclpy.lifecycle import Publisher
 from rclpy.lifecycle import State
 from rclpy.lifecycle import TransitionCallbackReturn
-from rclpy.timer import Timer
 
 from suave_msgs.srv import GetPath
 from suave.bluerov_gazebo import BlueROVGazebo
@@ -88,7 +84,6 @@ class PipelineFollowerLC(Node):
             if self.abort_follow is True:
                 return
             timer.sleep()
-
         last_point = None
         self.distance_inspected = 0
         for gz_pose in pipe_path.result().path.poses:
