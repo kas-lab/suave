@@ -1,5 +1,4 @@
 from geometry_msgs.msg import Pose
-from std_msgs.msg import Bool
 from mavros_wrapper.ardusub_wrapper import BlueROVArduSubWrapper
 
 
