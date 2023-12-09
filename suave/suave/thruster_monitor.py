@@ -41,6 +41,8 @@ class ThrusterMonitor(Node):
         self.mavros_state_sub = self.create_subscription(
             State, 'mavros/state', self.status_cb, 10)
 
+        self.last_event_time = self.get_clock().now().to_msg().sec
+
     def status_cb(self, msg):
         if msg.mode == 'GUIDED':
             self.last_event_time = self.get_clock().now().to_msg().sec

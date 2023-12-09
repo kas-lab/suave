@@ -16,8 +16,8 @@ class WaterVisibilityObserver(Node):
     def __init__(self):
         super().__init__('water_visibility')
 
-        self.declare_parameter('qa_publishing_period', 0.2)
-        self.declare_parameter('water_visibility_period', 100)
+        self.declare_parameter('qa_publishing_period', 1.0)
+        self.declare_parameter('water_visibility_period', 150)
         self.declare_parameter('water_visibility_min', 1.25)
         self.declare_parameter('water_visibility_max', 3.75)
         self.declare_parameter('water_visibility_sec_shift', 0.0)
@@ -30,6 +30,8 @@ class WaterVisibilityObserver(Node):
 
         self.mavros_state_sub = self.create_subscription(
             State, 'mavros/state', self.status_cb, 10)
+
+        self.initial_time = self.get_clock().now().to_msg().sec
 
     def status_cb(self, msg):
         if msg.mode == "GUIDED":
