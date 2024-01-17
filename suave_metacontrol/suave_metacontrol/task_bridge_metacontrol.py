@@ -29,9 +29,12 @@ class TaskBridgeMetacontrol(TaskBridge):
     def forward_task_request(self, function):
         self.get_logger().info("Waiting for future to complete")
         future = self.send_mros_objective(function)
-        while self.executor.spin_until_future_complete(
-                future, timeout_sec=1.0):
-            self.get_logger().info("Waiting for future to complete")
+
+        self.executor.spin_until_future_complete(future, timeout_sec=5.0)
+        if future.done() is False:
+            self.get_logger().warning(
+                'Future send mros_objective not completed {}'.format(function))
+            return None
         self.current_objectives_handle[function] = future.result()
         return self.current_objectives_handle[function].accepted
 
@@ -41,14 +44,16 @@ class TaskBridgeMetacontrol(TaskBridge):
             goal_handle = self.current_objectives_handle[function]
             future = goal_handle.cancel_goal_async()
             self.get_logger().info('cancel requested {}'.format(function))
-            while self.executor.spin_until_future_complete(
-                    future, timeout_sec=1.0):
-                self.get_logger().info("Waiting for future to complete")
+            self.executor.spin_until_future_complete(future, timeout_sec=5.0)
+            if future.done() is False:
+                self.get_logger().warning(
+                    'Future cancel mros_objective not completed {}'.format(
+                        function))
+                return False
             del function
             if future is not None and goal_handle.status == 3:
                 return True
-            else:
-                return False
+            return False
         else:
             self.get_logger().info(
                 'Function {} is not active'.format(function))
