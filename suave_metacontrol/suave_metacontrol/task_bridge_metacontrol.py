@@ -2,15 +2,12 @@
 import sys
 import rclpy
 
-from diagnostic_msgs.msg import DiagnosticArray
-from diagnostic_msgs.msg import DiagnosticStatus
 from diagnostic_msgs.msg import KeyValue
 from mros2_msgs.action import ControlQos
 
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.action import ActionClient
-from rclpy.node import Node
 from suave.task_bridge import TaskBridge
 
 

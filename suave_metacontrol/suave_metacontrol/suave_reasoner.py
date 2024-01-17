@@ -35,7 +35,7 @@ class SuaveReasoner(RosReasoner):
                                 objective.o_status = "IN_ERROR_NFR"
         except Exception as err:
             self.logger.info(
-                "In Custom Analyze, exception returned: {}".format(err))
+                "In custom Analyze, exception returned: {}".format(err))
         return objectives_in_error
 
 
@@ -54,7 +54,7 @@ def main(args=None):
 
     # Spin until the process in terminated
     rclpy.spin(pipeline_inspection_reasoner, executor=mt_executor)
-    ros_reasoner.destroy_node()
+    pipeline_inspection_reasoner.destroy_node()
     rclpy.shutdown()
 
 
