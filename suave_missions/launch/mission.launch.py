@@ -46,25 +46,34 @@ def generate_launch_description():
         'mission_config.yaml'
     )
 
-    mission_node = Node(
+    mission_metrics_node = Node(
         package='suave_missions',
-        executable=mission_type,
-        name='mission_node',
+        executable='mission_metrics',
+        name='mission_metrics',
         parameters=[mission_config, {
             'adaptation_manager': adaptation_manager,
+            'mission_name': mission_type,
         }],
         condition=LaunchConfigurationEquals('result_filename', '')
     )
 
-    mission_node_filename_override = Node(
+    mission_metrics_node_override = Node(
         package='suave_missions',
-        executable=mission_type,
-        name='mission_node',
+        executable='mission_metrics',
+        name='mission_metrics',
         parameters=[mission_config, {
             'adaptation_manager': adaptation_manager,
+            'mission_name': mission_type,
             'result_filename': result_filename,
         }],
         condition=LaunchConfigurationNotEquals('result_filename', '')
+    )
+
+    mission_node = Node(
+        package='suave_missions',
+        executable=mission_type,
+        name='mission_node',
+        parameters=[mission_config],
     )
 
     pkg_suave_path = get_package_share_directory('suave')
@@ -105,8 +114,9 @@ def generate_launch_description():
         adaptation_manager_arg,
         mission_type_arg,
         result_filename_arg,
+        mission_metrics_node,
+        mission_metrics_node_override,
         mission_node,
-        mission_node_filename_override,
         suave_launch,
         suave_metacontrol_launch,
         suave_random_launch,

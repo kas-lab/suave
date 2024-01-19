@@ -1,8 +1,5 @@
 import csv
-import rclpy
 from pathlib import Path
-from datetime import datetime
-from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.node import Node
 from suave_msgs.srv import Task
 
@@ -45,24 +42,6 @@ class MissionPlanner(Node):
                 future, timeout_sec=1.0):
             self.get_logger().info("Waiting for future to complete")
         return future.result()
-
-    def save_metrics(self, data):
-        result_path = Path(self.result_path).expanduser()
-
-        if result_path.is_dir() is False:
-            result_path.mkdir(parents=True)
-
-        result_file = result_path / (self.result_filename + '.csv')
-        if result_file.is_file() is False:
-            result_file.touch()
-            self.append_csv(result_file, self.metrics_header)
-
-        self.append_csv(result_file, data)
-
-    def append_csv(self, file_path, data):
-        with open(file_path, 'a') as file:
-            writer = csv.writer(file)
-            writer.writerow(data)
 
     def perform_mission(self):
         self.get_logger().warning("No mission defined!!!")

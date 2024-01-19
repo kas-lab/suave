@@ -4,13 +4,11 @@ import rclpy
 
 from rcl_interfaces.msg import ParameterDescriptor, SetParametersResult
 from rclpy.lifecycle import Node
-from rclpy.lifecycle import Publisher
 from rclpy.lifecycle import State
 from rclpy.lifecycle import TransitionCallbackReturn
 from rclpy.timer import Timer
 from suave.bluerov_gazebo import BlueROVGazebo
 
-import std_msgs.msg
 import threading
 import math
 
@@ -74,7 +72,6 @@ class SpiralSearcherLC(Node):
 
             self.old_spiral_altitude = self.spiral_altitude
             fov = math.pi/3
-            pipe_z = 0.5
             spiral_width = 2.0*self.spiral_altitude*math.tan(fov/2)
 
             altitude_bug = False
