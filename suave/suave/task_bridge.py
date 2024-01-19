@@ -27,6 +27,16 @@ class TaskBridge(Node):
 
     def task_request(self, req, forward_request):
         response = Task.Response()
+        if req.task_name not in self.task_functions_dict:
+            self.get_logger().error(
+                'Request: {}'.format(req) +
+                'Task requested is not available. ' +
+                'Available tasks: {}'.format(self.task_functions_dict.keys())
+            )
+            response = Task.Response()
+            response.success = False
+            return response
+
         try:
             function_names = self.task_functions_dict[req.task_name]
             success = True
@@ -35,9 +45,7 @@ class TaskBridge(Node):
             response.success = success
         except Exception as e:
             self.get_logger().error(
-                'Exception: {}. '.format(e) +
-                'Probably requested wrong task name. ' +
-                'Available tasks: {}'.format(self.task_functions_dict.keys())
+                'Exception: {0}. Request: {1}'.format(e, req)
             )
             response = Task.Response()
             response.success = False

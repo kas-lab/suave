@@ -30,7 +30,7 @@ repositories:
   mc_mros_reasoner:
     type: git
     url: https://github.com/meta-control/mc_mros_reasoner.git
-    version: 9392f680fb33ed97f6105830dbb5593e68070419
+    version: 9b1f915
   system_modes:
     type: git
     url: https://github.com/micro-ROS/system_modes

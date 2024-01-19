@@ -235,19 +235,19 @@ To follow the robot as it progresses along its mission make sure to right click 
 To run the exemplar with the runner, first make sure you are in the suave workspace:
 
 ```Bash
-cd ~/suave_ws
+cd ~/suave_ws/src/suave/runner/
 ```
 
 Then run:
 
 Without gui:
 ```Bash
-./runner false metacontrol time 2
+./runner.sh false metacontrol time 2
 ```
 
 With gui:
 ```Bash
-./runner true metacontrol time 2
+./runner.sh true metacontrol time 2
 ```
 
 The runner script takes 4 positional parameters:
