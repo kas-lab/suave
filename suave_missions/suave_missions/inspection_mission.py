@@ -1,6 +1,3 @@
-import os
-from datetime import datetime
-from geometry_msgs.msg import Pose
 from mavros_msgs.msg import State
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
@@ -12,22 +9,6 @@ from suave_missions.mission_planner import MissionPlanner
 class InspectionMission(MissionPlanner):
     def __init__(self, node_name='inspection_mission'):
         super().__init__(node_name)
-        self.declare_parameter('adaptation_manager', 'none')
-        self.adaptation_manager = self.get_parameter(
-            'adaptation_manager').value
-
-        self.mission_name = 'inspection mission ' + str(
-            self.adaptation_manager)
-        self.metrics_header = [
-            'mission_name',
-            'datetime',
-            'initial pos (x,y)',
-            'time_mission (s)',
-            'time_search (s)']
-
-        # TODO: get this automatically
-        self.initial_x = 0.0
-        self.initial_y = 0.0
 
         self.status = State()
         self.state_sub = self.create_subscription(
@@ -59,16 +40,6 @@ class InspectionMission(MissionPlanner):
         self.set_mode_service = self.create_client(
             SetMode, 'mavros/set_mode')
 
-        self.gazebo_pos_sub = self.create_subscription(
-            Pose,
-            'model/bluerov2/pose',
-            self.gazebo_pos_cb,
-            10,
-            callback_group=MutuallyExclusiveCallbackGroup())
-
-        self.pipeline_detected_time = None
-        self.first_gz_pose = True
-
     def perform_mission(self):
         self.get_logger().info("Pipeline inspection mission starting!!")
         self.timer = self.create_rate(1)
@@ -92,38 +63,6 @@ class InspectionMission(MissionPlanner):
         self.perform_task('search_pipeline', lambda: self.pipeline_detected)
         self.perform_task('inspect_pipeline', lambda: self.pipeline_inspected)
 
-        self.mission_completed_time = self.get_clock().now()
-        self.exit_mission()
-
-    def exit_mission(self):
-        detection_time_delta = -1
-        if self.pipeline_detected_time is not None:
-            detection_time_delta = \
-                self.pipeline_detected_time - self.mission_start_time
-            detection_time_delta = detection_time_delta.to_msg().sec
-
-        mission_time_delta = \
-            self.mission_completed_time - self.mission_start_time
-
-        self.get_logger().info(
-            'Time elapsed to detect pipeline: {} seconds'.format(
-                detection_time_delta))
-        self.get_logger().info(
-            'Time elapsed to complete mission: {} seconds'.format(
-                mission_time_delta.to_msg().sec))
-
-        mission_data = [
-            self.mission_name,
-            datetime.now().strftime("%b-%d-%Y-%H-%M-%S"),
-            '({0}, {1})'.format(
-                round(self.initial_x, 2), round(self.initial_y, 2)),
-            mission_time_delta.to_msg().sec,
-            detection_time_delta]
-
-        self.save_metrics(mission_data)
-        # TODO: make this a parameter
-        os.system("touch ~/suave_ws/mission.done")
-
     def status_cb(self, msg):
         self.status = msg
 
@@ -145,12 +84,3 @@ class InspectionMission(MissionPlanner):
         req = SetMode.Request()
         req.custom_mode = mode
         return self.call_service(self.set_mode_service, req)
-
-    def gazebo_pos_cb(self, msg):
-        self.gazebo_pos = msg
-        if self.first_gz_pose is True:
-            self.first_gz_pose = False
-            self.initial_x = msg.position.x
-            self.initial_y = msg.position.y
-
-        self.destroy_subscription(self.gazebo_pos_sub)
