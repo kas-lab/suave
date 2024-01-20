@@ -41,7 +41,11 @@ class TaskBridge(Node):
             function_names = self.task_functions_dict[req.task_name]
             success = True
             for function in function_names:
-                success = forward_request(function) and success
+                forward_request_result = forward_request(function)
+                if type(forward_request_result) is bool:
+                    success = forward_request(function) and success
+                else:
+                    success = False
             response.success = success
         except Exception as e:
             self.get_logger().error(
