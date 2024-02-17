@@ -22,15 +22,15 @@ repositories:
   mc_mdl_tomasys:
     type: git
     url: https://github.com/meta-control/mc_mdl_tomasys.git
-    version: 1a491bb
+    version: 7f0229d
   mros_ontology:
     type: git
     url: https://github.com/meta-control/mros_ontology.git
-    version: 8b24a78
+    version: 51a1ae9
   mc_mros_reasoner:
     type: git
     url: https://github.com/meta-control/mc_mros_reasoner.git
-    version: 4527b18
+    version: 35aedf5
   system_modes:
     type: git
     url: https://github.com/micro-ROS/system_modes
