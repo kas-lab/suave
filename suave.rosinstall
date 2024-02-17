@@ -22,11 +22,11 @@ repositories:
   mc_mdl_tomasys:
     type: git
     url: https://github.com/meta-control/mc_mdl_tomasys.git
-    version: 7f0229d
+    version: b4822dedead8d6659cb1433daf1a618f0e222cbb
   mros_ontology:
     type: git
     url: https://github.com/meta-control/mros_ontology.git
-    version: 51a1ae9
+    version: 4b9caa2f802c5788601fb8146f24a7adc047e93c
   mc_mros_reasoner:
     type: git
     url: https://github.com/meta-control/mc_mros_reasoner.git
