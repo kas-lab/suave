@@ -26,7 +26,7 @@ repositories:
   mros_ontology:
     type: git
     url: https://github.com/meta-control/mros_ontology.git
-    version: 4b9caa2f802c5788601fb8146f24a7adc047e93c
+    version: 51a1ae94c8d8337b51ab56eaa9c44ee5f9c66a0c
   mc_mros_reasoner:
     type: git
     url: https://github.com/meta-control/mc_mros_reasoner.git
