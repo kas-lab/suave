@@ -64,7 +64,7 @@ class TaskBridge(Node):
 
     def task_cancel_cb(self, req, response):
         response = self.task_request(req, self.forward_task_cancel_request)
-        if response.success is True:
+        if response.success is True and req.task_name in self.current_tasks:
             self.current_tasks.remove(req.task_name)
         return response
 
