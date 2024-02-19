@@ -30,6 +30,15 @@
     
 
 
+    <!-- http://www.metacontrol.org/suave#battery_level -->
+
+    <owl:NamedIndividual rdf:about="http://www.metacontrol.org/suave#battery_level">
+        <rdf:type rdf:resource="http://metacontrol.org/tomasys#QualityAttributeType"/>
+        <tomasys:qa_comparison_operator>&lt;</tomasys:qa_comparison_operator>
+    </owl:NamedIndividual>
+    
+
+
     <!-- http://www.metacontrol.org/suave#c_thruster_1 -->
 
     <owl:NamedIndividual rdf:about="http://www.metacontrol.org/suave#c_thruster_1">
