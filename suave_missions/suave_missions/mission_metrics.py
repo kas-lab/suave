@@ -58,11 +58,12 @@ class MissionMetrics(Node):
         self.mission_name += ' ' + self.adaptation_manager
 
         self.metrics_header = [
-            'mission_name',
+            'mission name',
             'datetime',
             'initial pos (x,y)',
-            'time_mission (s)',
-            'time search (s)',
+            'mission duration (s)',
+            'pipeline found',
+            'time searching pipeline (s)',
             'distance inspected (m)']
 
         self.mission_start_time = None
@@ -155,14 +156,16 @@ class MissionMetrics(Node):
 
     def save_mission_results(self) -> None:
         """Process mission data and save it into a .csv file."""
-        detection_time_delta = -1
+        mission_time_delta = \
+            self.get_clock().now() - self.mission_start_time
+
+        pipeline_detected = False
+        detection_time_delta = mission_time_delta.to_msg().sec
         if self.pipeline_detected_time is not None:
             detection_time_delta = \
                 self.pipeline_detected_time - self.mission_start_time
             detection_time_delta = detection_time_delta.to_msg().sec
-
-        mission_time_delta = \
-            self.get_clock().now() - self.mission_start_time
+            pipeline_detected = True
 
         self.get_logger().info(
             'Time elapsed to detect pipeline: {} seconds'.format(
@@ -177,6 +180,7 @@ class MissionMetrics(Node):
             '({0}, {1})'.format(
                 round(self.initial_x, 2), round(self.initial_y, 2)),
             mission_time_delta.to_msg().sec,
+            pipeline_detected,
             detection_time_delta,
             self.distance_inspected
         ]
