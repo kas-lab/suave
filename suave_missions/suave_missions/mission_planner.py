@@ -1,5 +1,4 @@
-import csv
-from pathlib import Path
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.node import Node
 from suave_msgs.srv import Task
 
@@ -8,10 +7,11 @@ class MissionPlanner(Node):
     def __init__(self, node_name='mission_node'):
         super().__init__(node_name)
 
+        self.cb_group = MutuallyExclusiveCallbackGroup()
         self.task_request_service = self.create_client(
-            Task, 'task/request')
+            Task, 'task/request', callback_group=self.cb_group)
         self.task_cancel_service = self.create_client(
-            Task, 'task/cancel')
+            Task, 'task/cancel', callback_group=self.cb_group)
 
         self.declare_parameter('result_path', '~/suave/results')
         self.declare_parameter('result_filename', 'mission_results')
@@ -35,12 +35,16 @@ class MissionPlanner(Node):
         return self.call_service(self.task_cancel_service, req)
 
     def call_service(self, cli, request):
-        while not cli.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('service not available, waiting again...')
+        if cli.wait_for_service(timeout_sec=5.0) is False:
+            self.get_logger().error(
+                'service not available {}'.format(cli.srv_name))
+            return None
         future = cli.call_async(request)
-        while self.executor.spin_until_future_complete(
-                future, timeout_sec=1.0):
-            self.get_logger().info("Waiting for future to complete")
+        self.executor.spin_until_future_complete(future, timeout_sec=5.0)
+        if future.done() is False:
+            self.get_logger().error(
+                'Future not completed {}'.format(cli.srv_name))
+            return None
         return future.result()
 
     def perform_mission(self):

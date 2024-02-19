@@ -43,7 +43,7 @@ class TaskBridge(Node):
             for function in function_names:
                 forward_request_result = forward_request(function)
                 if type(forward_request_result) is bool:
-                    success = forward_request(function) and success
+                    success = forward_request_result and success
                 else:
                     success = False
             response.success = success

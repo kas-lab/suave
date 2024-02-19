@@ -27,14 +27,16 @@ class TaskBridgeMetacontrol(TaskBridge):
         }
 
     def forward_task_request(self, function):
-        self.get_logger().info("Waiting for future to complete")
         future = self.send_mros_objective(function)
 
+        self.get_logger().info("Waiting for mros_objective future to complete")
         self.executor.spin_until_future_complete(future, timeout_sec=5.0)
         if future.done() is False:
             self.get_logger().warning(
                 'Future send mros_objective not completed {}'.format(function))
             return None
+        self.get_logger().info(
+            'Future send mros_objective completed {}'.format(function))
         self.current_objectives_handle[function] = future.result()
         return self.current_objectives_handle[function].accepted
 
