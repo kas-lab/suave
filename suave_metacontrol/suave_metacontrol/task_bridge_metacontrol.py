@@ -6,7 +6,7 @@ from diagnostic_msgs.msg import KeyValue
 from mros2_msgs.action import ControlQos
 
 from rclpy.executors import MultiThreadedExecutor
-from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.action import ActionClient
 from suave.task_bridge import TaskBridge
 
@@ -15,10 +15,10 @@ class TaskBridgeMetacontrol(TaskBridge):
     def __init__(self):
         super().__init__()
 
-        client_cb_group = MutuallyExclusiveCallbackGroup()
+        self.client_cb_group = ReentrantCallbackGroup()
         self.mros_action_client = ActionClient(
             self, ControlQos, '/mros/objective',
-            callback_group=client_cb_group)
+            callback_group=self.client_cb_group)
 
         self.current_objectives_handle = dict()
         self.task_functions_dict = {

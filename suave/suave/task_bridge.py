@@ -78,10 +78,14 @@ class TaskBridge(Node):
         return False
 
     def call_service(self, cli, request):
-        while not cli.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('service not available, waiting again...')
+        if cli.wait_for_service(timeout_sec=5.0) is False:
+            self.get_logger().error(
+                'service not available {}'.format(cli.srv_name))
+            return None
         future = cli.call_async(request)
-        while self.executor.spin_until_future_complete(
-                future, timeout_sec=1.0):
-            self.get_logger().info("Waiting for future to complete")
+        self.executor.spin_until_future_complete(future, timeout_sec=5.0)
+        if future.done() is False:
+            self.get_logger().error(
+                'Future not completed {}'.format(cli.srv_name))
+            return None
         return future.result()

@@ -10,6 +10,7 @@
 
 /water_visibility_observer_node:
   ros__parameters:
+    qa_publishing_period: 1.0
     water_visibility_period: 80 #Water visibility period in seconds
     water_visibility_min: 1.25 #Minimum value for water visibility
     water_visibility_max: 3.75 #Maximum value for water visibility
