@@ -74,8 +74,8 @@ RUN git clone https://github.com/ArduPilot/ardupilot.git
 WORKDIR $HOME/ardupilot
 RUN git checkout ab597cb
 RUN git submodule update --init --recursive
-# RUN rm $HOME/ardupilot/Tools/environment_install/install-prereqs-ubuntu.sh
-# RUN wget -P $HOME/ardupilot/Tools/environment_install/ https://raw.githubusercontent.com/ArduPilot/ardupilot/c623ae8b82db4d7e195f4b757e2ae5d049f941e5/Tools/environment_install/install-prereqs-ubuntu.sh
+RUN rm $HOME/ardupilot/Tools/environment_install/install-prereqs-ubuntu.sh
+RUN wget -P $HOME/ardupilot/Tools/environment_install/ https://raw.githubusercontent.com/ArduPilot/ardupilot/c623ae8b82db4d7e195f4b757e2ae5d049f941e5/Tools/environment_install/install-prereqs-ubuntu.sh
 RUN chmod +x $HOME/ardupilot/Tools/environment_install/install-prereqs-ubuntu.sh
 RUN USER=kasm-user Tools/environment_install/install-prereqs-ubuntu.sh -y
 
