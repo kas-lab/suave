@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-import sys
-
 import rclpy
 from diagnostic_msgs.msg import DiagnosticArray
 from suave.pipeline_detection import PipelineDetection
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 
 
 class PipelineDetectionWV(PipelineDetection):
@@ -11,7 +11,12 @@ class PipelineDetectionWV(PipelineDetection):
         super().__init__()
 
         self.diagnostics_sub = self.create_subscription(
-            DiagnosticArray, '/diagnostics', self.diagnostics_cb, 10)
+            DiagnosticArray,
+            '/diagnostics',
+            self.diagnostics_cb,
+            10,
+            callback_group=MutuallyExclusiveCallbackGroup()
+        )
 
         self.water_visibility = None
 
@@ -32,10 +37,19 @@ class PipelineDetectionWV(PipelineDetection):
         return result
 
 
-def main():
-    rclpy.init(args=sys.argv)
-
-    detect_pipeline_node = PipelineDetectionWV()
-    rclpy.spin(detect_pipeline_node)
-
-    rclpy.shutdown()
+def main(args=None):
+    rclpy.init(args=args)
+    try:
+        executor = MultiThreadedExecutor()
+        lc_node = PipelineDetectionWV()
+        executor.add_node(lc_node)
+        try:
+            executor.spin()
+        except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
+            executor.shutdown()
+            lc_node.destroy_node()
+        finally:
+            executor.shutdown()
+            lc_node.destroy_node()
+    finally:
+        rclpy.shutdown()

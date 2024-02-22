@@ -5,15 +5,12 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.actions import IncludeLaunchDescription
-from launch.conditions import LaunchConfigurationEquals
-from launch.conditions import LaunchConfigurationNotEquals
 from launch.launch_description_sources import AnyLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    pkg_ros_gz_sim = get_package_share_directory('ros_gz_sim')
     remaro_worlds_path = get_package_share_directory('remaro_worlds')
     min_pipes_launch_path = os.path.join(
         remaro_worlds_path, 'launch', 'small_min_pipes.launch.py')

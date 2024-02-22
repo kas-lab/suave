@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-import sys
 import math
 
 import rclpy
 from rclpy.node import Node
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 
 from std_msgs.msg import Bool
 from geometry_msgs.msg import Pose
@@ -19,14 +20,16 @@ class PipelineDetection(Node):
             PoseArray,
             '/model/min_pipes_pipeline/pose',
             self.pipeline_pose_cb,
-            10
+            10,
+            callback_group=MutuallyExclusiveCallbackGroup()
         )
 
         self.bluerov2_pose_sub = self.create_subscription(
             Pose,
             '/model/bluerov2/pose',
             self.detect_pipeline_cb,
-            10
+            10,
+            callback_group=MutuallyExclusiveCallbackGroup()
         )
 
         self.detect_pipeline_pub = self.create_publisher(
@@ -112,10 +115,19 @@ class PipelineDetection(Node):
             reversed(self.interpolated_path.poses[::delta]))
 
 
-def main():
-    rclpy.init(args=sys.argv)
-
-    detect_pipeline_node = PipelineDetection()
-    rclpy.spin(detect_pipeline_node)
-
-    rclpy.shutdown()
+def main(args=None):
+    rclpy.init(args=args)
+    try:
+        executor = MultiThreadedExecutor()
+        lc_node = PipelineDetection()
+        executor.add_node(lc_node)
+        try:
+            executor.spin()
+        except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
+            executor.shutdown()
+            lc_node.destroy_node()
+        finally:
+            executor.shutdown()
+            lc_node.destroy_node()
+    finally:
+        rclpy.shutdown()
