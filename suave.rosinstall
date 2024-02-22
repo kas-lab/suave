@@ -2,11 +2,11 @@ repositories:
   bluerov2_ignition:
     type: git
     url: https://github.com/Rezenders/bluerov2_ignition.git
-    version: 6756666
+    version: 909f091
   mavros:
     type: git
     url: https://github.com/mavlink/mavros.git
-    version: 3e1adc7
+    version: 227bb05c34a75188f1d6fccff6f767d0cc9129b0
   mavros_wrapper:
     type: git
     url: https://github.com/remaro-network/mavros_wrapper.git
