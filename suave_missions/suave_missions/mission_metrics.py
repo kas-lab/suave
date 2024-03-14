@@ -171,6 +171,9 @@ class MissionMetrics(Node):
             'Time elapsed to detect pipeline: {} seconds'.format(
                 detection_time_delta))
         self.get_logger().info(
+            'Distance inspected: {} m'.format(
+                self.distance_inspected))
+        self.get_logger().info(
             'Time elapsed to complete mission: {} seconds'.format(
                 mission_time_delta.to_msg().sec))
 
