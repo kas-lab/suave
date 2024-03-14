@@ -139,7 +139,7 @@ cd ~/ardupilot
 ./waf configure && make sub
 cd $CURDIR
 
-NOW=$(date +"%d_%m_%y_%H_%M_%S")
+NOW=$(date +"%y_%m_%d_%H_%M")
 MISSIONCONFIG=${NOW}"_mission_config.yaml"
 mkdir -p ~/suave/results
 cp ~/suave_ws/install/suave_missions/share/suave_missions/config/mission_config.yaml ~/suave/results/${MISSIONCONFIG}
