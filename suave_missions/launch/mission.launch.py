@@ -42,7 +42,7 @@ def generate_launch_description():
         'battery_constraint',
         default_value='False',
         description='Desired battery functionality' +
-                    '[none or battery_constraint]'
+                    '[True or False]'
     )
 
     pkg_suave_path = get_package_share_directory(

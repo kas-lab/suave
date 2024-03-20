@@ -83,16 +83,17 @@ class InspectionMission(MissionPlanner):
         battery_constraint_arg = self.get_parameter('battery_constraint').value
         for status in msg.status:
             if status.message  == 'QA status':
-                for value in status.values:
-                    if value.key == 'battery_level':
-                        if float(value.value) < 0.95:
-                            self.get_logger().warn("low battery! Mission abort.")
-                            self.abort_mission = True
-                            self.call_service(
-                            self.save_mission_results_cli, Empty.Request()
-                            )
-                            self.destroy_subscription(self.battery_sub)
-                        break
+                if battery_constraint_arg is True:
+                    for value in status.values:
+                        if value.key == 'battery_level':
+                            if float(value.value) < 0.05:
+                                self.get_logger().warn("low battery! Mission abort.")
+                                self.abort_mission = True
+                                self.call_service(
+                                self.save_mission_results_cli, Empty.Request()
+                                )
+                                self.destroy_subscription(self.battery_sub)
+                            break
 
     def status_cb(self, msg):
         self.status = msg
