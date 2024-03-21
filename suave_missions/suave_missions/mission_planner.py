@@ -51,10 +51,10 @@ class MissionPlanner(Node):
         self.get_logger().warning("No mission defined!!!")
 
     def perform_task(self, task_name, condition):
-        self.get_logger().info('Starting {} task'.format(task_name))
         self.task_timer = self.create_rate(1)
         task_status = "completed"
         if self.abort_mission is False:
+            self.get_logger().info('Starting {} task'.format(task_name))
             self.request_task(task_name)
             while condition() is not True:
                 if self.abort_mission is True:

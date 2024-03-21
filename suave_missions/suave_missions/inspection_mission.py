@@ -3,8 +3,14 @@ from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from std_msgs.msg import Bool
+from std_srvs.srv import Empty
+
+
+import rclpy
+
 from suave_missions.mission_planner import MissionPlanner
 
+from diagnostic_msgs.msg import DiagnosticArray
 
 class InspectionMission(MissionPlanner):
     def __init__(self, node_name='inspection_mission'):
@@ -39,7 +45,17 @@ class InspectionMission(MissionPlanner):
             CommandBool, 'mavros/cmd/arming')
         self.set_mode_service = self.create_client(
             SetMode, 'mavros/set_mode')
+        
+        self.battery_sub = self.create_subscription(
+            DiagnosticArray,
+            'diagnostics',
+            self.battery_level_cb,
+            10,
+            callback_group=MutuallyExclusiveCallbackGroup()
+        )
 
+        self.declare_parameter('battery_constraint', False)    
+        
     def perform_mission(self):
         self.get_logger().info("Pipeline inspection mission starting!!")
         self.timer = self.create_rate(1)
@@ -62,6 +78,22 @@ class InspectionMission(MissionPlanner):
 
         self.perform_task('search_pipeline', lambda: self.pipeline_detected)
         self.perform_task('inspect_pipeline', lambda: self.pipeline_inspected)
+        
+    def battery_level_cb(self, msg):
+        battery_constraint_arg = self.get_parameter('battery_constraint').value
+        for status in msg.status:
+            if status.message  == 'QA status':
+                if battery_constraint_arg is True:
+                    for value in status.values:
+                        if value.key == 'battery_level':
+                            if float(value.value) < 0.05:
+                                self.get_logger().warn("low battery! Mission abort.")
+                                self.abort_mission = True
+                                self.call_service(
+                                self.save_mission_results_cli, Empty.Request()
+                                )
+                                self.destroy_subscription(self.battery_sub)
+                            break
 
     def status_cb(self, msg):
         self.status = msg
