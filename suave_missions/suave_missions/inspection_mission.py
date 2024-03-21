@@ -6,11 +6,10 @@ from std_msgs.msg import Bool
 from std_srvs.srv import Empty
 
 
-import rclpy
-
 from suave_missions.mission_planner import MissionPlanner
 
 from diagnostic_msgs.msg import DiagnosticArray
+
 
 class InspectionMission(MissionPlanner):
     def __init__(self, node_name='inspection_mission'):
@@ -45,7 +44,7 @@ class InspectionMission(MissionPlanner):
             CommandBool, 'mavros/cmd/arming')
         self.set_mode_service = self.create_client(
             SetMode, 'mavros/set_mode')
-        
+
         self.battery_sub = self.create_subscription(
             DiagnosticArray,
             'diagnostics',
@@ -79,7 +78,7 @@ class InspectionMission(MissionPlanner):
 
         self.perform_task('search_pipeline', lambda: self.pipeline_detected)
         self.perform_task('inspect_pipeline', lambda: self.pipeline_inspected)
-        
+
     def battery_level_cb(self, msg):
         battery_constraint_arg = self.get_parameter('battery_constraint').value
         if battery_constraint_arg is True:
@@ -94,7 +93,8 @@ class InspectionMission(MissionPlanner):
                                     "Low battery! Mission abort.")
                                 self.abort_mission = True
                                 self.call_service(
-                                self.save_mission_results_cli, Empty.Request()
+                                    self.save_mission_results_cli,
+                                    Empty.Request()
                                 )
                                 self.destroy_subscription(self.battery_sub)
                             break

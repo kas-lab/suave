@@ -3,7 +3,6 @@ import sys
 
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.lifecycle import Node
-from rclpy.lifecycle import Publisher
 from rclpy.lifecycle import State
 from rclpy.lifecycle import TransitionCallbackReturn
 
