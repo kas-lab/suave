@@ -17,6 +17,7 @@ def generate_launch_description():
     mission_type = LaunchConfiguration('mission_type')
     result_filename = LaunchConfiguration('result_filename')
     battery_constraint = LaunchConfiguration('battery_constraint')
+    battery_constraint_value = LaunchConfiguration('battery_constraint_value')
 
     adaptation_manager_arg = DeclareLaunchArgument(
         'adaptation_manager',
@@ -43,6 +44,11 @@ def generate_launch_description():
         default_value='False',
         description='Desired battery functionality' +
                     '[True or False]'
+    )
+    battery_constraint_value_arg = DeclareLaunchArgument(
+        'battery_constraint_value',
+        default_value='0.2',
+        description='battery constraint value'
     )
 
     pkg_suave_path = get_package_share_directory(
@@ -81,7 +87,12 @@ def generate_launch_description():
         package='suave_missions',
         executable=mission_type,
         name='mission_node',
-        parameters=[mission_config, {'battery_constraint': battery_constraint}],
+        parameters=[
+            mission_config,
+            {
+                'battery_constraint': battery_constraint,
+                'battery_constraint_value': battery_constraint_value,
+            }],
     )
 
     pkg_suave_path = get_package_share_directory('suave')
@@ -123,6 +134,7 @@ def generate_launch_description():
         mission_type_arg,
         result_filename_arg,
         battery_constraint_arg,
+        battery_constraint_value_arg,
         mission_metrics_node,
         mission_metrics_node_override,
         mission_node,

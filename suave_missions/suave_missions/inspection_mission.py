@@ -54,8 +54,9 @@ class InspectionMission(MissionPlanner):
             callback_group=MutuallyExclusiveCallbackGroup()
         )
 
-        self.declare_parameter('battery_constraint', False)    
-        
+        self.declare_parameter('battery_constraint', False)
+        self.declare_parameter('battery_constraint_value', 0.2)
+
     def perform_mission(self):
         self.get_logger().info("Pipeline inspection mission starting!!")
         self.timer = self.create_rate(1)
@@ -86,8 +87,11 @@ class InspectionMission(MissionPlanner):
                 if status.message == 'QA status':
                     for value in status.values:
                         if value.key == 'battery_level':
-                            if float(value.value) < 0.05:
-                                self.get_logger().warn("low battery! Mission abort.")
+                            constraint = self.get_parameter(
+                                'battery_constraint_value').value
+                            if float(value.value) < constraint:
+                                self.get_logger().warn(
+                                    "Low battery! Mission abort.")
                                 self.abort_mission = True
                                 self.call_service(
                                 self.save_mission_results_cli, Empty.Request()
