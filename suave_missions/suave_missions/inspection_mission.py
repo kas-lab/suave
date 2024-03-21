@@ -81,9 +81,9 @@ class InspectionMission(MissionPlanner):
         
     def battery_level_cb(self, msg):
         battery_constraint_arg = self.get_parameter('battery_constraint').value
-        for status in msg.status:
-            if status.message  == 'QA status':
-                if battery_constraint_arg is True:
+        if battery_constraint_arg is True:
+            for status in msg.status:
+                if status.message == 'QA status':
                     for value in status.values:
                         if value.key == 'battery_level':
                             if float(value.value) < 0.05:
