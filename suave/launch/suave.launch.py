@@ -26,29 +26,29 @@ def generate_launch_description():
         'mission_config.yaml')
 
     water_visibility_node = Node(
-        package='suave',
+        package='suave_monitor',
         executable='water_visibility_observer',
         name='water_visibility_observer_node',
         parameters=[mission_config],
     )
 
     battery_monitor_node = Node(
-        package='suave',
+        package='suave_monitor',
         executable='battery_monitor',
         name='battery_monitor',
         parameters=[mission_config],
     )
 
-    pipeline_detection_wv_node = Node(
-        package='suave',
-        executable='pipeline_detection_wv',
-    )
-
     thruster_monitor_node = Node(
-        package='suave',
+        package='suave_monitor',
         executable='thruster_monitor',
         name='thruster_monitor',
         parameters=[mission_config]
+    )
+
+    pipeline_detection_wv_node = Node(
+        package='suave',
+        executable='pipeline_detection_wv',
     )
 
     spiral_search_node = Node(

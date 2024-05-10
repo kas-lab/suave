@@ -4,9 +4,7 @@ import rclpy
 import sys
 
 from rclpy.executors import MultiThreadedExecutor
-from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from suave.task_bridge_none import TaskBridgeNone
-from system_modes_msgs.srv import ChangeMode
 from system_modes_msgs.srv import GetAvailableModes
 
 
@@ -51,7 +49,6 @@ class TaskBridgeRandom(TaskBridgeNone):
                 modes_cli, GetAvailableModes.Request()).available_modes
             )
 
-        cli = self.sm_cli_dict[function]
         return self.call_sysmode_change_mode(function, mode_name)
 
 

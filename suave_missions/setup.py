@@ -30,7 +30,6 @@ setup(
                 'suave_missions.const_dist_mission:main',
             'time_constrained_mission = ' +
                 'suave_missions.time_constrained_mission:main',
-            'mission_metrics = suave_missions.mission_metrics:main',
         ],
     },
 )

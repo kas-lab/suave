@@ -16,7 +16,7 @@ class WaterVisibilityObserver(Node):
     def __init__(self):
         super().__init__('water_visibility')
 
-        self.declare_parameter('qa_publishing_period', 1.0)
+        self.declare_parameter('qa_publishing_period', 0.2)
         self.declare_parameter('water_visibility_period', 150)
         self.declare_parameter('water_visibility_min', 1.25)
         self.declare_parameter('water_visibility_max', 3.75)
