@@ -61,7 +61,7 @@ def generate_launch_description():
     )
 
     mission_metrics_node = Node(
-        package='suave_missions',
+        package='suave_metrics',
         executable='mission_metrics',
         name='mission_metrics',
         parameters=[mission_config, {
@@ -72,7 +72,7 @@ def generate_launch_description():
     )
 
     mission_metrics_node_override = Node(
-        package='suave_missions',
+        package='suave_metrics',
         executable='mission_metrics',
         name='mission_metrics',
         parameters=[mission_config, {
@@ -110,8 +110,10 @@ def generate_launch_description():
         'suave_metacontrol.launch.py'
     )
 
+    pkg_suave_random_path = get_package_share_directory(
+        'suave_random')
     suave_random_launch_path = os.path.join(
-        pkg_suave_metacontrol_path,
+        pkg_suave_random_path,
         'launch',
         'suave_random.launch.py'
     )

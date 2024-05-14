@@ -27,15 +27,12 @@ setup(
     # tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'battery_monitor = suave.battery_monitor:main',
             'pipeline_detection = suave.pipeline_node:main',
             'pipeline_detection_wv = suave.pipeline_detection_wv:main',
             'recharge_battery = suave.recharge_battery_lc:main',
             'spiral_search = suave.spiral_search_lc:main',
             'follow_pipeline = suave.follow_pipeline_lc:main',
-            'thruster_monitor = suave.thruster_monitor:main',
             'recover_thrusters = suave.recover_thrusters_lc:main',
-            'water_visibility_observer = suave.water_visibility_observer:main',
             'task_bridge_none = suave.task_bridge_none:main',
         ],
     },

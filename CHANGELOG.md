@@ -13,13 +13,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 2. Added recharge battery task
 
-3. Added qa_comparison_operator to water_visibility in suave.owl
+4. Added battery_constraint argument to mission [PR #155]
 
-4. Documentation with sphinx
+5. Added qa_comparison_operator to water_visibility in suave.owl
 
-5. CI to build sphinx documentation
+6. Documentation with sphinx
 
-6. Added mission metrics node
+7. CI to build sphinx documentation
+
+8. Added mission metrics node
 
 ### Changed
 
@@ -29,6 +31,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 3. Mission config default parameters
 
+4. Refactored repository. Created new packages : suave_monitor, and suave_metrics. Moved suave_metacontrol under suave_managing
 
 ### Fixed
 
