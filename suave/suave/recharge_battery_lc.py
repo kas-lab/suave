@@ -134,7 +134,7 @@ def main(args=None):
     rclpy.init(args=args)
     try:
         executor = MultiThreadedExecutor()
-        lc_node = RechargeBattery('recharge_battery')
+        lc_node = RechargeBattery('generate_recharge_path_node')
         executor.add_node(lc_node)
         try:
             executor.spin()
