@@ -30,48 +30,55 @@ set(dependencies
   diagnostic_msgs
 )
 
-include_directories(
-  include
-)
+# include_directories(
+#   include
+# )
 
 add_library(suave_mission SHARED src/suave_bt/suave_mission.cpp)
+add_library(is_pipeline_found SHARED src/suave_bt/is_pipeline_found.cpp)
+add_library(is_pipeline_inspected SHARED src/suave_bt/is_pipeline_inspected.cpp)
+add_library(condition_water_visibility SHARED src/suave_bt/condition_water_visibility.cpp)
+add_library(condition_thrusters_ok SHARED src/suave_bt/condition_thrusters_ok.cpp)
 
-add_library(is_pipeline_found_bt_node SHARED src/suave_bt/is_pipeline_found.cpp)
-add_library(is_pipeline_inspected_bt_node SHARED src/suave_bt/is_pipeline_inspected.cpp)
-add_library(condition_water_visibility_bt_node SHARED src/suave_bt/condition_water_visibility.cpp)
-add_library(condition_thrusters_ok_bt_node SHARED src/suave_bt/condition_thrusters_ok.cpp)
-
-add_library(action_arm_thrusters_bt_node SHARED src/suave_bt/action_arm_thrusters.cpp)
-add_library(action_set_guided_mode_bt_node SHARED src/suave_bt/action_set_guided_mode.cpp)
-add_library(action_search_pipeline_bt_node SHARED src/suave_bt/action_search_pipeline.cpp)
-add_library(action_inspect_pipeline_bt_node SHARED src/suave_bt/action_inspect_pipeline.cpp)
-add_library(action_recharge_battery_bt_node SHARED src/suave_bt/action_recharge_battery.cpp)
-add_library(action_change_mode_bt_node SHARED src/suave_bt/action_change_mode.cpp)
+add_library(action_arm_thrusters SHARED src/suave_bt/action_arm_thrusters.cpp)
+add_library(action_set_guided_mode SHARED src/suave_bt/action_set_guided_mode.cpp)
+add_library(action_search_pipeline SHARED src/suave_bt/action_search_pipeline.cpp)
+add_library(action_inspect_pipeline SHARED src/suave_bt/action_inspect_pipeline.cpp)
+add_library(action_recharge_battery SHARED src/suave_bt/action_recharge_battery.cpp)
+add_library(action_change_mode SHARED src/suave_bt/action_change_mode.cpp)
 
 
 list(APPEND plugin_libs
   suave_mission
-  is_pipeline_found_bt_node
-  is_pipeline_inspected_bt_node
-  condition_water_visibility_bt_node
-  condition_thrusters_ok_bt_node
-  action_arm_thrusters_bt_node
-  action_set_guided_mode_bt_node
-  action_search_pipeline_bt_node
-  action_inspect_pipeline_bt_node
-  action_recharge_battery_bt_node
-  action_change_mode_bt_node
+  is_pipeline_found
+  is_pipeline_inspected
+  condition_water_visibility
+  condition_thrusters_ok
+  action_arm_thrusters
+  action_set_guided_mode
+  action_search_pipeline
+  action_inspect_pipeline
+  action_recharge_battery
+  action_change_mode
 )
 
 foreach(bt_plugin ${plugin_libs})
+  # ament_target_dependencies(${bt_plugin} ${dependencies})
+  target_compile_features(${bt_plugin} PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+  target_include_directories(${bt_plugin} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>)
   ament_target_dependencies(${bt_plugin} ${dependencies})
-  target_compile_definitions(${bt_plugin} PRIVATE BT_PLUGIN_EXPORT)
+  target_compile_definitions(${bt_plugin} PRIVATE "SUAVE_BT_BUILDING_LIBRARY")
 endforeach()
 
 add_executable(suave_bt src/suave_bt.cpp)
 ament_target_dependencies(suave_bt ${dependencies})
 target_link_libraries(suave_bt ${plugin_libs})
 
+install(DIRECTORY include/
+  DESTINATION include/
+)
 
 install(TARGETS
   suave_bt
@@ -83,10 +90,6 @@ install(TARGETS ${plugin_libs}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
-)
-
-install(DIRECTORY include/
-  DESTINATION include/
 )
 
 # add config, launch etc, whatever is needed
