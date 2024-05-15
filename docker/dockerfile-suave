@@ -113,8 +113,9 @@ RUN vcs import src < suave.rosinstall --recursive
 
 RUN rm -rf $HOME/suave_ws/src/suave/
 COPY --chown=kasm-user:kasm-user suave/ $HOME/suave_ws/src/suave/suave/
+COPY --chown=kasm-user:kasm-user suave_managing/ $HOME/suave_ws/src/suave/suave_managing/
+COPY --chown=kasm-user:kasm-user suave_metrics/ $HOME/suave_ws/src/suave/suave_metrics/
 COPY --chown=kasm-user:kasm-user suave_missions/ $HOME/suave_ws/src/suave/suave_missions/
-COPY --chown=kasm-user:kasm-user suave_metacontrol/ $HOME/suave_ws/src/suave/suave_metacontrol/
 COPY --chown=kasm-user:kasm-user suave_msgs/ $HOME/suave_ws/src/suave/suave_msgs/
 
 # Install suave deps

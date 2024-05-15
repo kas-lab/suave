@@ -76,3 +76,26 @@ f_maintain_motion_node:
       __DEFAULT__:
         ros__parameters:
           random_param: 2.0
+
+generate_recharge_path:
+  ros__parameters:
+    type: system
+    parts:
+      generate_recharge_path_node
+    modes:
+      __DEFAULT__:
+        generate_recharge_path_node: inactive
+      normal:
+        generate_recharge_path_node: active.__DEFAULT__
+      inactive:
+        generate_recharge_path_node: inactive
+      fd_unground:
+        generate_recharge_path_node: inactive
+
+generate_recharge_path_node:
+  ros__parameters:
+    type: node
+    modes:
+      __DEFAULT__:
+        ros__parameters:
+          random_param: 2.0

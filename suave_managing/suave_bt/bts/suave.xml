@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4"
+      main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <RetryUntilSuccessful num_attempts="-1">
+      <ReactiveFallback>
+        <Sequence>
+          <is_mission_aborted/>
+          <Sequence>
+            <change_mode node_name="f_maintain_motion"
+                         mode_name="fd_unground"/>
+            <change_mode node_name="f_generate_search_path"
+                         mode_name="fd_unground"/>
+            <change_mode node_name="f_follow_pipeline"
+                         mode_name="fd_unground"/>
+          </Sequence>
+        </Sequence>
+        <SequenceWithMemory>
+          <SequenceWithMemory>
+            <arm_thrusters/>
+            <set_guided_mode/>
+          </SequenceWithMemory>
+          <ReactiveSequence>
+            <Fallback>
+              <Sequence>
+                <thrusters_ok/>
+                <change_mode node_name="f_maintain_motion"
+                             mode_name="fd_all_thrusters"/>
+              </Sequence>
+              <change_mode node_name="f_maintain_motion"
+                           mode_name="fd_recover_thrusters"/>
+            </Fallback>
+            <SequenceWithMemory>
+              <ReactiveSequence>
+                <Fallback>
+                  <Sequence>
+                    <water_visibility threshold="3.25"/>
+                    <change_mode node_name="f_generate_search_path"
+                                 mode_name="fd_spiral_high"/>
+                  </Sequence>
+                  <Sequence>
+                    <water_visibility threshold="2.25"/>
+                    <change_mode node_name="f_generate_search_path"
+                                 mode_name="fd_spiral_medium"/>
+                  </Sequence>
+                  <Sequence>
+                    <water_visibility threshold="1.25"/>
+                    <change_mode node_name="f_generate_search_path"
+                                 mode_name="fd_spiral_low"/>
+                  </Sequence>
+                </Fallback>
+                <search_pipeline/>
+                <change_mode node_name="f_generate_search_path"
+                             mode_name="fd_unground"/>
+              </ReactiveSequence>
+              <ReactiveSequence>
+                <change_mode node_name="f_follow_pipeline"
+                             mode_name="fd_follow_pipeline"/>
+                <inspect_pipeline/>
+                <change_mode node_name="f_follow_pipeline"
+                             mode_name="fd_unground"/>
+                <change_mode node_name="f_maintain_motion"
+                             mode_name="fd_unground"/>
+              </ReactiveSequence>
+            </SequenceWithMemory>
+          </ReactiveSequence>
+        </SequenceWithMemory>
+      </ReactiveFallback>
+    </RetryUntilSuccessful>
+  </BehaviorTree>
+
+  <!-- Description of Node Models (used by Groot) -->
+  <TreeNodesModel>
+    <Action ID="arm_thrusters"
+            editable="true"/>
+    <Action ID="change_mode"
+            editable="true">
+      <input_port name="node_name"/>
+      <input_port name="mode_name"/>
+    </Action>
+    <Action ID="inspect_pipeline"
+            editable="true"/>
+    <Condition ID="is_mission_aborted"
+               editable="true"/>
+    <Action ID="search_pipeline"
+            editable="true"/>
+    <Action ID="set_guided_mode"
+            editable="true"/>
+    <Condition ID="thrusters_ok"
+               editable="true"/>
+    <Condition ID="water_visibility"
+               editable="true">
+      <input_port name="threshold"/>
+    </Condition>
+  </TreeNodesModel>
+
+</root>

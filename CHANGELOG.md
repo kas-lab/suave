@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 8. Added mission metrics node
 
+9. Add a behavior tree as a managing subsystem for SUAVE and SUAVE extended to serve as a baseline for comparison
+
 ### Changed
 
 1. Ardusub, mavros, ros_gz, mc_mros_reasoner, mc_mdl_tomasys, mros_ontology verions
