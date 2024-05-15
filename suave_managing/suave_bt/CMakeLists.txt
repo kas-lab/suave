@@ -39,6 +39,7 @@ add_library(is_pipeline_found SHARED src/suave_bt/is_pipeline_found.cpp)
 add_library(is_pipeline_inspected SHARED src/suave_bt/is_pipeline_inspected.cpp)
 add_library(condition_water_visibility SHARED src/suave_bt/condition_water_visibility.cpp)
 add_library(condition_thrusters_ok SHARED src/suave_bt/condition_thrusters_ok.cpp)
+add_library(condition_battery_level SHARED src/suave_bt/condition_battery_level.cpp)
 
 add_library(action_arm_thrusters SHARED src/suave_bt/action_arm_thrusters.cpp)
 add_library(action_set_guided_mode SHARED src/suave_bt/action_set_guided_mode.cpp)
@@ -54,6 +55,7 @@ list(APPEND plugin_libs
   is_pipeline_inspected
   condition_water_visibility
   condition_thrusters_ok
+  condition_battery_level
   action_arm_thrusters
   action_set_guided_mode
   action_search_pipeline
@@ -76,12 +78,17 @@ add_executable(suave_bt src/suave_bt.cpp)
 ament_target_dependencies(suave_bt ${dependencies})
 target_link_libraries(suave_bt ${plugin_libs})
 
+add_executable(suave_bt_extended src/suave_bt_extended.cpp)
+ament_target_dependencies(suave_bt_extended ${dependencies})
+target_link_libraries(suave_bt_extended ${plugin_libs})
+
 install(DIRECTORY include/
   DESTINATION include/
 )
 
 install(TARGETS
   suave_bt
+  suave_bt_extended
   DESTINATION lib/${PROJECT_NAME}
 )
 

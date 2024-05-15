@@ -32,7 +32,7 @@ def generate_launch_description():
 
     mission_type_arg = DeclareLaunchArgument(
         'mission_type',
-        default_value='suave',
+        default_value='suave_extended',
         description='Mission name for logging'
     )
 
@@ -92,7 +92,7 @@ def generate_launch_description():
 
     suave_bt_node = Node(
         package='suave_bt',
-        executable='suave_bt',
+        executable='suave_bt_extended',
         parameters=[mission_config]
     )
 
