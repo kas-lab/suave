@@ -14,10 +14,18 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     task_bridge = LaunchConfiguration('task_bridge')
+    system_modes = LaunchConfiguration('system_modes')
+
     task_bridge_arg = DeclareLaunchArgument(
         'task_bridge',
         default_value='True',
-        description='Indicates if task_bridge should be launched [True/False]'
+        description='Indicates whether task_bridge should be launched [True/False]'
+    )
+
+    system_modes_arg = DeclareLaunchArgument(
+        'system_modes',
+        default_value='True',
+        description='Indicates whether system_modes should be launched [True/False]'
     )
 
     mission_config = os.path.join(
@@ -88,10 +96,13 @@ def generate_launch_description():
         'system_modes.launch.py')
 
     system_modes_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(system_modes_launch_path))
+        PythonLaunchDescriptionSource(system_modes_launch_path),
+        condition=LaunchConfigurationEquals('system_modes', 'True')
+    )
 
     return LaunchDescription([
         task_bridge_arg,
+        system_modes_arg,
         water_visibility_node,
         battery_monitor_node,
         pipeline_detection_wv_node,

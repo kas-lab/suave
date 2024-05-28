@@ -1,6 +1,8 @@
 /mission_metrics:
   ros__parameters:
     result_path: "~/suave/results" #Path to save results
+    water_visibiity_threshold: [3.25, 2.25, 1.25]
+    expected_altitude: [3.0, 2.0, 1.0]
 
 /mission_node:
   ros__parameters:

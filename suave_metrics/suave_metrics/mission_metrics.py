@@ -17,16 +17,26 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
+import statistics
 
 import rclpy
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
+from rclpy.time import Time
 
+from diagnostic_msgs.msg import DiagnosticArray
 from geometry_msgs.msg import Pose
 from mavros_msgs.msg import State
 from std_msgs.msg import Bool
 from std_msgs.msg import Float32
 from std_srvs.srv import Empty
+from rcl_interfaces.msg import ParameterEvent
+from rcl_interfaces.srv import GetParameters
+from lifecycle_msgs.msg import TransitionEvent
+
+from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
+
 
 
 class MissionMetrics(Node):
@@ -45,6 +55,10 @@ class MissionMetrics(Node):
         self.declare_parameter('adaptation_manager', 'none')
         self.declare_parameter('mission_name', 'inspection')
         # self.declare_parameter('metrics_header', [''])
+        self.declare_parameter(
+            'water_visibiity_threshold', rclpy.Parameter.Type.DOUBLE_ARRAY)
+        self.declare_parameter(
+            'expected_altitude', rclpy.Parameter.Type.DOUBLE_ARRAY)
 
         #: path where results must be saved
         self.result_path = self.get_parameter('result_path').value
@@ -57,15 +71,6 @@ class MissionMetrics(Node):
         self.mission_name = self.get_parameter('mission_name').value
         self.mission_name += ' ' + self.adaptation_manager
 
-        self.metrics_header = [
-            'mission name',
-            'datetime',
-            'initial pos (x,y)',
-            'mission duration (s)',
-            'pipeline found',
-            'time searching pipeline (s)',
-            'distance inspected (m)']
-
         self.mission_start_time = None
         self.pipeline_detected_time = None
 
@@ -75,6 +80,13 @@ class MissionMetrics(Node):
         self.first_gz_pose = True
 
         self.distance_inspected = 0.0
+
+        self.wrong_altitude = False
+        self.thrusters_failed = False
+        self.wrong_altitude_time = None
+        self.thrusters_failed_time = None
+        self.component_recovery_time = []
+        self.wv_reaction_time = []
 
         self.state_sub = self.create_subscription(
             State,
@@ -89,28 +101,66 @@ class MissionMetrics(Node):
             'pipeline/detected',
             self.pipeline_detected_cb,
             10,
-            callback_group=MutuallyExclusiveCallbackGroup())
+            callback_group=MutuallyExclusiveCallbackGroup()
+        )
 
         self.pipeline_inspected_sub = self.create_subscription(
             Bool,
             'pipeline/inspected',
             self.pipeline_inspected_cb,
             10,
-            callback_group=MutuallyExclusiveCallbackGroup())
+            callback_group=MutuallyExclusiveCallbackGroup()
+        )
 
         self.pipeline_distance_inspected_sub = self.create_subscription(
             Float32,
             'pipeline/distance_inspected',
             self.distance_inspected_cb,
             1,
-            callback_group=MutuallyExclusiveCallbackGroup())
+            callback_group=MutuallyExclusiveCallbackGroup()
+        )
 
         self.gazebo_pos_sub = self.create_subscription(
             Pose,
             'model/bluerov2/pose',
             self.gazebo_pos_cb,
             10,
-            callback_group=MutuallyExclusiveCallbackGroup())
+            callback_group=MutuallyExclusiveCallbackGroup()
+        )
+
+        self.qos = QoSProfile(
+            reliability=QoSReliabilityPolicy.RELIABLE,
+            history=QoSHistoryPolicy.KEEP_ALL,
+        )
+        self.diagnostics_sub = self.create_subscription(
+            DiagnosticArray,
+            '/diagnostics',
+            self.diagnostics_cb,
+            self.qos,
+            callback_group=ReentrantCallbackGroup()
+        )
+
+        self.f_maintain_motion_node_state_sub = self.create_subscription(
+            TransitionEvent,
+            '/f_maintain_motion_node/transition_event',
+            self.maintain_motion_transition_cb,
+            self.qos,
+            callback_group=ReentrantCallbackGroup()
+        )
+
+        self.param_change_sub = self.create_subscription(
+            ParameterEvent,
+            "/parameter_events",
+            self.param_change_cb,
+            self.qos,
+            callback_group=ReentrantCallbackGroup()
+        )
+
+        self.get_spiral_altitude_cli = self.create_client(
+            GetParameters,
+            '/f_generate_search_path_node/get_parameters',
+            callback_group=MutuallyExclusiveCallbackGroup()
+        )
 
         self.save_mission_results_srv = self.create_service(
             Empty,
@@ -145,6 +195,78 @@ class MissionMetrics(Node):
             self.initial_y = msg.position.y
             self.destroy_subscription(self.gazebo_pos_sub)
 
+    def diagnostics_cb(self, msg):
+        time = self.get_clock().now()
+        measurement_messages = [
+            'qa status',
+            'qa measurement',
+            'ea status',
+            'ea measurement',
+            'attribute measurement']
+        component_messages = [
+            'component status', 'component']
+        for diagnostic_status in msg.status:
+            if diagnostic_status.message.lower() in measurement_messages:
+                self.check_altitude(diagnostic_status, time)
+            if diagnostic_status.message.lower() in component_messages:
+                thrusters_ok = self.check_thrusther(diagnostic_status, time)
+
+    def check_altitude(self, diagnostic_status, time):
+        for value in diagnostic_status.values:
+            if value.key == 'water_visibility':
+                altitude = self.get_spiral_altitude()
+                expected = self.get_expected_spiral_altitude(value.value)
+                correct_altitude =  altitude == expected
+                if self.wrong_altitude is False and correct_altitude is False:
+                    self.wrong_altitude = True
+                    self.wrong_altitude_time = time
+                return
+
+    def get_spiral_altitude(self):
+        req = GetParameters.Request(names=['spiral_altitude'])
+        res = self.call_service(self.get_spiral_altitude_cli, req)
+        return res.values[0].double_value if len(res.values) > 0 else None
+
+    def get_expected_spiral_altitude(self, measured_wv):
+        wv_threshold = self.get_parameter('water_visibiity_threshold').value
+        wv_expected = self.get_parameter('expected_altitude').value
+        for threshold, expected in zip(wv_threshold, wv_expected):
+            if float(measured_wv) >= threshold:
+                return expected
+        return None
+
+    def check_thrusther(self, diagnostic_status, time):
+        for value in diagnostic_status.values:
+            if value.key.startswith("c_thruster_") and value.value=="FALSE":
+                if self.thrusters_failed is False:
+                    self.thrusters_failed = True
+                    self.thrusters_failed_time = time
+                return
+
+    def maintain_motion_transition_cb(self, msg):
+        if msg.goal_state.label == "active" and self.thrusters_failed is True:
+            reaction_time = self.get_clock().now() - self.thrusters_failed_time
+            reaction_time = reaction_time.nanoseconds * 1e-9
+            self.component_recovery_time.append(reaction_time)
+            self.thrusters_failed = False
+            self.get_logger().info(
+                'Component recovery time: {} seconds'.format(reaction_time))
+
+    def param_change_cb(self, msg):
+        if msg.node == "/f_generate_search_path_node"  \
+         and self.wrong_altitude is True:
+            for param in msg.changed_parameters:
+                if param.name == "spiral_altitude":
+                    reaction_time = self.get_clock().now() - self.wrong_altitude_time
+                    reaction_time = reaction_time.nanoseconds * 1e-9
+                    self.wv_reaction_time.append(
+                        reaction_time)
+                    self.wrong_altitude = False
+                    self.get_logger().info(
+                        'Water visibility correction time: {} seconds'.
+                        format(reaction_time))
+                    return
+
     def save_mission_results_cb(
          self, req: Empty.Request, res: Empty.Response) -> None:
         self.save_mission_results()
@@ -177,22 +299,64 @@ class MissionMetrics(Node):
             'Time elapsed to complete mission: {} seconds'.format(
                 mission_time_delta.to_msg().sec))
 
+        mission_header = [
+            'mission name',
+            'datetime',
+            'initial pos (x,y)',
+            'mission duration (s)',
+            'pipeline found',
+            'time searching pipeline (s)',
+            'distance inspected (m)',
+            'mean reaction time (s)',
+        ]
+
+        date = datetime.now().strftime("%b-%d-%Y-%H-%M-%S")
         mission_data = [
             self.mission_name,
-            datetime.now().strftime("%b-%d-%Y-%H-%M-%S"),
+            date,
             '({0}, {1})'.format(
                 round(self.initial_x, 2), round(self.initial_y, 2)),
             mission_time_delta.to_msg().sec,
             pipeline_detected,
             detection_time_delta,
-            self.distance_inspected
+            self.distance_inspected,
+            statistics.fmean(
+                self.component_recovery_time + self.wv_reaction_time)
         ]
 
-        self.save_metrics(mission_data)
+        self.save_metrics(
+            self.result_path,
+            self.result_filename,
+            mission_header,
+            mission_data)
+
+        component_file = self.result_filename +'_component_recovery_time'
+        for t in self.component_recovery_time:
+            self.save_metrics(
+                self.result_path,
+                component_file,
+                ['mission_name', 'datetime', 'reaction time (s)'],
+                [self.mission_name, date, t]
+            )
+
+        wv_file = self.result_filename +'_wv_reaction_time'
+        for t in self.wv_reaction_time:
+            self.save_metrics(
+                self.result_path,
+                wv_file,
+                ['mission_name', 'datetime', 'reaction time (s)'],
+                [self.mission_name, date, t]
+            )
+
         # TODO: make this a parameter
         os.system("touch ~/suave_ws/mission.done")
 
-    def save_metrics(self, data: list[str | float | int]) -> None:
+    def save_metrics(
+        self,
+        path: str,
+        filename: str,
+        header: list[str],
+        data: list[str | float | int]) -> None:
         """Save data into a .csv file.
 
         Create folder if `result_path` folder does not exist.
@@ -201,15 +365,15 @@ class MissionMetrics(Node):
 
         :param data: array with data to be saved
         """
-        result_path = Path(self.result_path).expanduser()
+        result_path = Path(path).expanduser()
 
         if result_path.is_dir() is False:
             result_path.mkdir(parents=True)
 
-        result_file = result_path / (self.result_filename + '.csv')
+        result_file = result_path / (filename + '.csv')
         if result_file.is_file() is False:
             result_file.touch()
-            self.append_csv(result_file, self.metrics_header)
+            self.append_csv(result_file, header)
 
         self.append_csv(result_file, data)
 
@@ -224,6 +388,18 @@ class MissionMetrics(Node):
             writer = csv.writer(file)
             writer.writerow(data)
 
+    def call_service(self, cli, request):
+        if cli.wait_for_service(timeout_sec=1.0) is False:
+            self.get_logger().error(
+                'service not available {}'.format(cli.srv_name))
+            return None
+        future = cli.call_async(request)
+        self.executor.spin_until_future_complete(future, timeout_sec=1.0)
+        if future.done() is False:
+            self.get_logger().error(
+                'Future not completed {}'.format(cli.srv_name))
+            return None
+        return future.result()
 
 def main():
     rclpy.init(args=sys.argv)
