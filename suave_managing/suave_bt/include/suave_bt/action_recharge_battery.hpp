@@ -33,7 +33,7 @@ class RechargeBattery :  public BT::StatefulActionNode{
 public:
   RechargeBattery(const std::string& name, const BT::NodeConfig & conf);
 
-  BT::NodeStatus onStart() override {return BT::NodeStatus::RUNNING;};
+  BT::NodeStatus onStart() override;
 
   BT::NodeStatus onRunning() override;
 
