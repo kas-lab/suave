@@ -96,6 +96,13 @@ RUN sudo apt update && sudo apt install -y \
 WORKDIR $HOME
 RUN git clone https://github.com/ArduPilot/ardupilot_gazebo
 
+ENV GZ_VERSION=garden
+RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
+    && sudo rosdep init \
+    && sudo wget https://raw.githubusercontent.com/osrf/osrf-rosdep/master/gz/00-gazebo.list -O /etc/ros/rosdep/sources.list.d/00-gazebo.list \
+    && rosdep update \
+    && rosdep resolve gz-$GZ_VERSION"]
+
 WORKDIR $HOME/ardupilot_gazebo
 RUN [ "/bin/bash","-c","mkdir build && cd build \
     && cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo\
@@ -105,7 +112,7 @@ ENV GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot_gazebo/build:${GZ_SIM_SYSTEM_PLUGI
 ENV GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}
 
 # Copy suave files
-ENV GZ_VERSION="garden"
+ENV GZ_VERSION=garden
 RUN mkdir -p $HOME/suave_ws/src
 COPY --chown=kasm-user:kasm-user suave.rosinstall $HOME/suave_ws/suave.rosinstall
 WORKDIR $HOME/suave_ws/
@@ -116,12 +123,12 @@ COPY --chown=kasm-user:kasm-user suave/ $HOME/suave_ws/src/suave/suave/
 COPY --chown=kasm-user:kasm-user suave_managing/ $HOME/suave_ws/src/suave/suave_managing/
 COPY --chown=kasm-user:kasm-user suave_metrics/ $HOME/suave_ws/src/suave/suave_metrics/
 COPY --chown=kasm-user:kasm-user suave_missions/ $HOME/suave_ws/src/suave/suave_missions/
+COPY --chown=kasm-user:kasm-user suave_monitor/ $HOME/suave_ws/src/suave/suave_monitor/
 COPY --chown=kasm-user:kasm-user suave_msgs/ $HOME/suave_ws/src/suave/suave_msgs/
 
 # Install suave deps
 WORKDIR $HOME/suave_ws
 RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
-    && sudo rosdep init \
     && rosdep update \
     && rosdep install --from-paths src --ignore-src -r -y"]
 
