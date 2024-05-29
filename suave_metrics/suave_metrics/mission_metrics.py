@@ -94,6 +94,8 @@ class MissionMetrics(Node):
         self.wv_reaction_time = []
         self.battery_reaction_time = []
 
+        self.measured_wv = None
+
         self.state_sub = self.create_subscription(
             State,
             'mavros/state',
@@ -229,6 +231,7 @@ class MissionMetrics(Node):
     def check_altitude(self, diagnostic_status, time):
         for value in diagnostic_status.values:
             if value.key == 'water_visibility':
+                self.measured_wv = float(value.value)
                 altitude = self.get_spiral_altitude()
                 expected = self.get_expected_spiral_altitude(value.value)
                 correct_altitude =  altitude == expected
@@ -293,8 +296,10 @@ class MissionMetrics(Node):
         time = self.get_clock().now()
         if msg.node == "/f_generate_search_path_node"  \
          and self.wrong_altitude is True:
+            expected_altitude = self.get_expected_spiral_altitude(
+                self.measured_wv)
             for param in msg.changed_parameters:
-                if param.name == "spiral_altitude":
+                if param.name == "spiral_altitude" and param.value.double_value == expected_altitude:
                     reaction_time =  time - self.wrong_altitude_time
                     reaction_time = reaction_time.nanoseconds * 1e-9
                     self.wv_reaction_time.append(
