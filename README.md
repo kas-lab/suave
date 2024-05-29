@@ -12,8 +12,12 @@ It clearly separates the system into two subsystems: the managed subsystem and t
 
 This repository is organized as following:
 - The package [suave](https://github.com/kas-lab/suave/tree/main/suave) contains the managed subsystem functionalities
+- The package [suave_monitor](https://github.com/kas-lab/suave/tree/main/suave_monitor) contains the monitor nodes
 - The package [suave_missions](https://github.com/kas-lab/suave/tree/main/suave_missions) contains the AUV's missions
-- The package [suave_metacontrol](https://github.com/kas-lab/suave/tree/main/suave_metacontrol) contains the metacontrol implementation of the managing subsystems, and a random managing subsystem
+- The package [suave_metrics](https://github.com/kas-lab/suave/tree/main/suave_metrics) contains the a node used for collecting mission metrics
+- The package [suave_metacontrol](https://github.com/kas-lab/suave/tree/main/suave_managing/suave_metacontrol) contains the metacontrol implementation of the managing subsystem
+- The package [suave_random](https://github.com/kas-lab/suave/tree/main/suave_managing/suave_random) contains the implementation of a random managing subsystems
+- The package [suave_bt](https://github.com/kas-lab/suave/tree/main/suave_managing/suave_bt) contains the behavior tree implementation of the managing subsystem
 - The package [suave_msgs](https://github.com/kas-lab/suave/tree/main/suave_msgs) contains suave's specific ros msgs
 - The folder [docker](https://github.com/kas-lab/suave/tree/main/docker) contains the dockerfiles and scripts used to package this repository
 - The folder [runner](https://github.com/kas-lab/suave/tree/main/runner) contains the bash scripts to run the exemplar
@@ -428,7 +432,7 @@ colcon build --symlink-install
 
 ## Citation
 
-If you find this repository useful, please consider citing:
+If you find this repository useful, please consider citing the [SUAVE paper](https://ieeexplore.ieee.org/abstract/document/10173938/):
 
 ```
 @INPROCEEDINGS{10173938,
