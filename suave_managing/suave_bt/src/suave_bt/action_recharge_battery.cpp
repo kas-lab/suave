@@ -31,6 +31,11 @@ namespace suave_bt
     recharged_ = msg.data;
   }
 
+  BT::NodeStatus RechargeBattery::onStart() {
+    recharged_ = false;
+    return BT::NodeStatus::RUNNING;
+  }
+
   BT::NodeStatus RechargeBattery::onRunning() {
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
 

@@ -56,9 +56,12 @@ class MissionMetrics(Node):
         self.declare_parameter('mission_name', 'inspection')
         # self.declare_parameter('metrics_header', [''])
         self.declare_parameter(
-            'water_visibiity_threshold', rclpy.Parameter.Type.DOUBLE_ARRAY)
+            'water_visibiity_threshold', [3.25, 2.25, 1.25])
         self.declare_parameter(
-            'expected_altitude', rclpy.Parameter.Type.DOUBLE_ARRAY)
+            'expected_altitude', [3.0, 2.0, 1.0])
+
+        self.declare_parameter(
+            'battery_limit', 0.25)
 
         #: path where results must be saved
         self.result_path = self.get_parameter('result_path').value
@@ -83,10 +86,15 @@ class MissionMetrics(Node):
 
         self.wrong_altitude = False
         self.thrusters_failed = False
+        self.battery_low = False
         self.wrong_altitude_time = None
         self.thrusters_failed_time = None
+        self.battery_low_time = None
         self.component_recovery_time = []
         self.wv_reaction_time = []
+        self.battery_reaction_time = []
+
+        self.measured_wv = None
 
         self.state_sub = self.create_subscription(
             State,
@@ -144,6 +152,14 @@ class MissionMetrics(Node):
             TransitionEvent,
             '/f_maintain_motion_node/transition_event',
             self.maintain_motion_transition_cb,
+            self.qos,
+            callback_group=ReentrantCallbackGroup()
+        )
+
+        self.generate_recharge_path_node_state_sub = self.create_subscription(
+            TransitionEvent,
+            '/generate_recharge_path_node/transition_event',
+            self.generate_recharge_path_transition_cb,
             self.qos,
             callback_group=ReentrantCallbackGroup()
         )
@@ -208,16 +224,19 @@ class MissionMetrics(Node):
         for diagnostic_status in msg.status:
             if diagnostic_status.message.lower() in measurement_messages:
                 self.check_altitude(diagnostic_status, time)
+                self.check_battery(diagnostic_status, time)
             if diagnostic_status.message.lower() in component_messages:
                 thrusters_ok = self.check_thrusther(diagnostic_status, time)
 
     def check_altitude(self, diagnostic_status, time):
         for value in diagnostic_status.values:
             if value.key == 'water_visibility':
+                self.measured_wv = float(value.value)
                 altitude = self.get_spiral_altitude()
                 expected = self.get_expected_spiral_altitude(value.value)
                 correct_altitude =  altitude == expected
-                if self.wrong_altitude is False and correct_altitude is False:
+                if self.battery_low is False and self.wrong_altitude is False \
+                 and correct_altitude is False:
                     self.wrong_altitude = True
                     self.wrong_altitude_time = time
                 return
@@ -229,8 +248,8 @@ class MissionMetrics(Node):
 
     def get_expected_spiral_altitude(self, measured_wv):
         wv_threshold = self.get_parameter('water_visibiity_threshold').value
-        wv_expected = self.get_parameter('expected_altitude').value
-        for threshold, expected in zip(wv_threshold, wv_expected):
+        expected_altitude = self.get_parameter('expected_altitude').value
+        for threshold, expected in zip(wv_threshold, expected_altitude):
             if float(measured_wv) >= threshold:
                 return expected
         return None
@@ -243,6 +262,18 @@ class MissionMetrics(Node):
                     self.thrusters_failed_time = time
                 return
 
+    def check_battery(self, diagnostic_status, time):
+        for value in diagnostic_status.values:
+            if value.key == 'battery_level':
+                battery_limit = self.get_parameter('battery_limit').value
+                if self.battery_low is False and float(value.value) < battery_limit:
+                    self.battery_low = True
+                    self.battery_low_time = time
+                    self.wrong_altitude = False
+                if self.battery_low is True and float(value.value) > battery_limit:
+                    self.battery_low = False
+                return
+
     def maintain_motion_transition_cb(self, msg):
         if msg.goal_state.label == "active" and self.thrusters_failed is True:
             reaction_time = self.get_clock().now() - self.thrusters_failed_time
@@ -252,12 +283,24 @@ class MissionMetrics(Node):
             self.get_logger().info(
                 'Component recovery time: {} seconds'.format(reaction_time))
 
+    def generate_recharge_path_transition_cb(self, msg):
+        if msg.goal_state.label == "active" and self.battery_low is True:
+            reaction_time = self.get_clock().now() - self.battery_low_time
+            reaction_time = reaction_time.nanoseconds * 1e-9
+            self.battery_reaction_time.append(reaction_time)
+            # self.battery_low = False
+            self.get_logger().info(
+                'Battery reaction time: {} seconds'.format(reaction_time))
+
     def param_change_cb(self, msg):
+        time = self.get_clock().now()
         if msg.node == "/f_generate_search_path_node"  \
          and self.wrong_altitude is True:
+            expected_altitude = self.get_expected_spiral_altitude(
+                self.measured_wv)
             for param in msg.changed_parameters:
-                if param.name == "spiral_altitude":
-                    reaction_time = self.get_clock().now() - self.wrong_altitude_time
+                if param.name == "spiral_altitude" and param.value.double_value == expected_altitude:
+                    reaction_time =  time - self.wrong_altitude_time
                     reaction_time = reaction_time.nanoseconds * 1e-9
                     self.wv_reaction_time.append(
                         reaction_time)
@@ -321,7 +364,9 @@ class MissionMetrics(Node):
             detection_time_delta,
             self.distance_inspected,
             statistics.fmean(
-                self.component_recovery_time + self.wv_reaction_time)
+                self.component_recovery_time +
+                self.wv_reaction_time +
+                self.battery_reaction_time)
         ]
 
         self.save_metrics(
@@ -344,6 +389,15 @@ class MissionMetrics(Node):
             self.save_metrics(
                 self.result_path,
                 wv_file,
+                ['mission_name', 'datetime', 'reaction time (s)'],
+                [self.mission_name, date, t]
+            )
+
+        battery_file = self.result_filename +'_battery_reaction_time'
+        for t in self.battery_reaction_time:
+            self.save_metrics(
+                self.result_path,
+                battery_file,
                 ['mission_name', 'datetime', 'reaction time (s)'],
                 [self.mission_name, date, t]
             )

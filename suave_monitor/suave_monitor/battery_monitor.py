@@ -43,7 +43,7 @@ class BatteryMonitor(Node):
 
         self.battery_level = 1.0
 
-        self.get_interpolated_path_srv = self.create_service(
+        self.recharge_battery_srv = self.create_service(
             Trigger,
             'battery_monitor/recharge',
             self.recharge_battery_cb)
@@ -59,6 +59,9 @@ class BatteryMonitor(Node):
             self.destroy_subscription(self.mavros_state_sub)
 
     def qa_publisher_cb(self):
+        self.publish_battery_level()
+
+    def publish_battery_level(self):
         discharge_time = self.get_parameter('discharge_time').value
 
         current_time = self.get_clock().now().to_msg().sec
@@ -90,6 +93,7 @@ class BatteryMonitor(Node):
 
     def recharge_battery_cb(self, req, res):
         self.battery_level = 1.0
+        self.publish_battery_level()
         res.success = True
         self.battery_recharged_pub.publish(Bool(data=True))
         return res

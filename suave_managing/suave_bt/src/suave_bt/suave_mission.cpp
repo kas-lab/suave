@@ -76,6 +76,7 @@ namespace suave_bt
   }
 
   void SuaveMission::set_search_started(){
+    if(search_started_ == true) return;
     start_time_ = this->get_clock()->now();
     search_started_ = true;
   }
