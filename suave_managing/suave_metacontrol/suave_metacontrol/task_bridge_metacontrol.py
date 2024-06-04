@@ -26,6 +26,8 @@ class TaskBridgeMetacontrol(TaskBridge):
             'inspect_pipeline': ['f_maintain_motion', 'f_follow_pipeline'],
         }
 
+        self.always_improve = ['f_generate_search_path']
+
     def forward_task_request(self, function):
         future = self.send_mros_objective(function)
 
@@ -72,6 +74,9 @@ class TaskBridgeMetacontrol(TaskBridge):
             nfr.key = str(required_nfr[0])
             nfr.value = str(required_nfr[1])
             goal_msg.qos_expected.qos.append(nfr)
+
+        goal_msg.qos_expected.always_improve = function in self.always_improve
+
         while not self.mros_action_client.wait_for_server(timeout_sec=1.0):
             self.get_logger().info('waiting for /mros/objective action ...')
         self.get_logger().info(

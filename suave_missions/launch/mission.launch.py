@@ -18,6 +18,7 @@ def generate_launch_description():
     result_filename = LaunchConfiguration('result_filename')
     battery_constraint = LaunchConfiguration('battery_constraint')
     battery_constraint_value = LaunchConfiguration('battery_constraint_value')
+    mc_reasoning_time_filename = LaunchConfiguration('mc_reasoning_time_filename')
 
     adaptation_manager_arg = DeclareLaunchArgument(
         'adaptation_manager',
@@ -45,10 +46,17 @@ def generate_launch_description():
         description='Desired battery functionality' +
                     '[True or False]'
     )
+
     battery_constraint_value_arg = DeclareLaunchArgument(
         'battery_constraint_value',
         default_value='0.2',
         description='battery constraint value'
+    )
+
+    mc_reasoning_time_filename_arg = DeclareLaunchArgument(
+        'mc_reasoning_time_filename',
+        default_value='metacontrol_reasoning_time',
+        description='metacontrol reasoning time filename'
     )
 
     pkg_suave_path = get_package_share_directory(
@@ -124,6 +132,8 @@ def generate_launch_description():
 
     suave_metacontrol_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(suave_metacontrol_launch_path),
+        launch_arguments = {
+            'reasoning_time_filename' : mc_reasoning_time_filename}.items(),
         condition=LaunchConfigurationEquals(
             'adaptation_manager', 'metacontrol'))
 

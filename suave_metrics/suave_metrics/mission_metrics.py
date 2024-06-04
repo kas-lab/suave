@@ -212,7 +212,7 @@ class MissionMetrics(Node):
             self.destroy_subscription(self.gazebo_pos_sub)
 
     def diagnostics_cb(self, msg):
-        time = self.get_clock().now()
+        time = Time.from_msg(msg.header.stamp)
         measurement_messages = [
             'qa status',
             'qa measurement',
@@ -233,6 +233,8 @@ class MissionMetrics(Node):
             if value.key == 'water_visibility':
                 self.measured_wv = float(value.value)
                 altitude = self.get_spiral_altitude()
+                if altitude is None:
+                    return
                 expected = self.get_expected_spiral_altitude(value.value)
                 correct_altitude =  altitude == expected
                 if self.battery_low is False and self.wrong_altitude is False \
@@ -244,7 +246,7 @@ class MissionMetrics(Node):
     def get_spiral_altitude(self):
         req = GetParameters.Request(names=['spiral_altitude'])
         res = self.call_service(self.get_spiral_altitude_cli, req)
-        return res.values[0].double_value if len(res.values) > 0 else None
+        return res.values[0].double_value if res is not None and len(res.values) > 0 else None
 
     def get_expected_spiral_altitude(self, measured_wv):
         wv_threshold = self.get_parameter('water_visibiity_threshold').value
@@ -353,7 +355,7 @@ class MissionMetrics(Node):
             'mean reaction time (s)',
         ]
 
-        date = datetime.now().strftime("%b-%d-%Y-%H-%M-%S")
+        date = datetime.now().strftime("%d-%b-%Y-%H-%M-%S")
         mission_data = [
             self.mission_name,
             date,
@@ -402,8 +404,7 @@ class MissionMetrics(Node):
                 [self.mission_name, date, t]
             )
 
-        # TODO: make this a parameter
-        os.system("touch ~/suave_ws/mission.done")
+        os.system("touch /tmp/mission.done")
 
     def save_metrics(
         self,

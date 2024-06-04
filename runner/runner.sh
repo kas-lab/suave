@@ -3,7 +3,7 @@
 if [ $# -lt 1 ]; then
 	echo "usage: $0 gui adaptation_manager mission_type runs"
 	echo example:
-	echo "  "$0 "[true | false] [metacontrol | random | none] [time | distance] runs(integer)"
+	echo "  "$0 "[true | false] [metacontrol | random | none | bt] [time | distance] runs(integer)"
 	exit 1
 fi
 
@@ -30,7 +30,7 @@ else
     exit 1
 fi
 
-if [ "$2" == "metacontrol" ] || [ "$2" == "random" ] || [[ "$2" == "none" ]];
+if [ "$2" == "metacontrol" ] || [ "$2" == "random" ] || [[ "$2" == "none" ]] || [[ "$2" == "bt" ]];
 then
     MANAGER=$2
 else
@@ -106,18 +106,18 @@ run_missions(){
       xfce4-terminal --execute ./scripts/launch_sim.sh $GUI &
       sleep 30 #let it boot up
 
-      rm -f ~/suave_ws/mission.done
+      rm -f /tmp/mission.done
       xfce4-terminal --execute ./scripts/launch_mission.sh $MANAGER $MTYPE $FILENAME &
       sleep 30 #let it boot up
 
       echo "start waiting for mission to finish"
       start_time=$SECONDS
-      while [ ! -f ~/suave_ws/mission.done ]
+      while [ ! -f /tmp/mission.done ]
       do
-          if [ -f ~/suave_ws/mission.done ]
+          if [ -f /tmp/mission.done ]
           then
               echo "mission done"
-              rm ~/suave_ws/mission.done
+              rm /tmp/mission.done
               break;
           fi
           current_time=$SECONDS
