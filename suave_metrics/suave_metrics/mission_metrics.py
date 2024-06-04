@@ -212,7 +212,7 @@ class MissionMetrics(Node):
             self.destroy_subscription(self.gazebo_pos_sub)
 
     def diagnostics_cb(self, msg):
-        time = self.get_clock().now()
+        time = Time.from_msg(msg.header.stamp)
         measurement_messages = [
             'qa status',
             'qa measurement',
