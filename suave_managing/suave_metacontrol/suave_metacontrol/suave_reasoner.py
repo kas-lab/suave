@@ -12,10 +12,16 @@ class SuaveReasoner(RosReasoner):
     def __init__(self):
         super().__init__()
 
-    def analyze(self):
+    def analyze(self,
+       save_reasoning_time = False,
+       reasoning_time_filename='metacontrol_reasoning_time',
+       reasoning_time_file_path='~/metacontrol/results'):
         objectives_in_error = []
         try:
-            objectives_in_error = super().analyze()
+            objectives_in_error = super().analyze(
+                save_reasoning_time,
+                reasoning_time_filename,
+                reasoning_time_file_path)
         except Exception as err:
             self.logger.info("In Analyze, exception returned: {}".format(err))
         try:
