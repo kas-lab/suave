@@ -34,7 +34,7 @@ def generate_launch_description():
     mavros_node = IncludeLaunchDescription(
         AnyLaunchDescriptionSource(mavros_launch_path),
         launch_arguments={
-            'fcu_url': 'udp://127.0.0.1:14551@14555',
+            'fcu_url': 'udp://0.0.0.0:14551@14555',
             'gcs_url': 'udp://@localhost:14550',
             'system_id': '255',
             'component_id': '240',
