@@ -52,8 +52,8 @@ def generate_launch_description():
         'metacontrol_config.yaml')
 
     mros_reasoner_node = Node(
-        package='suave_metacontrol',
-        executable='suave_reasoner',
+        package='mros2_reasoner',
+        executable='mros2_reasoner_node',
         name='suave_reasoner',
         output='screen',
         parameters=[metacontrol_config, {

@@ -26,9 +26,6 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'fake_managed_system = ' +
-                'suave_metacontrol.fake_managed_system:main',
-            'suave_reasoner = suave_metacontrol.suave_reasoner:main',
             'task_bridge_metacontrol = ' +
                 ' suave_metacontrol.task_bridge_metacontrol:main',
         ],
