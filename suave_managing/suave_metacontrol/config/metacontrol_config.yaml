@@ -1,0 +1,5 @@
+/suave_reasoner:
+  ros__parameters:
+    reasoning_time_save: True
+    reasoning_time_file_path: '~/suave/results' #Path to save results
+    reasoning_period: 1.5
