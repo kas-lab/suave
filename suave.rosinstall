@@ -15,10 +15,6 @@ repositories:
     type: git
     url: https://github.com/remaro-network/remaro_worlds.git
     version: 2650f19
-  suave:
-    type: git
-    url: https://github.com/kas-lab/suave.git
-    version: main
   mc_mdl_tomasys:
     type: git
     url: https://github.com/meta-control/mc_mdl_tomasys.git
