@@ -283,7 +283,7 @@ class MissionMetrics(Node):
             self.component_recovery_time.append(reaction_time)
             self.thrusters_failed = False
             self.get_logger().info(
-                'Component recovery time: {} seconds'.format(reaction_time))
+                'Thruster failure reaction time: {} seconds'.format(reaction_time))
 
     def generate_recharge_path_transition_cb(self, msg):
         if msg.goal_state.label == "active" and self.battery_low is True:
@@ -292,7 +292,7 @@ class MissionMetrics(Node):
             self.battery_reaction_time.append(reaction_time)
             # self.battery_low = False
             self.get_logger().info(
-                'Battery reaction time: {} seconds'.format(reaction_time))
+                'Battery drop reaction time: {} seconds'.format(reaction_time))
 
     def param_change_cb(self, msg):
         time = self.get_clock().now()
@@ -308,8 +308,7 @@ class MissionMetrics(Node):
                         reaction_time)
                     self.wrong_altitude = False
                     self.get_logger().info(
-                        'Water visibility correction time: {} seconds'.
-                        format(reaction_time))
+                        'Water visibility change reaction time: {0} seconds'.format(reaction_time))
                     return
 
     def save_mission_results_cb(
@@ -356,6 +355,14 @@ class MissionMetrics(Node):
         ]
 
         date = datetime.now().strftime("%d-%b-%Y-%H-%M-%S")
+        mean_reaction_time = 0.0
+        try:
+            mean_reaction_time = statistics.fmean(
+                self.component_recovery_time +
+                self.wv_reaction_time +
+                self.battery_reaction_time)
+        except statistics.StatisticsError as e:
+            pass
         mission_data = [
             self.mission_name,
             date,
@@ -365,10 +372,7 @@ class MissionMetrics(Node):
             pipeline_detected,
             detection_time_delta,
             self.distance_inspected,
-            statistics.fmean(
-                self.component_recovery_time +
-                self.wv_reaction_time +
-                self.battery_reaction_time)
+            mean_reaction_time
         ]
 
         self.save_metrics(
