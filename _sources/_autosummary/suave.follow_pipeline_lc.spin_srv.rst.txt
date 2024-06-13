@@ -1,0 +1,6 @@
+suave.follow\_pipeline\_lc.spin\_srv
+====================================
+
+.. currentmodule:: suave.follow_pipeline_lc
+
+.. autofunction:: spin_srv
