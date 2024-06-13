@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-1. Added battery monitor node
+1. Added battery monitor node [PR #148]
 
-2. Added recharge battery task
+2. Added recharge battery task [PR #148]
 
 4. Added battery_constraint argument to mission [PR #155]
 
@@ -21,9 +21,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 7. CI to build sphinx documentation
 
-8. Added mission metrics node
+8. Added mission metrics node [PR #148]
 
-9. Add a behavior tree as a managing subsystem for SUAVE and SUAVE extended to serve as a baseline for comparison
+9. Added a behavior tree as a managing subsystem for SUAVE and SUAVE extended to serve as a baseline for comparison [PR #160]
+
+10. Added reaction time metrics to measure how long the managing system takes to react and adapt the system [PR #161]
 
 ### Changed
 
@@ -33,7 +35,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 3. Mission config default parameters
 
-4. Refactored repository. Created new packages : suave_monitor, and suave_metrics. Moved suave_metacontrol under suave_managing
+4. Refactored repository. Created new packages : suave_monitor, and suave_metrics. Moved suave_metacontrol under suave_managing [PR #158]
+
+5. Removed suave_reasoner. The Analyze logic was moved to metacontrol. [PR #169]
 
 ### Fixed
 
