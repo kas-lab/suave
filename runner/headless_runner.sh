@@ -3,7 +3,7 @@
 if [ $# -lt 1 ]; then
 	echo "usage: $0 gui adaptation_manager mission_type runs"
 	echo example:
-	echo "  "$0 "[true | false] [metacontrol | random | none | bt] [time | distance | extended] runs(integer)"
+	echo "  "$0 "[true | false] [metacontrol | random | none] [time | distance] runs(integer)"
 	exit 1
 fi
 
@@ -30,7 +30,7 @@ else
     exit 1
 fi
 
-if [ "$2" == "metacontrol" ] || [ "$2" == "random" ] || [[ "$2" == "none" ]] || [[ "$2" == "bt" ]];
+if [ "$2" == "metacontrol" ] || [ "$2" == "random" ] || [[ "$2" == "none" ]];
 then
     MANAGER=$2
 else
@@ -38,7 +38,7 @@ else
     exit 1
 fi
 
-if [ "$3" == "time" ] || [ "$3" == "distance" ] || [ "$3" == "extended" ];
+if [ "$3" == "time" ] || [ "$3" == "distance" ];
 then
     MTYPE=$3
 else
@@ -92,6 +92,7 @@ sleep 15 #let it finish the killing spree
 }
 
 run_missions(){
+  source $SUAVE_WS/install/setup.bash
   for ((j=0; j < $RUNS; j++));
   do
       echo "starting run"
@@ -101,13 +102,13 @@ run_missions(){
       FILENAME="${MANAGER}_${MTYPE}_${NOW}"
       echo $FILENAME
       #should add some geometry to this so they don't stack on top of each other
-      xfce4-terminal --execute ./scripts/start_ardusub.sh $GUI &
+      screen -S vehicle -d -m bash -c "./scripts/start_ardusub.sh $GUI"
       sleep 10 #let it boot up
-      xfce4-terminal --execute ./scripts/launch_sim.sh $GUI &
+      ./scripts/launch_sim.sh $GUI &
       sleep 30 #let it boot up
 
       rm -f /tmp/mission.done
-      xfce4-terminal --execute ./scripts/launch_mission.sh $MANAGER $MTYPE $FILENAME &
+      ./scripts/launch_mission.sh $MANAGER $MTYPE $FILENAME &
       sleep 30 #let it boot up
 
       echo "start waiting for mission to finish"
@@ -139,9 +140,9 @@ cd ~/ardupilot
 ./waf configure && make sub
 cd $CURDIR
 
-NOW=$(date +"%y_%m_%d_%H_%M")
+NOW=$(date +"%d_%m_%y_%H_%M_%S")
 MISSIONCONFIG=${NOW}"_mission_config.yaml"
 mkdir -p ~/suave/results
-cp ~/suave_ws/install/suave_missions/share/suave_missions/config/mission_config.yaml ~/suave/results/${MISSIONCONFIG}
+cp $SUAVE_WS/install/suave_missions/share/suave_missions/config/mission_config.yaml ~/suave/results/${MISSIONCONFIG}
 
 run_missions
