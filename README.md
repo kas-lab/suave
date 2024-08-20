@@ -104,7 +104,7 @@ Problems may occur with different combinations of ArduPilot and MavROS versions.
 cd ~/
 git clone https://github.com/ArduPilot/ardupilot.git
 cd ardupilot
-git checkout ab597cb
+git checkout 2dd0bb7d4c85ac48437f139d66df648fc0e1d4ae
 git submodule update --init --recursive
 ```
 
