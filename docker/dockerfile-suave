@@ -43,7 +43,8 @@ RUN wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pk
 RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
 
 RUN apt update && apt install -y \
-  gz-garden \
+  # gz-garden \
+  gz-harmonic \
 	&& rm -rf /var/lib/apt/lists/
 
 RUN pip uninstall empy && pip install empy==3.3.4 && pip install -U colcon-common-extensions
@@ -72,7 +73,7 @@ WORKDIR $HOME
 # Install ArduSub
 RUN git clone https://github.com/ArduPilot/ardupilot.git
 WORKDIR $HOME/ardupilot
-RUN git checkout ab597cb
+RUN git checkout 2dd0bb7d4c85ac48437f139d66df648fc0e1d4ae
 RUN git submodule update --init --recursive
 RUN rm $HOME/ardupilot/Tools/environment_install/install-prereqs-ubuntu.sh
 RUN wget -P $HOME/ardupilot/Tools/environment_install/ https://raw.githubusercontent.com/ArduPilot/ardupilot/c623ae8b82db4d7e195f4b757e2ae5d049f941e5/Tools/environment_install/install-prereqs-ubuntu.sh
@@ -90,13 +91,20 @@ RUN ["/bin/bash","-c","./waf configure && make sub"]
 # install ardupilot gazebo plugin
 RUN sudo apt update && sudo apt install -y \
     rapidjson-dev \
-    libgz-sim7-dev \
+    # libgz-sim7-dev \
+    libgz-sim8-dev \
+    libopencv-dev \
+    libgstreamer1.0-dev \
+    libgstreamer-plugins-base1.0-dev \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-libav \
+    gstreamer1.0-gl \
     && sudo rm -rf /var/lib/apt/list/
 
 WORKDIR $HOME
 RUN git clone https://github.com/ArduPilot/ardupilot_gazebo
 
-ENV GZ_VERSION=garden
+ENV GZ_VERSION=harmonic
 RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
     && sudo rosdep init \
     && sudo wget https://raw.githubusercontent.com/osrf/osrf-rosdep/master/gz/00-gazebo.list -O /etc/ros/rosdep/sources.list.d/00-gazebo.list \
@@ -112,7 +120,7 @@ ENV GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot_gazebo/build:${GZ_SIM_SYSTEM_PLUGI
 ENV GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}
 
 # Copy suave files
-ENV GZ_VERSION=garden
+ENV GZ_VERSION=harmonic
 RUN mkdir -p $HOME/suave_ws/src
 COPY --chown=kasm-user:kasm-user suave.rosinstall $HOME/suave_ws/suave.rosinstall
 WORKDIR $HOME/suave_ws/
