@@ -64,7 +64,7 @@ class WaterVisibilityObserver(Node):
 
         status_msg = DiagnosticStatus()
         status_msg.level = DiagnosticStatus.OK
-        status_msg.name = ""
+        status_msg.name = "water_visibility_observer: Water visibility measurement"
         status_msg.message = "QA status"
         status_msg.values.append(key_value)
 

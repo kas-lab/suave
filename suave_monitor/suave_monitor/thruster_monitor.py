@@ -75,16 +75,24 @@ class ThrusterMonitor(Node):
         parameter.name = 'SERVO' + thruster + '_FUNCTION'
         parameter.value.type = ParameterType.PARAMETER_INTEGER
 
+        status_msg = DiagnosticStatus()
+
         print_status = ''
+        # Publishing two values for backward compability
         diagnostic_value = ''
+        diagnostic_value_2 = ''
         if value == 'failure':
             parameter.value.integer_value = 0
             print_status = 'failed'
             diagnostic_value = 'FALSE'
+            diagnostic_value_2 = 'ERROR'
+            status_msg.level = DiagnosticStatus.ERROR
         elif value == 'recovery':
             parameter.value.integer_value = int(thruster) + 32
             print_status = 'recovered'
             diagnostic_value = 'RECOVERED'
+            diagnostic_value_2 = 'OK'
+            status_msg.level = DiagnosticStatus.OK
         else:
             self.get_logger().info(
                 'Wrong event value: {}. '.format(value) +
@@ -101,11 +109,15 @@ class ThrusterMonitor(Node):
         key_value.key = 'c_thruster_{}'.format(thruster)
         key_value.value = diagnostic_value
 
-        status_msg = DiagnosticStatus()
-        status_msg.level = DiagnosticStatus.OK
-        status_msg.name = ''
+        key_value_2 = KeyValue()
+        key_value_2.key = 'c_thruster_{}'.format(thruster)
+        key_value_2.value = diagnostic_value_2
+
+
+        status_msg.name = 'thruster_monitor: Thruster status'
         status_msg.message = 'Component status'
         status_msg.values.append(key_value)
+        status_msg.values.append(key_value_2)
 
         diag_msg = DiagnosticArray()
         diag_msg.header.stamp = self.get_clock().now().to_msg()
