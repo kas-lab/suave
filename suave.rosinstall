@@ -31,7 +31,3 @@ repositories:
     type: git
     url: https://github.com/micro-ROS/system_modes
     version: 682ecb7
-  ros_gz:
-    type: git
-    url: https://github.com/gazebosim/ros_gz.git
-    version: 5cc92f8
