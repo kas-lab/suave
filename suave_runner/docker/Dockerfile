@@ -13,6 +13,7 @@ ENV GZ_VERSION=harmonic
 # Update and install additional dependencies if needed
 RUN apt-get update && apt-get install -y \
     sudo \
+    wget \
     python3-vcstool \
     python3-rosdep \
     gz-harmonic \
@@ -93,7 +94,6 @@ RUN git clone https://github.com/kas-lab/suave.git -b new_runner
 
 WORKDIR $HOME/suave_ws
 RUN vcs import src < src/suave/suave.rosinstall --recursive
-RUN ["/bin/bash", "-c", "sudo ./src/mavros/mavros/scripts/install_geographiclib_datasets.sh"]
 
 # && rosdep resolve gz-harmonic \
 RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
@@ -102,8 +102,10 @@ RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
     && rosdep install --from-paths src --ignore-src -r -y \
     && sudo rm -rf /var/lib/apt/lists/"]
 
+RUN ["/bin/bash", "-c", "sudo ./src/mavros/mavros/scripts/install_geographiclib_datasets.sh"]
+
 ## There is a bug with the default setuptools and packaging versions
-RUN USER=ubuntu-user python3 -m pip install setuptools==75.8.2  packaging==24.1
+RUN USER=ubuntu-user python3 -m pip install setuptools==75.8.2  packaging==24.1 empy==3.3.4
 RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
     && colcon build --symlink-install \
     && echo 'source ~/suave_ws/install/setup.bash' >> ~/.bashrc"]
