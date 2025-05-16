@@ -5,14 +5,38 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.actions import IncludeLaunchDescription
+from launch.actions import OpaqueFunction
 from launch.conditions import LaunchConfigurationEquals
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
+from launch.substitutions import PythonExpression
 
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    silent = LaunchConfiguration('silent')
+    def configure_logging(context, *args, **kwargs):
+        if silent.perform(context) == 'true':
+            import logging
+            logging.getLogger().setLevel(logging.ERROR)
+        return []
+    
+    silent_arg = DeclareLaunchArgument(
+        'silent',
+        default_value='false',
+        description='Suppress all output (launch logs + node logs)'
+    )
+    
+    print_output = PythonExpression([
+        '"log" if "', LaunchConfiguration('silent'), '" == "true" else "', LaunchConfiguration('print_output'), '"'
+    ])
+    print_output_arg = DeclareLaunchArgument(
+        'print_output',
+        default_value='screen',
+        description='Whether to print output to terminal (screen/log)'
+    )
+
     task_bridge = LaunchConfiguration('task_bridge')
     system_modes = LaunchConfiguration('system_modes')
 
@@ -38,6 +62,7 @@ def generate_launch_description():
         executable='water_visibility_observer',
         name='water_visibility_observer_node',
         parameters=[mission_config],
+        output=print_output,
     )
 
     battery_monitor_node = Node(
@@ -45,46 +70,51 @@ def generate_launch_description():
         executable='battery_monitor',
         name='battery_monitor',
         parameters=[mission_config],
+        output=print_output,
     )
 
     thruster_monitor_node = Node(
         package='suave_monitor',
         executable='thruster_monitor',
         name='thruster_monitor',
-        parameters=[mission_config]
+        parameters=[mission_config],
+        output=print_output,
     )
 
     pipeline_detection_wv_node = Node(
         package='suave',
         executable='pipeline_detection_wv',
+        output=print_output,
     )
 
     spiral_search_node = Node(
         package='suave',
         executable='spiral_search',
-        output='screen'
+        output=print_output,
     )
 
     follow_pipeline_node = Node(
         package='suave',
         executable='follow_pipeline',
-        output='screen',
+        output=print_output,
     )
 
     recharge_battery_node = Node(
         package='suave',
         executable='recharge_battery',
-        output='screen',
+        output=print_output,
     )
 
     recover_thrusters_node = Node(
         package='suave',
-        executable='recover_thrusters'
+        executable='recover_thrusters',
+        output=print_output,
     )
 
     task_bridge_node = Node(
         package='suave',
         executable='task_bridge_none',
+        output=print_output,
         condition=LaunchConfigurationEquals('task_bridge', 'True')
     )
 
@@ -103,6 +133,9 @@ def generate_launch_description():
     return LaunchDescription([
         task_bridge_arg,
         system_modes_arg,
+        silent_arg,
+        OpaqueFunction(function=configure_logging),
+        print_output_arg,
         water_visibility_node,
         battery_monitor_node,
         pipeline_detection_wv_node,

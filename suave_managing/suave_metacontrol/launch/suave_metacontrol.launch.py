@@ -5,12 +5,25 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.actions import IncludeLaunchDescription
+from launch.actions import OpaqueFunction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    silent = LaunchConfiguration('silent')
+    silent_arg = DeclareLaunchArgument(
+        'silent',
+        default_value='false',
+        description='Suppress all output (launch logs + node logs)'
+    )
+    def configure_logging(context, *args, **kwargs):
+        if silent.perform(context) == 'true':
+            import logging
+            logging.getLogger().setLevel(logging.ERROR)
+        return []
+
     tomasys_file = LaunchConfiguration('tomasys_file')
     model_file = LaunchConfiguration('model_file')
     reasoning_time_filename = LaunchConfiguration('reasoning_time_filename')
@@ -90,6 +103,8 @@ def generate_launch_description():
         tomasys_file_arg,
         model_file_arg,
         reasoning_time_filename_arg,
+        silent_arg,
+        OpaqueFunction(function=configure_logging),
         mros_reasoner_node,
         mros_system_modes_bridge_node,
         task_bridge_node,
