@@ -1,6 +1,8 @@
 import asyncio
 import multiprocessing
+import threading
 import rclpy
+import rclpy.executors
 from rclpy.node import Node
 import subprocess
 import time
@@ -8,37 +10,32 @@ import os
 import signal
 import json
 from datetime import datetime
-import ament_index_python.packages
 
 from launch import LaunchDescription
 from launch import LaunchService
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.actions import IncludeLaunchDescription
 from ament_index_python.packages import get_package_share_directory
-from launch_ros.actions import Node as LaunchNode
-
 
 
 class ExperimentRunnerNode(Node):
     def __init__(self):
         super().__init__('experiment_runner_node')
 
-        suave_missions_pkg_path = ament_index_python.packages.get_package_share_directory('suave_missions')
-        mission_config_path = os.path.join(suave_missions_pkg_path, 'config', 'mission_config.yaml')
-
         # Declare parameters
         self.declare_parameter('ardupilot_executable', 'sim_vehicle.py -L RATBeach -v ArduSub --model=JSON')
         self.declare_parameter('suave_simulation', 'ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0')
         self.declare_parameter('experiments', rclpy.Parameter.Type.STRING_ARRAY)  # List of JSON-encoded dicts
-        self.declare_parameter('mission_config', mission_config_path)  # path to .yaml file
         self.declare_parameter('run_duration', 600)  # seconds
+        self.declare_parameter('gui', False)  # whether to run GUI or not
+        self.declare_parameter('experiment_logging', False)  # whether to log experiment results or not
 
         # Retrieve parameters
         self.ardupilot_executable = self.get_parameter('ardupilot_executable').get_parameter_value().string_value
         self.suave_simulation_cmd = self.get_parameter('suave_simulation').get_parameter_value().string_value
-        self.mission_config_path = self.get_parameter('mission_config').get_parameter_value().string_value
         self.run_duration = self.get_parameter('run_duration').get_parameter_value().integer_value
-
+        self.gui = self.get_parameter('gui').get_parameter_value().bool_value
+        self.experiment_logging = self.get_parameter('experiment_logging').get_parameter_value().bool_value
         experiments_param = self.get_parameter('experiments').get_parameter_value().string_array_value
         try:
             self.experiments = [json.loads(exp_str) for exp_str in experiments_param]
@@ -52,14 +49,17 @@ class ExperimentRunnerNode(Node):
             rclpy.shutdown()
             return
 
-
-        self.get_logger().info(f"Runner initialized for {len(self.experiments)} experiments.")
         self.terminate_flag = False
 
         signal.signal(signal.SIGINT, self.handle_termination)
         signal.signal(signal.SIGTERM, self.handle_termination)
+        self.processes_stop_events = []
 
-        self.run_experiments()
+        self.ardupilot_cmd = ['xvfb-run', '-a'] + self.ardupilot_executable.split()
+        if self.gui is True:
+            self.ardupilot_cmd = self.ardupilot_cmd[2:]
+
+        self.get_logger().info(f"Runner initialized for {len(self.experiments)} experiments.")
 
     def handle_termination(self, signum, frame):
         self.get_logger().warn(f"Signal {signum} received. Cleaning up...")
@@ -78,31 +78,85 @@ class ExperimentRunnerNode(Node):
     def _run_launchfile(self, stop_event, launch_description):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        
         launch_service = LaunchService()
         launch_service.include_launch_description(launch_description)
-        launch_task = loop.create_task(launch_service.run_async())
-        loop.run_until_complete(loop.run_in_executor(None, stop_event.wait))
-        if not launch_task.done():
-            asyncio.ensure_future(launch_service.shutdown(), loop=loop)
-            loop.run_until_complete(launch_task)
+        
+        async def runner():
+            await launch_service.run_async()
+        
+        async def shutdown_launch_service(service):
+            await service.shutdown()
+        # Start launch service as background task
+        task = loop.create_task(runner())
 
-    def shutdown_launch_process(self, process, stop_event):
-        stop_event.set()
-        process.join()
+        def stop_checker():
+            stop_event.wait()
+            loop.call_soon_threadsafe(
+                lambda: asyncio.ensure_future(shutdown_launch_service(launch_service))
+            )
+
+        threading.Thread(target=stop_checker, daemon=True).start()
+
+        try:
+            loop.run_until_complete(task)
+        finally:
+            loop.close()
+
+
+    def shutdown_all_launch_processes(self):
+        for process, stop_event in self.processes_stop_events:
+            if process.is_alive():
+                stop_event.set()
+                process.join(timeout=10)
+            if process.is_alive():
+                self.get_logger().warn(f"Launch process {process.pid} did not exit cleanly.")
+        self.processes_stop_events.clear()
+        
+    def kill_gz_sim(self):
+        try:
+            subprocess.run(["pkill", "-f", "gz sim"], check=False)
+        except Exception as e:
+            print(f"Error killing gz sim processes: {e}")
+    
+    def shutdown_all_processes(self):
+        self.terminate_process(self.ardupilot_proc, "ArduPilot")
+        self.shutdown_all_launch_processes()
+        self.kill_gz_sim()
+        self.get_logger().info("All processes terminated.")
+
+    def terminate_process(self, proc, name):
+        if proc and proc.poll() is None:
+            self.get_logger().info(f"Terminating {name} process group...")
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGINT)
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.get_logger().warn(f"Forcing {name} process group to stop.")
+                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+
+    def remove_done_file(self):
+        try:
+            if os.path.exists("/tmp/mission.done"):
+                os.remove("/tmp/mission.done")
+                self.get_logger().info("    /tmp/mission.done detected and removed.")
+        except Exception as e:
+            self.get_logger().warn(f"    Could not remove /tmp/mission.done: {e}")
 
     def run_experiments(self):
         for exp_idx, experiment in enumerate(self.experiments):
             if self.terminate_flag:
                 break
 
+            self.remove_done_file()
+
             exp_launch = experiment.get("experiment_launch")
-            suave_base_launch = experiment.get("suave_base_launch")
             num_runs = experiment.get("num_runs", 1)
             adaptation_manager = experiment.get("adaptation_manager", "")
             mission_type = experiment.get("mission_name", f"mission_{exp_idx}")
 
-            if not exp_launch or not suave_base_launch:
-                self.get_logger().warn(f"Skipping experiment {exp_idx + 1}: Missing 'experiment_launch' or 'suave_base_launch'")
+            if not exp_launch:
+                self.get_logger().warn(f"Skipping experiment {exp_idx + 1}: Missing 'experiment_launch'")
                 continue
 
             date_str = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -116,38 +170,21 @@ class ExperimentRunnerNode(Node):
 
                 self.get_logger().info(f"  Run {run_idx + 1}/{num_runs}")
 
-                # ardupilot_cmd = ['xvfb-run', '-a'] + self.ardupilot_executable.split()
-                ardupilot_cmd = self.ardupilot_executable.split()
-                # suave_base_cmd = ['ros2', 'launch'] + suave_base_launch.split()
-                # experiment_cmd = ['ros2', 'launch'] + exp_launch.split()
-
-                # metrics_cmd = [
-                #     'ros2', 'run', 'suave_metrics', 'mission_metrics',
-                #     '--ros-args',
-                #     '-p', f'adaptation_manager:={adaptation_manager}',
-                #     '-p', f'mission_name:={mission_type}',
-                #     '-p', f'result_filename:={result_filename}',
-                #     '--params-file', self.mission_config_path
-                # ]
-
-                metrics_node = LaunchNode(
-                    package='suave_metrics',
-                    executable='mission_metrics',
-                    name='mission_metrics',
-                    parameters=[self.mission_config_path, {
-                        'adaptation_manager': adaptation_manager,
-                        'mission_name': mission_type,
-                        'result_filename': result_filename,
-                    }]
-                )
-
                 try:
                     self.get_logger().info("    Launching ArduPilot...")
-                    ardupilot_proc = subprocess.Popen(ardupilot_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    ardupilot_proc_log = subprocess.DEVNULL
+                    if self.experiment_logging is True:
+                        ardupilot_proc_log = subprocess.PIPE
+                    
+                    self.ardupilot_proc = subprocess.Popen(
+                        self.ardupilot_cmd,
+                        stdout=ardupilot_proc_log,
+                        stderr=ardupilot_proc_log,
+                        preexec_fn=os.setsid  # Launch in a new process group
+                    )
                     self.get_logger().info("    Sleeping 10 seconds before launching SUAVE simulation...")
                     time.sleep(10)
 
-                    # simulation_proc = subprocess.Popen(self.suave_simulation_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     # Launch ROS 2 simulation.launch.py using LaunchService
                     suave_simulation_cmd_split = self.suave_simulation_cmd.split()
                     sim_pkg, sim_file = suave_simulation_cmd_split[2], suave_simulation_cmd_split[3]
@@ -155,7 +192,13 @@ class ExperimentRunnerNode(Node):
                     sim_args = {}
                     if len(suave_simulation_cmd_split) > 4:
                         sim_args = {arg.split(':=')[0]: arg.split(':=')[1] for arg in suave_simulation_cmd_split[4:]}
-
+                    if self.gui is True:
+                        sim_args['gui'] = 'true'
+                    else:
+                        sim_args['gui'] = 'false'
+                    
+                    if self.experiment_logging is False:
+                        sim_args['silent'] = 'true'
                     
                     self.get_logger().info(f"    Launching SUAVE simulation from {sim_path} with args: {sim_args}")
                     sim_launch = IncludeLaunchDescription(
@@ -165,40 +208,11 @@ class ExperimentRunnerNode(Node):
                     sim_launch_ld = LaunchDescription()
                     sim_launch_ld.add_action(sim_launch)
                     sim_process, sim_stop_event = self.start_launch_process(sim_launch_ld)
-                    # sim_ls = LaunchService()
-                    # sim_ls.include_launch_description(sim_launch)
-                    # self.get_logger().info("    Launching SUAVE simulation...")
-                    # sim_task = sim_ls.run_async()
-                    # if sim_task:
-                    #     self.get_logger().info("SUAVE simulation task started successfully.")
-                    # else:
-                    #     self.get_logger().error("Failed to start SUAVE simulation task.")
-
-                    # # Log additional information about the SUAVE simulation task
-                    # try:
-                    #     sim_ls_result = sim_task.result()
-                    #     self.get_logger().info(f"SUAVE simulation task result: {sim_ls_result}")
-                    # except Exception as e:
-                    #     self.get_logger().error(f"Error while running SUAVE simulation task: {e}")
+                    self.processes_stop_events.append((sim_process, sim_stop_event))
 
                     self.get_logger().info("    Sleeping 10 seconds before launching next nodes...")
                     time.sleep(10)
 
-                    # suave_base_proc = subprocess.Popen(suave_base_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    # Launch suave_base
-                    suave_base_cmd_split = suave_base_launch.split()
-                    suave_base_pkg, suave_base_file = suave_base_cmd_split[2], suave_base_cmd_split[3]
-                    suave_base_path = os.path.join(get_package_share_directory(suave_base_pkg), 'launch', suave_base_file)
-                    suave_base_args = {}
-                    if len(suave_base_cmd_split) > 4:
-                        suave_base_args = {arg.split(':=')[0]: arg.split(':=')[1] for arg in suave_base_cmd_split[4:]}
-                    
-                    suave_base_launch_desc = IncludeLaunchDescription(
-                        PythonLaunchDescriptionSource(suave_base_path),
-                        launch_arguments=suave_base_args.items()
-                    )
-
-                    # experiment_proc = subprocess.Popen(experiment_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     # Launch experiment
                     exp_launch_cmd_split = exp_launch.split()
                     exp_pkg, exp_file = exp_launch_cmd_split[2], exp_launch_cmd_split[3]
@@ -207,7 +221,11 @@ class ExperimentRunnerNode(Node):
                     exp_args = {}
                     if len(exp_launch_cmd_split) > 4:
                         exp_args = {arg.split(':=')[0]: arg.split(':=')[1] for arg in exp_launch_cmd_split[4:]}
+                    exp_args['result_filename'] = result_filename
+                    if self.experiment_logging is False:
+                        exp_args['silent'] = 'true'
 
+                    self.get_logger().info(f"    Launching Experiment from {exp_path} with args: {exp_args}")
                     exp_launch_desc = IncludeLaunchDescription(
                         PythonLaunchDescriptionSource(exp_path),
                         launch_arguments=exp_args.items()
@@ -216,18 +234,9 @@ class ExperimentRunnerNode(Node):
 
                     # Create and run a combined LaunchService for base + experiment
                     experiment_ld = LaunchDescription()
-                    experiment_ld.add_action(metrics_node)
-                    experiment_ld.add_action(suave_base_launch_desc)
                     experiment_ld.add_action(exp_launch_desc)
-                    # experiment_ls = LaunchService()
-                    # experiment_ls.include_launch_description(experiment_ld)
                     experiment_process, experiment_stop_event = self.start_launch_process(experiment_ld)
-                    # experiment_ls.include_launch_description(suave_base_launch_desc)
-                    # experiment_ls.include_launch_description(exp_launch_desc)
-                    # experiment_ls.include_launch_description(metrics_node_ld)
-                    # experiment_task = experiment_ls.run_async()
-
-                    # metrics_proc = subprocess.Popen(metrics_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    self.processes_stop_events.append((experiment_process, experiment_stop_event))
                     
                 except Exception as e:
                     self.get_logger().error(f"Failed to launch processes: {e}")
@@ -240,29 +249,16 @@ class ExperimentRunnerNode(Node):
                 while not self.terminate_flag:
                     if os.path.exists("/tmp/mission.done"):
                         file_detected = True
-                        try:
-                            os.remove("/tmp/mission.done")
-                            self.get_logger().info("    Run completed: /tmp/mission.done detected and removed.")
-                        except Exception as e:
-                            self.get_logger().warn(f"    Could not remove /tmp/mission.done: {e}")
+                        self.remove_done_file()
                         break
 
                     if time.time() - start_time > self.run_duration:
                         self.get_logger().warn("    Timeout waiting for /tmp/mission.done.")
                         break
 
-                    rclpy.spin_once(self, timeout_sec=1.0)
+                    self.executor.spin_once(timeout_sec=1.0)
 
-                # self.terminate_process(experiment_proc, "experiment")
-                # self.terminate_process(metrics_proc, "mission_metrics")
-                # self.terminate_process(suave_base_proc, "SUAVE base")
-                # self.terminate_process(simulation_proc, "simulation")
-                self.terminate_process(ardupilot_proc, "ArduPilot")
-                self.shutdown_launch_process(sim_process, sim_stop_event)
-                self.shutdown_launch_process(experiment_process, experiment_stop_event)
-                # sim_ls.shutdown()
-
-                # experiment_ls.shutdown()
+                self.shutdown_all_processes()
 
                 if self.terminate_flag:
                     self.get_logger().info("Termination requested. Stopping early.")
@@ -271,24 +267,27 @@ class ExperimentRunnerNode(Node):
                 self.get_logger().info(f"  Run {run_idx + 1} completed (success: {file_detected}).")
 
         self.get_logger().info("All experiment runs completed or aborted.")
-        rclpy.shutdown()
-
-    def terminate_process(self, proc, name):
-        if proc and proc.poll() is None:
-            self.get_logger().info(f"Terminating {name} process...")
-            proc.terminate()
-            try:
-                proc.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                self.get_logger().warn(f"Forcing {name} process to stop.")
-                proc.kill()
-
 
 def main(args=None):
     rclpy.init(args=args)
-    node = ExperimentRunnerNode()
-    rclpy.spin(node)
-
+    try:
+        executor = rclpy.executors.MultiThreadedExecutor()
+        lc_node = ExperimentRunnerNode()
+        executor.add_node(lc_node)
+        run_experiment_task = executor.create_task(lc_node.run_experiments)
+        try:
+            executor.spin_until_future_complete(run_experiment_task)
+        except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
+            lc_node.shutdown_all_processes()
+            executor.shutdown()
+            lc_node.destroy_node()
+        finally:
+            lc_node.shutdown_all_processes()
+            executor.shutdown()
+            lc_node.destroy_node()
+    finally:
+        rclpy.shutdown()
 
 if __name__ == '__main__':
+    multiprocessing.set_start_method('spawn')
     main()
