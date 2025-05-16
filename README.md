@@ -84,15 +84,21 @@ To build the docker images locally, run:
 ```
 
 ## Install SUAVE locally
-To install the exemplar locally, you have to [install Gazebo Garden](#install-gazebo-garden), [install ROS2 Humble](#install-ros2-humble), [install ArduSub](#install-ardusub), [install the ArduSub plugin](#install-ardusub_plugin), and finally [install the SUAVE workspace](#install-suave-workspace).
+To install the exemplar locally, you have to [install Gazebo Harmonic](#install-gazebo-harmonic), [install ROS2 Humble](#install-ros2-humble), [install ArduSub](#install-ardusub), [install the ArduSub plugin](#install-ardusub_plugin), and finally [install the SUAVE workspace](#install-suave-workspace).
 
-#### Install Gazebo Garden
+#### Install Gazebo Harmonic
 
-Follow the [official instructions](https://gazebosim.org/docs/garden/install_ubuntu) for installing Gazebo Garden.
+Follow the [official instructions](https://gazebosim.org/docs/harmonic/install_ubuntu/#binary-installation-on-ubuntu) for installing Gazebo Harmonic.
 
 #### Install ROS2 Humble
 
 Follow the [official instructions](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html) for installing ROS2 Humble.
+
+#### Install ROS_GZ
+
+```Bash
+apt install ros-humble-ros-gzharmonic
+```
 
 #### Install ArduSub
 ArduSub is a subproject within ArduPilot for piloting underwater vehicles.
@@ -135,7 +141,18 @@ ArduPilot SITL should open and a console plus a map should appear.
 Install the dependencies:
 
 ```Bash
-sudo apt install libgz-sim7-dev rapidjson-dev
+sudo apt update
+sudo apt install libgz-sim8-dev rapidjson-dev
+sudo apt install libopencv-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-gl
+```
+
+```Bash
+export GZ_VERSION=harmonic 
+sudo bash -c 'wget https://raw.githubusercontent.com/osrf/osrf-rosdep/master/gz/00-gazebo.list -O /etc/ros/rosdep/sources.list.d/00-gazebo.list'
+rosdep update
+rosdep resolve gz-harmonic
+# Navigate to your ROS workspace before the next command.
+rosdep install --from-paths src --ignore-src -y
 ```
 
 Clone and build the repository:
