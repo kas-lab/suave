@@ -27,6 +27,9 @@ def generate_launch_description():
     tomasys_file = LaunchConfiguration('tomasys_file')
     model_file = LaunchConfiguration('model_file')
     reasoning_time_filename = LaunchConfiguration('reasoning_time_filename')
+    battery_constraint = LaunchConfiguration('battery_constraint')
+    battery_constraint_value = LaunchConfiguration('battery_constraint_value')
+    result_filename = LaunchConfiguration('result_filename')
 
     pkg_mc_mdl_tomasys_path = get_package_share_directory('mc_mdl_tomasys')
     pkg_mros_ontology_path = get_package_share_directory('mros_ontology')
@@ -58,6 +61,25 @@ def generate_launch_description():
         'reasoning_time_filename',
         default_value='metacontrol_reasoning_time',
         description='File name for saving metacontrol reasoning time')
+    
+    battery_constraint_arg = DeclareLaunchArgument(
+        'battery_constraint',
+        default_value='False',
+        description='Desired battery functionality' +
+                    '[True or False]'
+    )
+
+    battery_constraint_value_arg = DeclareLaunchArgument(
+        'battery_constraint_value',
+        default_value='0.2',
+        description='battery constraint value'
+    )
+
+    result_filename_arg = DeclareLaunchArgument(
+        'result_filename',
+        default_value='metacontrol_results',
+        description='Name of the results file'
+    )
 
     metacontrol_config = os.path.join(
         pkg_suave_metacontrol_path,
@@ -99,14 +121,48 @@ def generate_launch_description():
             'task_bridge': 'False'}.items()
     )
 
+    mission_config = os.path.join(
+        get_package_share_directory('suave_missions'),
+        'config',
+        'mission_config.yaml'
+    )
+
+    mission_node = Node(
+        package='suave_missions',
+        executable='time_constrained_mission',
+        name='mission_node',
+        parameters=[
+            mission_config,
+            {
+                'battery_constraint': battery_constraint,
+                'battery_constraint_value': battery_constraint_value,
+            }],
+    )
+
+    mission_metrics_node = Node(
+        package='suave_metrics',
+        executable='mission_metrics',
+        name='mission_metrics',
+        parameters=[mission_config, {
+            'adaptation_manager': 'metacontrol',
+            'mission_name': 'suave',
+            'result_filename': result_filename,
+        }],
+    )
+
     return LaunchDescription([
         tomasys_file_arg,
         model_file_arg,
         reasoning_time_filename_arg,
+        battery_constraint_arg,
+        battery_constraint_value_arg,
+        result_filename_arg,
         silent_arg,
         OpaqueFunction(function=configure_logging),
         mros_reasoner_node,
         mros_system_modes_bridge_node,
         task_bridge_node,
         suave_launch,
+        mission_node,
+        mission_metrics_node
     ])
