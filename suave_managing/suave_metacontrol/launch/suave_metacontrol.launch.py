@@ -21,7 +21,7 @@ def generate_launch_description():
     def configure_logging(context, *args, **kwargs):
         if silent.perform(context) == 'true':
             import logging
-            logging.getLogger().setLevel(logging.ERROR)
+            logging.getLogger().setLevel(logging.CRITICAL)
         return []
 
     tomasys_file = LaunchConfiguration('tomasys_file')
