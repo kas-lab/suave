@@ -20,7 +20,7 @@ from ament_index_python.packages import get_package_share_directory
 
 class ExperimentRunnerNode(Node):
     def __init__(self):
-        super().__init__('experiment_runner_node')
+        super().__init__('suave_runner_node')
 
         # Declare parameters
         self.declare_parameter('ardupilot_executable', 'sim_vehicle.py -L RATBeach -v ArduSub --model=JSON')
@@ -144,7 +144,7 @@ class ExperimentRunnerNode(Node):
         date_str = datetime.now().strftime("%Y_%m_%d_%H-%M-%S")
         result_filename = f"{date_str}_{adaptation_manager}_{mission_type}"
 
-        return exp_launch, num_runs, result_filename
+        return exp_launch, num_runs, result_filename, adaptation_manager
 
     def launch_ardupilot(self):
         self.get_logger().info("    Launching ArduPilot...")
@@ -216,19 +216,19 @@ class ExperimentRunnerNode(Node):
 
             self.remove_done_file()
 
-            exp_launch, num_runs, result_filename = self.initialize_experiment(experiment, exp_idx)
+            exp_launch, num_runs, result_filename, adaptation_manager = self.initialize_experiment(experiment, exp_idx)
 
             if not exp_launch:
                 self.get_logger().warn(f"Skipping experiment {exp_idx + 1}: Missing 'experiment_launch'")
                 continue
 
-            self.get_logger().info(f"Running experiment {exp_idx + 1}/{len(self.experiments)} for {num_runs} runs")
+            self.get_logger().info(f"Running experiment {exp_idx + 1}/{len(self.experiments)} for {num_runs} runs with {adaptation_manager}")
 
             for run_idx in range(num_runs):
                 if self.terminate_flag:
                     break
 
-                self.get_logger().info(f"  Run {run_idx + 1}/{num_runs}")
+                self.get_logger().info(f"  Run {adaptation_manager} {run_idx + 1}/{num_runs}")
 
                 try:
                     self.launch_ardupilot()
