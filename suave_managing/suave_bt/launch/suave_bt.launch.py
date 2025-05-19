@@ -18,6 +18,7 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.actions import IncludeLaunchDescription
+from launch.actions import OpaqueFunction
 from launch.conditions import LaunchConfigurationEquals
 from launch.conditions import LaunchConfigurationNotEquals
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -26,6 +27,18 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    silent = LaunchConfiguration('silent')
+    silent_arg = DeclareLaunchArgument(
+        'silent',
+        default_value='false',
+        description='Suppress all output (launch logs + node logs)'
+    )
+    def configure_logging(context, *args, **kwargs):
+        if silent.perform(context) == 'true':
+            import logging
+            logging.getLogger().setLevel(logging.CRITICAL)
+        return []
+    
     mission_type = LaunchConfiguration('mission_type')
     result_filename = LaunchConfiguration('result_filename')
     mission_config = LaunchConfiguration('mission_config')
@@ -100,6 +113,8 @@ def generate_launch_description():
         mission_type_arg,
         result_filename_arg,
         mission_config_arg,
+        silent_arg,
+        OpaqueFunction(function=configure_logging),
         suave_launch,
         mission_metrics_node,
         mission_metrics_node_override,
