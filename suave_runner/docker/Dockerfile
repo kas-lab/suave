@@ -66,15 +66,6 @@ ENV PATH=/usr/lib/ccache:$PATH
 
 RUN ["/bin/bash","-c","cd $HOME/ardupilot && ./waf configure && make sub"]
 
-# cd ~/ardupilot
-# cd Tools/environment_install/
-# rm install-prereqs-ubuntu.sh
-# wget https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/environment_install/install-prereqs-ubuntu.sh
-# cd ~/ardupilot
-# chmod +x Tools/environment_install/install-prereqs-ubuntu.sh
-# Tools/environment_install/install-prereqs-ubuntu.sh -y
-# . ~/.profile
-
 WORKDIR $HOME
 RUN git clone https://github.com/ArduPilot/ardupilot_gazebo && \
     cd ardupilot_gazebo && \
@@ -82,10 +73,8 @@ RUN git clone https://github.com/ArduPilot/ardupilot_gazebo && \
     cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo && \
     make -j4
 
-# RUN echo 'export GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot_gazebo/build:${GZ_SIM_SYSTEM_PLUGIN_PATH}' >> /etc/bash.bashrc && \
-#     echo 'export GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}' >> /etc/bash.bashrc
-ENV GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot_gazebo/build:${GZ_SIM_SYSTEM_PLUGIN_PATH}
-ENV GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}
+ENV GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot_gazebo/build
+ENV GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds
 
 WORKDIR $HOME
 RUN mkdir -p suave_ws/src
@@ -95,7 +84,6 @@ RUN git clone https://github.com/kas-lab/suave.git -b new_runner
 WORKDIR $HOME/suave_ws
 RUN vcs import src < src/suave/suave.rosinstall --recursive
 
-# && rosdep resolve gz-harmonic \
 RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
     && sudo apt update \
     && rosdep update \
