@@ -24,14 +24,14 @@ def generate_launch_description():
         'adaptation_manager',
         default_value='none',
         description='Adaptation manager in charge' +
-                    '[none or metacontrol or random]'
+                    '[none, metacontro, random, or bt]'
     )
 
     mission_type_arg = DeclareLaunchArgument(
         'mission_type',
         default_value='time_constrained_mission',
         description='Desired mission type' +
-                    '[time_constrained_mission or const_dist_mission]'
+                    '[time_constrained_mission or const_dist_mission (deprecated)]'
     )
 
     result_filename_arg = DeclareLaunchArgument(
@@ -59,57 +59,6 @@ def generate_launch_description():
         description='metacontrol reasoning time filename'
     )
 
-    pkg_suave_path = get_package_share_directory(
-        'suave_missions')
-
-    mission_config = os.path.join(
-        get_package_share_directory('suave_missions'),
-        'config',
-        'mission_config.yaml'
-    )
-
-    mission_metrics_node = Node(
-        package='suave_metrics',
-        executable='mission_metrics',
-        name='mission_metrics',
-        parameters=[mission_config, {
-            'adaptation_manager': adaptation_manager,
-            'mission_name': mission_type,
-        }],
-        condition=LaunchConfigurationEquals('result_filename', '')
-    )
-
-    mission_metrics_node_override = Node(
-        package='suave_metrics',
-        executable='mission_metrics',
-        name='mission_metrics',
-        parameters=[mission_config, {
-            'adaptation_manager': adaptation_manager,
-            'mission_name': mission_type,
-            'result_filename': result_filename,
-        }],
-        condition=LaunchConfigurationNotEquals('result_filename', '')
-    )
-
-    mission_node = Node(
-        package='suave_missions',
-        executable=mission_type,
-        name='mission_node',
-        parameters=[
-            mission_config,
-            {
-                'battery_constraint': battery_constraint,
-                'battery_constraint_value': battery_constraint_value,
-            }],
-    )
-
-    pkg_suave_path = get_package_share_directory('suave')
-    suave_launch_path = os.path.join(
-        pkg_suave_path,
-        'launch',
-        'suave.launch.py'
-    )
-
     pkg_suave_metacontrol_path = get_package_share_directory(
         'suave_metacontrol')
     suave_metacontrol_launch_path = os.path.join(
@@ -125,10 +74,22 @@ def generate_launch_description():
         'launch',
         'suave_random.launch.py'
     )
-
-    suave_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(suave_launch_path),
-        condition=LaunchConfigurationEquals('adaptation_manager', 'none'))
+    
+    pkg_suave_none_path = get_package_share_directory(
+        'suave_none')
+    suave_none_launch_path = os.path.join(
+        pkg_suave_none_path,
+        'launch',
+        'suave_none.launch.py'
+    )
+    
+    pkg_suave_bt_path = get_package_share_directory(
+        'suave_bt')
+    suave_bt_launch_path = os.path.join(
+        pkg_suave_bt_path,
+        'launch',
+        'suave_bt.launch.py'
+    )
 
     suave_metacontrol_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(suave_metacontrol_launch_path),
@@ -140,6 +101,14 @@ def generate_launch_description():
     suave_random_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(suave_random_launch_path),
         condition=LaunchConfigurationEquals('adaptation_manager', 'random'))
+    
+    suave_none_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(suave_none_launch_path),
+        condition=LaunchConfigurationEquals('adaptation_manager', 'none'))
+    
+    suave_bt_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(suave_bt_launch_path),
+        condition=LaunchConfigurationEquals('adaptation_manager', 'bt'))
 
     return LaunchDescription([
         adaptation_manager_arg,
@@ -147,10 +116,9 @@ def generate_launch_description():
         result_filename_arg,
         battery_constraint_arg,
         battery_constraint_value_arg,
-        mission_metrics_node,
-        mission_metrics_node_override,
-        mission_node,
-        suave_launch,
+        mc_reasoning_time_filename_arg,
         suave_metacontrol_launch,
         suave_random_launch,
+        suave_none_launch,
+        suave_bt_launch,
     ])
