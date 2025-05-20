@@ -66,6 +66,7 @@ ENV PATH=/usr/lib/ccache:$PATH
 
 RUN ["/bin/bash","-c","cd $HOME/ardupilot && ./waf configure && make sub"]
 
+# Install ardupilot gazebo plugin
 WORKDIR $HOME
 RUN git clone https://github.com/ArduPilot/ardupilot_gazebo && \
     cd ardupilot_gazebo && \
@@ -82,7 +83,7 @@ WORKDIR $HOME/suave_ws/src
 RUN git clone https://github.com/kas-lab/suave.git -b new_runner
 
 WORKDIR $HOME/suave_ws
-RUN vcs import src < src/suave/suave.rosinstall --recursive
+RUN vcs import src < src/suave/suave.repos --recursive
 
 RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
     && sudo apt update \
