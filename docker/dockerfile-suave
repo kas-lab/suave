@@ -48,7 +48,7 @@ RUN apt update && apt install -y \
   python3-vcstool \
   && rm -rf /var/lib/apt/lists/
 
-RUN rosdep init && rosdep update
+RUN rosdep init 
 
 ### Install Gazebo
 RUN curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg && \
