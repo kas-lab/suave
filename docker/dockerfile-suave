@@ -3,9 +3,8 @@ FROM $BASE_IMAGE
 
 USER root
 
-
 ### Envrionment config
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
 ###Add Sudo
 RUN add-apt-repository ppa:kisak/kisak-mesa \
@@ -31,21 +30,9 @@ RUN add-apt-repository ppa:kisak/kisak-mesa \
 # Set the locale
 RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
     locale-gen
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:en
-ENV LC_ALL en_US.UTF-8
-### Install Visual Studio Code
-# COPY ./docker/src/ubuntu/install/vs_code $INST_SCRIPTS/vs_code/
-# RUN bash $INST_SCRIPTS/vs_code/install_vs_code.sh  && rm -rf $INST_SCRIPTS/vs_code/
-
-### Install Gazebo
-RUN wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
-RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
-
-RUN apt update && apt install -y \
-  # gz-garden \
-  gz-harmonic \
-	&& rm -rf /var/lib/apt/lists/
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
 
 RUN pip uninstall empy && pip install empy==3.3.4 && pip install -U colcon-common-extensions
 
@@ -61,12 +48,25 @@ RUN apt update && apt install -y \
   python3-vcstool \
   && rm -rf /var/lib/apt/lists/
 
+RUN rosdep init 
+
+### Install Gazebo
+RUN curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
+
+RUN bash -c 'curl https://raw.githubusercontent.com/osrf/osrf-rosdep/master/gz/00-gazebo.list --output /etc/ros/rosdep/sources.list.d/00-gazebo.list'
+ENV GZ_VERSION=harmonic 
+
+RUN apt update && apt install -y \
+    gz-harmonic \
+    ros-humble-ros-gzharmonic \
+	&& rm -rf /var/lib/apt/lists/
 
 ###Add the USER env var
 RUN echo 'kasm-user ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
-ENV HOME /home/kasm-user
+ENV HOME=/home/kasm-user
 USER kasm-user
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR $HOME
 
@@ -86,7 +86,7 @@ ENV PATH=/opt/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH
 ENV PATH=$PATH:$HOME/ardupilot/Tools/autotest
 ENV PATH=/usr/lib/ccache:$PATH
 
-RUN ["/bin/bash","-c","./waf configure && make sub"]
+RUN ["/bin/bash","-c","cd $HOME/ardupilot && ./waf configure && make sub"]
 
 # install ardupilot gazebo plugin
 RUN sudo apt update && sudo apt install -y \
@@ -101,26 +101,18 @@ RUN sudo apt update && sudo apt install -y \
     gstreamer1.0-gl \
     && sudo rm -rf /var/lib/apt/list/
 
-WORKDIR $HOME
-RUN git clone https://github.com/ArduPilot/ardupilot_gazebo
-
 ENV GZ_VERSION=harmonic
-RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
-    && sudo rosdep init \
-    && sudo wget https://raw.githubusercontent.com/osrf/osrf-rosdep/master/gz/00-gazebo.list -O /etc/ros/rosdep/sources.list.d/00-gazebo.list \
-    && rosdep update \
-    && rosdep resolve gz-$GZ_VERSION"]
+WORKDIR $HOME
+RUN git clone https://github.com/ArduPilot/ardupilot_gazebo && \
+    cd ardupilot_gazebo && \
+    mkdir build && cd build && \
+    cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo && \
+    make -j4
 
-WORKDIR $HOME/ardupilot_gazebo
-RUN [ "/bin/bash","-c","mkdir build && cd build \
-    && cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo\
-    && make"]
-
-ENV GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot_gazebo/build:${GZ_SIM_SYSTEM_PLUGIN_PATH}
-ENV GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}
+ENV GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot_gazebo/build
+ENV GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds
 
 # Copy suave files
-ENV GZ_VERSION=harmonic
 RUN mkdir -p $HOME/suave_ws/src
 COPY --chown=kasm-user:kasm-user suave.repos $HOME/suave_ws/suave.repos
 WORKDIR $HOME/suave_ws/

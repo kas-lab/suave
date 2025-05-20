@@ -67,3 +67,12 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: BASE_IMAGE=${{ env.REGISTRY }}/kas-lab/kasm-jammy:latest
+
+      - name: Build and push suave image
+        uses: docker/build-push-action@v4
+        with:
+          context: suave_runner/docker/
+          file: suave_runner/docker/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/kas-lab/suave-headless
+          labels: ${{ steps.meta.outputs.labels }}

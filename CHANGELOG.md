@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 1.4.0
+
+### Added
+
+1. New suave_runner package containing a new python-based runner script
+
+2. A new docker image without vnc, allowing it to be executed without the web interface
+
+3. Move to gazebo harmonic
+
 ## 1.3.0
 
 ### Added

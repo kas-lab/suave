@@ -5,15 +5,39 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.actions import IncludeLaunchDescription
+from launch.actions import OpaqueFunction
 from launch.launch_description_sources import AnyLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
+from launch.substitutions import PythonExpression
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    silent = LaunchConfiguration('silent')
+    def configure_logging(context, *args, **kwargs):
+        if silent.perform(context) == 'true':
+            import logging
+            logging.getLogger().setLevel(logging.ERROR)
+        return []
+    
+    silent_arg = DeclareLaunchArgument(
+        'silent',
+        default_value='false',
+        description='Suppress all output (launch logs + node logs)'
+    )
+
     remaro_worlds_path = get_package_share_directory('remaro_worlds')
     min_pipes_launch_path = os.path.join(
         remaro_worlds_path, 'launch', 'small_min_pipes.launch.py')
+
+    print_output = PythonExpression([
+        '"log" if "', LaunchConfiguration('silent'), '" == "true" else "', LaunchConfiguration('print_output'), '"'
+    ])
+    print_output_arg = DeclareLaunchArgument(
+        'print_output',
+        default_value='screen',
+        description='Whether to print output to terminal (screen/log)'
+    )
 
     gui = LaunchConfiguration('gui')
     gui_arg = DeclareLaunchArgument(
@@ -24,7 +48,8 @@ def generate_launch_description():
     min_pipes_sim = IncludeLaunchDescription(
         AnyLaunchDescriptionSource(min_pipes_launch_path),
         launch_arguments={
-           'gui': gui
+           'gui': gui,
+           'print_output': print_output,
         }.items()
     )
 
@@ -39,7 +64,8 @@ def generate_launch_description():
             'system_id': '255',
             'component_id': '240',
             'target_system_id': '1',
-            'target_component_id': '1'
+            'target_component_id': '1',
+            'log_out': print_output,
             }.items()
         )
 
@@ -51,7 +77,7 @@ def generate_launch_description():
         package='ros_gz_bridge',
         executable='parameter_bridge',
         arguments=['/model/min_pipes_pipeline/pose@geometry_msgs/msg/PoseArray@gz.msgs.Pose_V'],
-        output='screen',
+        output=print_output,
         name='gz_pipe_pose_bridge',
     )
 
@@ -81,13 +107,14 @@ def generate_launch_description():
         package='ros_gz_bridge',
         executable='parameter_bridge',
         arguments=['/model/bluerov2/pose@geometry_msgs/msg/Pose@gz.msgs.Pose'],
-        output='screen',
+        output=print_output,
         name='gz_bluerov_pose_bridge',
     )
 
     bluerov_spawn = Node(
         package='ros_gz_sim',
         executable='create',
+        output=print_output,
         arguments=[
             '-v4',
             '-g',
@@ -105,6 +132,9 @@ def generate_launch_description():
         x_arg,
         y_arg,
         z_arg,
+        print_output_arg,
+        silent_arg,
+        OpaqueFunction(function=configure_logging),
         min_pipes_sim,
         bluerov_spawn,
         gz_pipe_pose_bridge,

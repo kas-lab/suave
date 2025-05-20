@@ -28,7 +28,7 @@ def generate_launch_description():
     result_filename = LaunchConfiguration('result_filename')
     result_filename_arg = DeclareLaunchArgument(
         'result_filename',
-        default_value='random_results',
+        default_value='none_results',
         description='Name of the results file'
     )
     mission_config = os.path.join(
@@ -50,12 +50,6 @@ def generate_launch_description():
             'task_bridge': 'False'}.items()
     )
 
-    task_bridge_node = Node(
-        package='suave_random',
-        executable='task_bridge_random',
-        parameters=[mission_config],
-    )
-
     mission_config = os.path.join(
         get_package_share_directory('suave_missions'),
         'config',
@@ -74,7 +68,7 @@ def generate_launch_description():
         executable='mission_metrics',
         name='mission_metrics',
         parameters=[mission_config, {
-            'adaptation_manager': 'random',
+            'adaptation_manager': 'none',
             'mission_name': 'suave',
             'result_filename': result_filename,
         }],
@@ -85,7 +79,6 @@ def generate_launch_description():
         silent_arg,
         OpaqueFunction(function=configure_logging),
         suave_launch,
-        task_bridge_node,
         mission_node,
         mission_metrics_node
     ])

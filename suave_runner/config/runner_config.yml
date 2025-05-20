@@ -1,0 +1,33 @@
+/suave_runner_node:
+  ros__parameters:
+    gui: false #Enable GUI
+    silent: true #Enable silent mode
+    experiments: #List of experiments to run
+      - |
+        {
+          "experiment_launch": "ros2 launch suave_bt suave_bt.launch.py",
+          "num_runs": 2,
+          "adaptation_manager": "bt",
+          "mission_name": "suave"
+        }
+      - |
+        {
+          "experiment_launch": "ros2 launch suave_metacontrol suave_metacontrol.launch.py",
+          "num_runs": 2,
+          "adaptation_manager": "metacontrol",
+          "mission_name": "suave"
+        }
+      - |
+        {
+          "experiment_launch": "ros2 launch suave_random suave_random.launch.py",
+          "num_runs": 2,
+          "adaptation_manager": "random",
+          "mission_name": "suave"
+        }
+      - |
+        {
+          "experiment_launch": "ros2 launch suave_none suave_none.launch.py",
+          "num_runs": 2,
+          "adaptation_manager": "none",
+          "mission_name": "suave"
+        }
