@@ -1,5 +1,5 @@
 # Use the official ROS 2 Humble base image with Gazebo Fortress pre-installed
-FROM osrf/ros:humble-desktop-full
+FROM osrf/ros:humble-desktop-full@sha256:d97c61122c3d84ccc4f3582eb72e64dc4ca64d54417635cbef6f836d063a0a3c
 
 # Set environment variables for non-interactive installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -80,7 +80,7 @@ ENV GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/wo
 WORKDIR $HOME
 RUN mkdir -p suave_ws/src
 WORKDIR $HOME/suave_ws/src
-RUN git clone https://github.com/kas-lab/suave.git -b new_runner
+RUN git clone https://github.com/kas-lab/suave.git
 
 WORKDIR $HOME/suave_ws
 RUN vcs import src < src/suave/suave.repos --recursive
