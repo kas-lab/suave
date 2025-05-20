@@ -191,8 +191,8 @@ cd ~/suave_ws/
 If you want to get the most updated version of the repo:
 
 ```Bash
-wget https://raw.githubusercontent.com/kas-lab/suave/main/suave.rosinstall
-vcs import src < suave.rosinstall --recursive
+wget https://raw.githubusercontent.com/kas-lab/suave/main/suave.repos
+vcs import src < suave.repos --recursive
 ```
 **SEAMS2023:** If you want to get the version submitted to SEAMS 2023 instead of the most updated version get the following dependencies instead:
 
