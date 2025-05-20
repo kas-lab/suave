@@ -11,8 +11,7 @@ permissions:
 
 jobs:
   docs:
-    runs-on: ubuntu-latest
-    container: ubuntu:22.04
+    runs-on: ubuntu:22.04
     steps:
       - uses: actions/checkout@v3.3.0
       - uses: ros-tooling/setup-ros@0.7.1
@@ -29,8 +28,10 @@ jobs:
         run: |
           pip install sphinx sphinx_rtd_theme myst_parser sphinx-autopackagesummary myst-parser
       - name: Sphinx build
+        shell: bash
         run: |
-          source ${{ steps.action_ros_ci_step.outputs.ros-workspace-directory-name }}/install/setup.bash && sphinx-build docs/source docs/build
+          source ${{ steps.action_ros_ci_step.outputs.ros-workspace-directory-name }}/install/setup.bash
+          sphinx-build docs/source docs/build
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}

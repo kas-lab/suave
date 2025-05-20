@@ -16,29 +16,48 @@ To follow the robot as it progresses along its mission make sure to right click 
 
 ### Full Runner
 
-To run the exemplar with the runner, first make sure you are in the suave workspace:
+To run the exemplar with the runner, first make sure you source the suave workspace:
 
 ```Bash
-cd ~/suave_ws/src/suave/runner/
+cd ~/suave_ws/
+source ~/suave_ws/install/setup.bash
 ```
 
 Then run:
 
 Without gui:
 ```Bash
-./runner.sh false metacontrol time 2
+ros2 run suave_runner suave_runner \
+  --ros-args \
+  -p gui:=False \
+  -p experiments:='[
+    "{\"experiment_launch\": \"ros2 launch suave_bt suave_bt.launch.py\", \
+      \"num_runs\": 2, \
+      \"adaptation_manager\": \"bt\", \
+      \"mission_name\": \"suave\"}"
+  ]'
 ```
 
 With gui:
 ```Bash
-./runner.sh true metacontrol time 2
+ros2 run suave_runner suave_runner \
+  --ros-args \
+  -p gui:=True \
+  -p experiments:='[
+    "{\"experiment_launch\": \"ros2 launch suave_bt suave_bt.launch.py\", \
+      \"num_runs\": 2, \
+      \"adaptation_manager\": \"bt\", \
+      \"mission_name\": \"suave\"}"
+  ]'
 ```
 
-The runner script takes 4 positional parameters:
-1. true or false -> indicates if the gui should be used
-2. metacontrol or random or none -> indicates which managing subsystem to use
-3. time or distance -> indicates which mission to run
-4. number of runs
+You can also use a launch file with a [config file](https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner_config.yml) to make it easier to run the experiments:
+
+```Bash
+ros2 launch suave_runner suave_runner.launch.py
+```
+
+To run SUAVE with different managing subsystems. Just replace the `experiment_launch` with the proper launch file.
 
 ## Without the runner
 
@@ -86,13 +105,8 @@ Launching the mission file without launch arguments will start a time-constraine
 ```
 'adaptation_manager':
     Managing subsystem to be used
-    available values: none/metacontrol/random
+    available values: none/metacontrol/random/bt
     (default: 'none')
-
-'mission_type':
-    Type of mission to be executed
-    available values: time_constrained_mission/const_dist_mission
-    (default: 'time_constrained_mission')
 
 'result_filename':
     Filename for the mission measured metrics
@@ -105,5 +119,5 @@ The arguments can be defined by adding the above arguments with the notation `<n
 An example of running the constant distance mission with metacontrol saving to a file called 'measurement_1':
 
 ```Bash
-ros2 launch suave_missions mission.launch.py adaptation_manager:=metacontrol mission_type:=const_dist_mission result_filename:=measurement_1
+ros2 launch suave_missions mission.launch.py adaptation_manager:=metacontrol result_filename:=measurement_1
 ```

@@ -210,6 +210,7 @@ class ExperimentRunnerNode(Node):
         self.processes_stop_events.append((experiment_process, experiment_stop_event))
 
     def run_experiments(self):
+        #TODO: get datetime here, instead of in initialize_experiment
         for exp_idx, experiment in enumerate(self.experiments):
             if self.terminate_flag:
                 break

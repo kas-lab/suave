@@ -25,6 +25,44 @@ A dialog will request a username and password, these are shown below, with the p
 
 <!-- Now you can proceed to [run the exemplar](#run-suave). -->
 
+## Headless docker image
+
+We also provide a docker image without VCN/Web interface, so you can just run the experiments directly from your terminal without needing to log in into the web interface.
+
+Pull image:
+```Bash
+docker pull ghcr.io/kas-lab/suave-headless:main
+```
+
+Run image (without gpu):
+```Bash
+docker run -it --rm --name suave_runner -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro -v $HOME/suave_ws/src/suave:/home/ubuntu-user/suave_ws/src/suave suave-headless
+```
+
+Run image (with nvidia)(don't forget to install nvidia docker toolkit)[https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html]:
+```Bash
+docker run -it --rm --gpus all --runtime=nvidia --name suave_runner -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all -v /dev/dri:/dev/dri -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro -v $HOME/suave_ws/src/suave:/home/ubuntu-user/suave_ws/src/suave suave-headless
+```
+
+You can try by running:
+
+```Bash
+ros2 run suave_runner suave_runner \
+  --ros-args \
+  -p gui:=False \
+  -p experiments:='[
+    "{\"experiment_launch\": \"ros2 launch suave_bt suave_bt.launch.py\", \
+      \"num_runs\": 2, \
+      \"adaptation_manager\": \"bt\", \
+      \"mission_name\": \"suave\"}"
+  ]'
+```
+
+If you want the image to have acess to the host GUI run the following command before running the image:
+```Bash
+xhost +
+```
+
 ## Build Docker images locally
 To build the docker images locally, run:
 
