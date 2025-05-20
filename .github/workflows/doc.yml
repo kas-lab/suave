@@ -23,7 +23,7 @@ jobs:
           package-name: suave suave_monitor suave_metrics suave_msgs suave_missions suave_metacontrol system_modes mavros mavros_wrapper mros2_reasoner mros2_msgs
           target-ros2-distro: humble
           skip-tests: true
-          vcs-repo-file-url: https://raw.githubusercontent.com/kas-lab/suave/main/suave.rosinstall
+          vcs-repo-file-url: https://raw.githubusercontent.com/kas-lab/suave/main/suave.repos
       - name: Install dependencies
         run: |
           pip install sphinx sphinx_rtd_theme myst_parser sphinx-autopackagesummary myst-parser

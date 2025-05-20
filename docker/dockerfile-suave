@@ -122,9 +122,9 @@ ENV GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/wo
 # Copy suave files
 ENV GZ_VERSION=harmonic
 RUN mkdir -p $HOME/suave_ws/src
-COPY --chown=kasm-user:kasm-user suave.rosinstall $HOME/suave_ws/suave.rosinstall
+COPY --chown=kasm-user:kasm-user suave.repos $HOME/suave_ws/suave.repos
 WORKDIR $HOME/suave_ws/
-RUN vcs import src < suave.rosinstall --recursive
+RUN vcs import src < suave.repos --recursive
 
 RUN rm -rf $HOME/suave_ws/src/suave/
 COPY --chown=kasm-user:kasm-user suave/ $HOME/suave_ws/src/suave/suave/
