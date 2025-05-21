@@ -43,7 +43,6 @@ RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/r
 RUN apt update && apt install -y \
   ros-humble-ros-base \
   python3-empy=3.3.4-2 \
-  # python3-colcon-common-extensions \
   python3-rosdep \
   python3-vcstool \
   && rm -rf /var/lib/apt/lists/
@@ -91,7 +90,6 @@ RUN ["/bin/bash","-c","cd $HOME/ardupilot && ./waf configure && make sub"]
 # install ardupilot gazebo plugin
 RUN sudo apt update && sudo apt install -y \
     rapidjson-dev \
-    # libgz-sim7-dev \
     libgz-sim8-dev \
     libopencv-dev \
     libgstreamer1.0-dev \

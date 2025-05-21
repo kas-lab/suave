@@ -1,42 +1,42 @@
 # Use the official ROS 2 Humble base image with Gazebo Fortress pre-installed
-FROM osrf/ros:humble-desktop-full@sha256:d97c61122c3d84ccc4f3582eb72e64dc4ca64d54417635cbef6f836d063a0a3c
+FROM ros:humble-ros-core-jammy@sha256:36dbc9891ce56eef400539054016897ff98ed72c71088bcf0f8842d209eba558
 
 # Set environment variables for non-interactive installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
-
-RUN bash -c 'curl https://raw.githubusercontent.com/osrf/osrf-rosdep/master/gz/00-gazebo.list --output /etc/ros/rosdep/sources.list.d/00-gazebo.list'
-ENV GZ_VERSION=harmonic 
-
 # Update and install additional dependencies if needed
 RUN apt-get update && apt-get install -y \
     sudo \
+    curl \
     wget \
+    vim \
+    git \
+    python3-pip \
     python3-vcstool \
     python3-rosdep \
-    gz-harmonic \
-    ros-humble-ros-gzharmonic \
-    vim \
-    python3-pip \
-    libgz-sim8-dev \ 
-    rapidjson-dev \
-    libopencv-dev \
-    libgstreamer1.0-dev \
-    libgstreamer-plugins-base1.0-dev \
-    gstreamer1.0-plugins-bad \
-    gstreamer1.0-libav \
-    gstreamer1.0-gl \
     xvfb \
     htop \
     mesa-utils \
     libgl1-mesa-glx \
     libgl1-mesa-dri \
     libglx-mesa0 \
+    ros-dev-tools \
     && rm -rf /var/lib/apt/lists/*
 
-    
+RUN rosdep init 
+
+### Install Gazebo
+RUN curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
+
+RUN bash -c 'curl https://raw.githubusercontent.com/osrf/osrf-rosdep/master/gz/00-gazebo.list --output /etc/ros/rosdep/sources.list.d/00-gazebo.list'
+ENV GZ_VERSION=harmonic 
+
+RUN apt update && apt install -y \
+    gz-harmonic \
+    ros-humble-ros-gzharmonic \
+	&& rm -rf /var/lib/apt/lists/
+
 ###Add the USER env var
 RUN groupadd -g 1000 ubuntu-user \
     && adduser --disabled-password --gid 1000 --uid 1000 --gecos '' ubuntu-user \
@@ -65,6 +65,18 @@ ENV PATH=$PATH:$HOME/ardupilot/Tools/autotest
 ENV PATH=/usr/lib/ccache:$PATH
 
 RUN ["/bin/bash","-c","cd $HOME/ardupilot && ./waf configure && make sub"]
+
+# Ardupilot gazebo plugin dependencies
+RUN sudo apt-get update && sudo apt-get install -y \
+    libgz-sim8-dev \ 
+    rapidjson-dev \
+    libopencv-dev \
+    libgstreamer1.0-dev \
+    libgstreamer-plugins-base1.0-dev \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-libav \
+    gstreamer1.0-gl \
+    && sudo rm -rf /var/lib/apt/lists/*
 
 # Install ardupilot gazebo plugin
 WORKDIR $HOME
