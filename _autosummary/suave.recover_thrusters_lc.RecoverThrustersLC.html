@@ -1,0 +1,256 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RecoverThrustersLC &mdash; SUAVE v1.2.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=3130c8bc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="suave.spiral_search_lc" href="suave.spiral_search_lc.html" />
+    <link rel="prev" title="suave.recover_thrusters_lc.main" href="suave.recover_thrusters_lc.main.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            SUAVE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Install SUAVE locally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docker.html">Use SUAVE with Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../run.html">Run SUAVE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../extend.html">Extending SUAVE and connecting managing subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../related.html">Related works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../citing.html">Citation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="suave.bluerov_gazebo.html">suave.bluerov_gazebo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave.follow_pipeline_lc.html">suave.follow_pipeline_lc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave.pipeline_detection.html">suave.pipeline_detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave.pipeline_detection_wv.html">suave.pipeline_detection_wv</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="suave.recover_thrusters_lc.html">suave.recover_thrusters_lc</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="suave.recover_thrusters_lc.main.html">suave.recover_thrusters_lc.main</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">RecoverThrustersLC</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#suave.recover_thrusters_lc.RecoverThrustersLC"><code class="docutils literal notranslate"><span class="pre">RecoverThrustersLC</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="suave.spiral_search_lc.html">suave.spiral_search_lc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave.task_bridge.html">suave.task_bridge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave.task_bridge_none.html">suave.task_bridge_none</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave_monitor.thruster_monitor.html">suave_monitor.thruster_monitor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave_monitor.water_visibility_observer.html">suave_monitor.water_visibility_observer</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SUAVE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">API</a></li>
+          <li class="breadcrumb-item"><a href="suave.recover_thrusters_lc.html">suave.recover_thrusters_lc</a></li>
+      <li class="breadcrumb-item active">RecoverThrustersLC</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/suave.recover_thrusters_lc.RecoverThrustersLC.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="recoverthrusterslc">
+<h1>RecoverThrustersLC<a class="headerlink" href="#recoverthrusterslc" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="suave.recover_thrusters_lc.RecoverThrustersLC">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">suave.recover_thrusters_lc.</span></span><span class="sig-name descname"><span class="pre">RecoverThrustersLC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#suave.recover_thrusters_lc.RecoverThrustersLC" title="Link to this definition"></a></dt>
+<dd><blockquote>
+<div><dl class="py method">
+<dt class="sig sig-object py" id="suave.recover_thrusters_lc.RecoverThrustersLC.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#suave.recover_thrusters_lc.RecoverThrustersLC.__init__" title="Link to this definition"></a></dt>
+<dd><p>Create a lifecycle node.</p>
+<p>See rclpy.lifecycle.LifecycleNodeMixin.__init__() and rclpy.node.Node()
+for the documentation of each parameter.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave.recover_thrusters_lc.RecoverThrustersLC.call_service">
+<span class="sig-name descname"><span class="pre">call_service</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">srv_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">srv_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#suave.recover_thrusters_lc.RecoverThrustersLC.call_service" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave.recover_thrusters_lc.RecoverThrustersLC.on_activate">
+<span class="sig-name descname"><span class="pre">on_activate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LifecycleState</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">TransitionCallbackReturnType</span></span></span><a class="headerlink" href="#suave.recover_thrusters_lc.RecoverThrustersLC.on_activate" title="Link to this definition"></a></dt>
+<dd><p>Handle an activating transition.</p>
+<p>This is the default on_activate() callback.
+It will call all on_activate() callbacks of managed entities, giving up at the first
+entity that returns TransitionCallbackReturn.FAILURE or TransitionCallbackReturn.ERROR.</p>
+<p>It’s possible to override this callback if the default behavior is not desired.
+If you only want to extend what this callback does, make sure to call
+super().on_activate() in derived classes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave.recover_thrusters_lc.RecoverThrustersLC.on_cleanup">
+<span class="sig-name descname"><span class="pre">on_cleanup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LifecycleState</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">TransitionCallbackReturnType</span></span></span><a class="headerlink" href="#suave.recover_thrusters_lc.RecoverThrustersLC.on_cleanup" title="Link to this definition"></a></dt>
+<dd><p>Handle a cleaning up transition.</p>
+<p>This is the default on_cleanup() callback.
+It will call all on_cleanup() callbacks of managed entities, giving up at the first
+entity that returns TransitionCallbackReturn.FAILURE or TransitionCallbackReturn.ERROR.</p>
+<p>It’s possible to override this callback if the default behavior is not desired.
+If you only want to extend what this callback does, make sure to call
+super().on_cleanup() in derived classes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave.recover_thrusters_lc.RecoverThrustersLC.on_configure">
+<span class="sig-name descname"><span class="pre">on_configure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LifecycleState</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">TransitionCallbackReturnType</span></span></span><a class="headerlink" href="#suave.recover_thrusters_lc.RecoverThrustersLC.on_configure" title="Link to this definition"></a></dt>
+<dd><p>Handle a configuring transition.</p>
+<p>This is the default on_configure() callback.
+It will call all on_configure() callbacks of managed entities, giving up at the first
+entity that returns TransitionCallbackReturn.FAILURE or TransitionCallbackReturn.ERROR.</p>
+<p>It’s possible to override this callback if the default behavior is not desired.
+If you only want to extend what this callback does, make sure to call
+super().on_configure() in derived classes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave.recover_thrusters_lc.RecoverThrustersLC.on_deactivate">
+<span class="sig-name descname"><span class="pre">on_deactivate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LifecycleState</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">TransitionCallbackReturnType</span></span></span><a class="headerlink" href="#suave.recover_thrusters_lc.RecoverThrustersLC.on_deactivate" title="Link to this definition"></a></dt>
+<dd><p>Handle a deactivating transition.</p>
+<p>This is the default on_deactivate() callback.
+It will call all on_deactivate() callbacks of managed entities, giving up at the first
+entity that returns TransitionCallbackReturn.FAILURE or TransitionCallbackReturn.ERROR.</p>
+<p>It’s possible to override this callback if the default behavior is not desired.
+If you only want to extend what this callback does, make sure to call
+super().on_deactivate() in derived classes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave.recover_thrusters_lc.RecoverThrustersLC.on_shutdown">
+<span class="sig-name descname"><span class="pre">on_shutdown</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LifecycleState</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">TransitionCallbackReturnType</span></span></span><a class="headerlink" href="#suave.recover_thrusters_lc.RecoverThrustersLC.on_shutdown" title="Link to this definition"></a></dt>
+<dd><p>Handle a shutting down transition.</p>
+<p>This is the default on_shutdown() callback.
+It will call all on_shutdown() callbacks of managed entities, giving up at the first
+entity that returns TransitionCallbackReturn.FAILURE or TransitionCallbackReturn.ERROR.</p>
+<p>It’s possible to override this callback if the default behavior is not desired.
+If you only want to extend what this callback does, make sure to call
+super().on_shutdown() in derived classes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave.recover_thrusters_lc.RecoverThrustersLC.recover_thrusters">
+<span class="sig-name descname"><span class="pre">recover_thrusters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suave.recover_thrusters_lc.RecoverThrustersLC.recover_thrusters" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</div></blockquote>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#suave.recover_thrusters_lc.RecoverThrustersLC.__init__" title="suave.recover_thrusters_lc.RecoverThrustersLC.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(node_name, **kwargs)</p></td>
+<td><p>Create a lifecycle node.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#suave.recover_thrusters_lc.RecoverThrustersLC.call_service" title="suave.recover_thrusters_lc.RecoverThrustersLC.call_service"><code class="xref py py-obj docutils literal notranslate"><span class="pre">call_service</span></code></a>(srv_type, srv_name, request)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#suave.recover_thrusters_lc.RecoverThrustersLC.on_activate" title="suave.recover_thrusters_lc.RecoverThrustersLC.on_activate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_activate</span></code></a>(state)</p></td>
+<td><p>Handle an activating transition.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#suave.recover_thrusters_lc.RecoverThrustersLC.on_cleanup" title="suave.recover_thrusters_lc.RecoverThrustersLC.on_cleanup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_cleanup</span></code></a>(state)</p></td>
+<td><p>Handle a cleaning up transition.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#suave.recover_thrusters_lc.RecoverThrustersLC.on_configure" title="suave.recover_thrusters_lc.RecoverThrustersLC.on_configure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_configure</span></code></a>(state)</p></td>
+<td><p>Handle a configuring transition.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#suave.recover_thrusters_lc.RecoverThrustersLC.on_deactivate" title="suave.recover_thrusters_lc.RecoverThrustersLC.on_deactivate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_deactivate</span></code></a>(state)</p></td>
+<td><p>Handle a deactivating transition.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#suave.recover_thrusters_lc.RecoverThrustersLC.on_shutdown" title="suave.recover_thrusters_lc.RecoverThrustersLC.on_shutdown"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_shutdown</span></code></a>(state)</p></td>
+<td><p>Handle a shutting down transition.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#suave.recover_thrusters_lc.RecoverThrustersLC.recover_thrusters" title="suave.recover_thrusters_lc.RecoverThrustersLC.recover_thrusters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">recover_thrusters</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+</tbody>
+</table>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="suave.recover_thrusters_lc.main.html" class="btn btn-neutral float-left" title="suave.recover_thrusters_lc.main" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="suave.spiral_search_lc.html" class="btn btn-neutral float-right" title="suave.spiral_search_lc" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gustavo Rezende, Juliane Päßler, Jeroen Zwanepol, Elvin Alberts, Lizeth Tarifa, Ilias Gerostathopoulos, Einar Johnsen, Carlos Hernández.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
