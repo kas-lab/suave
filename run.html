@@ -1,0 +1,236 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Run SUAVE &mdash; SUAVE v1.2.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=3130c8bc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Extending SUAVE and connecting managing subsystems" href="extend.html" />
+    <link rel="prev" title="Use SUAVE with Docker" href="docker.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SUAVE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Install SUAVE locally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker.html">Use SUAVE with Docker</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Run SUAVE</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#with-runner">With Runner</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#trying-it-out">Trying it out!</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#full-runner">Full Runner</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#without-the-runner">Without the runner</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#start-ardusub">Start ArduSub</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#start-the-simulation">Start the simulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#start-suave-s-nodes">Start SUAVE’s nodes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="extend.html">Extending SUAVE and connecting managing subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="related.html">Related works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citing.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SUAVE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Run SUAVE</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/run.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="run-suave">
+<h1>Run SUAVE<a class="headerlink" href="#run-suave" title="Link to this heading"></a></h1>
+<section id="with-runner">
+<h2>With Runner<a class="headerlink" href="#with-runner" title="Link to this heading"></a></h2>
+<section id="trying-it-out">
+<h3>Trying it out!<a class="headerlink" href="#trying-it-out" title="Link to this heading"></a></h3>
+<p>If you simply want to try out the exemplar, simply enter the following commands in a terminal:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/suave_ws/src/suave/runner/
+./example_run.sh
+</pre></div>
+</div>
+<p>Within a couple of minutes, some new terminals should open as well as the Gazebo simulator.
+A default mission is executed of inspecting the pipeline with a time limit.
+To follow the robot as it progresses along its mission make sure to right click and follow it in the entity tree of Gazebo as shown below:
+<img alt="BLUEROV Follow" src="https://github.com/kas-lab/suave/blob/652db0676ec2995c4cc0653ef5de0fc49edd00ac/docker/follow_bluerov.PNG" /></p>
+<p><strong>Please note</strong>: It can take a little while for the robot to get moving, it is an issue we are aware of. Once it does get a move on you should see it perform its mission for about 5 minutes.</p>
+</section>
+<section id="full-runner">
+<h3>Full Runner<a class="headerlink" href="#full-runner" title="Link to this heading"></a></h3>
+<p>To run the exemplar with the runner, first make sure you source the suave workspace:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/suave_ws/
+<span class="nb">source</span><span class="w"> </span>~/suave_ws/install/setup.bash
+</pre></div>
+</div>
+<p>Then run:</p>
+<p>Without gui:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>suave_runner<span class="w"> </span>suave_runner<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--ros-args<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>gui:<span class="o">=</span>False<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>experiments:<span class="o">=</span><span class="s1">&#39;[</span>
+<span class="s1">    &quot;{\&quot;experiment_launch\&quot;: \&quot;ros2 launch suave_bt suave_bt.launch.py\&quot;, \</span>
+<span class="s1">      \&quot;num_runs\&quot;: 2, \</span>
+<span class="s1">      \&quot;adaptation_manager\&quot;: \&quot;bt\&quot;, \</span>
+<span class="s1">      \&quot;mission_name\&quot;: \&quot;suave\&quot;}&quot;</span>
+<span class="s1">  ]&#39;</span>
+</pre></div>
+</div>
+<p>With gui:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>suave_runner<span class="w"> </span>suave_runner<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--ros-args<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>gui:<span class="o">=</span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>experiments:<span class="o">=</span><span class="s1">&#39;[</span>
+<span class="s1">    &quot;{\&quot;experiment_launch\&quot;: \&quot;ros2 launch suave_bt suave_bt.launch.py\&quot;, \</span>
+<span class="s1">      \&quot;num_runs\&quot;: 2, \</span>
+<span class="s1">      \&quot;adaptation_manager\&quot;: \&quot;bt\&quot;, \</span>
+<span class="s1">      \&quot;mission_name\&quot;: \&quot;suave\&quot;}&quot;</span>
+<span class="s1">  ]&#39;</span>
+</pre></div>
+</div>
+<p>You can also use a launch file with a <a class="reference external" href="https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner_config.yml">config file</a> to make it easier to run the experiments:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>suave_runner<span class="w"> </span>suave_runner.launch.py
+</pre></div>
+</div>
+<p>To run SUAVE with different managing subsystems. Just replace the <code class="docutils literal notranslate"><span class="pre">experiment_launch</span></code> with the proper launch file.</p>
+</section>
+</section>
+<section id="without-the-runner">
+<h2>Without the runner<a class="headerlink" href="#without-the-runner" title="Link to this heading"></a></h2>
+<p><strong>Configuring SUAVE:</strong>
+SUAVE has a number of parameters that may be of interest when running experiments with its missions, such as the time limit of a time constrained mission or the frequency of thruster failure. These can be found in the <a class="reference external" href="https://github.com/kas-lab/suave/blob/main/suave_missions/config/mission_config.yaml">mission_config.yaml</a> file. <strong>Note:</strong> When you change the mission_config file, you need to rebuild the suave_ws with <code class="docutils literal notranslate"><span class="pre">colcon</span> <span class="pre">build</span> <span class="pre">--symlink-install</span></code></p>
+<p><strong>Note:</strong> Before starting the simulation or the ros nodes, remember that you have to source SUAVE’s workspace. If you are using the dockerized version this is already done for you, therefore sourcing the workspace is not necessary.</p>
+<p>Navigate to the workspace and source it:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/suave_ws/
+<span class="nb">source</span><span class="w"> </span>install/setup.bash
+</pre></div>
+</div>
+<p>With SUAVE configured and sourced, start ArduSub, the simulation, and the SUAVE’s nodes with the following instructions.</p>
+<section id="start-ardusub">
+<h3>Start ArduSub<a class="headerlink" href="#start-ardusub" title="Link to this heading"></a></h3>
+<p>Run:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>sim_vehicle.py<span class="w"> </span>-L<span class="w"> </span>RATBeach<span class="w"> </span>-v<span class="w"> </span>ArduSub<span class="w">  </span>--model<span class="o">=</span>JSON<span class="w"> </span>--console
+</pre></div>
+</div>
+</section>
+<section id="start-the-simulation">
+<h3>Start the simulation<a class="headerlink" href="#start-the-simulation" title="Link to this heading"></a></h3>
+<p>Run:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>suave<span class="w"> </span>simulation.launch.py<span class="w"> </span>x:<span class="o">=</span>-17.0<span class="w"> </span>y:<span class="o">=</span><span class="m">2</span>.0
+</pre></div>
+</div>
+<p><strong>Note:</strong> It is possible to pass arguments to specify the x and y coordinates of where the UUV spawns, by changing the values. In the above launch command the initial coordinates are set to (-17.0, 2.0).</p>
+</section>
+<section id="start-suave-s-nodes">
+<h3>Start SUAVE’s nodes<a class="headerlink" href="#start-suave-s-nodes" title="Link to this heading"></a></h3>
+<p>Run:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>suave_missions<span class="w"> </span>mission.launch.py
+</pre></div>
+</div>
+<p><strong>Mission results:</strong> The mission results will be saved in the path specified in the <a class="reference external" href="https://github.com/kas-lab/suave/blob/main/suave_missions/config/mission_config.yaml">mission_config.yaml</a> file.</p>
+<p><strong>Selecting the manging system and mission type:</strong>
+Launching the mission file without launch arguments will start a time-constrained mission without a managing subsystem. To select a different managing subsystem or a different type of mission, the following launch arguments can be used:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;adaptation_manager&#39;</span><span class="p">:</span>
+    <span class="n">Managing</span> <span class="n">subsystem</span> <span class="n">to</span> <span class="n">be</span> <span class="n">used</span>
+    <span class="n">available</span> <span class="n">values</span><span class="p">:</span> <span class="n">none</span><span class="o">/</span><span class="n">metacontrol</span><span class="o">/</span><span class="n">random</span><span class="o">/</span><span class="n">bt</span>
+    <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="s1">&#39;none&#39;</span><span class="p">)</span>
+
+<span class="s1">&#39;result_filename&#39;</span><span class="p">:</span>
+    <span class="n">Filename</span> <span class="k">for</span> <span class="n">the</span> <span class="n">mission</span> <span class="n">measured</span> <span class="n">metrics</span>
+    <span class="n">available</span> <span class="n">values</span><span class="p">:</span> <span class="nb">any</span> <span class="n">name</span>
+    <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="s1">&#39;time_constrained_mission_results&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The arguments can be defined by adding the above arguments with the notation <code class="docutils literal notranslate"><span class="pre">&lt;name&gt;:=&lt;value&gt;</span></code> to the end of the command line.</p>
+<p>An example of running the constant distance mission with metacontrol saving to a file called ‘measurement_1’:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>suave_missions<span class="w"> </span>mission.launch.py<span class="w"> </span>adaptation_manager:<span class="o">=</span>metacontrol<span class="w"> </span>result_filename:<span class="o">=</span>measurement_1
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="docker.html" class="btn btn-neutral float-left" title="Use SUAVE with Docker" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="extend.html" class="btn btn-neutral float-right" title="Extending SUAVE and connecting managing subsystems" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gustavo Rezende, Juliane Päßler, Jeroen Zwanepol, Elvin Alberts, Lizeth Tarifa, Ilias Gerostathopoulos, Einar Johnsen, Carlos Hernández.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
