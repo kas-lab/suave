@@ -68,7 +68,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: BASE_IMAGE=${{ env.REGISTRY }}/kas-lab/kasm-jammy:latest
 
-      - name: Build and push suave image
+      - name: Build and push suave headless image
         uses: docker/build-push-action@v4
         with:
           context: suave_runner/docker/

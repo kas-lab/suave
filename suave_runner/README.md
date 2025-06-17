@@ -5,6 +5,10 @@ docker run -it --rm --gpus all --runtime=nvidia --name suave_runner -e DISPLAY=$
 ```
 
 ```
+docker run -it --rm --gpus all --runtime=nvidia --name suave_runner -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all -v /dev/dri:/dev/dri -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro -v $HOME/suave_ws/src/suave:/home/ubuntu-user/suave_ws/src/suave ghcr.io/kas-lab/suave-headless:latest
+```
+
+```
 docker run -it --rm   --gpus all   --runtime=nvidia   -e DISPLAY=$DISPLAY   -e QT_X11_NO_MITSHM=1   -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro -v /home/gus/suave_ws/src/suave/:/home/ubuntu-user/suave_ws/src/suave suave_runner
 ```
 

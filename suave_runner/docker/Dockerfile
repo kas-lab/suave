@@ -1,5 +1,5 @@
 # Use the official ROS 2 Humble base image with Gazebo Fortress pre-installed
-FROM ros:humble-ros-core-jammy@sha256:36dbc9891ce56eef400539054016897ff98ed72c71088bcf0f8842d209eba558
+FROM ros:humble-ros-core-jammy
 
 # Set environment variables for non-interactive installation
 ENV DEBIAN_FRONTEND=noninteractive
