@@ -15,7 +15,7 @@ jobs:
     container: ubuntu:22.04
     steps:
       - uses: actions/checkout@v3.3.0
-      - uses: ros-tooling/setup-ros@0.7.1
+      - uses: ros-tooling/setup-ros@0.7.14
         with:
           required-ros-distributions: humble
       - uses: ros-tooling/action-ros-ci@0.3.5
