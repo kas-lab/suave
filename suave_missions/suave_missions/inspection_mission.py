@@ -106,7 +106,7 @@ class InspectionMission(MissionPlanner):
         self.pipeline_detected = msg.data
         if self.pipeline_detected is True:
             self.pipeline_detected_time = self.get_clock().now()
-        self.destroy_subscription(self.pipeline_detected_sub)
+            self.destroy_subscription(self.pipeline_detected_sub)
 
     def pipeline_inspected_cb(self, msg):
         self.pipeline_inspected = msg.data

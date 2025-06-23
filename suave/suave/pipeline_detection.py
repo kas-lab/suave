@@ -11,7 +11,6 @@ from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseArray
 from suave_msgs.srv import GetPath
 
-
 class PipelineDetection(Node):
 
     def __init__(self):
@@ -24,6 +23,7 @@ class PipelineDetection(Node):
             callback_group=MutuallyExclusiveCallbackGroup()
         )
 
+        self.first_detection = True
         self.bluerov2_pose_sub = self.create_subscription(
             Pose,
             '/model/bluerov2/pose',
@@ -34,7 +34,6 @@ class PipelineDetection(Node):
 
         self.detect_pipeline_pub = self.create_publisher(
             Bool, 'pipeline/detected', 10)
-        self.first_detection = True
 
         self.pipes_pose_array = PoseArray()
         self.interpolation_number = 20
@@ -71,7 +70,8 @@ class PipelineDetection(Node):
             pose = Pose()
             pose.position.x = xn
             pose.position.y = yn
-            pose.position.z = pose1.position.z + 0.75
+            # pose.position.z = pose1.position.z + 0.75
+            pose.position.z = pose1.position.z
             points.append(pose)
         return points
 
@@ -104,7 +104,7 @@ class PipelineDetection(Node):
                     self.sort_pipe_path(i)
                     self.first_detection = False
                     self.destroy_subscription(self.bluerov2_pose_sub)
-                break
+                return
 
     def sort_pipe_path(self, index):
         delta = 1
