@@ -105,6 +105,9 @@ class PipelineDetection(Node):
                     self.first_detection = False
                     self.destroy_subscription(self.bluerov2_pose_sub)
                 return
+        pipe_detected = Bool()
+        pipe_detected.data = False
+        self.detect_pipeline_pub.publish(pipe_detected)
 
     def sort_pipe_path(self, index):
         delta = 1

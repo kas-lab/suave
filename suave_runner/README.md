@@ -66,6 +66,7 @@ ros2 run suave_runner suave_runner \
 ros2 run suave_runner suave_runner \
   --ros-args \
   -p gui:=False \
+  -p experiment_logging:=True \
   -p experiments:='[
     "{\"experiment_launch\": \"ros2 launch suave_none suave_none.launch.py\", \
       \"num_runs\": 2, \
