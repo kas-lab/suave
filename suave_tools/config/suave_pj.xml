@@ -1,0 +1,267 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<root>
+ <tabbed_widget name="Main Window" parent="main_window">
+  <Tab tab_name="tab1" containers="1">
+   <Container>
+    <DockSplitter count="2" orientation="-" sizes="0.530011;0.469989">
+     <DockArea name="...">
+      <plot mode="TimeSeries" background_data="Distance Too big" background_colormap="distanceTooBig" flip_x="false" flip_y="false" style="Lines">
+       <range bottom="-20.195581" top="-11.981185" left="1750696299.676391" right="1750696454.578907"/>
+       <limitY/>
+       <curve name="Pipeline Z position" color="#00ff00"/>
+       <curve name="Water visibility" color="#2756d6"/>
+       <curve name="Expected altitude" color="#ff78d6"/>
+       <curve name="BlueROV Z position" color="#ff0008"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot mode="XYPlot" flip_x="false" flip_y="false" style="Lines">
+       <range bottom="-15.699101" top="7.783129" left="-88.903730" right="24.951748"/>
+       <limitY/>
+       <curve curve_x="/model/bluerov2/pose/position/x" name="BlueRov pose" color="#1f77b4" curve_y="/model/bluerov2/pose/position/y"/>
+       <curve curve_x="Pipe0_1_x" name="Pipe0_1_[x;y]" color="#bdae22" curve_y="Pipe0_1_y"/>
+       <curve curve_x="Pipe1_2_x" name="Pipe1_2_[x;y]" color="#bdae22" curve_y="Pipe1_2_y"/>
+       <curve curve_x="Pipe2_3_x" name="Pipe2_3_[x;y]" color="#bdae22" curve_y="Pipe2_3_y"/>
+       <curve curve_x="Pipe3_4_x" name="Pipe3_4_[x;y]" color="#bdae22" curve_y="Pipe3_4_y"/>
+       <curve curve_x="Pipe4_5_x" name="Pipe4_5_[x;y]" color="#bdae22" curve_y="Pipe4_5_y"/>
+       <curve curve_x="X FOV" name="[X FOV;Y FOV]" color="#f14cc1" curve_y="Y FOV"/>
+      </plot>
+     </DockArea>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <currentTabIndex index="0"/>
+ </tabbed_widget>
+ <use_relative_time_offset enabled="0"/>
+ <!-- - - - - - - - - - - - - - - -->
+ <!-- - - - - - - - - - - - - - - -->
+ <Plugins>
+  <plugin ID="DataLoad CSV">
+   <parameters delimiter="0" time_axis=""/>
+  </plugin>
+  <plugin ID="DataLoad MCAP"/>
+  <plugin ID="DataLoad ROS2 bags">
+   <use_header_stamp value="false"/>
+   <discard_large_arrays value="true"/>
+   <max_array_size value="100"/>
+   <boolean_strings_to_number value="true"/>
+   <remove_suffix_from_strings value="true"/>
+   <selected_topics value=""/>
+  </plugin>
+  <plugin ID="DataLoad ULog"/>
+  <plugin ID="ROS2 Topic Subscriber">
+   <use_header_stamp value="true"/>
+   <discard_large_arrays value="true"/>
+   <max_array_size value="100"/>
+   <boolean_strings_to_number value="true"/>
+   <remove_suffix_from_strings value="true"/>
+   <selected_topics value="/diagnostics;/model/bluerov2/pose;/model/min_pipes_pipeline/pose;/pipeline/detected;/pipeline/distance_inspected;/pipeline/inspected"/>
+  </plugin>
+  <plugin ID="UDP Server"/>
+  <plugin ID="WebSocket Server"/>
+  <plugin ID="ZMQ Subscriber"/>
+  <plugin ID="Fast Fourier Transform"/>
+  <plugin ID="Quaternion to RPY"/>
+  <plugin ID="Reactive Script Editor">
+   <library code="--[[ Helper function to create a series from arrays&#xa;&#xa; new_series: a series previously created with ScatterXY.new(name)&#xa; prefix:     prefix of the timeseries, before the index of the array&#xa; suffix_X:   suffix to complete the name of the series containing the X value. If [nil], use the index of the array.&#xa; suffix_Y:   suffix to complete the name of the series containing the Y value&#xa; timestamp:   usually the tracker_time variable&#xa;              &#xa; Example:&#xa; &#xa; Assuming we have multiple series in the form:&#xa; &#xa;   /trajectory/node.{X}/position/x&#xa;   /trajectory/node.{X}/position/y&#xa;   &#xa; where {N} is the index of the array (integer). We can create a reactive series from the array with:&#xa; &#xa;   new_series = ScatterXY.new(&quot;my_trajectory&quot;) &#xa;   CreateSeriesFromArray( new_series, &quot;/trajectory/node&quot;, &quot;position/x&quot;, &quot;position/y&quot;, tracker_time );&#xa;--]]&#xa;&#xa;function CreateSeriesFromArray( new_series, prefix, suffix_X, suffix_Y, timestamp )&#xa;  &#xa;  --- clear previous values&#xa;  new_series:clear()&#xa;  &#xa;  --- Append points to new_series&#xa;  index = 0&#xa;  while(true) do&#xa;&#xa;    x = index;&#xa;    -- if not nil, get the X coordinate from a series&#xa;    if suffix_X ~= nil then &#xa;      series_x = TimeseriesView.find( string.format( &quot;%s.%d/%s&quot;, prefix, index, suffix_X) )&#xa;      if series_x == nil then break end&#xa;      x = series_x:atTime(timestamp)&#x9; &#xa;    end&#xa;    &#xa;    series_y = TimeseriesView.find( string.format( &quot;%s.%d/%s&quot;, prefix, index, suffix_Y) )&#xa;    if series_y == nil then break end &#xa;    y = series_y:atTime(timestamp)&#xa;    &#xa;    new_series:push_back(x,y)&#xa;    index = index+1&#xa;  end&#xa;end&#xa;&#xa;--[[ Similar to the built-in function GetSeriesNames(), but select only the names with a give prefix. --]]&#xa;&#xa;function GetSeriesNamesByPrefix(prefix)&#xa;  -- GetSeriesNames(9 is a built-in function&#xa;  all_names = GetSeriesNames()&#xa;  filtered_names = {}&#xa;  for i, name in ipairs(all_names)  do&#xa;    -- check the prefix&#xa;    if name:find(prefix, 1, #prefix) then&#xa;      table.insert(filtered_names, name);&#xa;    end&#xa;  end&#xa;  return filtered_names&#xa;end&#xa;&#xa;--[[ Modify an existing series, applying offsets to all their X and Y values&#xa;&#xa; series: an existing timeseries, obtained with TimeseriesView.find(name)&#xa; delta_x: offset to apply to each x value&#xa; delta_y: offset to apply to each y value &#xa;  &#xa;--]]&#xa;&#xa;function ApplyOffsetInPlace(series, delta_x, delta_y)&#xa;  -- use C++ indices, not Lua indices&#xa;  for index=0, series:size()-1 do&#xa;    x,y = series:at(index)&#xa;    series:set(index, x + delta_x, y + delta_y)&#xa;  end&#xa;end&#xa;"/>
+   <scripts/>
+  </plugin>
+  <plugin ID="CSV Exporter"/>
+  <plugin ID="ROS2 Topic Re-Publisher"/>
+ </Plugins>
+ <!-- - - - - - - - - - - - - - - -->
+ <!-- - - - - - - - - - - - - - - -->
+ <customMathEquations>
+  <snippet name="Distance Too big">
+   <global></global>
+   <function>if v2==1 then return 0 end
+return (20 + value) - v1</function>
+   <linked_source>/model/bluerov2/pose/position/z</linked_source>
+   <additional_sources>
+    <v1>/diagnostics/water_visibility_observer: Water visibility measurement/water_visibility</v1>
+    <v2>/pipeline/detected/data</v2>
+   </additional_sources>
+  </snippet>
+  <snippet name="Pipe4_5_x">
+   <global>
+</global>
+   <function>return {{time, value}, {time, v1}}</function>
+   <linked_source>/model/min_pipes_pipeline/pose/poses[4]/position/x</linked_source>
+   <additional_sources>
+    <v1>/model/min_pipes_pipeline/pose/poses[5]/position/x</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="Pipe3_4_y">
+   <global>
+</global>
+   <function>return {{time, value}, {time, v1}}</function>
+   <linked_source>/model/min_pipes_pipeline/pose/poses[3]/position/y</linked_source>
+   <additional_sources>
+    <v1>/model/min_pipes_pipeline/pose/poses[4]/position/y</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="Pipe2_3_x">
+   <global>
+</global>
+   <function>return {{time, value}, {time, v1}}</function>
+   <linked_source>/model/min_pipes_pipeline/pose/poses[2]/position/x</linked_source>
+   <additional_sources>
+    <v1>/model/min_pipes_pipeline/pose/poses[3]/position/x</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="Pipe2_3_y">
+   <global>
+</global>
+   <function>return {{time, value}, {time, v1}}</function>
+   <linked_source>/model/min_pipes_pipeline/pose/poses[2]/position/y</linked_source>
+   <additional_sources>
+    <v1>/model/min_pipes_pipeline/pose/poses[3]/position/y</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="Distance to pipeline">
+   <global></global>
+   <function>return value - v1</function>
+   <linked_source>/model/bluerov2/pose/position/z</linked_source>
+   <additional_sources>
+    <v1>/model/min_pipes_pipeline/pose/poses[0]/position/z</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="Expected altitude">
+   <global></global>
+   <function>if v1 == 1 then
+    return value
+end
+if v2 >= 3.25 then
+    return 3.0 -20
+end
+if v2 >= 2.25 then
+    return 2.0 -20
+end
+if v2 >= 1.25 then
+    return 1.0 -20
+end
+
+return value</function>
+   <linked_source>/model/bluerov2/pose/position/z</linked_source>
+   <additional_sources>
+    <v1>/pipeline/detected/data</v1>
+    <v2>/diagnostics/water_visibility_observer: Water visibility measurement/water_visibility</v2>
+   </additional_sources>
+  </snippet>
+  <snippet name="Pipe3_4_x">
+   <global>
+</global>
+   <function>return {{time, value}, {time, v1}}</function>
+   <linked_source>/model/min_pipes_pipeline/pose/poses[3]/position/x</linked_source>
+   <additional_sources>
+    <v1>/model/min_pipes_pipeline/pose/poses[4]/position/x</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="Absolute water visibility">
+   <global></global>
+   <function>return value</function>
+   <linked_source>/diagnostics/water_visibility_observer: Water visibility measurement/water_visibility</linked_source>
+  </snippet>
+  <snippet name="Water visibility">
+   <global></global>
+   <function>return value -20</function>
+   <linked_source>/diagnostics/water_visibility_observer: Water visibility measurement/water_visibility</linked_source>
+   <additional_sources>
+    <v1>/pipeline/detected/data</v1>
+    <v2>/model/bluerov2/pose/position/z</v2>
+   </additional_sources>
+  </snippet>
+  <snippet name="Pipe4_5_y">
+   <global>
+</global>
+   <function>return {{time, value}, {time, v1}}</function>
+   <linked_source>/model/min_pipes_pipeline/pose/poses[4]/position/y</linked_source>
+   <additional_sources>
+    <v1>/model/min_pipes_pipeline/pose/poses[5]/position/y</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="Pipeline Z position">
+   <global></global>
+   <function>return value</function>
+   <linked_source>/model/min_pipes_pipeline/pose/poses[0]/position/z</linked_source>
+  </snippet>
+  <snippet name="Pipeline Detected">
+   <global>pipeline_detected = 0</global>
+   <function>if v1 == 1 then pipeline_detected = 1 end
+if v1 == 0 then pipeline_detected = 0 end
+return pipeline_detected</function>
+   <linked_source>/model/bluerov2/pose/position/z</linked_source>
+   <additional_sources>
+    <v1>/pipeline/detected/data</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="X FOV">
+   <global>fov = math.pi/3
+</global>
+   <function>altitude = 20 + v1 
+x1 = value + altitude*math.tan(fov/2)
+x2 = value - altitude*math.tan(fov/2)
+return {{time, x1}, {time, x2}, {time, x2}, {time, x1}}</function>
+   <linked_source>/model/bluerov2/pose/position/x</linked_source>
+   <additional_sources>
+    <v1>/model/bluerov2/pose/position/z</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="Y FOV">
+   <global>fov = math.pi/3
+</global>
+   <function>altitude = 20 + v1 
+x1 = value + altitude*math.tan(fov/2)
+x2 = value - altitude*math.tan(fov/2)
+return {{time, x1}, {time, x1}, {time, x2}, {time, x2}}</function>
+   <linked_source>/model/bluerov2/pose/position/y</linked_source>
+   <additional_sources>
+    <v1>/model/bluerov2/pose/position/z</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="Pipe0_1_y">
+   <global>
+</global>
+   <function>return {{time, value}, {time, v1}}</function>
+   <linked_source>/model/min_pipes_pipeline/pose/poses[0]/position/y</linked_source>
+   <additional_sources>
+    <v1>/model/min_pipes_pipeline/pose/poses[1]/position/y</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="Pipe1_2_x">
+   <global>
+</global>
+   <function>return {{time, value}, {time, v1}}</function>
+   <linked_source>/model/min_pipes_pipeline/pose/poses[1]/position/x</linked_source>
+   <additional_sources>
+    <v1>/model/min_pipes_pipeline/pose/poses[2]/position/x</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="BlueROV Z position">
+   <global></global>
+   <function>return value</function>
+   <linked_source>/model/bluerov2/pose/position/z</linked_source>
+  </snippet>
+  <snippet name="Pipe0_1_x">
+   <global>
+</global>
+   <function>return {{time, value}, {time, v1}}</function>
+   <linked_source>/model/min_pipes_pipeline/pose/poses[0]/position/x</linked_source>
+   <additional_sources>
+    <v1>/model/min_pipes_pipeline/pose/poses[1]/position/x</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="Pipe1_2_y">
+   <global>
+</global>
+   <function>return {{time, value}, {time, v1}}</function>
+   <linked_source>/model/min_pipes_pipeline/pose/poses[1]/position/y</linked_source>
+   <additional_sources>
+    <v1>/model/min_pipes_pipeline/pose/poses[2]/position/y</v1>
+   </additional_sources>
+  </snippet>
+ </customMathEquations>
+ <snippets/>
+ <!-- - - - - - - - - - - - - - - -->
+</root>
+
