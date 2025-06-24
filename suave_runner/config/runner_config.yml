@@ -1,8 +1,12 @@
 /suave_runner_node:
   ros__parameters:
-    gui: false #Enable GUI
-    silent: true #Enable silent mode
-    experiments: #List of experiments to run
+    gui: true # Enable GUI
+    experiment_logging: true # Enable silent mode
+    initial_pos_x: -16.0
+    initial_pos_y: 2.0
+    initial_pos_x_random_interval: [-1.0, 1.0]
+    initial_pos_y_random_interval: [-1.0, 1.0]
+    experiments: # List of experiments to run
       - |
         {
           "experiment_launch": "ros2 launch suave_bt suave_bt.launch.py",

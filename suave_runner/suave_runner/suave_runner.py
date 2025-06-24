@@ -1,15 +1,17 @@
 import asyncio
 import multiprocessing
 import threading
-import rclpy
-import rclpy.executors
-from rclpy.node import Node
 import subprocess
 import time
 import os
 import signal
 import json
+import random
 from datetime import datetime
+
+import rclpy
+import rclpy.executors
+from rclpy.node import Node
 
 from launch import LaunchDescription
 from launch import LaunchService
@@ -24,7 +26,17 @@ class ExperimentRunnerNode(Node):
 
         # Declare parameters
         self.declare_parameter('ardupilot_executable', 'sim_vehicle.py -L RATBeach -v ArduSub --model=JSON')
-        self.declare_parameter('suave_simulation', 'ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0')
+        
+        ## Simulation parameters
+        self.declare_parameter('suave_simulation', 'ros2 launch suave simulation.launch.py')
+        self.declare_parameter('initial_pos_x', -17.0)
+        self.declare_parameter('initial_pos_y', 2.0)
+        self.declare_parameter('initial_pos_z', -18.5)
+        self.declare_parameter('initial_pos_x_random_interval', [0.0, 0.0])
+        self.declare_parameter('initial_pos_y_random_interval', [0.0, 0.0])
+        self.declare_parameter('initial_pos_z_random_interval', [0.0, 0.0])
+        
+        
         self.declare_parameter('experiments', rclpy.Parameter.Type.STRING_ARRAY)  # List of JSON-encoded dicts
         self.declare_parameter('run_duration', 600)  # seconds
         self.declare_parameter('gui', False)  # whether to run GUI or not
@@ -32,7 +44,17 @@ class ExperimentRunnerNode(Node):
 
         # Retrieve parameters
         self.ardupilot_executable = self.get_parameter('ardupilot_executable').get_parameter_value().string_value
+        
+        ## Simulation parameters
         self.suave_simulation_cmd = self.get_parameter('suave_simulation').get_parameter_value().string_value
+        self.initial_pos_x = self.get_parameter('initial_pos_x').get_parameter_value().double_value
+        self.initial_pos_y = self.get_parameter('initial_pos_y').get_parameter_value().double_value
+        self.initial_pos_z = self.get_parameter('initial_pos_z').get_parameter_value().double_value
+        self.initial_pos_x_random_interval = self.get_parameter('initial_pos_x_random_interval').get_parameter_value().double_array_value
+        self.initial_pos_y_random_interval = self.get_parameter('initial_pos_y_random_interval').get_parameter_value().double_array_value
+        self.initial_pos_z_random_interval = self.get_parameter('initial_pos_z_random_interval').get_parameter_value().double_array_value
+        
+
         self.run_duration = self.get_parameter('run_duration').get_parameter_value().integer_value
         self.gui = self.get_parameter('gui').get_parameter_value().bool_value
         self.experiment_logging = self.get_parameter('experiment_logging').get_parameter_value().bool_value
@@ -172,6 +194,10 @@ class ExperimentRunnerNode(Node):
         sim_args['gui'] = 'true' if self.gui else 'false'
         if not self.experiment_logging:
             sim_args['silent'] = 'true'
+
+        sim_args['x'] = str(self.initial_pos_x + random.uniform(self.initial_pos_x_random_interval[0], self.initial_pos_x_random_interval[1]))
+        sim_args['y'] = str(self.initial_pos_y + random.uniform(self.initial_pos_y_random_interval[0], self.initial_pos_y_random_interval[1]))
+        sim_args['z'] = str(self.initial_pos_z + random.uniform(self.initial_pos_z_random_interval[0], self.initial_pos_z_random_interval[1]))
 
         self.get_logger().info(f"    Launching SUAVE simulation from {sim_path} with args: {sim_args}")
         sim_launch = IncludeLaunchDescription(
