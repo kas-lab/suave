@@ -18,7 +18,6 @@
       <plot mode="XYPlot" flip_x="false" flip_y="false" style="Lines">
        <range bottom="-15.699101" top="7.783129" left="-88.903730" right="24.951748"/>
        <limitY/>
-       <curve curve_x="/model/bluerov2/pose/position/x" name="BlueRov pose" color="#1f77b4" curve_y="/model/bluerov2/pose/position/y"/>
        <curve curve_x="Pipe0_1_x" name="Pipe0_1_[x;y]" color="#bdae22" curve_y="Pipe0_1_y"/>
        <curve curve_x="Pipe1_2_x" name="Pipe1_2_[x;y]" color="#bdae22" curve_y="Pipe1_2_y"/>
        <curve curve_x="Pipe2_3_x" name="Pipe2_3_[x;y]" color="#bdae22" curve_y="Pipe2_3_y"/>

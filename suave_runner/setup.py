@@ -14,14 +14,19 @@ setup(
                 (os.path.join('share', package_name,
                               'launch'), glob('launch/*launch.[pxy][yma]*')),
                 (os.path.join('share', package_name,
-                              'config'), glob('config/*'))],
+                              'config'), glob('config/*')),
+                (os.path.join('share', package_name, 'test'), glob('test/*.py')),],
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='Gustavo Rezende',
     maintainer_email='g.rezendesilva@tudelft.nl',
     description='TODO: Package description',
     license='Apache-2.0',
-    tests_require=['pytest'],
+    extras_require = {
+        'test': [
+            'pytest',
+        ],
+    },
     entry_points={
         'console_scripts':
         ['suave_runner = suave_runner.suave_runner:main'],
