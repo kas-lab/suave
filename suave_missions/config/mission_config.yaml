@@ -1,23 +1,23 @@
 /mission_metrics:
   ros__parameters:
-    result_path: "~/suave/results" #Path to save results
+    result_path: "~/suave/results" # Path to save results
     water_visibiity_threshold: [3.25, 2.25, 1.25]
     expected_altitude: [3.0, 2.0, 1.0]
     battery_limit: 0.25
 
 /mission_node:
   ros__parameters:
-    time_limit: 300 #Time limit for a time_constrained mission
-    f_generate_search_path_mode: "fd_spiral_low" #Default mode for f_generate_search_path when no manager is used
-    f_follow_pipeline_mode: "fd_follow_pipeline" #Default mode for f_follow_pipeline when no manager is used
+    time_limit: 300 # Time limit for a time_constrained mission
+    f_generate_search_path_mode: "fd_spiral_low" # Default mode for f_generate_search_path when no manager is used
+    f_follow_pipeline_mode: "fd_follow_pipeline" # Default mode for f_follow_pipeline when no manager is used
 
 /water_visibility_observer_node:
   ros__parameters:
     qa_publishing_period: 1.0
-    water_visibility_period: 80 #Water visibility period in seconds
-    water_visibility_min: 1.25 #Minimum value for water visibility
-    water_visibility_max: 3.75 #Maximum value for water visibility
-    water_visibility_sec_shift: 0.0 #Water visibility seconds shift to left
+    water_visibility_period: 80 # Water visibility period in seconds
+    water_visibility_min: 1.25 # Minimum value for water visibility
+    water_visibility_max: 3.75 # Maximum value for water visibility
+    water_visibility_sec_shift: 0.0 # Water visibility seconds shift to left
 
 /thruster_monitor:
   ros__parameters:
@@ -26,4 +26,5 @@
 
 /task_bridge:
   ros__parameters:
-    adapt_period: 30 #Period to perform random adaptation in seconds
+    adapt_period: 30 # Period to perform random adaptation in seconds
+

@@ -1,7 +1,10 @@
 /suave_runner_node:
   ros__parameters:
-    gui: true # Enable GUI
-    experiment_logging: true # Enable silent mode
+    gui: false # Enable GUI
+    experiment_logging: false # Enable silent mode
+    mission_config_pkg: 'suave_missions'
+    mission_config_file: 'config/mission_config.yaml'
+    random_interval: 5 # how many experiment runs in each "random" interval
     initial_pos_x: -16.0
     initial_pos_y: 2.0
     initial_pos_x_random_interval: [-1.0, 1.0]
