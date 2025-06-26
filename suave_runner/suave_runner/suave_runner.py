@@ -1,3 +1,17 @@
+# Copyright 2025 KAS-lab
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import asyncio
 import multiprocessing
 import threading
@@ -7,7 +21,9 @@ import os
 import signal
 import json
 import random
+import yaml
 from datetime import datetime
+from pathlib import Path
 
 import rclpy
 import rclpy.executors
@@ -25,9 +41,17 @@ class ExperimentRunnerNode(Node):
         super().__init__('suave_runner_node', **kwargs)
         random.seed(100) # set random seed
 
-        self.declare_parameter('random_interval', 5)
-
         # Declare parameters
+
+        ## Runner parameters
+        self.declare_parameter('result_path', '~/suave/results')
+        self.declare_parameter('random_interval', 5)
+        self.declare_parameter('experiments', [''])  # List of JSON-encoded dicts
+        self.declare_parameter('run_duration', 600)  # seconds
+        self.declare_parameter('gui', False)  # whether to run GUI or not
+        self.declare_parameter('experiment_logging', False)  # whether to log experiment results or not
+        
+        ## Ardupilot parameters
         self.declare_parameter('ardupilot_executable', 'sim_vehicle.py -L RATBeach -v ArduSub --model=JSON')
         
         ## Simulation parameters
@@ -39,13 +63,12 @@ class ExperimentRunnerNode(Node):
         self.declare_parameter('initial_pos_y_random_interval', [0.0, 0.0])
         self.declare_parameter('initial_pos_z_random_interval', [0.0, 0.0])
         
-        
-        self.declare_parameter('experiments', [''])  # List of JSON-encoded dicts
-        self.declare_parameter('run_duration', 600)  # seconds
-        self.declare_parameter('gui', False)  # whether to run GUI or not
-        self.declare_parameter('experiment_logging', False)  # whether to log experiment results or not
+        ## Mission parameters
         self.declare_parameter('mission_config_pkg', 'suave_missions')  # whether to log experiment results or not
         self.declare_parameter('mission_config_file', 'config/mission_config.yaml')  # whether to log experiment results or not
+
+        self.declare_parameter('water_visibility_sec_shift', 0.0)
+        self.declare_parameter('water_visibility_sec_shift_random_interval', [0.0, 0.0])
 
         # Retrieve parameters
         self.ardupilot_executable = self.get_parameter('ardupilot_executable').get_parameter_value().string_value
@@ -62,8 +85,8 @@ class ExperimentRunnerNode(Node):
         self.initial_pos_x_array = []
         self.initial_pos_y_array = []
         self.initial_pos_z_array = []
-        
 
+        ## Runner parameters
         self.run_duration = self.get_parameter('run_duration').get_parameter_value().integer_value
         self.gui = self.get_parameter('gui').get_parameter_value().bool_value
         self.experiment_logging = self.get_parameter('experiment_logging').get_parameter_value().bool_value
@@ -78,12 +101,11 @@ class ExperimentRunnerNode(Node):
             self.get_logger().error("Parameter 'experiments' must be a non-empty list of JSON objects.")
             return
 
-        mission_config_pkg = self.get_parameter('mission_config_pkg').get_parameter_value().string_value
-        mission_config_file = self.get_parameter('mission_config_file').get_parameter_value().string_value
-        self.mission_config_file = os.path.join(
-            get_package_share_directory(mission_config_pkg),
-            mission_config_file
-        )
+        self.wv_sec_shift = self.get_parameter(
+            'water_visibility_sec_shift').get_parameter_value().double_value
+        self.wv_sec_shift_interval =  self.get_parameter(
+            'water_visibility_sec_shift_random_interval').get_parameter_value().double_array_value
+        self.wv_sec_shift_array = []
 
         self.terminate_flag = False
         self.processes_stop_events = []
@@ -138,7 +160,6 @@ class ExperimentRunnerNode(Node):
         finally:
             loop.close()
 
-
     def shutdown_all_launch_processes(self):
         for process, stop_event in self.processes_stop_events:
             if process.is_alive():
@@ -173,14 +194,21 @@ class ExperimentRunnerNode(Node):
         except Exception as e:
             self.get_logger().warn(f"    Could not remove /tmp/mission.done: {e}")
 
+    def create_experiment_folder(self):
+        result_path_ = self.get_parameter('result_path').get_parameter_value().string_value
+        result_path = Path(result_path_).expanduser() / datetime.now().strftime("%Y_%m_%d_%H-%M-%S")
+
+        if result_path.is_dir() is False:
+            result_path.mkdir(parents=True)
+        return result_path
+
     def initialize_experiment(self, experiment, exp_idx):
         exp_launch = experiment.get("experiment_launch")
         num_runs = experiment.get("num_runs", 1)
         adaptation_manager = experiment.get("adaptation_manager", "")
         mission_type = experiment.get("mission_name", f"mission_{exp_idx}")
 
-        date_str = datetime.now().strftime("%Y_%m_%d_%H-%M-%S")
-        result_filename = f"{date_str}_{adaptation_manager}_{mission_type}"
+        result_filename = f"{adaptation_manager}_{mission_type}"
 
         return exp_launch, num_runs, result_filename, adaptation_manager
 
@@ -227,7 +255,7 @@ class ExperimentRunnerNode(Node):
         self.get_logger().info("    Sleeping 10 seconds before launching next nodes...")
         time.sleep(10)
 
-    def launch_experiment(self, exp_launch, result_filename):
+    def launch_experiment(self, exp_launch, result_path, result_filename):
         exp_launch_cmd_split = exp_launch.split()
         exp_pkg, exp_file = exp_launch_cmd_split[2], exp_launch_cmd_split[3]
         exp_path = os.path.join(get_package_share_directory(exp_pkg), 'launch', exp_file)
@@ -235,6 +263,7 @@ class ExperimentRunnerNode(Node):
         exp_args = {}
         if len(exp_launch_cmd_split) > 4:
             exp_args = {arg.split(':=')[0]: arg.split(':=')[1] for arg in exp_launch_cmd_split[4:]}
+        exp_args['result_path'] = str(result_path)
         exp_args['result_filename'] = result_filename
         exp_args['gui'] = 'true' if self.gui else 'false'
         if not self.experiment_logging:
@@ -254,7 +283,10 @@ class ExperimentRunnerNode(Node):
         self.processes_stop_events.append((experiment_process, experiment_stop_event))
 
     def run_experiments(self):
-        #TODO: get datetime here, instead of in initialize_experiment
+        result_path = self.create_experiment_folder()
+        mission_config_file_array = self.generate_mission_config_files(
+            result_path,
+            self.wv_sec_shift_array)
         for exp_idx, experiment in enumerate(self.experiments):
             if self.terminate_flag:
                 break
@@ -278,7 +310,7 @@ class ExperimentRunnerNode(Node):
                 try:
                     self.launch_ardupilot()
                     self.launch_suave_simulation(run_idx)
-                    self.launch_experiment(exp_launch, result_filename)
+                    self.launch_experiment(exp_launch, result_path, result_filename)
                 except Exception as e:
                     self.get_logger().error(f"Failed to launch processes: {e}")
                     break
@@ -321,7 +353,32 @@ class ExperimentRunnerNode(Node):
             )
         array.append(value + delta)
         return delta
+    
+    def generate_mission_config_files(self, result_path, wv_sec_shift_array):
+        ## Mission parameters
+        mission_config_pkg = self.get_parameter('mission_config_pkg').get_parameter_value().string_value
+        mission_config_file = self.get_parameter('mission_config_file').get_parameter_value().string_value
+        mission_config_file = os.path.join(
+            get_package_share_directory(mission_config_pkg),
+            mission_config_file
+        )
+        mission_config_file_array = []
+        for idx, wv_shift in enumerate(wv_sec_shift_array):
+            # Load the original YAML
+            with open(mission_config_file, 'r') as f:
+                config = yaml.safe_load(f)
 
+            # Replace the value
+            config['water_visibility_sec_shift'] = float(wv_shift)
+
+            # Create a new filename
+            new_file = result_path / f'mission_config_run{idx}.yaml'
+            with open(new_file, 'w') as f:
+                yaml.safe_dump(config, f)
+
+            mission_config_file_array.append(new_file)
+        return mission_config_file_array
+                                      
     def randomize_experiments_configuration(self):
         random_interval = self.get_parameter('random_interval').get_parameter_value().integer_value
         for exp_idx, experiment in enumerate(self.experiments):
@@ -329,6 +386,7 @@ class ExperimentRunnerNode(Node):
             delta_x = 0.0
             delta_y = 0.0
             delta_z = 0.0
+            delta_wv_sec_shift = 0.0
             for i in range(num_runs):
                 delta_x = self.append_array_random_interval(
                     self.initial_pos_x_array, 
@@ -353,6 +411,14 @@ class ExperimentRunnerNode(Node):
                     delta_z,
                     self.initial_pos_z_random_interval[0],
                     self.initial_pos_z_random_interval[1],
+                    i)
+                delta_wv_sec_shift = self.append_array_random_interval(
+                    self.wv_sec_shift_array, 
+                    self.wv_sec_shift, 
+                    random_interval, 
+                    delta_wv_sec_shift,
+                    self.wv_sec_shift_interval[0],
+                    self.wv_sec_shift_interval[1],
                     i)
 
 def main(args=None):
