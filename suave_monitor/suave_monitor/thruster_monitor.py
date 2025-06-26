@@ -24,6 +24,14 @@ from rcl_interfaces.msg import Parameter
 from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.srv import SetParameters
 
+def read_thruster_events(events):
+    thruster_events = []
+    if events != '':
+        for event in events:
+            if event != '':
+                thruster_events.append(
+                    [e.strip() for e in event.strip('()').split(',')])
+    return thruster_events
 
 class ThrusterMonitor(Node):
     def __init__(self):
@@ -32,7 +40,7 @@ class ThrusterMonitor(Node):
         # '(thrusterN, failure/recovery, delta time in seconds )'
         # e.g. '(1, failure, 50)'
         self.declare_parameter('thruster_events', [''])
-        self.thruster_events = self.read_thruster_events(
+        self.thruster_events = read_thruster_events(
             self.get_parameter('thruster_events').value)
 
         self.diagnostics_publisher = self.create_publisher(
@@ -49,15 +57,6 @@ class ThrusterMonitor(Node):
             self.thruster_event_timer = self.create_timer(
                 1, self.thruster_event_cb)
             self.destroy_subscription(self.mavros_state_sub)
-
-    def read_thruster_events(self, events):
-        thruster_events = []
-        if events != '':
-            for event in events:
-                if event != '':
-                    thruster_events.append(
-                        [e.strip() for e in event.strip('()').split(',')])
-        return thruster_events
 
     def thruster_event_cb(self):
         current_time = self.get_clock().now().to_msg().sec
