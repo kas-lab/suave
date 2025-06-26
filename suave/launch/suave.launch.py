@@ -52,10 +52,18 @@ def generate_launch_description():
         description='Indicates whether system_modes should be launched [True/False]'
     )
 
-    mission_config = os.path.join(
+    mission_config_default = os.path.join(
         get_package_share_directory('suave_missions'),
         'config',
-        'mission_config.yaml')
+        'mission_config.yaml'
+    )
+
+    mission_config = LaunchConfiguration('mission_config')
+    mission_config_arg = DeclareLaunchArgument(
+        'mission_config',
+        default_value=mission_config_default,
+        description='Mission config full path'
+    )
 
     water_visibility_node = Node(
         package='suave_monitor',
@@ -136,6 +144,7 @@ def generate_launch_description():
         silent_arg,
         OpaqueFunction(function=configure_logging),
         print_output_arg,
+        mission_config_arg,
         water_visibility_node,
         battery_monitor_node,
         pipeline_detection_wv_node,
