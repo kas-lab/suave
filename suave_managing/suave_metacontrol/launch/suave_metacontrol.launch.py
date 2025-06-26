@@ -75,6 +75,13 @@ def generate_launch_description():
         description='battery constraint value'
     )
 
+    result_path = LaunchConfiguration('result_path')
+    result_path_arg = DeclareLaunchArgument(
+        'result_path',
+        default_value='~/suave/results',
+        description='Path where to save the results'
+    )
+
     result_filename_arg = DeclareLaunchArgument(
         'result_filename',
         default_value='metacontrol_results',
@@ -95,6 +102,7 @@ def generate_launch_description():
             'tomasys_file': tomasys_file,
             'model_file': model_file,
             'reasoning_time_filename': reasoning_time_filename,
+            'reasoning_time_file_path': result_path
         }],
     )
 
@@ -147,10 +155,12 @@ def generate_launch_description():
             'adaptation_manager': 'metacontrol',
             'mission_name': 'suave',
             'result_filename': result_filename,
+            'result_path': result_path,
         }],
     )
 
     return LaunchDescription([
+        result_path_arg,
         tomasys_file_arg,
         model_file_arg,
         reasoning_time_filename_arg,

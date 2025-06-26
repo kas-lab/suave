@@ -86,6 +86,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         result_path_arg,
+        result_path_arg,
         result_filename_arg,
         silent_arg,
         mission_config_arg,

@@ -36,6 +36,13 @@ def generate_launch_description():
         description='Mission name for logging'
     )
 
+    result_path = LaunchConfiguration('result_path')
+    result_path_arg = DeclareLaunchArgument(
+        'result_path',
+        default_value='~/suave/results',
+        description='Path where to save the results'
+    )
+
     result_filename_arg = DeclareLaunchArgument(
         'result_filename',
         default_value='',
@@ -74,6 +81,7 @@ def generate_launch_description():
         parameters=[mission_config, {
             'adaptation_manager': 'bt',
             'mission_name': mission_type,
+            'result_path': result_path,
         }],
         condition=LaunchConfigurationEquals('result_filename', '')
     )
@@ -86,6 +94,7 @@ def generate_launch_description():
             'adaptation_manager': 'bt',
             'mission_name': mission_type,
             'result_filename': result_filename,
+            'result_path': result_path,
         }],
         condition=LaunchConfigurationNotEquals('result_filename', '')
     )
@@ -97,6 +106,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        result_path_arg,
         mission_type_arg,
         result_filename_arg,
         mission_config_arg,
