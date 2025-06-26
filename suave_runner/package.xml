@@ -13,6 +13,7 @@
 
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
+  <depend>suave_monitor</depend>
 
   <test_depend>pytest</test_depend>
   <test_depend>python3-pytest</test_depend>

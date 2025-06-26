@@ -21,6 +21,7 @@ import rclpy
 from rclpy.parameter import Parameter
 
 from suave_runner.suave_runner import ExperimentRunnerNode
+from suave_monitor.thruster_monitor import read_thruster_events
 
 def test_create_experiment_folder():
     rclpy.init()
@@ -120,6 +121,8 @@ def test_generate_mission_config_files():
             Parameter("mission_config_file", Parameter.Type.STRING, "config/mission_config.yaml"),
             Parameter("water_visibility_sec_shift", Parameter.Type.DOUBLE, 0.0),
             Parameter("water_visibility_sec_shift_random_interval", Parameter.Type.DOUBLE_ARRAY, [-10.0, 10.0]),
+            Parameter("thruster_events", Parameter.Type.STRING_ARRAY, ["(1,failure,35)", "(3,failure,35)"]),
+            Parameter("thruster_events_random_interval", Parameter.Type.DOUBLE_ARRAY, [-10.0, 10.0]),
             Parameter("random_interval", Parameter.Type.INTEGER, 5),
             Parameter("experiments", Parameter.Type.STRING_ARRAY, [
                 '''{
@@ -154,17 +157,29 @@ def test_generate_mission_config_files():
         if result_path.is_dir() is False:
             result_path.mkdir(parents=True)
         config_files = runner.generate_mission_config_files(
-            result_path, 
-            runner.wv_sec_shift_array)
+            result_path)
         
         assert len(config_files) == 10
 
         wv_shift_array = []
+        thruster_events_array = []
         for file in config_files:
             with open(file, 'r') as f:
                 config = yaml.safe_load(f)
-            wv_shift_array.append(float(config['water_visibility_sec_shift']))
+            wv_shift_array.append(
+                float(config['/water_visibility_observer_node']['ros__parameters']['water_visibility_sec_shift'])
+            )
+            thruster_events_array.append(config['/thruster_monitor']['ros__parameters']['thruster_events'])
+        
         assert all(wv_shift_array[i] == wv_shift_array[0] for i in range(5))
         assert all(wv_shift_array[i] == wv_shift_array[5] for i in range(5,10))
+        
+        assert all(thruster_events_array[i][0][2] == thruster_events_array[0][0][2] for i in range(5))
+        assert all(thruster_events_array[i][1][2] == thruster_events_array[0][1][2] for i in range(5))
+        assert all(thruster_events_array[i][0][2] == thruster_events_array[5][0][2] for i in range(5,10))
+        assert all(thruster_events_array[i][1][2] == thruster_events_array[5][1][2] for i in range(5,10))
+
     finally:
+        path = Path("/tmp/suave")
+        shutil.rmtree(path)
         rclpy.shutdown()

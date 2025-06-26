@@ -35,6 +35,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.actions import IncludeLaunchDescription
 from ament_index_python.packages import get_package_share_directory
 
+from suave_monitor.thruster_monitor import read_thruster_events
 
 class ExperimentRunnerNode(Node):
     def __init__(self, **kwargs):
@@ -69,6 +70,9 @@ class ExperimentRunnerNode(Node):
 
         self.declare_parameter('water_visibility_sec_shift', 0.0)
         self.declare_parameter('water_visibility_sec_shift_random_interval', [0.0, 0.0])
+
+        self.declare_parameter('thruster_events', [''])
+        self.declare_parameter('thruster_events_random_interval', [0.0, 0.0])
 
         # Retrieve parameters
         self.ardupilot_executable = self.get_parameter('ardupilot_executable').get_parameter_value().string_value
@@ -105,7 +109,13 @@ class ExperimentRunnerNode(Node):
             'water_visibility_sec_shift').get_parameter_value().double_value
         self.wv_sec_shift_interval =  self.get_parameter(
             'water_visibility_sec_shift_random_interval').get_parameter_value().double_array_value
-        self.wv_sec_shift_array = []
+        self.wv_sec_shift_array =[]
+        
+        self.thruster_events = read_thruster_events(self.get_parameter(
+            'thruster_events').get_parameter_value().string_array_value)
+        self.thruster_events_interval =  self.get_parameter(
+            'thruster_events_random_interval').get_parameter_value().double_array_value
+        self.thruster_events_array = []
 
         self.terminate_flag = False
         self.processes_stop_events = []
@@ -255,7 +265,7 @@ class ExperimentRunnerNode(Node):
         self.get_logger().info("    Sleeping 10 seconds before launching next nodes...")
         time.sleep(10)
 
-    def launch_experiment(self, exp_launch, result_path, result_filename):
+    def launch_experiment(self, exp_launch: str, result_path: str, result_filename: str, mission_config_file: str):
         exp_launch_cmd_split = exp_launch.split()
         exp_pkg, exp_file = exp_launch_cmd_split[2], exp_launch_cmd_split[3]
         exp_path = os.path.join(get_package_share_directory(exp_pkg), 'launch', exp_file)
@@ -263,13 +273,13 @@ class ExperimentRunnerNode(Node):
         exp_args = {}
         if len(exp_launch_cmd_split) > 4:
             exp_args = {arg.split(':=')[0]: arg.split(':=')[1] for arg in exp_launch_cmd_split[4:]}
-        exp_args['result_path'] = str(result_path)
+        exp_args['result_path'] = result_path
         exp_args['result_filename'] = result_filename
         exp_args['gui'] = 'true' if self.gui else 'false'
         if not self.experiment_logging:
             exp_args['silent'] = 'true'
     
-        # exp_args['mission_config'] = self.mission_config_file
+        exp_args['mission_config'] = mission_config_file
 
         self.get_logger().info(f"    Launching Experiment from {exp_path} with args: {exp_args}")
         exp_launch_desc = IncludeLaunchDescription(
@@ -285,8 +295,7 @@ class ExperimentRunnerNode(Node):
     def run_experiments(self):
         result_path = self.create_experiment_folder()
         mission_config_file_array = self.generate_mission_config_files(
-            result_path,
-            self.wv_sec_shift_array)
+            result_path)
         for exp_idx, experiment in enumerate(self.experiments):
             if self.terminate_flag:
                 break
@@ -310,7 +319,11 @@ class ExperimentRunnerNode(Node):
                 try:
                     self.launch_ardupilot()
                     self.launch_suave_simulation(run_idx)
-                    self.launch_experiment(exp_launch, result_path, result_filename)
+                    self.launch_experiment(
+                        exp_launch, 
+                        str(result_path), 
+                        result_filename,
+                        str(mission_config_file_array[run_idx]))
                 except Exception as e:
                     self.get_logger().error(f"Failed to launch processes: {e}")
                     break
@@ -342,6 +355,34 @@ class ExperimentRunnerNode(Node):
         
         self.get_logger().info("All experiment runs completed or aborted.")
 
+    def generate_mission_config_files(self, result_path):
+        ## Mission parameters
+        mission_config_pkg = self.get_parameter('mission_config_pkg').get_parameter_value().string_value
+        mission_config_file = self.get_parameter('mission_config_file').get_parameter_value().string_value
+        mission_config_file = Path(get_package_share_directory(mission_config_pkg)) / mission_config_file
+
+        mission_config_file_array = []
+        for idx, wv_shift in enumerate(self.wv_sec_shift_array):
+            # Load the original YAML
+            with open(mission_config_file, 'r') as f:
+                config = yaml.safe_load(f)
+
+            # Replace the value of watervi sibility sec shift
+            config['/water_visibility_observer_node']['ros__parameters']['water_visibility_sec_shift'] = float(wv_shift)
+            
+            config['/thruster_monitor']['ros__parameters']['thruster_events'] = [
+                f"({event[0]},{event[1]},{float(event[2]) + float(self.thruster_events_array[idx])})"
+                for event in self.thruster_events
+            ]
+
+            # Create a new filename
+            new_file = result_path / f'mission_config_run{idx}.yaml'
+            with open(new_file, 'w') as f:
+                yaml.safe_dump(config, f, default_flow_style=False, indent=2, sort_keys=False)
+
+            mission_config_file_array.append(new_file)
+        return mission_config_file_array
+    
     def append_array_random_interval(self, array, value, random_interval, current_delta, min_delta, max_delta, i):
         if i < len(array):
             return current_delta
@@ -352,74 +393,33 @@ class ExperimentRunnerNode(Node):
                 max_delta
             )
         array.append(value + delta)
-        return delta
+        return delta                                      
     
-    def generate_mission_config_files(self, result_path, wv_sec_shift_array):
-        ## Mission parameters
-        mission_config_pkg = self.get_parameter('mission_config_pkg').get_parameter_value().string_value
-        mission_config_file = self.get_parameter('mission_config_file').get_parameter_value().string_value
-        mission_config_file = os.path.join(
-            get_package_share_directory(mission_config_pkg),
-            mission_config_file
-        )
-        mission_config_file_array = []
-        for idx, wv_shift in enumerate(wv_sec_shift_array):
-            # Load the original YAML
-            with open(mission_config_file, 'r') as f:
-                config = yaml.safe_load(f)
-
-            # Replace the value
-            config['water_visibility_sec_shift'] = float(wv_shift)
-
-            # Create a new filename
-            new_file = result_path / f'mission_config_run{idx}.yaml'
-            with open(new_file, 'w') as f:
-                yaml.safe_dump(config, f)
-
-            mission_config_file_array.append(new_file)
-        return mission_config_file_array
-                                      
     def randomize_experiments_configuration(self):
         random_interval = self.get_parameter('random_interval').get_parameter_value().integer_value
+        
+        # List of variables to randomize
+        # Each tuple: (array, value, interval, current_delta)
+        arrays = [
+            (self.initial_pos_x_array, self.initial_pos_x, self.initial_pos_x_random_interval, 0.0),
+            (self.initial_pos_y_array, self.initial_pos_y, self.initial_pos_y_random_interval, 0.0),
+            (self.initial_pos_z_array, self.initial_pos_z, self.initial_pos_z_random_interval, 0.0),
+            (self.wv_sec_shift_array, self.wv_sec_shift, self.wv_sec_shift_interval, 0.0),
+            (self.thruster_events_array, 0, self.thruster_events_interval, 0.0),
+        ]
+        
         for exp_idx, experiment in enumerate(self.experiments):
             _, num_runs, _, _ = self.initialize_experiment(experiment, exp_idx)
-            delta_x = 0.0
-            delta_y = 0.0
-            delta_z = 0.0
-            delta_wv_sec_shift = 0.0
+            
+            # Use a list for current_delta per variable
+            current_deltas = [item[3] for item in arrays]
+            
             for i in range(num_runs):
-                delta_x = self.append_array_random_interval(
-                    self.initial_pos_x_array, 
-                    self.initial_pos_x, 
-                    random_interval, 
-                    delta_x,
-                    self.initial_pos_x_random_interval[0],
-                    self.initial_pos_x_random_interval[1],
-                    i)
-                delta_y = self.append_array_random_interval(
-                    self.initial_pos_y_array, 
-                    self.initial_pos_y, 
-                    random_interval, 
-                    delta_y,
-                    self.initial_pos_y_random_interval[0],
-                    self.initial_pos_y_random_interval[1],
-                    i)
-                delta_z = self.append_array_random_interval(
-                    self.initial_pos_z_array, 
-                    self.initial_pos_z, 
-                    random_interval, 
-                    delta_z,
-                    self.initial_pos_z_random_interval[0],
-                    self.initial_pos_z_random_interval[1],
-                    i)
-                delta_wv_sec_shift = self.append_array_random_interval(
-                    self.wv_sec_shift_array, 
-                    self.wv_sec_shift, 
-                    random_interval, 
-                    delta_wv_sec_shift,
-                    self.wv_sec_shift_interval[0],
-                    self.wv_sec_shift_interval[1],
-                    i)
+                for idx, (array, value, interval, _) in enumerate(arrays):
+                    min_delta, max_delta = interval
+                    current_deltas[idx] = self.append_array_random_interval(
+                        array, value, random_interval, current_deltas[idx], min_delta, max_delta, i
+                    )
 
 def main(args=None):
     rclpy.init(args=args)

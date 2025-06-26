@@ -7,6 +7,10 @@
     mission_config_file: 'config/runner_mission_config.yaml'
     water_visibility_sec_shift: 0.0
     water_visibility_sec_shift_random_interval: [-10.0, 10.0]
+    thruster_events: 
+      - (1,failure,35)
+      - (3,failure,35)
+    thruster_events_random_interval: [-10.0, 10.0]
     random_interval: 5 # how many experiment runs in each "random" interval
     initial_pos_x: -16.0
     initial_pos_y: 2.0
