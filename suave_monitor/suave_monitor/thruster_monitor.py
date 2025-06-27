@@ -50,7 +50,7 @@ class ThrusterMonitor(Node):
             State, 'mavros/state', self.status_cb, 10)
 
         self.last_event_time = self.get_clock().now().to_msg().sec
-
+    
     def status_cb(self, msg):
         if msg.mode == 'GUIDED':
             self.last_event_time = self.get_clock().now().to_msg().sec
@@ -62,11 +62,10 @@ class ThrusterMonitor(Node):
         current_time = self.get_clock().now().to_msg().sec
         delta_time = current_time - self.last_event_time
         if len(self.thruster_events) > 0 and \
-           delta_time >= int(self.thruster_events[0][2]):
+           delta_time >= float(self.thruster_events[0][2]):
 
             self.change_thruster_status(
                 self.thruster_events[0][0], self.thruster_events[0][1])
-            self.last_event_time = self.get_clock().now().to_msg().sec
             self.thruster_events.pop(0)
 
     def change_thruster_status(self, thruster, value):
