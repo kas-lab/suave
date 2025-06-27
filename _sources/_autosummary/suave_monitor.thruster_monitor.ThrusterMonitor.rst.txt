@@ -1,0 +1,37 @@
+ThrusterMonitor
+===============
+
+.. currentmodule:: suave_monitor.thruster_monitor
+
+.. autoclass:: ThrusterMonitor
+
+   
+
+   
+    .. automethod:: __init__
+    .. automethod:: call_service
+    .. automethod:: change_thruster_status
+    .. automethod:: status_cb
+    .. automethod:: thruster_event_cb
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ThrusterMonitor.__init__
+      ~ThrusterMonitor.call_service
+      ~ThrusterMonitor.change_thruster_status
+      ~ThrusterMonitor.status_cb
+      ~ThrusterMonitor.thruster_event_cb
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+   
+   

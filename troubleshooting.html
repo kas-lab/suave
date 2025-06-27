@@ -1,0 +1,151 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Troubleshooting &mdash; SUAVE v1.2.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=3130c8bc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Related works" href="related.html" />
+    <link rel="prev" title="Extending SUAVE and connecting managing subsystems" href="extend.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SUAVE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Install SUAVE locally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker.html">Use SUAVE with Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run.html">Run SUAVE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extend.html">Extending SUAVE and connecting managing subsystems</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Troubleshooting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#mavros-and-ardusub-integration-problems">MAVROS and ArduSub integration problems:</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="related.html">Related works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citing.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SUAVE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Troubleshooting</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/troubleshooting.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="troubleshooting">
+<h1>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h1>
+<p>List of known problems and their solutions. If you find new problems and find a solution for it, please consider contributing to this section.</p>
+<section id="mavros-and-ardusub-integration-problems">
+<h2>MAVROS and ArduSub integration problems:<a class="headerlink" href="#mavros-and-ardusub-integration-problems" title="Link to this heading"></a></h2>
+<p>A common problem that occurs over time is that some packages are upgraded in Ubuntu 22.04 and the connection between MAVROS and ArduSub stops working. I don’t know how to fix this issue long term, but a workaround is to update MAVROS and/or ArduSub and check if it works again.</p>
+<p>Before updating MAVROS and ArduSub upgrade your Ubuntu:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sudo<span class="w"> </span>apt<span class="w"> </span>upgrade
+</pre></div>
+</div>
+<p><strong>Update ArduSub:</strong></p>
+<p>Due to ArduSub usage of submodules, it is simpler to just remove the whole ardupilo repo and build it from scratch again.</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>rm<span class="w"> </span>-rf<span class="w"> </span>~/ardupilot
+</pre></div>
+</div>
+<p>To find the latest version of ArduSub go to the <a class="reference external" href="https://github.com/ArduPilot/ardupilot">ardupilot repo</a> and look for the newest branch of ArduSub. At the time of this writing, the latest branch is <a class="reference external" href="https://github.com/ArduPilot/ardupilot/commits/Sub-4.1">Sub-4.1</a> at commit <a class="reference external" href="https://github.com/ArduPilot/ardupilot/tree/e9f46b91cda16cf7a48eb9861fea13e452c5c08c">e9f46b9</a>. After you know the latest branch or commit you want to get, follow the <a class="reference external" href="https://github.com/kas-lab/suave#install-ardusub">install ardusub</a> instructions replacing the commit in <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">checkout</span> <span class="pre">e9f46b9</span></code> with the commit/branch you selected.</p>
+<p><strong>Update MAVROS:</strong>
+To update MAVROS, you can either change its version in the <a class="reference external" href="https://github.com/kas-lab/suave/blob/8f0e47571fc6c7524139fcb7ef20d9157d73a3e6/suave.rosinstall#L9">suave.rosinstall</a> file with the newest version of <a class="reference external" href="https://github.com/mavlink/mavros">mavros</a>, or simply change the version to ros2. Then you need to pull the repo:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/suave_ws/
+vcs<span class="w"> </span>pull<span class="w"> </span>src
+</pre></div>
+</div>
+<p>Alternatively, instead of updating the suave.rosinstall file, you can just update mavros manually:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/suave_ws/src/mavros
+git<span class="w"> </span>checkout<span class="w"> </span>ros2
+git<span class="w"> </span>pull
+</pre></div>
+</div>
+<p>Don’t forget to rebuild the suave workspace:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/suave_ws/
+colcon<span class="w"> </span>build<span class="w"> </span>--symlink-install
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="extend.html" class="btn btn-neutral float-left" title="Extending SUAVE and connecting managing subsystems" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="related.html" class="btn btn-neutral float-right" title="Related works" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gustavo Rezende, Juliane Päßler, Jeroen Zwanepol, Elvin Alberts, Lizeth Tarifa, Ilias Gerostathopoulos, Einar Johnsen, Carlos Hernández.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
