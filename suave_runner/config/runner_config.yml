@@ -6,42 +6,42 @@
     mission_config_pkg: 'suave_missions'
     mission_config_file: 'config/runner_mission_config.yaml'
     water_visibility_sec_shift: 0.0
-    water_visibility_sec_shift_random_interval: [-10.0, 10.0]
+    water_visibility_sec_shift_random_interval: [0.0, 120.0] # increase these values to increase the state, match the period
     thruster_events: 
-      - (1,failure,35)
-      - (3,failure,35)
-    thruster_events_random_interval: [-10.0, 10.0]
+      - (1,failure,100)
+      - (3,failure,100) # choose a thruster that really makes it bad
+    thruster_events_random_interval: [-100.0, 100.0]
     random_interval: 5 # how many experiment runs in each "random" interval
-    initial_pos_x: -16.0
-    initial_pos_y: 2.0
-    initial_pos_x_random_interval: [-1.0, 1.0]
-    initial_pos_y_random_interval: [-1.0, 1.0]
+    initial_pos_x: -17.0
+    initial_pos_y: 2.5
+    initial_pos_x_random_interval: [0.0, 0.0]
+    initial_pos_y_random_interval: [-0.5, 0.5]
     experiments: # List of experiments to run
       - |
         {
           "experiment_launch": "ros2 launch suave_bt suave_bt.launch.py",
-          "num_runs": 2,
+          "num_runs": 10,
           "adaptation_manager": "bt",
           "mission_name": "suave"
         }
       - |
         {
           "experiment_launch": "ros2 launch suave_metacontrol suave_metacontrol.launch.py",
-          "num_runs": 2,
+          "num_runs": 10,
           "adaptation_manager": "metacontrol",
           "mission_name": "suave"
         }
       - |
         {
           "experiment_launch": "ros2 launch suave_random suave_random.launch.py",
-          "num_runs": 2,
+          "num_runs": 10,
           "adaptation_manager": "random",
           "mission_name": "suave"
         }
       - |
         {
           "experiment_launch": "ros2 launch suave_none suave_none.launch.py",
-          "num_runs": 2,
+          "num_runs": 10,
           "adaptation_manager": "none",
           "mission_name": "suave"
         }

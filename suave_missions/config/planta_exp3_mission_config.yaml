@@ -10,7 +10,7 @@
     f_generate_search_path_mode: "fd_spiral_low" # Default mode for f_generate_search_path when no manager is used
     f_follow_pipeline_mode: "fd_follow_pipeline" # Default mode for f_follow_pipeline when no manager is used
 
-/water_visibility_observer_node:
+/water_visibility_observer_node:  # constant water visibility
   ros__parameters:
     qa_publishing_period: 1.0
     water_visibility_period: 120 # Water visibility period in seconds
@@ -21,7 +21,8 @@
 /thruster_monitor:
   ros__parameters:
     thruster_events: # Thruster events, format: (thruster number (1 to 6), failure or recovery, delta time in seconds(from the last event))
-    - (1,failure,35)
+    - (1,failure,100)
+    - (3,failure,100)
 
 /task_bridge:
   ros__parameters:
