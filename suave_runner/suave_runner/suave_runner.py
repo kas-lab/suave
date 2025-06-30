@@ -370,10 +370,11 @@ class ExperimentRunnerNode(Node):
             # Replace the value of watervi sibility sec shift
             config['/water_visibility_observer_node']['ros__parameters']['water_visibility_sec_shift'] = float(wv_shift)
             
-            config['/thruster_monitor']['ros__parameters']['thruster_events'] = [
-                f"({event[0]},{event[1]},{float(event[2]) + float(self.thruster_events_array[idx])})"
-                for event in self.thruster_events
-            ]
+            if len(self.thruster_events) > 0:
+                config['/thruster_monitor']['ros__parameters']['thruster_events'] = [
+                    f"({event[0]},{event[1]},{float(event[2]) + float(self.thruster_events_array[idx])})"
+                    for event in self.thruster_events
+                ]
 
             # Create a new filename
             new_file = result_path / f'mission_config_run{idx}.yaml'
