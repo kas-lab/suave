@@ -129,10 +129,17 @@ def generate_launch_description():
             'task_bridge': 'False'}.items()
     )
 
-    mission_config = os.path.join(
+    mission_config_default = os.path.join(
         get_package_share_directory('suave_missions'),
         'config',
         'mission_config.yaml'
+    )
+
+    mission_config = LaunchConfiguration('mission_config')
+    mission_config_arg = DeclareLaunchArgument(
+        'mission_config',
+        default_value=mission_config_default,
+        description='Mission config full path'
     )
 
     mission_node = Node(
@@ -169,6 +176,7 @@ def generate_launch_description():
         result_filename_arg,
         silent_arg,
         OpaqueFunction(function=configure_logging),
+        mission_config_arg,
         mros_reasoner_node,
         mros_system_modes_bridge_node,
         task_bridge_node,

@@ -38,10 +38,19 @@ def generate_launch_description():
         default_value='random_results',
         description='Name of the results file'
     )
-    mission_config = os.path.join(
+
+    mission_config_default = os.path.join(
         get_package_share_directory('suave_missions'),
         'config',
-        'mission_config.yaml')
+        'mission_config.yaml'
+    )
+
+    mission_config = LaunchConfiguration('mission_config')
+    mission_config_arg = DeclareLaunchArgument(
+        'mission_config',
+        default_value=mission_config_default,
+        description='Mission config full path'
+    )
 
     pkg_suave_path = get_package_share_directory(
         'suave')
@@ -61,12 +70,6 @@ def generate_launch_description():
         package='suave_random',
         executable='task_bridge_random',
         parameters=[mission_config],
-    )
-
-    mission_config = os.path.join(
-        get_package_share_directory('suave_missions'),
-        'config',
-        'mission_config.yaml'
     )
 
     mission_node = Node(
@@ -92,6 +95,7 @@ def generate_launch_description():
         result_path_arg,
         result_filename_arg,
         silent_arg,
+        mission_config_arg,
         OpaqueFunction(function=configure_logging),
         suave_launch,
         task_bridge_node,
