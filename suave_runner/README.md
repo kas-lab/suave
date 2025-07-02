@@ -69,9 +69,21 @@ ros2 run suave_runner suave_runner \
   -p experiment_logging:=True \
   -p experiments:='[
     "{\"experiment_launch\": \"ros2 launch suave_none suave_none.launch.py\", \
-      \"num_runs\": 2, \
+      \"num_runs\": 6, \
       \"adaptation_manager\": \"none\", \
       \"mission_name\": \"suave\"}"
   ]'
 ```
 
+## Statistical analysis
+
+```bash
+ros2 run suave_runner statistical_analysis \
+  --ros-args \
+  -p data_files:='[
+    "{\"managing_system\": \"none\", \
+      \"data_file\": \"~/suave/results/none_suave.csv\"}",
+    "{\"managing_system\": \"suave_bt\", \
+      \"data_file\": \"~/suave/results/bt_suave.csv\"}"
+  ]'
+```

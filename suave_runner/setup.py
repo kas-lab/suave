@@ -29,6 +29,8 @@ setup(
     },
     entry_points={
         'console_scripts':
-        ['suave_runner = suave_runner.suave_runner:main'],
+        ['suave_runner = suave_runner.suave_runner:main',
+         'statistical_analysis = suave_runner.statistical_analysis:main'
+        ],
     },
 )
