@@ -1,0 +1,33 @@
+WaterVisibilityObserver
+=======================
+
+.. currentmodule:: suave_monitor.water_visibility_observer
+
+.. autoclass:: WaterVisibilityObserver
+
+   
+
+   
+    .. automethod:: __init__
+    .. automethod:: qa_publisher_cb
+    .. automethod:: status_cb
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~WaterVisibilityObserver.__init__
+      ~WaterVisibilityObserver.qa_publisher_cb
+      ~WaterVisibilityObserver.status_cb
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+   
+   

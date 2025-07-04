@@ -1,0 +1,234 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Install SUAVE locally &mdash; SUAVE v1.2.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=3130c8bc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Use SUAVE with Docker" href="docker.html" />
+    <link rel="prev" title="Welcome to SUAVE’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SUAVE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Install SUAVE locally</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#install-gazebo-garden">Install Gazebo Garden</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install-ros2-humble">Install ROS2 Humble</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install-ardusub">Install ArduSub</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install-ardusub-plugin">Install ArduSub plugin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install-suave-workspace">Install SUAVE workspace</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="docker.html">Use SUAVE with Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run.html">Run SUAVE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extend.html">Extending SUAVE and connecting managing subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="related.html">Related works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citing.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SUAVE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Install SUAVE locally</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/installation.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="install-suave-locally">
+<h1>Install SUAVE locally<a class="headerlink" href="#install-suave-locally" title="Link to this heading"></a></h1>
+<p>To install the exemplar locally, you have to <a class="reference internal" href="#install-gazebo-garden">install Gazebo Garden</a>, <a class="reference internal" href="#install-ros2-humble">install ROS2 Humble</a>, <a class="reference internal" href="#install-ardusub">install ArduSub</a>, <a class="reference internal" href="#install-ardusub-plugin">install the ArduSub plugin</a>, and finally <a class="reference internal" href="#install-suave-workspace">install the SUAVE workspace</a>.</p>
+<section id="install-gazebo-garden">
+<h2>Install Gazebo Garden<a class="headerlink" href="#install-gazebo-garden" title="Link to this heading"></a></h2>
+<p>Follow the <a class="reference external" href="https://gazebosim.org/docs/garden/install_ubuntu">official instructions</a> for installing Gazebo Garden.</p>
+</section>
+<section id="install-ros2-humble">
+<h2>Install ROS2 Humble<a class="headerlink" href="#install-ros2-humble" title="Link to this heading"></a></h2>
+<p>Follow the <a class="reference external" href="https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html">official instructions</a> for installing ROS2 Humble.</p>
+</section>
+<section id="install-ardusub">
+<h2>Install ArduSub<a class="headerlink" href="#install-ardusub" title="Link to this heading"></a></h2>
+<p>ArduSub is a subproject within ArduPilot for piloting underwater vehicles.</p>
+<p><strong>Disclaimer:</strong>
+Problems may occur with different combinations of ArduPilot and MavROS versions. This repo was tested with <a class="reference external" href="https://github.com/ArduPilot/ardupilot/tree/94ba4ece5f9ccdf632b95938f8e644a622f5ee75">this ArduPilot commit</a> and <a class="reference external" href="https://github.com/mavlink/mavros/tree/01eccd8">mavros 2.4.0</a>. Unfortunately, at least at the time of writing this README, the releases available in Ubuntu 22.04 do not match.</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/ArduPilot/ardupilot.git
+<span class="nb">cd</span><span class="w"> </span>ardupilot
+git<span class="w"> </span>checkout<span class="w"> </span>e9f46b9
+git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive
+</pre></div>
+</div>
+<p>Note that the script used to install prerequisites available for this
+version of ArduSub does not work in Ubuntu 22.04. Therefore, you need to replace them before
+running ArduSub. To install the ArduPilot prerequisites, do the following.</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/ardupilot
+<span class="nb">cd</span><span class="w"> </span>Tools/environment_install/
+rm<span class="w"> </span>install-prereqs-ubuntu.sh
+wget<span class="w"> </span>https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/environment_install/install-prereqs-ubuntu.sh
+<span class="nb">cd</span><span class="w"> </span>~/ardupilot
+chmod<span class="w"> </span>+x<span class="w"> </span>Tools/environment_install/install-prereqs-ubuntu.sh
+Tools/environment_install/install-prereqs-ubuntu.sh<span class="w"> </span>-y
+.<span class="w"> </span>~/.profile
+</pre></div>
+</div>
+<p>To test if the installation worked, run:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>sim_vehicle.py<span class="w"> </span>-v<span class="w"> </span>ArduSub<span class="w"> </span>-L<span class="w"> </span>RATBeach<span class="w"> </span>--console<span class="w"> </span>--map
+</pre></div>
+</div>
+<p>ArduPilot SITL should open and a console plus a map should appear.</p>
+</section>
+<section id="install-ardusub-plugin">
+<h2>Install ArduSub plugin<a class="headerlink" href="#install-ardusub-plugin" title="Link to this heading"></a></h2>
+<p>Install the dependencies:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>libgz-sim7-dev<span class="w"> </span>rapidjson-dev
+</pre></div>
+</div>
+<p>Clone and build the repository:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/ArduPilot/ardupilot_gazebo
+<span class="nb">cd</span><span class="w"> </span>ardupilot_gazebo
+mkdir<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
+cmake<span class="w"> </span>..<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>RelWithDebInfo
+make<span class="w"> </span>-j4
+</pre></div>
+</div>
+<p>Add the required paths:</p>
+<p>Assuming that you have cloned the repository in <code class="docutils literal notranslate"><span class="pre">$HOME/ardupilot_gazebo</span></code>, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;export GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot_gazebo/build:${GZ_SIM_SYSTEM_PLUGIN_PATH}&#39;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.bashrc
+<span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;export GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}&#39;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.bashrc
+</pre></div>
+</div>
+<p>Now that new environmental variables have been added to your terminal, you need to reload it with</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>~/.bashrc
+</pre></div>
+</div>
+<p>More info about the plugin can be found in the corresponding <a class="reference external" href="https://github.com/ArduPilot/ardupilot_gazebo/">repository</a>.</p>
+</section>
+<section id="install-suave-workspace">
+<h2>Install SUAVE workspace<a class="headerlink" href="#install-suave-workspace" title="Link to this heading"></a></h2>
+<p>Create the workspace and download the required repositories:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>-p<span class="w"> </span>~/suave_ws/src/
+<span class="nb">cd</span><span class="w"> </span>~/suave_ws/
+</pre></div>
+</div>
+<p>If you want to get the most updated version of the repo:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>wget<span class="w"> </span>https://raw.githubusercontent.com/kas-lab/suave/main/suave.rosinstall
+vcs<span class="w"> </span>import<span class="w"> </span>src<span class="w"> </span>&lt;<span class="w"> </span>suave.rosinstall<span class="w"> </span>--recursive
+</pre></div>
+</div>
+<p><strong>SEAMS2023:</strong> If you want to get the version submitted to SEAMS 2023 instead of the most updated version get the following dependencies instead:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>wget<span class="w"> </span>https://raw.githubusercontent.com/kas-lab/suave/9e6468896ce766376557ca9522d84f92b70129f1/suave.rosinstall
+vcs<span class="w"> </span>import<span class="w"> </span>src<span class="w"> </span>&lt;<span class="w"> </span>suave.rosinstall<span class="w"> </span>--recursive
+</pre></div>
+</div>
+<p>Before building the <code class="docutils literal notranslate"><span class="pre">ros_gz</span></code> package (one of the dependencies), you need to export the gazebo version:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">GZ_VERSION</span><span class="o">=</span><span class="s2">&quot;garden&quot;</span>
+</pre></div>
+</div>
+<p>You can also add this to your <code class="docutils literal notranslate"><span class="pre">~/.bashrc</span></code> to make this process easier.</p>
+<p>Install the dependencies:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>/opt/ros/humble/setup.bash
+<span class="nb">cd</span><span class="w"> </span>~/suave_ws/
+rosdep<span class="w"> </span>install<span class="w"> </span>--from-paths<span class="w"> </span>src<span class="w"> </span>--ignore-src<span class="w"> </span>-r<span class="w"> </span>-y
+</pre></div>
+</div>
+<p>Build the project:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/suave_ws/
+colcon<span class="w"> </span>build<span class="w"> </span>--symlink-install
+</pre></div>
+</div>
+<p>If you have memory problems while building the package, run the following command instead, it is slower but uses less memory:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>colcon<span class="w"> </span>build<span class="w"> </span>--symlink-install<span class="w"> </span>--executor<span class="w"> </span>sequential<span class="w"> </span>--parallel-workers<span class="w"> </span><span class="m">1</span>
+</pre></div>
+</div>
+<p>Install a MAVROS dependency:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>wget<span class="w"> </span>https://raw.githubusercontent.com/mavlink/mavros/master/mavros/scripts/install_geographiclib_datasets.sh
+sudo<span class="w"> </span>bash<span class="w"> </span>./install_geographiclib_datasets.sh
+</pre></div>
+</div>
+<!-- Now you can proceed to [run the exemplar](#run-suave). -->
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to SUAVE’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="docker.html" class="btn btn-neutral float-right" title="Use SUAVE with Docker" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gustavo Rezende, Juliane Päßler, Jeroen Zwanepol, Elvin Alberts, Lizeth Tarifa, Ilias Gerostathopoulos, Einar Johnsen, Carlos Hernández.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
