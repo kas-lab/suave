@@ -122,6 +122,8 @@ def generate_launch_description():
     task_bridge_node = Node(
         package='suave',
         executable='task_bridge_none',
+        name='task_bridge',
+        parameters=[mission_config],
         output=print_output,
         condition=LaunchConfigurationEquals('task_bridge', 'True')
     )

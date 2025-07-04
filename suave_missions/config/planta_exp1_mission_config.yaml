@@ -27,4 +27,5 @@
 /task_bridge:
   ros__parameters:
     adapt_period: 30 # Period to perform random adaptation in seconds
+    f_generate_search_path_mode: 'fd_spiral_medium'
 
