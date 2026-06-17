@@ -1,0 +1,8 @@
+# Goal (empty - just start searching)
+---
+# Result
+float32 time_spent
+bool pipeline_found
+---
+# Feedback
+float32 elapsed_time

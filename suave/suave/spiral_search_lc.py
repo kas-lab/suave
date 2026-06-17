@@ -14,19 +14,21 @@
 
 """Lifecycle node that commands the vehicle along an expanding spiral."""
 
-from typing import Optional
-
 import math
 import threading
+import time
+from typing import Optional
 
 import rclpy
-
+from rclpy.action import ActionServer, GoalResponse, CancelResponse
 from rcl_interfaces.msg import ParameterDescriptor, SetParametersResult
 from rclpy.lifecycle import Node
 from rclpy.lifecycle import State
 from rclpy.lifecycle import TransitionCallbackReturn
 from rclpy.timer import Timer
+from std_msgs.msg import Bool
 from suave.bluerov_gazebo import BlueROVGazebo
+from suave_msgs.action import SpiralSearch
 
 
 def spiral_points(i, old_x, old_y, resolution=0.1, spiral_width=1.0):
@@ -59,6 +61,8 @@ class SpiralSearcherLC(Node):
         self.count = 0
         self.z_delta = 0
         self.old_spiral_altitude = -1
+        self._pipeline_detected = False
+        self._action_server = None
 
         super().__init__(node_name, **kwargs)
 
@@ -68,6 +72,7 @@ class SpiralSearcherLC(Node):
             description='Sets the spiral altitude of the UUV.')
         self.declare_parameter(
             'spiral_altitude', 2.0, spiral_altitude_descriptor)
+        self.declare_parameter('use_action_server', False)
 
         self.param_change_callback_handle = \
             self.add_on_set_parameters_callback(self.param_change_callback)
@@ -85,6 +90,11 @@ class SpiralSearcherLC(Node):
                     parameter.value))
         return result
 
+    def _pipeline_detected_cb(self, msg):
+        """Set the internal flag when the pipeline is detected."""
+        if msg.data:
+            self._pipeline_detected = True
+
     def publish(self):
         """Publish the next spiral setpoint when the node is enabled."""
         if self._enabled is True:
@@ -94,7 +104,7 @@ class SpiralSearcherLC(Node):
             # Initialize spiral center from the current MAVROS local pose the
             # first time a local position is available (map frame == Gazebo
             # frame, so this is the robot's actual start position).
-            if self.spiral_center_x is None:
+            if self.spiral_center_x is None or self.spiral_center_y is None:
                 if not self.ardusub.local_pos_received:
                     return
                 local_pos = self.ardusub.local_pos.pose.position
@@ -157,8 +167,51 @@ class SpiralSearcherLC(Node):
             else:
                 self.count += 1
 
+    def _goal_callback(self, goal_request):
+        """Accept goals only when active and use_action_server is True."""
+        if self._state_machine.current_state[1] != 'active':
+            self.get_logger().warn('Goal rejected: node is not active.')
+            return GoalResponse.REJECT
+        if not self.get_parameter(
+                'use_action_server').get_parameter_value().bool_value:
+            self.get_logger().warn('Goal rejected: use_action_server is False.')
+            return GoalResponse.REJECT
+        return GoalResponse.ACCEPT
+
+    def _cancel_callback(self, goal_handle):
+        """Allow cancellation at any time."""
+        return CancelResponse.ACCEPT
+
+    def _execute_spiral_search(self, goal_handle):
+        """Run spiral search until pipeline detected or cancelled."""
+        self._pipeline_detected = False
+        self._enabled = True
+        start_time = time.time()
+        rate = self.create_rate(1)
+
+        while not self._pipeline_detected:
+            if goal_handle.is_cancel_requested:
+                self._enabled = False
+                goal_handle.canceled()
+                result = SpiralSearch.Result()
+                result.time_spent = float(time.time() - start_time)
+                result.pipeline_found = False
+                return result
+
+            feedback = SpiralSearch.Feedback()
+            feedback.elapsed_time = float(time.time() - start_time)
+            goal_handle.publish_feedback(feedback)
+            rate.sleep()
+
+        self._enabled = False
+        result = SpiralSearch.Result()
+        result.time_spent = float(time.time() - start_time)
+        result.pipeline_found = True
+        goal_handle.succeed()
+        return result
+
     def on_configure(self, state: State) -> TransitionCallbackReturn:
-        """Configure the node and start the spiral timer."""
+        """Configure the node, start the spiral timer, and register the action server."""
         self.get_logger().info('on_configure() is called.')
         self.ardusub = BlueROVGazebo('bluerov_spiral_search')
 
@@ -166,19 +219,34 @@ class SpiralSearcherLC(Node):
             target=rclpy.spin, args=(self.ardusub, ), daemon=True)
         self.thread.start()
 
+        self._pipeline_detected_sub = self.create_subscription(
+            Bool, 'pipeline/detected', self._pipeline_detected_cb, 10)
+
+        self._action_server = ActionServer(
+            self,
+            SpiralSearch,
+            'spiral_search',
+            execute_callback=self._execute_spiral_search,
+            goal_callback=self._goal_callback,
+            cancel_callback=self._cancel_callback,
+        )
+
         self._timer_ = self.create_timer(self.timer_period, self.publish)
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
-        """Activate the node and reset the spiral center."""
+        """Activate: start spiral immediately unless action server mode is on."""
         self.get_logger().info("on_activate() is called.")
         self.spiral_center_x = None
         self.spiral_center_y = None
-        self._enabled = True
+        use_action_server = self.get_parameter(
+            'use_action_server').get_parameter_value().bool_value
+        if not use_action_server:
+            self._enabled = True
         return super().on_activate(state)
 
     def on_deactivate(self, state: State) -> TransitionCallbackReturn:
-        """Deactivate the node."""
+        """Deactivate the node and stop spiral behavior."""
         self.get_logger().info("on_deactivate() is called.")
         self._enabled = False
         return super().on_deactivate(state)
