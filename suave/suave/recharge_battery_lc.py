@@ -17,7 +17,11 @@
 import rclpy
 import threading
 
-from rclpy.action import ActionServer, GoalResponse, CancelResponse
+from typing import Callable
+from typing import Optional
+
+from rclpy.action import ActionServer
+from rclpy.action.server import ServerGoalHandle
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.lifecycle import Node
@@ -28,16 +32,13 @@ from geometry_msgs.msg import Point
 from geometry_msgs.msg import Pose
 from std_srvs.srv import Trigger
 
+from suave.action_server_utils import accept_cancel
+from suave.action_server_utils import make_goal_callback
+from suave.action_server_utils import spin_srv
+from suave.action_server_utils import use_action_server
 from suave.bluerov_gazebo import BlueROVGazebo
+from suave.ros_service_utils import call_service_with_timeout
 from suave_msgs.action import RechargeBattery as RechargeBatteryAction
-
-
-def check_lc_active(func):
-    """Decorate func to run only when the node is active."""
-    def inner(*args, **kwargs):
-        if args[0].active is True:
-            return func(*args, **kwargs)
-    return inner
 
 
 class RechargeBattery(Node):
@@ -46,10 +47,12 @@ class RechargeBattery(Node):
     def __init__(self, node_name, **kwargs):
         """Create the recharge battery node."""
         super().__init__(node_name, **kwargs)
-        self.recharge_timer_period = 5.0
-        self.active = False
         self.cli_group = MutuallyExclusiveCallbackGroup()
         self._action_server = None
+        self._legacy_recharge_stop = threading.Event()
+        self._legacy_recharge_task = None
+        self._deactivate_event = threading.Event()
+        self._goal_executing = threading.Event()
         self.trigger_configure()
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
@@ -58,6 +61,7 @@ class RechargeBattery(Node):
 
         self.declare_parameter(
             'recharge_station_gz_pos', [-3.0, -2.0, -19.5])
+        self.declare_parameter('recharge_retry_rate', 2.0)
         self.declare_parameter('use_action_server', False)
 
         self.recharge_battery_cli = self.create_client(
@@ -67,106 +71,117 @@ class RechargeBattery(Node):
         )
 
         self.ardusub = BlueROVGazebo('bluerov_recharge')
-
+        ardusub_executor = rclpy.executors.SingleThreadedExecutor()
+        ardusub_executor.add_node(self.ardusub)
         self.thread = threading.Thread(
-            target=rclpy.spin, args=(self.ardusub, ), daemon=True)
+            target=spin_srv, args=(ardusub_executor, ), daemon=True)
         self.thread.start()
-
-        self.recharge_cb_timer = self.create_timer(
-            self.recharge_timer_period, self.recharge_cb)
 
         self._action_server = ActionServer(
             self,
             RechargeBatteryAction,
             'recharge_battery',
             execute_callback=self._execute_recharge,
-            goal_callback=self._goal_callback,
-            cancel_callback=self._cancel_callback,
+            goal_callback=make_goal_callback(self),
+            cancel_callback=accept_cancel,
         )
 
         self.get_logger().info(self.get_name() + ': on_configure() completed.')
         return TransitionCallbackReturn.SUCCESS
 
-    def _goal_callback(self, goal_request):
-        """Accept goals only when active and use_action_server is True."""
-        if not self.active:
-            self.get_logger().warn('Goal rejected: node is not active.')
-            return GoalResponse.REJECT
-        if not self.get_parameter(
-                'use_action_server').get_parameter_value().bool_value:
-            self.get_logger().warn('Goal rejected: use_action_server is False.')
-            return GoalResponse.REJECT
-        return GoalResponse.ACCEPT
+    def _make_result(self, success: bool) -> RechargeBatteryAction.Result:
+        """Create a RechargeBattery action result."""
+        result = RechargeBatteryAction.Result()
+        result.success = success
+        return result
 
-    def _cancel_callback(self, goal_handle):
-        """Allow cancellation at any time."""
-        return CancelResponse.ACCEPT
+    def _get_recharge_station_pose(self) -> Pose:
+        """Return the configured recharge station pose."""
+        station_parameter = self.get_parameter(
+            'recharge_station_gz_pos').get_parameter_value()
+        station_position = station_parameter.double_array_value
+        return Pose(position=Point(
+            x=station_position[0],
+            y=station_position[1],
+            z=station_position[2],
+        ))
 
-    def _execute_recharge(self, goal_handle):
-        """Navigate to recharge station and trigger recharging."""
-        rate = self.create_rate(2)
-        while True:
-            if goal_handle.is_cancel_requested:
-                result = RechargeBatteryAction.Result()
-                result.success = False
-                goal_handle.canceled()
-                return result
-
-            recharge_station_gz_pos = self.get_parameter(
-                'recharge_station_gz_pos').get_parameter_value()
-            recharge_station_pos = recharge_station_gz_pos.double_array_value
-            station_pose = Pose(position=Point(
-                x=recharge_station_pos[0],
-                y=recharge_station_pos[1],
-                z=recharge_station_pos[2],
-            ))
-
-            setpoint = self.ardusub.setpoint_position_gz(
-                station_pose, fixed_altitude=True)
-
-            if setpoint is None:
-                rate.sleep()
-                continue
-
-            if self.ardusub.check_setpoint_reached_xy(setpoint, 0.5):
-                svc_result = self.call_service(
-                    self.recharge_battery_cli, Trigger.Request())
-                result = RechargeBatteryAction.Result()
-                result.success = (
-                    svc_result is not None and svc_result.success)
-                goal_handle.succeed()
-                return result
-
-            rate.sleep()
-
-    @check_lc_active
-    def recharge_cb(self):
-        """Timer callback: navigate to and trigger recharge station (legacy mode)."""
-        recharge_station_gz_pos = self.get_parameter(
-                'recharge_station_gz_pos').get_parameter_value()
-        recharge_station_pos = recharge_station_gz_pos.double_array_value
-        station_pose = Pose(position=Point(
-                x=recharge_station_pos[0],
-                y=recharge_station_pos[1],
-                z=recharge_station_pos[2],
-            )
-        )
-
+    def _try_recharge_once(self) -> Optional[bool]:
+        """Advance recharge once, returning None while it is in progress."""
+        station_pose = self._get_recharge_station_pose()
         setpoint = self.ardusub.setpoint_position_gz(
-            station_pose,
-            fixed_altitude=True)
+            station_pose, fixed_altitude=True)
 
         if setpoint is None:
-            return
+            return None
+        if not self.ardusub.check_setpoint_reached_xy(setpoint, 0.5):
+            return None
 
-        if self.ardusub.check_setpoint_reached_xy(setpoint, 0.5):
-            self.call_service(self.recharge_battery_cli, Trigger.Request())
+        service_result = call_service_with_timeout(
+            self, self.recharge_battery_cli, Trigger.Request())
+        return service_result is not None and service_result.success
+
+    def _run_recharge(
+            self, stop_requested: Callable[[], bool]) -> Optional[bool]:
+        """Run recharge until completion or an external stop request."""
+        retry_rate = self.get_parameter(
+            'recharge_retry_rate').get_parameter_value().double_value
+        rate = self.create_rate(retry_rate)
+        while not stop_requested():
+            recharged = self._try_recharge_once()
+            if recharged is not None:
+                return recharged
+            rate.sleep()
+        return None
+
+    def _execute_recharge(
+            self, goal_handle: ServerGoalHandle
+            ) -> RechargeBatteryAction.Result:
+        """Navigate to recharge station and trigger recharging."""
+        self._goal_executing.set()
+        try:
+            recharged = self._run_recharge(
+                lambda: goal_handle.is_cancel_requested
+                or self._deactivate_event.is_set())
+            result = self._make_result(recharged is True)
+            if recharged is None:
+                if self._deactivate_event.is_set():
+                    goal_handle.abort()
+                else:
+                    goal_handle.canceled()
+            elif recharged:
+                goal_handle.succeed()
+            else:
+                goal_handle.abort()
+            return result
+        finally:
+            self._goal_executing.clear()
+
+    def _run_legacy_recharge(self) -> None:
+        """Run recharge for legacy lifecycle mode."""
+        recharged = self._run_recharge(self._legacy_recharge_stop.is_set)
+        if recharged is False:
+            self.get_logger().error('Battery recharge failed.')
+
+    def _start_legacy_recharge(self) -> None:
+        """Start one legacy recharge task if no task is running."""
+        if (self._legacy_recharge_task is not None and
+                not self._legacy_recharge_task.done()):
             return
+        self._legacy_recharge_stop.clear()
+        self._legacy_recharge_task = self.executor.create_task(
+            self._run_legacy_recharge)
+
+    def _stop_legacy_recharge(self) -> None:
+        """Request that the legacy recharge task stop."""
+        self._legacy_recharge_stop.set()
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
         """Activate the node."""
         self.get_logger().info(self.get_name() + ': on_activate() is called.')
-        self.active = True
+        self._deactivate_event.clear()
+        if not use_action_server(self):
+            self._start_legacy_recharge()
         self.get_logger().info(
             self.get_name() + ': on_activate() is completed.')
         return super().on_activate(state)
@@ -174,39 +189,32 @@ class RechargeBattery(Node):
     def on_deactivate(self, state: State) -> TransitionCallbackReturn:
         """Deactivate the node."""
         self.get_logger().info("on_deactivate() is called.")
-        self.active = False
+        self._deactivate_event.set()
+        self._stop_legacy_recharge()
         return super().on_deactivate(state)
 
     def on_cleanup(self, state: State) -> TransitionCallbackReturn:
         """Clean up the node."""
-        self.active = False
+        self._stop_legacy_recharge()
         self.thread.join()
         self.ardusub.destroy_node()
-        self.destroy_timer(self.recharge_cb_timer)
+        if self._action_server is not None:
+            self._action_server.destroy()
+            self._action_server = None
         self.get_logger().info('on_cleanup() is called.')
         return TransitionCallbackReturn.SUCCESS
 
     def on_shutdown(self, state: State) -> TransitionCallbackReturn:
         """Shut down the node."""
         self.get_logger().info('on_shutdown() is called.')
+        self._deactivate_event.set()
+        self._stop_legacy_recharge()
         self.thread.join()
         self.ardusub.destroy_node()
-        self.destroy_timer(self.recharge_cb_timer)
+        if self._action_server is not None:
+            self._action_server.destroy()
+            self._action_server = None
         return super().on_shutdown(state)
-
-    def call_service(self, cli, request):
-        """Call a ROS service synchronously, returning None on failure."""
-        if cli.wait_for_service(timeout_sec=5.0) is False:
-            self.get_logger().error(
-                'service not available {}'.format(cli.srv_name))
-            return None
-        future = cli.call_async(request)
-        self.executor.spin_until_future_complete(future, timeout_sec=5.0)
-        if future.done() is False:
-            self.get_logger().error(
-                'Future not completed {}'.format(cli.srv_name))
-            return None
-        return future.result()
 
 
 def main(args=None):

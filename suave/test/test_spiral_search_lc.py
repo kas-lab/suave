@@ -15,16 +15,17 @@
 """Tests for the spiral search lifecycle node action server."""
 
 import time
-import threading
 
 import pytest
 import rclpy
 
 from rclpy.action import ActionClient
-from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from std_msgs.msg import Bool
 
+from action_test_utils import send_goal_and_wait
+from action_test_utils import spin_nodes_in_executors
+from action_test_utils import wait_for_action_result
 from suave.spiral_search_lc import SpiralSearcherLC
 from suave_msgs.action import SpiralSearch
 
@@ -63,33 +64,9 @@ def spiral_node():
 
 @pytest.fixture
 def executor(test_node, spiral_node):
-    """Spin the helper and spiral nodes in separate executors to avoid reentrancy."""
-    ex = MultiThreadedExecutor()
-    t = threading.Thread(target=ex.spin, daemon=True)
-    t.start()
-    try:
-        ex.add_node(spiral_node)
-        ex.add_node(test_node)
-        yield ex
-    finally:
-        ex.shutdown()
-        t.join(timeout=2.0)
-    # helper_ex = MultiThreadedExecutor()
-    # helper_ex.add_node(test_node)
-    # helper_thread = threading.Thread(target=helper_ex.spin, daemon=True)
-    # helper_thread.start()
-
-    # node_ex = MultiThreadedExecutor()
-    # node_ex.add_node(spiral_node)
-    # node_thread = threading.Thread(target=node_ex.spin, daemon=True)
-    # node_thread.start()
-    # try:
-    #     yield node_ex
-    # finally:
-    #     helper_ex.shutdown()
-    #     node_ex.shutdown()
-    #     helper_thread.join(timeout=2.0)
-    #     node_thread.join(timeout=2.0)
+    """Spin helper and spiral nodes in separate executors."""
+    with spin_nodes_in_executors(test_node, spiral_node) as executors:
+        yield executors[-1]
 
 
 def test_spiral_search_action_rejected_when_inactive(
@@ -98,32 +75,80 @@ def test_spiral_search_action_rejected_when_inactive(
     client = ActionClient(test_node, SpiralSearch, 'spiral_search')
     assert client.wait_for_server(timeout_sec=5.0)
 
-    future = client.send_goal_async(SpiralSearch.Goal())
-    deadline = time.time() + 5.0
-    while not future.done() and time.time() < deadline:
-        time.sleep(0.05)
+    goal_handle = send_goal_and_wait(client, SpiralSearch.Goal())
 
-    assert future.done()
-    assert not future.result().accepted
+    assert goal_handle is not None
+    assert not goal_handle.accepted
     client.destroy()
 
 
 def test_spiral_search_action_rejected_when_use_action_server_false(
         executor, test_node, spiral_node):
-    """Verify action goals are rejected when active but use_action_server=False."""
+    """Verify active goals are rejected when use_action_server=False."""
     spiral_node.trigger_activate()
     client = ActionClient(test_node, SpiralSearch, 'spiral_search')
     assert client.wait_for_server(timeout_sec=5.0)
 
-    future = client.send_goal_async(SpiralSearch.Goal())
-    deadline = time.time() + 5.0
-    while not future.done() and time.time() < deadline:
-        time.sleep(0.05)
+    goal_handle = send_goal_and_wait(client, SpiralSearch.Goal())
 
-    assert future.done()
-    assert not future.result().accepted
+    assert goal_handle is not None
+    assert not goal_handle.accepted
     spiral_node.trigger_deactivate()
     client.destroy()
+
+
+def test_start_spiral_does_not_reset_pipeline_detection(spiral_node):
+    """Verify _start_spiral does not clear pipeline detection."""
+    spiral_node._pipeline_detected = True
+
+    spiral_node._start_spiral()
+
+    assert spiral_node._enabled is True
+    assert spiral_node._pipeline_detected is True
+
+
+def test_reset_spiral_state_clears_pipeline_detection(spiral_node):
+    """Verify _reset_spiral_state clears pipeline detection."""
+    spiral_node._pipeline_detected = True
+
+    spiral_node._reset_spiral_state()
+    spiral_node._start_spiral()
+
+    assert spiral_node._enabled is True
+    assert spiral_node._pipeline_detected is False
+
+
+def test_stop_spiral_disables_movement(spiral_node):
+    """Verify spiral stop disables timer-driven movement."""
+    spiral_node._start_spiral()
+
+    spiral_node._stop_spiral()
+
+    assert spiral_node._enabled is False
+
+
+def test_action_cancellation_stops_spiral(spiral_node):
+    """Verify action cancellation always disables spiral movement."""
+    class GoalHandle:
+        """Minimal canceled goal handle for action execution."""
+
+        is_cancel_requested = True
+
+        def __init__(self):
+            """Create a goal handle that has not been canceled."""
+            self.canceled_called = False
+
+        def canceled(self):
+            """Record action cancellation."""
+            self.canceled_called = True
+
+    goal_handle = GoalHandle()
+
+    result = spiral_node._execute_spiral_search(goal_handle)
+
+    assert result.pipeline_found is False
+    assert goal_handle.canceled_called is True
+    assert spiral_node._enabled is False
 
 
 def test_spiral_search_use_action_server_false_enables_spiral_on_activate(
@@ -132,8 +157,12 @@ def test_spiral_search_use_action_server_false_enables_spiral_on_activate(
     assert spiral_node.get_parameter(
         'use_action_server').get_parameter_value().bool_value is False
 
+    spiral_node.spiral_center_x = 10.0
+    spiral_node.spiral_center_y = 20.0
     spiral_node.trigger_activate()
     assert spiral_node._enabled is True
+    assert spiral_node.spiral_center_x is None
+    assert spiral_node.spiral_center_y is None
     spiral_node.trigger_deactivate()
     assert spiral_node._enabled is False
 
@@ -160,28 +189,25 @@ def test_spiral_search_use_action_server_true_does_not_enable_on_activate(
 
 def test_spiral_search_action_completes_when_pipeline_detected(
         executor, test_node, spiral_node):
-    """Verify action succeeds with pipeline_found=True when pipeline/detected fires."""
-    spiral_node.trigger_activate()
-
-    client = ActionClient(test_node, SpiralSearch, 'spiral_search')
-    assert client.wait_for_server(timeout_sec=5.0)
-
+    """Verify the action succeeds when pipeline/detected fires."""
     spiral_node.set_parameters([
         rclpy.parameter.Parameter(
             'use_action_server',
             rclpy.Parameter.Type.BOOL,
             True)])
+    spiral_node.trigger_activate()
+
+    client = ActionClient(test_node, SpiralSearch, 'spiral_search')
+    assert client.wait_for_server(timeout_sec=5.0)
 
     def _feedback_cb(msg):
         pass
 
-    goal_future = client.send_goal_async(
-        SpiralSearch.Goal(), feedback_callback=_feedback_cb)
-    deadline = time.time() + 5.0
-    while not goal_future.done() and time.time() < deadline:
-        time.sleep(0.05)
+    goal_handle = send_goal_and_wait(
+        client, SpiralSearch.Goal(), feedback_callback=_feedback_cb)
 
-    assert goal_future.result().accepted
+    assert goal_handle is not None
+    assert goal_handle.accepted
 
     # Give the execute callback time to start
     time.sleep(0.2)
@@ -195,15 +221,19 @@ def test_spiral_search_action_completes_when_pipeline_detected(
         pub.publish(msg)
         time.sleep(0.1)
 
-    result_future = goal_future.result().get_result_async()
-    deadline = time.time() + 10.0
-    while not result_future.done() and time.time() < deadline:
-        time.sleep(0.1)
+    result = wait_for_action_result(goal_handle, timeout_sec=10.0)
 
-    assert result_future.done()
-    assert result_future.result().result.pipeline_found is True
-    assert result_future.result().result.time_spent >= 0.0
+    assert result is not None
+    assert result.result.pipeline_found is True
+    assert result.result.time_spent >= 0.0
+    assert spiral_node._enabled is False
 
     spiral_node.trigger_deactivate()
     pub.destroy()
     client.destroy()
+
+
+def test_spiral_timer_is_stored_for_lifecycle_cleanup(spiral_node):
+    """Verify configuration stores the timer under the managed attribute."""
+    assert spiral_node._timer is not None
+    assert not hasattr(spiral_node, '_timer_')

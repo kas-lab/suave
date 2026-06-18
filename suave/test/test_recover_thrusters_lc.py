@@ -14,9 +14,6 @@
 
 """Tests for the recover thrusters lifecycle node."""
 
-import time
-import threading
-
 import pytest
 import rclpy
 
@@ -26,10 +23,15 @@ from rcl_interfaces.msg import ParameterValue
 from rcl_interfaces.msg import SetParametersResult
 from rcl_interfaces.srv import SetParameters
 from rclpy.action import ActionClient
-from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 
+from action_test_utils import send_goal_and_wait
+from action_test_utils import spin_nodes_in_executors
+from action_test_utils import wait_for_action_result
+from action_test_utils import wait_for_condition
+from suave import recover_thrusters_lc
 from suave.recover_thrusters_lc import RecoverThrustersLC
+from suave.ros_service_utils import call_service_with_timeout
 from suave_msgs.action import RecoverThrusters
 
 
@@ -67,23 +69,9 @@ def recover_node():
 
 @pytest.fixture
 def executor(test_node, recover_node):
-    """Spin the helper and recover nodes in separate executors to avoid reentrancy."""
-    helper_ex = MultiThreadedExecutor()
-    helper_ex.add_node(test_node)
-    helper_thread = threading.Thread(target=helper_ex.spin, daemon=True)
-    helper_thread.start()
-
-    node_ex = MultiThreadedExecutor()
-    node_ex.add_node(recover_node)
-    node_thread = threading.Thread(target=node_ex.spin, daemon=True)
-    node_thread.start()
-    try:
-        yield node_ex
-    finally:
-        helper_ex.shutdown()
-        node_ex.shutdown()
-        helper_thread.join(timeout=2.0)
-        node_thread.join(timeout=2.0)
+    """Spin helper and recover nodes in separate executors."""
+    with spin_nodes_in_executors(test_node, recover_node) as executors:
+        yield executors[-1]
 
 
 def test_recover_thrusters_uses_configured_client_and_waits_for_response(
@@ -110,8 +98,8 @@ def test_recover_thrusters_uses_configured_client_and_waits_for_response(
     )
     request = SetParameters.Request(parameters=[parameter])
 
-    response = recover_node.call_service(
-        recover_node.set_parameters_service, request)
+    response = call_service_with_timeout(
+        recover_node, recover_node.set_parameters_service, request)
 
     assert response is not None
     assert len(response.results) == 1
@@ -146,16 +134,17 @@ def test_recover_thrusters_returns_false_when_parameter_update_rejected(
         def sleep(self):
             """Skip sleeping."""
 
-    def _call_service(client, request):
+    def _call_service(node, client, request):
         requests.append(request)
         response = SetParameters.Response()
         response.results.append(SetParametersResult(successful=False))
         return response
 
     monkeypatch.setattr(recover_node, 'create_rate', lambda frequency: Rate())
-    monkeypatch.setattr(recover_node, 'call_service', _call_service)
+    monkeypatch.setattr(
+        recover_thrusters_lc, 'call_service_with_timeout', _call_service)
 
-    assert recover_node.recover_thrusters() is False
+    assert recover_node._recover_thrusters() is False
     assert len(requests) == 6
 
 
@@ -179,7 +168,8 @@ def test_execute_recover_aborts_when_recovery_fails(
             self.aborted = True
 
     goal_handle = GoalHandle()
-    monkeypatch.setattr(recover_node, 'recover_thrusters', lambda: False)
+    monkeypatch.setattr(
+        recover_node, '_recover_thrusters', lambda cancel_requested=None: False)
 
     result = recover_node._execute_recover(goal_handle)
 
@@ -194,40 +184,32 @@ def test_recover_thrusters_action_rejected_when_inactive(
     client = ActionClient(test_node, RecoverThrusters, 'recover_thrusters')
     assert client.wait_for_server(timeout_sec=5.0)
 
-    future = client.send_goal_async(RecoverThrusters.Goal())
-    deadline = time.time() + 5.0
-    while not future.done() and time.time() < deadline:
-        time.sleep(0.05)
+    goal_handle = send_goal_and_wait(client, RecoverThrusters.Goal())
 
-    assert future.done()
-    goal_handle = future.result()
+    assert goal_handle is not None
     assert not goal_handle.accepted
     client.destroy()
 
 
 def test_recover_thrusters_action_rejected_when_use_action_server_false(
         executor, test_node, recover_node):
-    """Verify action goals are rejected when active but use_action_server=False."""
+    """Verify active goals are rejected when use_action_server=False."""
     recover_node.trigger_activate()
     client = ActionClient(test_node, RecoverThrusters, 'recover_thrusters')
     assert client.wait_for_server(timeout_sec=5.0)
 
-    future = client.send_goal_async(RecoverThrusters.Goal())
-    deadline = time.time() + 5.0
-    while not future.done() and time.time() < deadline:
-        time.sleep(0.05)
+    goal_handle = send_goal_and_wait(client, RecoverThrusters.Goal())
 
-    assert future.done()
-    assert not future.result().accepted
+    assert goal_handle is not None
+    assert not goal_handle.accepted
     recover_node.trigger_deactivate()
     client.destroy()
 
 
 def test_recover_thrusters_action_accepted_when_active(
         executor, test_node, recover_node):
-    """Verify action goals are accepted when active and use_action_server=True."""
+    """Verify active goals are accepted when use_action_server=True."""
     def _set_parameters_cb(request, response):
-        from rcl_interfaces.msg import SetParametersResult
         response.results.append(SetParametersResult(successful=True))
         return response
 
@@ -241,22 +223,15 @@ def test_recover_thrusters_action_accepted_when_active(
     client = ActionClient(test_node, RecoverThrusters, 'recover_thrusters')
     assert client.wait_for_server(timeout_sec=5.0)
 
-    future = client.send_goal_async(RecoverThrusters.Goal())
-    deadline = time.time() + 5.0
-    while not future.done() and time.time() < deadline:
-        time.sleep(0.05)
+    goal_handle = send_goal_and_wait(client, RecoverThrusters.Goal())
 
-    assert future.done()
-    goal_handle = future.result()
+    assert goal_handle is not None
     assert goal_handle.accepted
 
-    result_future = goal_handle.get_result_async()
-    deadline = time.time() + 30.0
-    while not result_future.done() and time.time() < deadline:
-        time.sleep(0.1)
+    result = wait_for_action_result(goal_handle, timeout_sec=30.0)
 
-    assert result_future.done()
-    assert result_future.result().result.success is True
+    assert result is not None
+    assert result.result.success is True
 
     recover_node.trigger_deactivate()
     test_node.destroy_service(service)
@@ -265,20 +240,17 @@ def test_recover_thrusters_action_accepted_when_active(
 
 def test_recover_thrusters_no_action_server_mode_starts_on_activate(
         executor, test_node, recover_node):
-    """Verify use_action_server=False starts recovery immediately on activation."""
+    """Verify use_action_server=False starts recovery on activation."""
     started = []
-    original = recover_node.recover_thrusters
+    original = recover_node._recover_thrusters
 
     def _mock_recover():
         started.append(True)
 
-    recover_node.recover_thrusters = _mock_recover
+    recover_node._recover_thrusters = _mock_recover
     recover_node.trigger_activate()
 
-    deadline = time.time() + 5.0
-    while not started and time.time() < deadline:
-        time.sleep(0.05)
-
-    assert started, "recover_thrusters() was not called on activation"
-    recover_node.recover_thrusters = original
+    assert wait_for_condition(lambda: bool(started), 5.0), (
+        "_recover_thrusters() was not called on activation")
+    recover_node._recover_thrusters = original
     recover_node.trigger_deactivate()

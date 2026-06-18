@@ -20,13 +20,18 @@ import time
 from typing import Optional
 
 import rclpy
-from rclpy.action import ActionServer, GoalResponse, CancelResponse
+from rclpy.action import ActionServer
+from rclpy.action.server import ServerGoalHandle
 from rcl_interfaces.msg import ParameterDescriptor, SetParametersResult
 from rclpy.lifecycle import Node
 from rclpy.lifecycle import State
 from rclpy.lifecycle import TransitionCallbackReturn
 from rclpy.timer import Timer
 from std_msgs.msg import Bool
+from suave.action_server_utils import accept_cancel
+from suave.action_server_utils import make_goal_callback
+from suave.action_server_utils import spin_srv
+from suave.action_server_utils import use_action_server
 from suave.bluerov_gazebo import BlueROVGazebo
 from suave_msgs.action import SpiralSearch
 
@@ -35,13 +40,12 @@ def spiral_points(i, old_x, old_y, resolution=0.1, spiral_width=1.0):
     """Return the next spiral offset (x, y) from the spiral center."""
     if i == 0:
         return .0, .0
-    else:
-        delta_angle = i*resolution - (i-1)*resolution
-        old_radius = math.sqrt(old_x**2 + old_y**2)
-        current_radius = old_radius + (spiral_width*delta_angle/(2*math.pi))
-        x = current_radius*math.cos(i*resolution)
-        y = current_radius*math.sin(i*resolution)
-        return x, y
+    delta_angle = i*resolution - (i-1)*resolution
+    old_radius = math.sqrt(old_x**2 + old_y**2)
+    current_radius = old_radius + (spiral_width*delta_angle/(2*math.pi))
+    x = current_radius*math.cos(i*resolution)
+    y = current_radius*math.sin(i*resolution)
+    return x, y
 
 
 class SpiralSearcherLC(Node):
@@ -63,6 +67,8 @@ class SpiralSearcherLC(Node):
         self.old_spiral_altitude = -1
         self._pipeline_detected = False
         self._action_server = None
+        self._abort_event = threading.Event()
+        self._goal_executing = threading.Event()
 
         super().__init__(node_name, **kwargs)
 
@@ -167,56 +173,76 @@ class SpiralSearcherLC(Node):
             else:
                 self.count += 1
 
-    def _goal_callback(self, goal_request):
-        """Accept goals only when active and use_action_server is True."""
-        if self._state_machine.current_state[1] != 'active':
-            self.get_logger().warn('Goal rejected: node is not active.')
-            return GoalResponse.REJECT
-        if not self.get_parameter(
-                'use_action_server').get_parameter_value().bool_value:
-            self.get_logger().warn('Goal rejected: use_action_server is False.')
-            return GoalResponse.REJECT
-        return GoalResponse.ACCEPT
-
-    def _cancel_callback(self, goal_handle):
-        """Allow cancellation at any time."""
-        return CancelResponse.ACCEPT
-
-    def _execute_spiral_search(self, goal_handle):
-        """Run spiral search until pipeline detected or cancelled."""
+    def _reset_spiral_state(self) -> None:
+        """Reset all spiral search state for a fresh run."""
+        self.spiral_center_x = None
+        self.spiral_center_y = None
+        self.spiral_count = 0
+        self.spiral_x = 0.0
+        self.spiral_y = 0.0
+        self.z_delta = 0
+        self.goal_setpoint = None
+        self.count = 0
         self._pipeline_detected = False
+
+    def _start_spiral(self) -> None:
+        """Enable spiral movement."""
         self._enabled = True
+
+    def _stop_spiral(self) -> None:
+        """Disable spiral movement."""
+        self._enabled = False
+
+    def _make_result(
+            self, pipeline_found: bool,
+            time_spent: float) -> SpiralSearch.Result:
+        """Create a SpiralSearch action result."""
+        result = SpiralSearch.Result()
+        result.time_spent = time_spent
+        result.pipeline_found = pipeline_found
+        return result
+
+    def _execute_spiral_search(
+            self, goal_handle: ServerGoalHandle) -> SpiralSearch.Result:
+        """Run spiral search until pipeline detected or cancelled."""
+        self._goal_executing.set()
+        self._reset_spiral_state()
+        self._start_spiral()
         start_time = time.time()
         rate = self.create_rate(1)
 
-        while not self._pipeline_detected:
-            if goal_handle.is_cancel_requested:
-                self._enabled = False
-                goal_handle.canceled()
-                result = SpiralSearch.Result()
-                result.time_spent = float(time.time() - start_time)
-                result.pipeline_found = False
-                return result
+        try:
+            while not self._pipeline_detected:
+                if goal_handle.is_cancel_requested:
+                    goal_handle.canceled()
+                    return self._make_result(
+                        False, float(time.time() - start_time))
+                if self._abort_event.is_set():
+                    goal_handle.abort()
+                    return self._make_result(
+                        False, float(time.time() - start_time))
 
-            feedback = SpiralSearch.Feedback()
-            feedback.elapsed_time = float(time.time() - start_time)
-            goal_handle.publish_feedback(feedback)
-            rate.sleep()
+                feedback = SpiralSearch.Feedback()
+                feedback.elapsed_time = float(time.time() - start_time)
+                goal_handle.publish_feedback(feedback)
+                rate.sleep()
 
-        self._enabled = False
-        result = SpiralSearch.Result()
-        result.time_spent = float(time.time() - start_time)
-        result.pipeline_found = True
-        goal_handle.succeed()
-        return result
+            result = self._make_result(
+                True, float(time.time() - start_time))
+            goal_handle.succeed()
+            return result
+        finally:
+            self._stop_spiral()
+            self._goal_executing.clear()
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         """Configure the node, start the spiral timer, and register the action server."""
         self.get_logger().info('on_configure() is called.')
         self.ardusub = BlueROVGazebo('bluerov_spiral_search')
-
+        ardusub_executor = rclpy.executors.SingleThreadedExecutor()
+        ardusub_executor.add_node(self.ardusub)
         self.thread = threading.Thread(
-            target=rclpy.spin, args=(self.ardusub, ), daemon=True)
+            target=spin_srv, args=(ardusub_executor, ), daemon=True)
         self.thread.start()
 
         self._pipeline_detected_sub = self.create_subscription(
@@ -227,43 +253,57 @@ class SpiralSearcherLC(Node):
             SpiralSearch,
             'spiral_search',
             execute_callback=self._execute_spiral_search,
-            goal_callback=self._goal_callback,
-            cancel_callback=self._cancel_callback,
+            goal_callback=make_goal_callback(self),
+            cancel_callback=accept_cancel,
         )
 
-        self._timer_ = self.create_timer(self.timer_period, self.publish)
+        self._timer = self.create_timer(self.timer_period, self.publish)
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
         """Activate: start spiral immediately unless action server mode is on."""
         self.get_logger().info("on_activate() is called.")
-        self.spiral_center_x = None
-        self.spiral_center_y = None
-        use_action_server = self.get_parameter(
-            'use_action_server').get_parameter_value().bool_value
-        if not use_action_server:
-            self._enabled = True
+        self._reset_spiral_state()
+        self._abort_event.clear()
+        if not use_action_server(self):
+            self._start_spiral()
         return super().on_activate(state)
 
     def on_deactivate(self, state: State) -> TransitionCallbackReturn:
         """Deactivate the node and stop spiral behavior."""
         self.get_logger().info("on_deactivate() is called.")
-        self._enabled = False
+        self._abort_event.set()
+        self._stop_spiral()
         return super().on_deactivate(state)
+
+    def _destroy_spiral_timer(self) -> None:
+        """Destroy the spiral timer if it exists."""
+        if self._timer is not None:
+            self.destroy_timer(self._timer)
+            self._timer = None
 
     def on_cleanup(self, state: State) -> TransitionCallbackReturn:
         """Clean up the node."""
+        self._stop_spiral()
         self.thread.join()
         self.ardusub.destroy_node()
-        self.destroy_timer(self._timer)
+        self._destroy_spiral_timer()
+        if self._action_server is not None:
+            self._action_server.destroy()
+            self._action_server = None
         self.get_logger().info('on_cleanup() is called.')
         return TransitionCallbackReturn.SUCCESS
 
     def on_shutdown(self, state: State) -> TransitionCallbackReturn:
         """Shut down the node."""
+        self._abort_event.set()
+        self._stop_spiral()
         self.thread.join()
         self.ardusub.destroy_node()
-        self.destroy_timer(self._timer)
+        self._destroy_spiral_timer()
+        if self._action_server is not None:
+            self._action_server.destroy()
+            self._action_server = None
         self.get_logger().info('on_shutdown() is called.')
         return TransitionCallbackReturn.SUCCESS
 

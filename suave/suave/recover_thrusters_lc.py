@@ -16,8 +16,9 @@
 
 import rclpy
 import sys
+import threading
 
-from rclpy.action import ActionServer, GoalResponse, CancelResponse
+from rclpy.action import ActionServer
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.lifecycle import Node
 from rclpy.lifecycle import State
@@ -30,6 +31,10 @@ from rcl_interfaces.msg import Parameter
 from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.srv import SetParameters
 
+from suave.action_server_utils import accept_cancel
+from suave.action_server_utils import make_goal_callback
+from suave.action_server_utils import use_action_server
+from suave.ros_service_utils import call_service_with_timeout
 from suave_msgs.action import RecoverThrusters
 
 
@@ -41,6 +46,8 @@ class RecoverThrustersLC(Node):
         super().__init__(node_name, **kwargs)
         self.set_parameters_service = None
         self._action_server = None
+        self._abort_event = threading.Event()
+        self._goal_executing = threading.Event()
         self.trigger_configure()
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
@@ -56,61 +63,68 @@ class RecoverThrustersLC(Node):
             RecoverThrusters,
             'recover_thrusters',
             execute_callback=self._execute_recover,
-            goal_callback=self._goal_callback,
-            cancel_callback=self._cancel_callback,
+            goal_callback=make_goal_callback(self),
+            cancel_callback=accept_cancel,
         )
         return TransitionCallbackReturn.SUCCESS
 
-    def _goal_callback(self, goal_request):
-        """Accept goals only when active and use_action_server is True."""
-        if self._state_machine.current_state[1] != 'active':
-            self.get_logger().warn('Goal rejected: node is not active.')
-            return GoalResponse.REJECT
-        if not self.get_parameter(
-                'use_action_server').get_parameter_value().bool_value:
-            self.get_logger().warn('Goal rejected: use_action_server is False.')
-            return GoalResponse.REJECT
-        return GoalResponse.ACCEPT
-
-    def _cancel_callback(self, goal_handle):
-        """Allow cancellation at any time."""
-        return CancelResponse.ACCEPT
+    def _make_result(self, success):
+        """Create a RecoverThrusters action result."""
+        result = RecoverThrusters.Result()
+        result.success = success
+        return result
 
     def _execute_recover(self, goal_handle):
         """Run thruster recovery and return result."""
-        recovered = self.recover_thrusters()
-        result = RecoverThrusters.Result()
-        result.success = recovered
-        if recovered:
-            goal_handle.succeed()
-        else:
-            goal_handle.abort()
-        return result
+        self._goal_executing.set()
+        try:
+            recovered = self._recover_thrusters(
+                cancel_requested=lambda: goal_handle.is_cancel_requested)
+            result = self._make_result(recovered is True)
+            if recovered is True:
+                goal_handle.succeed()
+            elif recovered is None:
+                if self._abort_event.is_set():
+                    goal_handle.abort()
+                else:
+                    goal_handle.canceled()
+            else:
+                goal_handle.abort()
+            return result
+        finally:
+            self._goal_executing.clear()
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
         """Activate: start recovery immediately unless action server mode is on."""
         self.get_logger().info("on_activate() is called.")
-        use_action_server = self.get_parameter(
-            'use_action_server').get_parameter_value().bool_value
-        if not use_action_server:
-            self.executor.create_task(self.recover_thrusters)
+        self._abort_event.clear()
+        if not use_action_server(self):
+            self.executor.create_task(self._recover_thrusters)
         return super().on_activate(state)
 
     def on_deactivate(self, state: State) -> TransitionCallbackReturn:
         """Deactivate the node."""
         self.get_logger().info("on_deactivate() is called.")
+        self._abort_event.set()
         return super().on_deactivate(state)
 
     def on_cleanup(self, state: State) -> TransitionCallbackReturn:
         """Clean up the node."""
         self.get_logger().info('on_cleanup() is called.')
         self.destroy_set_parameters_service()
+        if self._action_server is not None:
+            self._action_server.destroy()
+            self._action_server = None
         return TransitionCallbackReturn.SUCCESS
 
     def on_shutdown(self, state: State) -> TransitionCallbackReturn:
         """Shut down the node."""
         self.get_logger().info('on_shutdown() is called.')
+        self._abort_event.set()
         self.destroy_set_parameters_service()
+        if self._action_server is not None:
+            self._action_server.destroy()
+            self._action_server = None
         return TransitionCallbackReturn.SUCCESS
 
     def destroy_set_parameters_service(self):
@@ -119,27 +133,17 @@ class RecoverThrustersLC(Node):
             self.destroy_client(self.set_parameters_service)
             self.set_parameters_service = None
 
-    def call_service(self, cli, request):
-        """Call a ROS service synchronously, returning None on failure."""
-        if cli.wait_for_service(timeout_sec=5.0) is False:
-            self.get_logger().error(
-                'service not available {}'.format(cli.srv_name))
-            return None
-        future = cli.call_async(request)
-        self.executor.spin_until_future_complete(future, timeout_sec=5.0)
-        if future.done() is False:
-            self.get_logger().error(
-                'Future not completed {}'.format(cli.srv_name))
-            return None
-        return future.result()
-
-    def recover_thrusters(self):
-        """Set all six thruster SERVO_FUNCTION parameters via MAVROS and publish diagnostics."""
+    def _recover_thrusters(self, cancel_requested=None):
+        """Recover all thrusters and return true only if every write succeeds."""
         publish_rate = self.create_rate(4)
         rate = self.create_rate(0.1)
         rate.sleep()
         all_recovered = True
         for thruster in range(1, 7):
+            if self._abort_event.is_set():
+                return None
+            if cancel_requested is not None and cancel_requested():
+                return None
             parameter = Parameter()
             parameter.name = 'SERVO' + str(thruster) + '_FUNCTION'
             parameter.value.type = ParameterType.PARAMETER_INTEGER
@@ -148,7 +152,8 @@ class RecoverThrustersLC(Node):
             req = SetParameters.Request()
             req.parameters.append(parameter)
 
-            response = self.call_service(self.set_parameters_service, req)
+            response = call_service_with_timeout(
+                self, self.set_parameters_service, req)
             if response is None:
                 all_recovered = False
                 self.get_logger().error(
