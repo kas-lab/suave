@@ -82,9 +82,9 @@ To run SUAVE with different managing subsystems, replace the `experiment_launch`
 
 | Parameter | Default | Description |
 |---|---|---|
-| `result_path` | `~/suave/results` | Directory where CSV result files are written |
+| `result_path` | `~/suave/results` | Directory where CSV result files and per-run logs are written |
 | `gui` | `false` | Launch Gazebo with a visible window |
-| `experiment_logging` | `false` | Enable verbose logging during experiments |
+| `experiment_logging` | `false` | Enable extra console output from the runner (ArduPilot and ROS node logs are always captured to `<result_path>/logs/run_<exp>_<run>/` regardless of this flag) |
 | `mission_config_pkg` | `suave_missions` | ROS package containing the mission config |
 | `mission_config_file` | `config/runner_mission_config.yaml` | Path to mission config within that package |
 | `initial_pos_x` / `y` | `-17.0` / `2.5` | AUV spawn position in the Gazebo world |
@@ -95,6 +95,8 @@ To run SUAVE with different managing subsystems, replace the `experiment_launch`
 | `thruster_events` | `[(1,failure,100), (3,failure,100)]` | List of thruster events: `(id, type, time_s)` |
 | `thruster_events_random_interval` | `[-100.0, 100.0]` | Random offset (s) applied to each thruster event time |
 | `random_interval` | `5` | Number of runs before re-randomising offsets |
+| `random_seed` | `100` | Seed for the perturbation RNG — fix this value for reproducible benchmark campaigns |
+| `resume_result_path` | `""` | Path to an existing result folder to resume a crashed campaign (empty = start a new timestamped folder) |
 | `experiments` | *(see file)* | List of experiment definitions (see below) |
 
 Each entry in `experiments` is a JSON string with four fields:
@@ -206,7 +208,7 @@ Launching the mission file without launch arguments will start a time-constraine
 
 The arguments can be defined by adding the above arguments with the notation `<name>:=<value>` to the end of the command line.
 
-An example of running the constant distance mission with metacontrol saving to a file called 'measurement_1':
+An example of running a mission with metacontrol saving to a file called 'measurement_1':
 
 ```Bash
 ros2 launch suave_missions mission.launch.py adaptation_manager:=metacontrol result_filename:=measurement_1
