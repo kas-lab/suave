@@ -20,6 +20,8 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.actions import IncludeLaunchDescription
 from launch.actions import OpaqueFunction
+from launch.conditions import LaunchConfigurationEquals
+from launch.conditions import LaunchConfigurationNotEquals
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 
@@ -95,8 +97,21 @@ def generate_launch_description():
             'adaptation_manager': 'none',
             'mission_name': 'suave',
             'result_path': result_path,
+        }],
+        condition=LaunchConfigurationEquals('result_filename', '')
+    )
+
+    mission_metrics_node_override = Node(
+        package='suave_metrics',
+        executable='mission_metrics',
+        name='mission_metrics',
+        parameters=[mission_config, {
+            'adaptation_manager': 'none',
+            'mission_name': 'suave',
+            'result_path': result_path,
             'result_filename': result_filename,
         }],
+        condition=LaunchConfigurationNotEquals('result_filename', '')
     )
 
     return LaunchDescription([
@@ -107,5 +122,6 @@ def generate_launch_description():
         OpaqueFunction(function=configure_logging),
         suave_launch,
         mission_node,
-        mission_metrics_node
+        mission_metrics_node,
+        mission_metrics_node_override
     ])
