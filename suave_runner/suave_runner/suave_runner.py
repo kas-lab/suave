@@ -67,6 +67,8 @@ class ExperimentRunnerNode(Node):
         self.declare_parameter('gui', False)  # whether to run GUI or not
         # whether to log experiment results or not
         self.declare_parameter('experiment_logging', False)
+        # Resume an interrupted campaign by pointing at an existing result folder
+        self.declare_parameter('resume_result_path', '')
 
         # Ardupilot parameters
         self.declare_parameter(
@@ -261,12 +263,17 @@ class ExperimentRunnerNode(Node):
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
 
     def create_experiment_folder(self):
-        result_path_ = self.get_parameter(
-            'result_path').get_parameter_value().string_value
-        result_path = Path(result_path_).expanduser() / \
-            datetime.now().strftime("%Y_%m_%d_%H-%M-%S")
-
-        if result_path.is_dir() is False:
+        resume_path = self.get_parameter(
+            'resume_result_path').get_parameter_value().string_value
+        if resume_path:
+            result_path = Path(resume_path).expanduser()
+            self.get_logger().info(f"Resuming campaign from {result_path}")
+        else:
+            result_path_ = self.get_parameter(
+                'result_path').get_parameter_value().string_value
+            result_path = Path(result_path_).expanduser() / \
+                datetime.now().strftime("%Y_%m_%d_%H-%M-%S")
+        if not result_path.is_dir():
             result_path.mkdir(parents=True)
         return result_path
 
@@ -397,6 +404,13 @@ class ExperimentRunnerNode(Node):
                 if self.terminate_flag:
                     break
 
+                done_marker = result_path / f'run_{exp_idx}_{run_idx}.done'
+                if done_marker.exists():
+                    self.get_logger().info(
+                        f"  Skipping {adaptation_manager} run "
+                        f"{run_idx + 1}/{num_runs} (checkpoint found).")
+                    continue
+
                 self._mission_done_event.clear()
                 self.get_logger().info(
                     f"  Run {adaptation_manager} {run_idx + 1}/{num_runs}")
@@ -433,6 +447,9 @@ class ExperimentRunnerNode(Node):
                     self.get_logger().info(
                         "Termination requested. Stopping early.")
                     break
+
+                if mission_complete:
+                    done_marker.touch()
 
                 self.get_logger().info(
                     f"  Run {run_idx + 1} completed "
@@ -471,15 +488,16 @@ class ExperimentRunnerNode(Node):
                     for event in self.thruster_events
                 ]
 
-            # Create a new filename
+            # Create a new filename; reuse existing file when resuming
             new_file = result_path / f'mission_config_run{idx}.yaml'
-            with open(new_file, 'w') as f:
-                yaml.safe_dump(
-                    config,
-                    f,
-                    default_flow_style=False,
-                    indent=2,
-                    sort_keys=False)
+            if not new_file.exists():
+                with open(new_file, 'w') as f:
+                    yaml.safe_dump(
+                        config,
+                        f,
+                        default_flow_style=False,
+                        indent=2,
+                        sort_keys=False)
 
             mission_config_file_array.append(new_file)
         return mission_config_file_array

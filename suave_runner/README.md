@@ -22,6 +22,30 @@ The published image is available as `ghcr.io/kas-lab/suave-headless:main`.
 docker run -it --rm --gpus all --runtime=nvidia --name suave_runner -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all -v $HOME/suave/results:/home/ubuntu-user/suave/results -v /dev/dri:/dev/dri -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro ghcr.io/kas-lab/suave-headless:main
 ```
 
+## Resuming a crashed campaign
+
+If the runner crashes or is interrupted mid-campaign, it can resume from where it
+left off without re-running completed runs.
+
+After each successful run the runner writes a marker file
+`run_<exp_idx>_<run_idx>.done` inside the result folder. On resume the runner
+reads these markers and skips any run whose marker already exists. Runs that
+timed out (no `mission_metrics/done` received) are **not** marked and will be
+retried.
+
+To resume, pass the path of the existing result folder via `resume_result_path`:
+
+```bash
+ros2 run suave_runner suave_runner \
+  --ros-args \
+  -p resume_result_path:=~/suave/results/2026_06_19_10-30-00 \
+  -p experiments:='[...]'
+```
+
+The `experiments` parameter must match the original campaign. Per-run mission
+config files (`mission_config_run*.yaml`) are reused if already present in the
+folder; otherwise they are regenerated from the same random seed.
+
 ## Reproducible perturbations
 
 The runner uses the `random_seed` ROS parameter when generating experiment

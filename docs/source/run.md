@@ -119,6 +119,36 @@ experiments:
 
 Multiple experiments can be listed and will be run sequentially. See the [Metrics Reference](metrics.md) for details on output files.
 
+### Resuming a crashed campaign
+
+If the runner is interrupted mid-campaign (crash, Ctrl+C, power loss), it can
+resume from where it left off without re-running completed runs.
+
+After each **successful** run the runner writes a marker file
+`run_<exp_idx>_<run_idx>.done` inside the result folder. Runs that timed out
+(no result received within `run_duration`) are **not** marked and will be
+retried on resume.
+
+To resume, pass the path of the interrupted result folder via
+`resume_result_path`:
+
+```Bash
+ros2 run suave_runner suave_runner \
+  --ros-args \
+  -p resume_result_path:=~/suave/results/2026_06_19_10-30-00 \
+  -p experiments:='[
+    "{\"experiment_launch\": \"ros2 launch suave_bt suave_bt.launch.py\", \
+      \"num_runs\": 10, \
+      \"adaptation_manager\": \"bt\", \
+      \"mission_name\": \"suave\"}"
+  ]'
+```
+
+The `experiments` parameter must match the original campaign exactly so that
+run indices line up with the marker files. Per-run mission config files
+(`mission_config_run*.yaml`) are reused from the existing folder if present;
+otherwise they are regenerated using the same random seed.
+
 ## Without the runner
 
 **Configuring SUAVE:**
