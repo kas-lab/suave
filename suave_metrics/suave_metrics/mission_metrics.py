@@ -13,7 +13,6 @@
 # limitations under the License.
 """module used to save metrics."""
 import csv
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -35,10 +34,17 @@ from rcl_interfaces.msg import ParameterEvent
 from rcl_interfaces.srv import GetParameters
 from lifecycle_msgs.msg import TransitionEvent
 
-from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
+from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy, QoSDurabilityPolicy
 
 
 DEFAULT_WATER_VISIBILITY_THRESHOLDS = [3.25, 2.25, 1.25]
+
+MISSION_DONE_QOS = QoSProfile(
+    reliability=QoSReliabilityPolicy.RELIABLE,
+    durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+    history=QoSHistoryPolicy.KEEP_LAST,
+    depth=1,
+)
 
 
 class MissionMetrics(Node):
@@ -191,6 +197,12 @@ class MissionMetrics(Node):
             'mission_metrics/save',
             self.save_mission_results_cb,
             callback_group=MutuallyExclusiveCallbackGroup()
+        )
+
+        self.mission_done_pub = self.create_publisher(
+            Bool,
+            'mission_metrics/done',
+            MISSION_DONE_QOS,
         )
 
     def status_cb(self, msg):
@@ -444,7 +456,8 @@ class MissionMetrics(Node):
                 [self.mission_name, date, t]
             )
 
-        os.system("touch /tmp/mission.done")
+        self.mission_done_pub.publish(Bool(data=True))
+        Path('/tmp/mission.done').touch()  # backward-compat for shell-script runners
 
     def save_metrics(self,
                      path: str,

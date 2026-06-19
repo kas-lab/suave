@@ -20,8 +20,20 @@ from pathlib import Path
 import rclpy
 from rclpy.parameter import Parameter
 
+from std_msgs.msg import Bool
+
 from suave_runner.suave_runner import ExperimentRunnerNode
 from suave_monitor.thruster_monitor import read_thruster_events
+
+
+def _minimal_runner_params():
+    return [
+        Parameter('experiments', Parameter.Type.STRING_ARRAY, [
+            '{"experiment_launch": "ros2 launch suave_bt suave_bt.launch.py",'
+            ' "num_runs": 1, "adaptation_manager": "bt", "mission_name": "suave"}'
+        ])
+    ]
+
 
 def test_create_experiment_folder():
     rclpy.init()
@@ -45,6 +57,7 @@ def test_create_experiment_folder():
         path = Path("/tmp/suave")
         shutil.rmtree(path)
         rclpy.shutdown()
+
 
 def test_randomize_experiments_configuration():
     rclpy.init()
@@ -90,7 +103,7 @@ def test_randomize_experiments_configuration():
         ]
         runner = ExperimentRunnerNode(parameter_overrides=params)
         runner.randomize_experiments_configuration()
-        
+
         assert len(runner.initial_pos_x_array) == 10
         assert all(runner.initial_pos_x_array[i] == runner.initial_pos_x_array[0] for i in range(5))
         assert all(runner.initial_pos_x_array[i] == runner.initial_pos_x_array[5] for i in range(5,10))
@@ -110,6 +123,7 @@ def test_randomize_experiments_configuration():
         assert all(runner.wv_sec_shift_array[i] == runner.wv_sec_shift_array[5] for i in range(5,10))
     finally:
         rclpy.shutdown()
+
 
 def test_generate_mission_config_files():
     rclpy.init()
@@ -158,7 +172,7 @@ def test_generate_mission_config_files():
             result_path.mkdir(parents=True)
         config_files = runner.generate_mission_config_files(
             result_path)
-        
+
         assert len(config_files) == 10
 
         wv_shift_array = []
@@ -170,10 +184,10 @@ def test_generate_mission_config_files():
                 float(config['/water_visibility_observer_node']['ros__parameters']['water_visibility_sec_shift'])
             )
             thruster_events_array.append(config['/thruster_monitor']['ros__parameters']['thruster_events'])
-        
+
         assert all(wv_shift_array[i] == wv_shift_array[0] for i in range(5))
         assert all(wv_shift_array[i] == wv_shift_array[5] for i in range(5,10))
-        
+
         assert all(thruster_events_array[i][0][2] == thruster_events_array[0][0][2] for i in range(5))
         assert all(thruster_events_array[i][1][2] == thruster_events_array[0][1][2] for i in range(5))
         assert all(thruster_events_array[i][0][2] == thruster_events_array[5][0][2] for i in range(5,10))
@@ -182,4 +196,39 @@ def test_generate_mission_config_files():
     finally:
         path = Path("/tmp/suave")
         shutil.rmtree(path)
+        rclpy.shutdown()
+
+
+def test_mission_done_cb_sets_event():
+    rclpy.init()
+    try:
+        runner = ExperimentRunnerNode(
+            parameter_overrides=_minimal_runner_params())
+        assert not runner._mission_done_event.is_set()
+        runner._mission_done_cb(Bool(data=True))
+        assert runner._mission_done_event.is_set()
+    finally:
+        rclpy.shutdown()
+
+
+def test_mission_done_cb_ignores_false():
+    rclpy.init()
+    try:
+        runner = ExperimentRunnerNode(
+            parameter_overrides=_minimal_runner_params())
+        runner._mission_done_cb(Bool(data=False))
+        assert not runner._mission_done_event.is_set()
+    finally:
+        rclpy.shutdown()
+
+
+def test_handle_termination_sets_done_event():
+    rclpy.init()
+    try:
+        runner = ExperimentRunnerNode(
+            parameter_overrides=_minimal_runner_params())
+        assert not runner._mission_done_event.is_set()
+        runner.handle_termination()
+        assert runner._mission_done_event.is_set()
+    finally:
         rclpy.shutdown()
