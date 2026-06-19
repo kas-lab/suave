@@ -36,7 +36,7 @@ setup(
     maintainer_email='g.rezendesilva@tudelft.nl',
     description='TODO: Package description',
     license='Apache-2.0',
-    extras_require = {
+    extras_require={
         'test': [
             'pytest',
         ],
@@ -44,7 +44,6 @@ setup(
     entry_points={
         'console_scripts':
         ['suave_runner = suave_runner.suave_runner:main',
-         'statistical_analysis = suave_runner.statistical_analysis:main'
-        ],
+         'statistical_analysis = suave_runner.statistical_analysis:main'],
     },
 )

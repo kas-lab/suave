@@ -28,7 +28,10 @@ from pathlib import Path
 import rclpy
 import rclpy.executors
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy, QoSDurabilityPolicy
+from rclpy.qos import QoSDurabilityPolicy
+from rclpy.qos import QoSHistoryPolicy
+from rclpy.qos import QoSProfile
+from rclpy.qos import QoSReliabilityPolicy
 
 from std_msgs.msg import Bool
 
@@ -47,26 +50,33 @@ MISSION_DONE_QOS = QoSProfile(
     depth=1,
 )
 
+
 class ExperimentRunnerNode(Node):
     def __init__(self, **kwargs):
         super().__init__('suave_runner_node', **kwargs)
-        random.seed(100) # set random seed
+        random.seed(100)  # set random seed
 
         # Declare parameters
 
         # Runner parameters
         self.declare_parameter('result_path', '~/suave/results')
         self.declare_parameter('random_interval', 5)
-        self.declare_parameter('experiments', [''])  # List of JSON-encoded dicts
+        # List of JSON-encoded dicts
+        self.declare_parameter('experiments', [''])
         self.declare_parameter('run_duration', 600)  # seconds
         self.declare_parameter('gui', False)  # whether to run GUI or not
-        self.declare_parameter('experiment_logging', False)  # whether to log experiment results or not
+        # whether to log experiment results or not
+        self.declare_parameter('experiment_logging', False)
 
         # Ardupilot parameters
-        self.declare_parameter('ardupilot_executable', 'sim_vehicle.py -L RATBeach -v ArduSub --model=JSON')
+        self.declare_parameter(
+            'ardupilot_executable',
+            'sim_vehicle.py -L RATBeach -v ArduSub --model=JSON')
 
         # Simulation parameters
-        self.declare_parameter('suave_simulation', 'ros2 launch suave simulation.launch.py')
+        self.declare_parameter(
+            'suave_simulation',
+            'ros2 launch suave simulation.launch.py')
         self.declare_parameter('initial_pos_x', -17.0)
         self.declare_parameter('initial_pos_y', 2.0)
         self.declare_parameter('initial_pos_z', -18.5)
@@ -76,68 +86,86 @@ class ExperimentRunnerNode(Node):
 
         # Mission parameters
         self.declare_parameter('mission_config_pkg', 'suave_missions')
-        self.declare_parameter('mission_config_file', 'config/mission_config.yaml')
+        self.declare_parameter(
+            'mission_config_file',
+            'config/mission_config.yaml')
 
         self.declare_parameter('water_visibility_sec_shift', 0.0)
-        self.declare_parameter('water_visibility_sec_shift_random_interval', [0.0, 0.0])
+        self.declare_parameter(
+            'water_visibility_sec_shift_random_interval', [
+                0.0, 0.0])
 
         self.declare_parameter('thruster_events', [''])
         self.declare_parameter('thruster_events_random_interval', [0.0, 0.0])
 
         # Retrieve parameters
-        self.ardupilot_executable = self.get_parameter('ardupilot_executable').get_parameter_value().string_value
+        self.ardupilot_executable = self.get_parameter(
+            'ardupilot_executable').get_parameter_value().string_value
 
         # Simulation parameters
         self.suave_simulation_cmd = self.get_parameter(
             'suave_simulation').get_parameter_value().string_value
-        self.initial_pos_x = self.get_parameter('initial_pos_x').get_parameter_value().double_value
-        self.initial_pos_y = self.get_parameter('initial_pos_y').get_parameter_value().double_value
-        self.initial_pos_z = self.get_parameter('initial_pos_z').get_parameter_value().double_value
+        self.initial_pos_x = self.get_parameter(
+            'initial_pos_x').get_parameter_value().double_value
+        self.initial_pos_y = self.get_parameter(
+            'initial_pos_y').get_parameter_value().double_value
+        self.initial_pos_z = self.get_parameter(
+            'initial_pos_z').get_parameter_value().double_value
         self.initial_pos_x_random_interval = self.get_parameter(
-            'initial_pos_x_random_interval').get_parameter_value().double_array_value
+            'initial_pos_x_random_interval'
+        ).get_parameter_value().double_array_value
         self.initial_pos_y_random_interval = self.get_parameter(
-            'initial_pos_y_random_interval').get_parameter_value().double_array_value
+            'initial_pos_y_random_interval'
+        ).get_parameter_value().double_array_value
         self.initial_pos_z_random_interval = self.get_parameter(
-            'initial_pos_z_random_interval').get_parameter_value().double_array_value
+            'initial_pos_z_random_interval'
+        ).get_parameter_value().double_array_value
 
         self.initial_pos_x_array = []
         self.initial_pos_y_array = []
         self.initial_pos_z_array = []
 
         # Runner parameters
-        self.run_duration = self.get_parameter('run_duration').get_parameter_value().integer_value
+        self.run_duration = self.get_parameter(
+            'run_duration').get_parameter_value().integer_value
         self.gui = self.get_parameter('gui').get_parameter_value().bool_value
         self.experiment_logging = self.get_parameter(
             'experiment_logging').get_parameter_value().bool_value
         experiments_param = self.get_parameter(
             'experiments').get_parameter_value().string_array_value
         try:
-            self.experiments = [json.loads(exp_str) for exp_str in experiments_param]
+            self.experiments = [json.loads(exp_str)
+                                for exp_str in experiments_param]
         except json.JSONDecodeError as e:
-            self.get_logger().error(f"Invalid JSON in 'experiments' parameter: {e}")
+            self.get_logger().error(
+                f"Invalid JSON in 'experiments' parameter: {e}")
             return
 
         if not self.experiments:
             self.get_logger().error(
-                "Parameter 'experiments' must be a non-empty list of JSON objects.")
+                "Parameter 'experiments' must be a non-empty list of JSON "
+                "objects.")
             return
 
         self.wv_sec_shift = self.get_parameter(
             'water_visibility_sec_shift').get_parameter_value().double_value
         self.wv_sec_shift_interval = self.get_parameter(
-            'water_visibility_sec_shift_random_interval').get_parameter_value().double_array_value
+            'water_visibility_sec_shift_random_interval'
+        ).get_parameter_value().double_array_value
         self.wv_sec_shift_array = []
 
         self.thruster_events = read_thruster_events(self.get_parameter(
             'thruster_events').get_parameter_value().string_array_value)
-        self.thruster_events_interval =  self.get_parameter(
-            'thruster_events_random_interval').get_parameter_value().double_array_value
+        self.thruster_events_interval = self.get_parameter(
+            'thruster_events_random_interval'
+        ).get_parameter_value().double_array_value
         self.thruster_events_array = []
 
         self.terminate_flag = False
         self.processes_stop_events = []
 
-        self.ardupilot_cmd = ['xvfb-run', '-a'] + self.ardupilot_executable.split()
+        self.ardupilot_cmd = ['xvfb-run', '-a'] + \
+            self.ardupilot_executable.split()
         if self.gui is True:
             self.ardupilot_cmd = self.ardupilot_cmd[2:]
 
@@ -149,7 +177,8 @@ class ExperimentRunnerNode(Node):
             MISSION_DONE_QOS,
         )
 
-        self.get_logger().info(f"Runner initialized for {len(self.experiments)} experiments.")
+        self.get_logger().info(
+            f"Runner initialized for {len(self.experiments)} experiments.")
 
     def handle_termination(self):
         self.get_logger().warn('Signal received. Cleaning up...')
@@ -190,8 +219,8 @@ class ExperimentRunnerNode(Node):
         def stop_checker():
             stop_event.wait()
             loop.call_soon_threadsafe(
-                lambda: asyncio.ensure_future(shutdown_launch_service(launch_service))
-            )
+                lambda: asyncio.ensure_future(
+                    shutdown_launch_service(launch_service)))
 
         threading.Thread(target=stop_checker, daemon=True).start()
 
@@ -206,7 +235,8 @@ class ExperimentRunnerNode(Node):
                 stop_event.set()
                 process.join(timeout=10)
             if process.is_alive():
-                self.get_logger().warn(f"Launch process {process.pid} did not exit cleanly.")
+                self.get_logger().warn(
+                    f"Launch process {process.pid} did not exit cleanly.")
         self.processes_stop_events.clear()
 
     def kill_gz_sim(self):
@@ -223,13 +253,15 @@ class ExperimentRunnerNode(Node):
 
     def terminate_process(self, proc, name):
         if proc and proc.poll() is None:
-            self.get_logger().info(f"Terminating {name} process group {os.getpgid(proc.pid)}...")
+            self.get_logger().info(
+                f"Terminating {name} process group {os.getpgid(proc.pid)}...")
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
 
     def create_experiment_folder(self):
-        result_path_ = self.get_parameter('result_path').get_parameter_value().string_value
-        result_path = Path(
-            result_path_).expanduser() / datetime.now().strftime("%Y_%m_%d_%H-%M-%S")
+        result_path_ = self.get_parameter(
+            'result_path').get_parameter_value().string_value
+        result_path = Path(result_path_).expanduser() / \
+            datetime.now().strftime("%Y_%m_%d_%H-%M-%S")
 
         if result_path.is_dir() is False:
             result_path.mkdir(parents=True)
@@ -257,17 +289,23 @@ class ExperimentRunnerNode(Node):
             stderr=ardupilot_proc_log,
             preexec_fn=os.setsid  # Launch in a new process group
         )
-        self.get_logger().info("    Sleeping 10 seconds before launching SUAVE simulation...")
+        self.get_logger().info(
+            "    Sleeping 10 seconds before launching SUAVE simulation...")
         time.sleep(10)
 
     def launch_suave_simulation(self, run_idx):
         suave_simulation_cmd_split = self.suave_simulation_cmd.split()
-        sim_pkg, sim_file = suave_simulation_cmd_split[2], suave_simulation_cmd_split[3]
-        sim_path = os.path.join(get_package_share_directory(sim_pkg), 'launch', sim_file)
+        sim_pkg = suave_simulation_cmd_split[2]
+        sim_file = suave_simulation_cmd_split[3]
+        sim_path = os.path.join(
+            get_package_share_directory(sim_pkg),
+            'launch',
+            sim_file)
 
         sim_args = {}
         if len(suave_simulation_cmd_split) > 4:
-            sim_args = {arg.split(':=')[0]: arg.split(':=')[1] for arg in suave_simulation_cmd_split[4:]}
+            sim_args = {arg.split(':=')[0]: arg.split(':=')[1]
+                        for arg in suave_simulation_cmd_split[4:]}
         sim_args['gui'] = 'true' if self.gui else 'false'
         if not self.experiment_logging:
             sim_args['silent'] = 'true'
@@ -277,7 +315,8 @@ class ExperimentRunnerNode(Node):
         sim_args['z'] = str(self.initial_pos_z_array[run_idx])
 
         self.get_logger().info(
-            f"    Launching SUAVE simulation from {sim_path} with args: {sim_args}")
+            f"    Launching SUAVE simulation from {sim_path} with args: "
+            f"{sim_args}")
         sim_launch = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(sim_path),
             launch_arguments=list(sim_args.items())
@@ -286,17 +325,27 @@ class ExperimentRunnerNode(Node):
         sim_launch_ld.add_action(sim_launch)
         sim_process, sim_stop_event = self.start_launch_process(sim_launch_ld)
         self.processes_stop_events.append((sim_process, sim_stop_event))
-        self.get_logger().info("    Sleeping 10 seconds before launching next nodes...")
+        self.get_logger().info(
+            "    Sleeping 10 seconds before launching next nodes...")
         time.sleep(10)
 
-    def launch_experiment(self, exp_launch: str, result_path: str, result_filename: str, mission_config_file: str):
+    def launch_experiment(
+            self,
+            exp_launch: str,
+            result_path: str,
+            result_filename: str,
+            mission_config_file: str):
         exp_launch_cmd_split = exp_launch.split()
         exp_pkg, exp_file = exp_launch_cmd_split[2], exp_launch_cmd_split[3]
-        exp_path = os.path.join(get_package_share_directory(exp_pkg), 'launch', exp_file)
+        exp_path = os.path.join(
+            get_package_share_directory(exp_pkg),
+            'launch',
+            exp_file)
 
         exp_args = {}
         if len(exp_launch_cmd_split) > 4:
-            exp_args = {arg.split(':=')[0]: arg.split(':=')[1] for arg in exp_launch_cmd_split[4:]}
+            exp_args = {arg.split(':=')[0]: arg.split(':=')[1]
+                        for arg in exp_launch_cmd_split[4:]}
         exp_args['result_path'] = result_path
         exp_args['result_filename'] = result_filename
         exp_args['gui'] = 'true' if self.gui else 'false'
@@ -305,7 +354,8 @@ class ExperimentRunnerNode(Node):
 
         exp_args['mission_config'] = mission_config_file
 
-        self.get_logger().info(f"    Launching Experiment from {exp_path} with args: {exp_args}")
+        self.get_logger().info(
+            f"    Launching Experiment from {exp_path} with args: {exp_args}")
         exp_launch_desc = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(exp_path),
             launch_arguments=exp_args.items()
@@ -313,8 +363,10 @@ class ExperimentRunnerNode(Node):
 
         experiment_ld = LaunchDescription()
         experiment_ld.add_action(exp_launch_desc)
-        experiment_process, experiment_stop_event = self.start_launch_process(experiment_ld)
-        self.processes_stop_events.append((experiment_process, experiment_stop_event))
+        experiment_process, experiment_stop_event = self.start_launch_process(
+            experiment_ld)
+        self.processes_stop_events.append(
+            (experiment_process, experiment_stop_event))
 
     def run_experiments(self):
         result_path = self.create_experiment_folder()
@@ -324,20 +376,27 @@ class ExperimentRunnerNode(Node):
             if self.terminate_flag:
                 break
 
-            exp_launch, num_runs, result_filename, adaptation_manager = self.initialize_experiment(experiment, exp_idx)
+            experiment_data = self.initialize_experiment(experiment, exp_idx)
+            exp_launch, num_runs, result_filename, adaptation_manager = (
+                experiment_data)
 
             if not exp_launch:
-                self.get_logger().warn(f"Skipping experiment {exp_idx + 1}: Missing 'experiment_launch'")
+                self.get_logger().warn(
+                    f"Skipping experiment {exp_idx + 1}: Missing "
+                    "'experiment_launch'")
                 continue
 
-            self.get_logger().info(f"Running experiment {exp_idx + 1}/{len(self.experiments)} for {num_runs} runs with {adaptation_manager}")
+            self.get_logger().info(
+                f"Running experiment {exp_idx + 1}/{len(self.experiments)} "
+                f"for {num_runs} runs with {adaptation_manager}")
 
             for run_idx in range(num_runs):
                 if self.terminate_flag:
                     break
 
                 self._mission_done_event.clear()
-                self.get_logger().info(f"  Run {adaptation_manager} {run_idx + 1}/{num_runs}")
+                self.get_logger().info(
+                    f"  Run {adaptation_manager} {run_idx + 1}/{num_runs}")
 
                 try:
                     self.launch_ardupilot()
@@ -351,7 +410,8 @@ class ExperimentRunnerNode(Node):
                     self.get_logger().error(f"Failed to launch processes: {e}")
                     break
 
-                self.get_logger().info("    Waiting for mission_metrics/done...")
+                self.get_logger().info(
+                    "    Waiting for mission_metrics/done...")
                 start_time = time.time()
                 mission_complete = False
 
@@ -360,16 +420,20 @@ class ExperimentRunnerNode(Node):
                         mission_complete = True
                         break
                     if time.time() - start_time > self.run_duration:
-                        self.get_logger().warn("    Timeout waiting for mission_metrics/done.")
+                        self.get_logger().warn(
+                            "    Timeout waiting for mission_metrics/done.")
                         break
 
                 self.shutdown_all_processes()
 
                 if self.terminate_flag:
-                    self.get_logger().info("Termination requested. Stopping early.")
+                    self.get_logger().info(
+                        "Termination requested. Stopping early.")
                     break
 
-                self.get_logger().info(f"  Run {run_idx + 1} completed (success: {mission_complete}).")
+                self.get_logger().info(
+                    f"  Run {run_idx + 1} completed "
+                    f"(success: {mission_complete}).")
                 time.sleep(10)
 
         self.get_logger().info("All experiment runs completed or aborted.")
@@ -390,23 +454,42 @@ class ExperimentRunnerNode(Node):
                 config = yaml.safe_load(f)
 
             # Replace the value of watervi sibility sec shift
-            config['/water_visibility_observer_node']['ros__parameters']['water_visibility_sec_shift'] = float(wv_shift)
+            observer_params = config[
+                '/water_visibility_observer_node']['ros__parameters']
+            observer_params['water_visibility_sec_shift'] = float(wv_shift)
 
             if len(self.thruster_events) > 0:
-                config['/thruster_monitor']['ros__parameters']['thruster_events'] = [
-                    f"({event[0]},{event[1]},{float(event[2]) + float(self.thruster_events_array[idx])})"
+                thruster_params = config[
+                    '/thruster_monitor']['ros__parameters']
+                event_shift = self.thruster_events_array[idx]
+                thruster_params['thruster_events'] = [
+                    f"({event[0]},{event[1]},"
+                    f"{float(event[2]) + float(event_shift)})"
                     for event in self.thruster_events
                 ]
 
             # Create a new filename
             new_file = result_path / f'mission_config_run{idx}.yaml'
             with open(new_file, 'w') as f:
-                yaml.safe_dump(config, f, default_flow_style=False, indent=2, sort_keys=False)
+                yaml.safe_dump(
+                    config,
+                    f,
+                    default_flow_style=False,
+                    indent=2,
+                    sort_keys=False)
 
             mission_config_file_array.append(new_file)
         return mission_config_file_array
 
-    def append_array_random_interval(self, array, value, random_interval, current_delta, min_delta, max_delta, i):
+    def append_array_random_interval(
+            self,
+            array,
+            value,
+            random_interval,
+            current_delta,
+            min_delta,
+            max_delta,
+            i):
         if i < len(array):
             return current_delta
         delta = current_delta
@@ -419,16 +502,22 @@ class ExperimentRunnerNode(Node):
         return delta
 
     def randomize_experiments_configuration(self):
-        random_interval = self.get_parameter('random_interval').get_parameter_value().integer_value
+        random_interval = self.get_parameter(
+            'random_interval').get_parameter_value().integer_value
 
         # List of variables to randomize
         # Each tuple: (array, value, interval, current_delta)
         arrays = [
-            (self.initial_pos_x_array, self.initial_pos_x, self.initial_pos_x_random_interval, 0.0),
-            (self.initial_pos_y_array, self.initial_pos_y, self.initial_pos_y_random_interval, 0.0),
-            (self.initial_pos_z_array, self.initial_pos_z, self.initial_pos_z_random_interval, 0.0),
-            (self.wv_sec_shift_array, self.wv_sec_shift, self.wv_sec_shift_interval, 0.0),
-            (self.thruster_events_array, 0, self.thruster_events_interval, 0.0),
+            (self.initial_pos_x_array, self.initial_pos_x,
+             self.initial_pos_x_random_interval, 0.0),
+            (self.initial_pos_y_array, self.initial_pos_y,
+             self.initial_pos_y_random_interval, 0.0),
+            (self.initial_pos_z_array, self.initial_pos_z,
+             self.initial_pos_z_random_interval, 0.0),
+            (self.wv_sec_shift_array, self.wv_sec_shift,
+             self.wv_sec_shift_interval, 0.0),
+            (self.thruster_events_array, 0,
+             self.thruster_events_interval, 0.0),
         ]
 
         for exp_idx, experiment in enumerate(self.experiments):
@@ -441,8 +530,13 @@ class ExperimentRunnerNode(Node):
                 for idx, (array, value, interval, _) in enumerate(arrays):
                     min_delta, max_delta = interval
                     current_deltas[idx] = self.append_array_random_interval(
-                        array, value, random_interval, current_deltas[idx], min_delta, max_delta, i
-                    )
+                        array,
+                        value,
+                        random_interval,
+                        current_deltas[idx],
+                        min_delta,
+                        max_delta,
+                        i)
 
 
 def main(args=None):
