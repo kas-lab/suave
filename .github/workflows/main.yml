@@ -13,9 +13,9 @@ jobs:
       image: rostooling/setup-ros-docker:ubuntu-jammy-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Build pkgs
-        uses: ros-tooling/action-ros-ci@0.4.8
+        uses: ros-tooling/action-ros-ci@c8bee402c95e6b4a47c9bb5ce69de4c692128d3a # 0.4.5
         with:
           package-name: |
             suave
