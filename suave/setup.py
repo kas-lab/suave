@@ -37,7 +37,7 @@ setup(
     maintainer='gus',
     maintainer_email='g.rezendesilva@tudelft.nl',
     description='TODO: Package description',
-    license='TODO: License declaration',
+    license='Apache-2.0',
     extras_require={
         'test': [
             'pytest',
