@@ -91,7 +91,7 @@ int main(int argc, char * argv[])
     });
 
   bool finish = false;
-  while (!finish & rclcpp::ok()) {
+  while (!finish && rclcpp::ok()) {
     finish = tree.rootNode()->executeTick() == BT::NodeStatus::SUCCESS;
     std::this_thread::sleep_for(100ms);
   }
