@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Run repeatable SUAVE experiment campaigns and collect their results."""
+
 import asyncio
 import multiprocessing
 import threading
@@ -52,7 +54,10 @@ MISSION_DONE_QOS = QoSProfile(
 
 
 class ExperimentRunnerNode(Node):
+    """Orchestrate simulation and adaptation experiments."""
+
     def __init__(self, **kwargs):
+        """Initialize campaign configuration and process state."""
         super().__init__('suave_runner_node', **kwargs)
 
         # Declare parameters
@@ -67,7 +72,7 @@ class ExperimentRunnerNode(Node):
         self.declare_parameter('gui', False)  # whether to run GUI or not
         # whether to log experiment results or not
         self.declare_parameter('experiment_logging', False)
-        # Resume an interrupted campaign by pointing at an existing result folder
+        # Resume an interrupted campaign from an existing result folder.
         self.declare_parameter('resume_result_path', '')
 
         # Ardupilot parameters
@@ -186,6 +191,7 @@ class ExperimentRunnerNode(Node):
             f"Runner initialized for {len(self.experiments)} experiments.")
 
     def handle_termination(self):
+        """Request campaign termination and unblock mission waiting."""
         self.get_logger().warn('Signal received. Cleaning up...')
         self.terminate_flag = True
         self._mission_done_event.set()  # unblock any waiting run
@@ -196,6 +202,7 @@ class ExperimentRunnerNode(Node):
 
     def start_launch_process(
             self, launch_description: LaunchDescription, log_dir: Path):
+        """Start a ROS launch description in an isolated child process."""
         stop_event = multiprocessing.Event()
         process = multiprocessing.Process(
             target=self._run_launchfile,
@@ -239,6 +246,7 @@ class ExperimentRunnerNode(Node):
             loop.close()
 
     def shutdown_all_launch_processes(self):
+        """Request shutdown of every tracked ROS launch process."""
         for process, stop_event in self.processes_stop_events:
             if process.is_alive():
                 stop_event.set()
@@ -249,12 +257,14 @@ class ExperimentRunnerNode(Node):
         self.processes_stop_events.clear()
 
     def kill_gz_sim(self):
+        """Terminate remaining Gazebo Sim processes."""
         try:
             subprocess.run(["pkill", "-f", "gz sim"], check=False)
         except Exception as e:
             print(f"Error killing gz sim processes: {e}")
 
     def shutdown_all_processes(self):
+        """Stop ArduPilot, ROS launch processes, Gazebo, and log output."""
         self.terminate_process(self.ardupilot_proc, "ArduPilot")
         self.shutdown_all_launch_processes()
         self.kill_gz_sim()
@@ -265,12 +275,14 @@ class ExperimentRunnerNode(Node):
         self.get_logger().info("All processes terminated.")
 
     def terminate_process(self, proc, name):
+        """Terminate a running subprocess and its process group."""
         if proc and proc.poll() is None:
             self.get_logger().info(
                 f"Terminating {name} process group {os.getpgid(proc.pid)}...")
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
 
     def create_experiment_folder(self):
+        """Return a resumed or newly created campaign result directory."""
         resume_path = self.get_parameter(
             'resume_result_path').get_parameter_value().string_value
         if resume_path:
@@ -286,6 +298,7 @@ class ExperimentRunnerNode(Node):
         return result_path
 
     def initialize_experiment(self, experiment, exp_idx):
+        """Extract normalized launch and result settings for an experiment."""
         exp_launch = experiment.get("experiment_launch")
         num_runs = experiment.get("num_runs", 1)
         adaptation_manager = experiment.get("adaptation_manager", "")
@@ -296,6 +309,7 @@ class ExperimentRunnerNode(Node):
         return exp_launch, num_runs, result_filename, adaptation_manager
 
     def launch_ardupilot(self, log_path: Path):
+        """Start ArduPilot and redirect its output to a run log."""
         self.get_logger().info("    Launching ArduPilot...")
         self._ardupilot_log = open(log_path, 'w')
         self.ardupilot_proc = subprocess.Popen(
@@ -309,6 +323,7 @@ class ExperimentRunnerNode(Node):
         time.sleep(10)
 
     def launch_suave_simulation(self, run_idx, log_dir: Path):
+        """Launch the SUAVE simulation for a configured run position."""
         suave_simulation_cmd_split = self.suave_simulation_cmd.split()
         sim_pkg = suave_simulation_cmd_split[2]
         sim_file = suave_simulation_cmd_split[3]
@@ -352,6 +367,7 @@ class ExperimentRunnerNode(Node):
             result_filename: str,
             mission_config_file: str,
             log_dir: Path):
+        """Launch the mission and managing system for one experiment run."""
         exp_launch_cmd_split = exp_launch.split()
         exp_pkg, exp_file = exp_launch_cmd_split[2], exp_launch_cmd_split[3]
         exp_path = os.path.join(
@@ -386,6 +402,7 @@ class ExperimentRunnerNode(Node):
             (experiment_process, experiment_stop_event))
 
     def run_experiments(self):
+        """Execute configured campaigns with resumable checkpoints."""
         result_path = self.create_experiment_folder()
         mission_config_file_array = self.generate_mission_config_files(
             result_path)
@@ -471,6 +488,7 @@ class ExperimentRunnerNode(Node):
         self.get_logger().info("All experiment runs completed or aborted.")
 
     def generate_mission_config_files(self, result_path):
+        """Generate per-run mission configurations with randomized events."""
         # Mission parameters
         mission_config_pkg = self.get_parameter(
             'mission_config_pkg').get_parameter_value().string_value
@@ -523,6 +541,7 @@ class ExperimentRunnerNode(Node):
             min_delta,
             max_delta,
             i):
+        """Append a value using a delta refreshed at fixed run intervals."""
         if i < len(array):
             return current_delta
         delta = current_delta
@@ -535,6 +554,7 @@ class ExperimentRunnerNode(Node):
         return delta
 
     def randomize_experiments_configuration(self):
+        """Generate reproducible perturbations for all runs."""
         random_interval = self.get_parameter(
             'random_interval').get_parameter_value().integer_value
 
@@ -573,6 +593,7 @@ class ExperimentRunnerNode(Node):
 
 
 def main(args=None):
+    """Run the SUAVE experiment campaign node."""
     rclpy.init(args=args)
     executor = rclpy.executors.MultiThreadedExecutor()
     lc_node = ExperimentRunnerNode()

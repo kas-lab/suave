@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Schedule thruster failures and recoveries and publish diagnostics."""
+
 import sys
 import rclpy
 
@@ -26,6 +29,7 @@ from rcl_interfaces.srv import SetParameters
 
 
 def read_thruster_events(events):
+    """Parse configured thruster-event strings into event fields."""
     thruster_events = []
     if events != '':
         for event in events:
@@ -36,7 +40,10 @@ def read_thruster_events(events):
 
 
 class ThrusterMonitor(Node):
+    """Apply scheduled thruster events through MAVROS parameters."""
+
     def __init__(self):
+        """Initialize event configuration, diagnostics, and state input."""
         super().__init__('thruster_monitor_node')
 
         # '(thrusterN, failure/recovery, delta time in seconds )'
@@ -54,6 +61,7 @@ class ThrusterMonitor(Node):
         self.last_event_time = self.get_clock().now().to_msg().sec
 
     def status_cb(self, msg):
+        """Start processing thruster events in guided mode."""
         if msg.mode == 'GUIDED':
             self.last_event_time = self.get_clock().now().to_msg().sec
             self.thruster_event_timer = self.create_timer(
@@ -61,6 +69,7 @@ class ThrusterMonitor(Node):
             self.destroy_subscription(self.mavros_state_sub)
 
     def thruster_event_cb(self):
+        """Apply the next event after its configured delay."""
         current_time = self.get_clock().now().to_msg().sec
         delta_time = current_time - self.last_event_time
         if len(self.thruster_events) > 0 and \
@@ -71,6 +80,7 @@ class ThrusterMonitor(Node):
             self.thruster_events.pop(0)
 
     def change_thruster_status(self, thruster, value):
+        """Apply a thruster failure or recovery and publish diagnostics."""
         parameter = Parameter()
         parameter.name = 'SERVO' + thruster + '_FUNCTION'
         parameter.value.type = ParameterType.PARAMETER_INTEGER
@@ -125,6 +135,7 @@ class ThrusterMonitor(Node):
         self.diagnostics_publisher.publish(diag_msg)
 
     def call_service(self, srv_type, srv_name, request):
+        """Wait for a service and submit an asynchronous request."""
         service = self.create_client(srv_type, srv_name)
         while not service.wait_for_service(timeout_sec=1.0):
             self.get_logger().info(srv_name + ' not available, waiting...')
@@ -133,6 +144,7 @@ class ThrusterMonitor(Node):
 
 
 def main():
+    """Run the thruster monitor node."""
     print("Starting thruster monitor node")
 
     rclpy.init(args=sys.argv)

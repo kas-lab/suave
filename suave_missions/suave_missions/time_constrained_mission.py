@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Run pipeline inspection with a configurable mission time limit."""
+
 import sys
 import rclpy
 
@@ -23,7 +25,10 @@ from suave_missions.inspection_mission import InspectionMission
 
 
 class MissionTimeConstrained(InspectionMission):
+    """Abort and save an inspection mission after its time limit."""
+
     def __init__(self, node_name='time_contrained_mission'):
+        """Initialize inspection behavior and the time-limit monitor."""
         super().__init__(node_name)
         if self.result_filename == 'mission_results':
             self.result_filename = 'time_mission_results'
@@ -42,6 +47,7 @@ class MissionTimeConstrained(InspectionMission):
             callback_group=MutuallyExclusiveCallbackGroup())
 
     def time_monitor_cb(self):
+        """Abort and save when elapsed time reaches the limit."""
         if self.mission_start_time is not None:
             current_time = self.get_clock().now()
             elapsed_time = current_time - self.mission_start_time
@@ -53,6 +59,7 @@ class MissionTimeConstrained(InspectionMission):
 
 
 def main():
+    """Run the time-constrained inspection mission node."""
     rclpy.init(args=sys.argv)
 
     mission_node = MissionTimeConstrained()

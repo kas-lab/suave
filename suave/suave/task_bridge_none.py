@@ -13,6 +13,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Bridge mission tasks directly to system-mode changes."""
+
 import sys
 import rclpy
 
@@ -23,7 +26,10 @@ from system_modes_msgs.srv import ChangeMode
 
 
 class TaskBridgeNone(TaskBridge):
+    """Execute mission tasks without an adaptation manager."""
+
     def __init__(self):
+        """Initialize mode parameters, clients, and task mappings."""
         super().__init__()
         self.declare_parameter('f_generate_search_path_mode', 'fd_spiral_low')
         self.declare_parameter('f_follow_pipeline_mode', 'fd_follow_pipeline')
@@ -50,14 +56,17 @@ class TaskBridgeNone(TaskBridge):
         }
 
     def forward_task_request(self, function):
+        """Activate the configured system mode for a mission function."""
         mode_name = self.get_parameter(function + '_mode').value
         return self.call_sysmode_change_mode(function, mode_name)
 
     def forward_task_cancel_request(self, function):
+        """Cancel a mission function by switching it to the unground mode."""
         mode_name = 'fd_unground'
         return self.call_sysmode_change_mode(function, mode_name)
 
     def call_sysmode_change_mode(self, function, mode_name):
+        """Request a system-mode change for the specified function."""
         mode_req = ChangeMode.Request()
         mode_req.mode_name = mode_name
         cli = self.sm_cli_dict[function]
@@ -66,6 +75,7 @@ class TaskBridgeNone(TaskBridge):
 
 
 def main():
+    """Run the direct task bridge node."""
     print('Starting task bridge node')
 
     rclpy.init(args=sys.argv)

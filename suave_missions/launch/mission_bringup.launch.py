@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Declare common SUAVE mission bringup arguments."""
+
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 
 
 def generate_launch_description():
-
+    """Return common mission-selection launch arguments."""
     adaptation_manager_arg = DeclareLaunchArgument(
         'adaptation_manager',
         default_value='none',

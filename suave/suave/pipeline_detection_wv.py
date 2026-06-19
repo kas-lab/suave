@@ -13,6 +13,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Detect pipelines while accounting for observed water visibility."""
+
 import rclpy
 from diagnostic_msgs.msg import DiagnosticArray
 from suave.pipeline_detection import PipelineDetection
@@ -21,7 +24,10 @@ from rclpy.executors import MultiThreadedExecutor
 
 
 class PipelineDetectionWV(PipelineDetection):
+    """Restrict geometric pipeline detection by water visibility distance."""
+
     def __init__(self):
+        """Initialize pipeline detection and subscribe to diagnostics."""
         super().__init__()
 
         self.diagnostics_sub = self.create_subscription(
@@ -35,6 +41,7 @@ class PipelineDetectionWV(PipelineDetection):
         self.water_visibility = None
 
     def diagnostics_cb(self, msg):
+        """Update the current water visibility from diagnostic values."""
         for status in msg.status:
             if status.message == "QA status":
                 for value in status.values:
@@ -42,6 +49,7 @@ class PipelineDetectionWV(PipelineDetection):
                         self.water_visibility = float(value.value)
 
     def compare_poses(self, bluerov_pose, pipe_pose):
+        """Return whether a pipeline pose is visible in geometry and water."""
         result = False
         if self.water_visibility is not None:
             result = super().compare_poses(bluerov_pose, pipe_pose)
@@ -52,6 +60,7 @@ class PipelineDetectionWV(PipelineDetection):
 
 
 def main(args=None):
+    """Run the water-visibility-aware pipeline detection node."""
     rclpy.init(args=args)
     try:
         executor = MultiThreadedExecutor()

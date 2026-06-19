@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Publish a time-varying water-visibility quality attribute."""
+
 from diagnostic_msgs.msg import DiagnosticArray
 from diagnostic_msgs.msg import DiagnosticStatus
 from diagnostic_msgs.msg import KeyValue
@@ -26,8 +28,10 @@ import sys
 
 
 class WaterVisibilityObserver(Node):
+    """Generate sinusoidal water-visibility diagnostic measurements."""
 
     def __init__(self):
+        """Initialize visibility parameters, diagnostics, and state input."""
         super().__init__('water_visibility')
 
         self.declare_parameter('qa_publishing_period', 0.2)
@@ -48,6 +52,7 @@ class WaterVisibilityObserver(Node):
         self.initial_time = self.get_clock().now().to_msg().sec
 
     def status_cb(self, msg):
+        """Start visibility measurements when guided mode begins."""
         if msg.mode == "GUIDED":
             self.initial_time = self.get_clock().now().to_msg().sec
             self.qa_publisher_timer = self.create_timer(
@@ -55,6 +60,7 @@ class WaterVisibilityObserver(Node):
             self.destroy_subscription(self.mavros_state_sub)
 
     def qa_publisher_cb(self):
+        """Calculate and publish the current water visibility."""
         water_visibility_period = self.get_parameter(
             'water_visibility_period').value
         water_visibility_min = self.get_parameter(
@@ -78,7 +84,8 @@ class WaterVisibilityObserver(Node):
 
         status_msg = DiagnosticStatus()
         status_msg.level = DiagnosticStatus.OK
-        status_msg.name = "water_visibility_observer: Water visibility measurement"
+        status_msg.name = (
+            "water_visibility_observer: Water visibility measurement")
         status_msg.message = "QA status"
         status_msg.values.append(key_value)
 
@@ -90,6 +97,7 @@ class WaterVisibilityObserver(Node):
 
 
 def main():
+    """Run the water-visibility observer node."""
     print("Starting water_visibility observer node")
 
     rclpy.init(args=sys.argv)

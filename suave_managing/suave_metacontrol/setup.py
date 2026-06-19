@@ -1,3 +1,5 @@
+"""Package the SUAVE metacontrol manager and resources."""
+
 import os
 from glob import glob
 from setuptools import setup

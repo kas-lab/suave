@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Simulate and publish the vehicle battery quality attribute."""
+
 from diagnostic_msgs.msg import DiagnosticArray
 from diagnostic_msgs.msg import DiagnosticStatus
 from diagnostic_msgs.msg import KeyValue
@@ -25,8 +27,10 @@ import sys
 
 
 class BatteryMonitor(Node):
+    """Publish battery depletion diagnostics and provide battery recharge."""
 
     def __init__(self):
+        """Initialize battery state, interfaces, and parameters."""
         super().__init__('battery_monitor')
 
         self.declare_parameter('qa_publishing_period', 1.0)
@@ -52,6 +56,7 @@ class BatteryMonitor(Node):
             State, 'mavros/state', self.status_cb, 10)
 
     def status_cb(self, msg):
+        """Start battery updates when the vehicle enters guided mode."""
         if msg.mode == "GUIDED":
             self.last_time = self.get_clock().now().to_msg().sec
             self.qa_publisher_timer = self.create_timer(
@@ -59,9 +64,11 @@ class BatteryMonitor(Node):
             self.destroy_subscription(self.mavros_state_sub)
 
     def qa_publisher_cb(self):
+        """Publish the next battery-level measurement."""
         self.publish_battery_level()
 
     def publish_battery_level(self):
+        """Decrease battery level over elapsed time and publish diagnostics."""
         discharge_time = self.get_parameter('discharge_time').value
 
         current_time = self.get_clock().now().to_msg().sec
@@ -92,6 +99,7 @@ class BatteryMonitor(Node):
         self.diagnostics_publisher.publish(diag_msg)
 
     def recharge_battery_cb(self, req, res):
+        """Restore full battery level and report recharge completion."""
         self.battery_level = 1.0
         self.publish_battery_level()
         res.success = True
@@ -100,6 +108,7 @@ class BatteryMonitor(Node):
 
 
 def main():
+    """Run the battery monitor node."""
     print("Starting battery_monitor observer node")
 
     rclpy.init(args=sys.argv)

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Launch the managed SUAVE system and its supporting nodes."""
+
 import os
 
 from ament_index_python.packages import get_package_share_directory
@@ -29,6 +31,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    """Return the managed-system launch description."""
     silent = LaunchConfiguration('silent')
 
     def configure_logging(context, *args, **kwargs):
@@ -59,13 +62,15 @@ def generate_launch_description():
     task_bridge_arg = DeclareLaunchArgument(
         'task_bridge',
         default_value='True',
-        description='Indicates whether task_bridge should be launched [True/False]'
+        description=(
+            'Indicates whether task_bridge should be launched [True/False]')
     )
 
     system_modes_arg = DeclareLaunchArgument(
         'system_modes',
         default_value='True',
-        description='Indicates whether system_modes should be launched [True/False]'
+        description=(
+            'Indicates whether system_modes should be launched [True/False]')
     )
 
     mission_config_default = os.path.join(

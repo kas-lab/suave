@@ -13,6 +13,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Detect an underwater pipeline and provide an ordered inspection path."""
+
 import math
 
 import rclpy
@@ -27,8 +30,10 @@ from suave_msgs.srv import GetPath
 
 
 class PipelineDetection(Node):
+    """Detect pipeline visibility from vehicle and pipeline poses."""
 
     def __init__(self):
+        """Initialize pose inputs, detection output, and path service."""
         super().__init__('detect_pipeline')
         self.min_pipes_pipeline_pose_subscription = self.create_subscription(
             PoseArray,
@@ -65,11 +70,13 @@ class PipelineDetection(Node):
         self.camera_fov = math.pi/3
 
     def pipeline_pose_cb(self, msg):
+        """Store pipeline poses and calculate the interpolated path once."""
         self.pipes_pose_array = msg
         self.destroy_subscription(self.min_pipes_pipeline_pose_subscription)
         self.calculate_interpolated_path()
 
     def interpolate_line_by_points(self, pose1, pose2, n):
+        """Return ``n`` evenly spaced poses between two pipeline poses."""
         x1 = pose1.position.x
         y1 = pose1.position.y
         x2 = pose2.position.x
@@ -91,6 +98,7 @@ class PipelineDetection(Node):
         return points
 
     def calculate_interpolated_path(self):
+        """Interpolate all adjacent pipeline segments into a dense path."""
         for pose_index in range(len(self.pipes_pose_array.poses)-1):
             pose1 = self.pipes_pose_array.poses[pose_index]
             pose2 = self.pipes_pose_array.poses[pose_index+1]
@@ -99,16 +107,19 @@ class PipelineDetection(Node):
                     pose1, pose2, self.interpolation_number))
 
     def get_interpolated_path_cb(self, req, response):
+        """Populate a service response with the ordered pipeline path."""
         response.path = self.sorted_path
         return response
 
     def compare_poses(self, bluerov_pose, pipe_pose):
+        """Return whether a pipeline pose is within the camera FOV."""
         altitude = abs(bluerov_pose.position.z - pipe_pose.position.z)
         delta = altitude * math.tan(self.camera_fov/2)
         return abs(bluerov_pose.position.x - pipe_pose.position.x) <= delta \
             and abs(bluerov_pose.position.y - pipe_pose.position.y) <= delta
 
     def detect_pipeline_cb(self, bluerov_pose):
+        """Publish visibility and order the path on first detection."""
         for i in range(len(self.interpolated_path.poses)):
             if self.compare_poses(bluerov_pose,
                self.interpolated_path.poses[i]):
@@ -125,6 +136,7 @@ class PipelineDetection(Node):
         self.detect_pipeline_pub.publish(pipe_detected)
 
     def sort_pipe_path(self, index):
+        """Order the pipeline path starting from the detected pose index."""
         delta = 1
         self.sorted_path = PoseArray()
         self.sorted_path.poses.extend(
@@ -134,6 +146,7 @@ class PipelineDetection(Node):
 
 
 def main(args=None):
+    """Run the pipeline detection node."""
     rclpy.init(args=args)
     try:
         executor = MultiThreadedExecutor()

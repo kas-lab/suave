@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Launch the SUAVE experiment runner from its YAML configuration."""
+
 import os
 
 from launch import LaunchDescription
@@ -20,6 +22,7 @@ from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
+    """Return the configured experiment-runner launch description."""
     # Get the path to the config file
     config_path = os.path.join(
         get_package_share_directory('suave_runner'),

@@ -34,7 +34,10 @@ from rcl_interfaces.msg import ParameterEvent
 from rcl_interfaces.srv import GetParameters
 from lifecycle_msgs.msg import TransitionEvent
 
-from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy, QoSDurabilityPolicy
+from rclpy.qos import QoSDurabilityPolicy
+from rclpy.qos import QoSHistoryPolicy
+from rclpy.qos import QoSProfile
+from rclpy.qos import QoSReliabilityPolicy
 
 
 DEFAULT_WATER_VISIBILITY_THRESHOLDS = [3.25, 2.25, 1.25]
@@ -57,6 +60,7 @@ class MissionMetrics(Node):
     """
 
     def __init__(self, node_name: str = 'suave_metrics', **kwargs):
+        """Initialize metric parameters, subscriptions, service, and output."""
         super().__init__(node_name, **kwargs)
 
         self.declare_parameter('result_path', '~/suave/results')
@@ -206,24 +210,29 @@ class MissionMetrics(Node):
         )
 
     def status_cb(self, msg):
+        """Record mission start when the vehicle enters guided mode."""
         if msg.mode == 'GUIDED':
             self.mission_start_time = self.get_clock().now()
             self.destroy_subscription(self.state_sub)
 
     def pipeline_detected_cb(self, msg):
+        """Record the first successful pipeline detection time."""
         if msg.data is True:
             self.pipeline_detected_time = self.get_clock().now()
             self.destroy_subscription(self.pipeline_detected_sub)
 
     def pipeline_inspected_cb(self, msg):
+        """Save mission results when pipeline inspection completes."""
         if msg.data is True:
             self.save_mission_results()
             self.destroy_subscription(self.pipeline_inspected_sub)
 
     def distance_inspected_cb(self, msg):
+        """Update the latest inspected pipeline distance."""
         self.distance_inspected = msg.data
 
     def gazebo_pos_cb(self, msg):
+        """Record the vehicle's initial Gazebo position."""
         self.gazebo_pos = msg
         if self.first_gz_pose is True:
             self.first_gz_pose = False
@@ -232,6 +241,7 @@ class MissionMetrics(Node):
             self.destroy_subscription(self.gazebo_pos_sub)
 
     def diagnostics_cb(self, msg):
+        """Process quality and component diagnostic measurements."""
         time = Time.from_msg(msg.header.stamp)
         measurement_messages = [
             'qa status',
@@ -249,6 +259,7 @@ class MissionMetrics(Node):
                 self.check_thrusther(diagnostic_status, time)
 
     def check_altitude(self, diagnostic_status, time):
+        """Detect an altitude mismatch for the measured water visibility."""
         for value in diagnostic_status.values:
             if value.key == 'water_visibility':
                 self.measured_wv = float(value.value)
@@ -267,6 +278,7 @@ class MissionMetrics(Node):
                 return
 
     def get_spiral_altitude(self):
+        """Return the current spiral-search altitude, if available."""
         req = GetParameters.Request(names=['spiral_altitude'])
         res = self.call_service(self.get_spiral_altitude_cli, req)
         if res is not None and len(res.values) > 0:
@@ -274,6 +286,7 @@ class MissionMetrics(Node):
         return None
 
     def get_expected_spiral_altitude(self, measured_wv):
+        """Map measured water visibility to the expected search altitude."""
         wv_threshold = self.get_water_visibility_thresholds()
         expected_altitude = self.get_parameter('expected_altitude').value
         for threshold, expected in zip(wv_threshold, expected_altitude):
@@ -282,6 +295,7 @@ class MissionMetrics(Node):
         return None
 
     def get_water_visibility_thresholds(self):
+        """Return configured visibility thresholds with legacy-name support."""
         correct_value = self.get_parameter(
             'water_visibility_threshold').value
         legacy_value = self.get_parameter(
@@ -292,6 +306,7 @@ class MissionMetrics(Node):
         return correct_value
 
     def check_thrusther(self, diagnostic_status, time):
+        """Record the first reported thruster failure."""
         for value in diagnostic_status.values:
             if value.key.startswith("c_thruster_") and value.value == "FALSE":
                 if self.thrusters_failed is False:
@@ -300,6 +315,7 @@ class MissionMetrics(Node):
                 return
 
     def check_battery(self, diagnostic_status, time):
+        """Track transitions below and above the configured battery limit."""
         for value in diagnostic_status.values:
             if value.key == 'battery_level':
                 battery_limit = self.get_parameter('battery_limit').value
@@ -318,6 +334,7 @@ class MissionMetrics(Node):
                 return
 
     def maintain_motion_transition_cb(self, msg):
+        """Record reaction time when motion recovers after thruster failure."""
         if msg.goal_state.label == "active" and self.thrusters_failed is True:
             reaction_time = self.get_clock().now() - self.thrusters_failed_time
             reaction_time = reaction_time.nanoseconds * 1e-9
@@ -328,6 +345,7 @@ class MissionMetrics(Node):
                     reaction_time))
 
     def generate_recharge_path_transition_cb(self, msg):
+        """Record reaction time when a recharge path becomes active."""
         if msg.goal_state.label == "active" and self.battery_low is True:
             reaction_time = self.get_clock().now() - self.battery_low_time
             reaction_time = reaction_time.nanoseconds * 1e-9
@@ -337,6 +355,7 @@ class MissionMetrics(Node):
                 'Battery drop reaction time: {} seconds'.format(reaction_time))
 
     def param_change_cb(self, msg):
+        """Record reaction time for a corrective search-altitude update."""
         time = self.get_clock().now()
         if (
             msg.node == "/f_generate_search_path_node" and
@@ -361,6 +380,7 @@ class MissionMetrics(Node):
 
     def save_mission_results_cb(
          self, req: Empty.Request, res: Empty.Response) -> None:
+        """Save results on service request and stop metric subscriptions."""
         self.save_mission_results()
         self.destroy_subscription(self.gazebo_pos_sub)
         self.destroy_subscription(self.pipeline_detected_sub)
@@ -457,7 +477,8 @@ class MissionMetrics(Node):
             )
 
         self.mission_done_pub.publish(Bool(data=True))
-        Path('/tmp/mission.done').touch()  # backward-compat for shell-script runners
+        # Backward compatibility for shell-script runners.
+        Path('/tmp/mission.done').touch()
 
     def save_metrics(self,
                      path: str,
@@ -498,6 +519,7 @@ class MissionMetrics(Node):
             writer.writerow(data)
 
     def call_service(self, cli, request):
+        """Call a ROS service and return its response within one second."""
         if cli.wait_for_service(timeout_sec=1.0) is False:
             self.get_logger().error(
                 'service not available {}'.format(cli.srv_name))
@@ -512,6 +534,7 @@ class MissionMetrics(Node):
 
 
 def main():
+    """Run the mission metrics node."""
     rclpy.init(args=sys.argv)
 
     metrics_node = MissionMetrics()

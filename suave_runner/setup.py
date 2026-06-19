@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Package SUAVE experiment orchestration and analysis tools."""
+
 import os
 from glob import glob
 from setuptools import setup
@@ -29,7 +31,8 @@ setup(
                               'launch'), glob('launch/*launch.[pxy][yma]*')),
                 (os.path.join('share', package_name,
                               'config'), glob('config/*')),
-                (os.path.join('share', package_name, 'test'), glob('test/*.py')),],
+                (os.path.join('share', package_name, 'test'),
+                 glob('test/*.py')), ],
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='Gustavo Rezende',

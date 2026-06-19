@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Compare SUAVE experiment metrics using nonparametric statistics."""
+
 import pandas as pd
 from scipy.stats import shapiro
 # from scipy.stats import levene
@@ -25,7 +27,10 @@ from rclpy.node import Node
 
 
 class SuaveData:
+    """Load metric samples for one managing system."""
+
     def __init__(self, managing_system, csv_file):
+        """Load search-time, distance, and reaction-time samples from CSV."""
         self.managing_system = managing_system
 
         self.time_search = pd.read_csv(csv_file)['time searching pipeline (s)']
@@ -34,6 +39,7 @@ class SuaveData:
             csv_file)['mean reaction time (s)']
 
     def test_normality_(self, data_name, data):
+        """Run and print a Shapiro-Wilk normality test for one metric."""
         # Shapiro-Wilk test for normality
         _, p = shapiro(data)
 
@@ -47,13 +53,17 @@ class SuaveData:
             print(f"{self.managing_system} {data_name}: normal")
 
     def test_normality(self):
+        """Test normality for each loaded metric."""
         self.test_normality_('time searching pipeline', self.time_search)
         self.test_normality_('distance inspected', self.distance_inspect)
         self.test_normality_('mean reaction time', self.mean_reaction_time)
 
 
 class StatisticalAnalysis(Node):
+    """Calculate pairwise Mann-Whitney U tests for experiment metrics."""
+
     def __init__(self, **kwargs):
+        """Load configured datasets and initialize result matrices."""
         super().__init__('analysis', **kwargs)
 
         self.declare_parameter('result_path', '~/suave/results')
@@ -86,6 +96,7 @@ class StatisticalAnalysis(Node):
         self.results_matrix_mrt = pd.DataFrame(index=systems, columns=systems)
 
     def save_data_frames(self):
+        """Write pairwise p-value matrices to CSV files."""
         if self.result_path.is_dir() is False:
             self.result_path.mkdir(parents=True)
 
@@ -106,6 +117,7 @@ class StatisticalAnalysis(Node):
                 '_mean_reaction_time.csv'))
 
     def u_test(self, i, j, data_i, data_j):
+        """Compare two managing systems and store their metric p-values."""
         _, p_sp = mannwhitneyu(
             data_i.time_search, data_j.time_search, alternative="less")
         self.results_matrix_sp.iloc[i, j] = p_sp
@@ -149,6 +161,7 @@ class StatisticalAnalysis(Node):
                 f"lower than {data_j.managing_system} mean reaction times.")
 
     def perform_analysis(self):
+        """Run all pairwise comparisons and save their result matrices."""
         for i, data_i in enumerate(self.data_array):
             for j, data_j in enumerate(self.data_array):
                 if i == j:
@@ -164,6 +177,7 @@ class StatisticalAnalysis(Node):
 
 
 def main(args=None):
+    """Run the statistical analysis node."""
     rclpy.init(args=args)
     executor = rclpy.executors.SingleThreadedExecutor()
     lc_node = StatisticalAnalysis()

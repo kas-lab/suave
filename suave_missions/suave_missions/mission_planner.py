@@ -12,13 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Provide common task orchestration for SUAVE missions."""
+
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.node import Node
 from suave_msgs.srv import Task
 
 
 class MissionPlanner(Node):
+    """Base ROS node for requesting and monitoring mission tasks."""
+
     def __init__(self, node_name='mission_node'):
+        """Initialize task clients, result parameters, and mission state."""
         super().__init__(node_name)
 
         self.cb_group = MutuallyExclusiveCallbackGroup()
@@ -39,16 +44,19 @@ class MissionPlanner(Node):
         self.abort_mission = False
 
     def request_task(self, task_name):
+        """Request execution of a named mission task."""
         req = Task.Request()
         req.task_name = task_name
         return self.call_service(self.task_request_service, req)
 
     def cancel_task(self, task_name):
+        """Request cancellation of a named mission task."""
         req = Task.Request()
         req.task_name = task_name
         return self.call_service(self.task_cancel_service, req)
 
     def call_service(self, cli, request):
+        """Call a mission service with a five-second timeout."""
         if cli.wait_for_service(timeout_sec=5.0) is False:
             self.get_logger().error(
                 'service not available {}'.format(cli.srv_name))
@@ -62,9 +70,11 @@ class MissionPlanner(Node):
         return future.result()
 
     def perform_mission(self):
+        """Report that subclasses must define mission behavior."""
         self.get_logger().warning("No mission defined!!!")
 
     def perform_task(self, task_name, condition):
+        """Run a task until its completion condition or mission abortion."""
         self.task_timer = self.create_rate(10)
         task_status = "completed"
         if self.abort_mission is False:

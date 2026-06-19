@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Select and launch a SUAVE mission with an adaptation manager."""
+
 import os
 
 from ament_index_python.packages import get_package_share_directory
@@ -25,7 +27,9 @@ from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
-    mc_reasoning_time_filename = LaunchConfiguration('mc_reasoning_time_filename')
+    """Return the top-level configurable mission launch description."""
+    mc_reasoning_time_filename = LaunchConfiguration(
+        'mc_reasoning_time_filename')
 
     adaptation_manager_arg = DeclareLaunchArgument(
         'adaptation_manager',

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Package the SUAVE random adaptation manager and resources."""
+
 import os
 from glob import glob
 from setuptools import setup

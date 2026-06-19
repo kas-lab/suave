@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Package SUAVE quality and component monitors."""
+
 from setuptools import find_packages, setup
 
 package_name = 'suave_monitor'
@@ -40,7 +42,8 @@ setup(
         'console_scripts': [
             'thruster_monitor = suave_monitor.thruster_monitor:main',
             'battery_monitor = suave_monitor.battery_monitor:main',
-            'water_visibility_observer = suave_monitor.water_visibility_observer:main',
+            'water_visibility_observer = '
+            'suave_monitor.water_visibility_observer:main',
         ],
     },
 )

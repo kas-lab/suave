@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Launch the SUAVE system-modes manager."""
+
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
@@ -21,7 +23,7 @@ import os
 
 
 def generate_launch_description():
-
+    """Return the system-modes manager launch description."""
     shm_model_path = os.path.join(
         get_package_share_directory('suave'),
         'config',
