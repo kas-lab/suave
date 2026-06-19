@@ -14,14 +14,25 @@ jobs:
     runs-on: ubuntu-latest
     container: ubuntu:22.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: ros-tooling/setup-ros@0.7.14
+      - uses: actions/checkout@v7
+      - uses: ros-tooling/setup-ros@0.7.19
         with:
           required-ros-distributions: humble
-      - uses: ros-tooling/action-ros-ci@0.3.5
+      - uses: ros-tooling/action-ros-ci@0.4.8
         id: action_ros_ci_step
         with:
-          package-name: suave suave_monitor suave_metrics suave_msgs suave_missions suave_metacontrol system_modes mavros mavros_wrapper mros2_reasoner mros2_msgs suave_runner
+          package-name: |
+            suave
+            suave_monitor
+            suave_metrics
+            suave_msgs
+            suave_missions
+            suave_metacontrol
+            system_modes
+            mavros
+            mros2_reasoner
+            mros2_msgs
+            suave_runner
           target-ros2-distro: humble
           skip-tests: true
           vcs-repo-file-url: ${{ github.workspace }}/suave.repos
@@ -34,7 +45,7 @@ jobs:
           source ${{ steps.action_ros_ci_step.outputs.ros-workspace-directory-name }}/install/setup.bash
           sphinx-build docs/source docs/build
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         with:
           publish_branch: gh-pages
