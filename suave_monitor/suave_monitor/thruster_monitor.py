@@ -85,13 +85,13 @@ class ThrusterMonitor(Node):
             parameter.value.integer_value = 0
             print_status = 'failed'
             diagnostic_value = 'FALSE'
-            diagnostic_value_2 = 'ERROR'
+            diagnostic_value_2 = 'ERROR'  # alias
             status_msg.level = DiagnosticStatus.ERROR
         elif value == 'recovery':
             parameter.value.integer_value = int(thruster) + 32
             print_status = 'recovered'
             diagnostic_value = 'RECOVERED'
-            diagnostic_value_2 = 'OK'
+            diagnostic_value_2 = 'OK'  # alias
             status_msg.level = DiagnosticStatus.OK
         else:
             self.get_logger().info(
@@ -122,7 +122,6 @@ class ThrusterMonitor(Node):
         diag_msg.header.stamp = self.get_clock().now().to_msg()
         diag_msg.status.append(status_msg)
 
-        # TODO: wait service to complete before changing the component state
         self.diagnostics_publisher.publish(diag_msg)
 
     def call_service(self, srv_type, srv_name, request):

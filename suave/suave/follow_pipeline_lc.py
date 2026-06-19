@@ -86,6 +86,7 @@ class PipelineFollowerLC(Node):
         self.pipeline_distance_inspected_pub = None
         self.declare_parameter('ground_depth_gz', -20.0)
         self.declare_parameter('altitude', 1.25)
+        self.declare_parameter('system_mode_marker', '__DEFAULT__')
         self.declare_parameter('use_action_server', False)
         self.trigger_configure()
 

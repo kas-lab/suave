@@ -63,6 +63,7 @@ class RechargeBattery(Node):
         self.declare_parameter(
             'recharge_station_gz_pos', [-3.0, -2.0, -19.5])
         self.declare_parameter('recharge_retry_rate', 2.0)
+        self.declare_parameter('system_mode_marker', '__DEFAULT__')
         self.declare_parameter('use_action_server', False)
         self.trigger_configure()
 

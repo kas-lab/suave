@@ -52,7 +52,7 @@ f_follow_pipeline_node:
     modes:
       __DEFAULT__:
         ros__parameters:
-          random_param: 2.0
+          system_mode_marker: __DEFAULT__
 
 f_maintain_motion:
   ros__parameters:
@@ -75,7 +75,7 @@ f_maintain_motion_node:
     modes:
       __DEFAULT__:
         ros__parameters:
-          random_param: 2.0
+          system_mode_marker: __DEFAULT__
 
 generate_recharge_path:
   ros__parameters:
@@ -98,4 +98,4 @@ generate_recharge_path_node:
     modes:
       __DEFAULT__:
         ros__parameters:
-          random_param: 2.0
+          system_mode_marker: __DEFAULT__

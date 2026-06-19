@@ -14,6 +14,9 @@
 
 """Tests for the recover thrusters lifecycle node."""
 
+import threading
+import time
+
 import pytest
 import rclpy
 
@@ -117,7 +120,7 @@ def test_destroy_set_parameters_service_releases_configured_client(
     """Verify cleanup destroys the configured parameter client."""
     client = recover_node.set_parameters_service
 
-    recover_node.destroy_set_parameters_service()
+    recover_node._destroy_configured_entities()
 
     assert client is not None
     assert recover_node.set_parameters_service is None
@@ -128,19 +131,18 @@ def test_recover_thrusters_returns_false_when_parameter_update_rejected(
     """Verify recovery fails when MAVROS rejects parameter writes."""
     requests = []
 
-    class Rate:
-        """No-op rate for deterministic recovery tests."""
-
-        def sleep(self):
-            """Skip sleeping."""
-
-    def _call_service(node, client, request):
+    def _call_service(
+            node, client, request, stop_requested=None):
         requests.append(request)
         response = SetParameters.Response()
         response.results.append(SetParametersResult(successful=False))
         return response
 
-    monkeypatch.setattr(recover_node, 'create_rate', lambda frequency: Rate())
+    monkeypatch.setattr(
+        recover_node,
+        '_wait_interruptibly',
+        lambda duration, stop_requested: True,
+    )
     monkeypatch.setattr(
         recover_thrusters_lc, 'call_service_with_timeout', _call_service)
 
@@ -169,7 +171,7 @@ def test_execute_recover_aborts_when_recovery_fails(
 
     goal_handle = GoalHandle()
     monkeypatch.setattr(
-        recover_node, '_recover_thrusters', lambda cancel_requested=None: False)
+        recover_node, '_recover_thrusters', lambda stop_requested=None: False)
 
     result = recover_node._execute_recover(goal_handle)
 
@@ -203,6 +205,8 @@ def test_recover_thrusters_action_rejected_when_use_action_server_false(
     assert goal_handle is not None
     assert not goal_handle.accepted
     recover_node.trigger_deactivate()
+    assert recover_node.recover_task.done()
+    assert not recover_node.recover_task.cancelled()
     client.destroy()
 
 
@@ -244,7 +248,7 @@ def test_recover_thrusters_no_action_server_mode_starts_on_activate(
     started = []
     original = recover_node._recover_thrusters
 
-    def _mock_recover():
+    def _mock_recover(stop_requested=None):
         started.append(True)
 
     recover_node._recover_thrusters = _mock_recover
@@ -254,3 +258,77 @@ def test_recover_thrusters_no_action_server_mode_starts_on_activate(
         "_recover_thrusters() was not called on activation")
     recover_node._recover_thrusters = original
     recover_node.trigger_deactivate()
+
+
+def test_interruptible_wait_stops_when_abort_is_requested(recover_node):
+    """Verify lifecycle deactivation interrupts recovery delays."""
+    recover_node._abort_event.set()
+
+    started = time.monotonic()
+    completed = recover_node._wait_interruptibly(
+        10.0,
+        recover_node._abort_event.is_set,
+    )
+
+    assert completed is False
+    assert time.monotonic() - started < 0.5
+
+
+def test_service_wait_cancels_future_when_stop_is_requested():
+    """Verify cooperative stopping cancels a pending service future."""
+    stop_event = threading.Event()
+
+    class Future:
+        """Pending service future test double."""
+
+        def __init__(self):
+            """Create an uncanceled pending future."""
+            self.canceled = False
+
+        def done(self):
+            """Keep the response pending."""
+            return False
+
+        def cancel(self):
+            """Record cancellation."""
+            self.canceled = True
+
+    class Client:
+        """Available service client test double."""
+
+        srv_name = 'test/service'
+
+        def __init__(self, future):
+            """Store the response future."""
+            self.future = future
+
+        def wait_for_service(self, timeout_sec):
+            """Report the service as available."""
+            return True
+
+        def call_async(self, request):
+            """Return the pending response future."""
+            return self.future
+
+    class Executor:
+        """Executor test double that requests a stop after one poll."""
+
+        def spin_until_future_complete(self, future, timeout_sec):
+            """Request cooperative stopping."""
+            stop_event.set()
+
+    class Node:
+        """Service-helper node test double."""
+
+        executor = Executor()
+
+    future = Future()
+    response = call_service_with_timeout(
+        Node(),
+        Client(future),
+        object(),
+        stop_requested=stop_event.is_set,
+    )
+
+    assert response is None
+    assert future.canceled is True

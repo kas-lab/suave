@@ -14,17 +14,49 @@
 
 """Shared ROS service-call helpers."""
 
+import time
+from typing import Callable
+from typing import Optional
 
-def call_service_with_timeout(node, cli, request, timeout_sec=5.0):
-    """Call a ROS service and wait for a response, returning None on failure."""
-    if cli.wait_for_service(timeout_sec=timeout_sec) is False:
-        node.get_logger().error(
-            'service not available {}'.format(cli.srv_name))
-        return None
+
+StopRequested = Callable[[], bool]
+
+
+def call_service_with_timeout(
+        node, cli, request, timeout_sec=5.0,
+        stop_requested: Optional[StopRequested] = None):
+    """Call a service and wait for its response or a stop request."""
+    poll_interval = 0.05
+    deadline = time.monotonic() + timeout_sec
+
+    while True:
+        if stop_requested is not None and stop_requested():
+            return None
+        remaining = deadline - time.monotonic()
+        wait_timeout = min(poll_interval, max(0.0, remaining))
+        if cli.wait_for_service(timeout_sec=wait_timeout):
+            break
+        if remaining <= 0.0:
+            node.get_logger().error(
+                'service not available {}'.format(cli.srv_name))
+            return None
+
     future = cli.call_async(request)
-    node.executor.spin_until_future_complete(future, timeout_sec=timeout_sec)
-    if future.done() is False:
-        node.get_logger().error(
-            'Future not completed {}'.format(cli.srv_name))
-        return None
+    deadline = time.monotonic() + timeout_sec
+
+    while not future.done():
+        if stop_requested is not None and stop_requested():
+            future.cancel()
+            return None
+        remaining = deadline - time.monotonic()
+        if remaining <= 0.0:
+            future.cancel()
+            node.get_logger().error(
+                'Future not completed {}'.format(cli.srv_name))
+            return None
+        node.executor.spin_until_future_complete(
+            future,
+            timeout_sec=min(poll_interval, remaining),
+        )
+
     return future.result()
