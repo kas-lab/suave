@@ -194,18 +194,22 @@ class ExperimentRunnerNode(Node):
         if msg.data:
             self._mission_done_event.set()
 
-    def start_launch_process(self, launch_description: LaunchDescription):
+    def start_launch_process(
+            self, launch_description: LaunchDescription, log_dir: Path):
         stop_event = multiprocessing.Event()
         process = multiprocessing.Process(
             target=self._run_launchfile,
-            args=(stop_event, launch_description),
+            args=(stop_event, launch_description, log_dir),
         )
         process.start()
         return process, stop_event
 
-    def _run_launchfile(self, stop_event, launch_description):
+    def _run_launchfile(self, stop_event, launch_description, log_dir):
         # Ignore SIGINT in this process
         signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+        log_dir.mkdir(parents=True, exist_ok=True)
+        os.environ['ROS_LOG_DIR'] = str(log_dir)
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -254,6 +258,10 @@ class ExperimentRunnerNode(Node):
         self.terminate_process(self.ardupilot_proc, "ArduPilot")
         self.shutdown_all_launch_processes()
         self.kill_gz_sim()
+        ardupilot_log = getattr(self, '_ardupilot_log', None)
+        if ardupilot_log:
+            ardupilot_log.close()
+            self._ardupilot_log = None
         self.get_logger().info("All processes terminated.")
 
     def terminate_process(self, proc, name):
@@ -287,23 +295,20 @@ class ExperimentRunnerNode(Node):
 
         return exp_launch, num_runs, result_filename, adaptation_manager
 
-    def launch_ardupilot(self):
+    def launch_ardupilot(self, log_path: Path):
         self.get_logger().info("    Launching ArduPilot...")
-        ardupilot_proc_log = subprocess.DEVNULL
-        if self.experiment_logging:
-            ardupilot_proc_log = subprocess.PIPE
-
+        self._ardupilot_log = open(log_path, 'w')
         self.ardupilot_proc = subprocess.Popen(
             self.ardupilot_cmd,
-            stdout=ardupilot_proc_log,
-            stderr=ardupilot_proc_log,
+            stdout=self._ardupilot_log,
+            stderr=self._ardupilot_log,
             preexec_fn=os.setsid  # Launch in a new process group
         )
         self.get_logger().info(
             "    Sleeping 10 seconds before launching SUAVE simulation...")
         time.sleep(10)
 
-    def launch_suave_simulation(self, run_idx):
+    def launch_suave_simulation(self, run_idx, log_dir: Path):
         suave_simulation_cmd_split = self.suave_simulation_cmd.split()
         sim_pkg = suave_simulation_cmd_split[2]
         sim_file = suave_simulation_cmd_split[3]
@@ -333,7 +338,8 @@ class ExperimentRunnerNode(Node):
         )
         sim_launch_ld = LaunchDescription()
         sim_launch_ld.add_action(sim_launch)
-        sim_process, sim_stop_event = self.start_launch_process(sim_launch_ld)
+        sim_process, sim_stop_event = self.start_launch_process(
+            sim_launch_ld, log_dir)
         self.processes_stop_events.append((sim_process, sim_stop_event))
         self.get_logger().info(
             "    Sleeping 10 seconds before launching next nodes...")
@@ -344,7 +350,8 @@ class ExperimentRunnerNode(Node):
             exp_launch: str,
             result_path: str,
             result_filename: str,
-            mission_config_file: str):
+            mission_config_file: str,
+            log_dir: Path):
         exp_launch_cmd_split = exp_launch.split()
         exp_pkg, exp_file = exp_launch_cmd_split[2], exp_launch_cmd_split[3]
         exp_path = os.path.join(
@@ -374,7 +381,7 @@ class ExperimentRunnerNode(Node):
         experiment_ld = LaunchDescription()
         experiment_ld.add_action(exp_launch_desc)
         experiment_process, experiment_stop_event = self.start_launch_process(
-            experiment_ld)
+            experiment_ld, log_dir)
         self.processes_stop_events.append(
             (experiment_process, experiment_stop_event))
 
@@ -411,18 +418,23 @@ class ExperimentRunnerNode(Node):
                         f"{run_idx + 1}/{num_runs} (checkpoint found).")
                     continue
 
+                run_log_dir = result_path / 'logs' / f'run_{exp_idx}_{run_idx}'
+                run_log_dir.mkdir(parents=True, exist_ok=True)
+
                 self._mission_done_event.clear()
                 self.get_logger().info(
                     f"  Run {adaptation_manager} {run_idx + 1}/{num_runs}")
 
                 try:
-                    self.launch_ardupilot()
-                    self.launch_suave_simulation(run_idx)
+                    self.launch_ardupilot(run_log_dir / 'ardupilot.log')
+                    self.launch_suave_simulation(
+                        run_idx, run_log_dir / 'simulation')
                     self.launch_experiment(
                         exp_launch,
                         str(result_path),
                         result_filename,
-                        str(mission_config_file_array[run_idx]))
+                        str(mission_config_file_array[run_idx]),
+                        run_log_dir / 'experiment')
                 except Exception as e:
                     self.get_logger().error(f"Failed to launch processes: {e}")
                     break
