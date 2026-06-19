@@ -54,13 +54,13 @@ MISSION_DONE_QOS = QoSProfile(
 class ExperimentRunnerNode(Node):
     def __init__(self, **kwargs):
         super().__init__('suave_runner_node', **kwargs)
-        random.seed(100)  # set random seed
 
         # Declare parameters
 
         # Runner parameters
         self.declare_parameter('result_path', '~/suave/results')
         self.declare_parameter('random_interval', 5)
+        self.declare_parameter('random_seed', 100)
         # List of JSON-encoded dicts
         self.declare_parameter('experiments', [''])
         self.declare_parameter('run_duration', 600)  # seconds
@@ -126,6 +126,9 @@ class ExperimentRunnerNode(Node):
         self.initial_pos_z_array = []
 
         # Runner parameters
+        self.random_seed = self.get_parameter(
+            'random_seed').get_parameter_value().integer_value
+        random.seed(self.random_seed)
         self.run_duration = self.get_parameter(
             'run_duration').get_parameter_value().integer_value
         self.gui = self.get_parameter('gui').get_parameter_value().bool_value

@@ -12,6 +12,7 @@
       - (3,failure,100) # choose a thruster that really makes it bad
     thruster_events_random_interval: [-100.0, 100.0]
     random_interval: 5 # how many experiment runs in each "random" interval
+    random_seed: 100 # fixed by default for reproducible perturbations
     initial_pos_x: -17.0
     initial_pos_y: 2.5
     initial_pos_x_random_interval: [0.0, 0.0]

@@ -15,6 +15,7 @@
 import shutil
 import yaml
 from pathlib import Path
+from unittest.mock import patch
 
 import rclpy
 from rclpy.parameter import Parameter
@@ -60,6 +61,21 @@ def test_create_experiment_folder():
         result_path.rmdir()
         path = Path("/tmp/suave")
         shutil.rmtree(path)
+        rclpy.shutdown()
+
+
+def test_random_seed_parameter_seeds_random_generator():
+    rclpy.init()
+    try:
+        params = _minimal_runner_params() + [
+            Parameter('random_seed', Parameter.Type.INTEGER, 42)
+        ]
+        with patch('suave_runner.suave_runner.random.seed') as seed:
+            runner = ExperimentRunnerNode(parameter_overrides=params)
+
+        assert runner.random_seed == 42
+        seed.assert_called_once_with(42)
+    finally:
         rclpy.shutdown()
 
 

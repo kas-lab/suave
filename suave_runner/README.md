@@ -22,6 +22,13 @@ The published image is available as `ghcr.io/kas-lab/suave-headless:main`.
 docker run -it --rm --gpus all --runtime=nvidia --name suave_runner -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all -v $HOME/suave/results:/home/ubuntu-user/suave/results -v /dev/dri:/dev/dri -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro ghcr.io/kas-lab/suave-headless:main
 ```
 
+## Reproducible perturbations
+
+The runner uses the `random_seed` ROS parameter when generating experiment
+perturbations. It defaults to `100` so benchmark runs are reproducible. Set a
+different integer in `config/runner_config.yml` or through `--ros-args -p
+random_seed:=<value>` to generate a different sequence.
+
 
 ## Metacontrol
 
