@@ -37,8 +37,7 @@ def generate_launch_description():
     mission_type_arg = DeclareLaunchArgument(
         'mission_type',
         default_value='time_constrained_mission',
-        description='Desired mission type' +
-                    '[time_constrained_mission or const_dist_mission (deprecated)]'
+        description='Desired mission type'
     )
 
     result_filename_arg = DeclareLaunchArgument(

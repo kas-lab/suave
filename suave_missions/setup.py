@@ -44,8 +44,6 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'const_dist_mission = ' +
-            'suave_missions.const_dist_mission:main',
             'time_constrained_mission = ' +
             'suave_missions.time_constrained_mission:main',
         ],
