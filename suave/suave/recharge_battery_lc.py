@@ -12,18 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Lifecycle node that navigates to the recharge station and triggers recharging."""
+"""Navigate to the recharge station and trigger battery recharging."""
 
-import rclpy
 import threading
+import time
 
 from typing import Callable
 from typing import Optional
 
+import rclpy
 from rclpy.action import ActionServer
 from rclpy.action.server import ServerGoalHandle
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
+from rclpy.executors import ExternalShutdownException
 from rclpy.lifecycle import Node
 from rclpy.lifecycle import State
 from rclpy.lifecycle import TransitionCallbackReturn
@@ -34,9 +36,9 @@ from std_srvs.srv import Trigger
 
 from suave.action_server_utils import accept_cancel
 from suave.action_server_utils import make_goal_callback
-from suave.action_server_utils import spin_srv
 from suave.action_server_utils import use_action_server
-from suave.bluerov_gazebo import BlueROVGazebo
+from suave.action_server_utils import wait_for_action_completion
+from suave.mavros_position_controller import MavrosPositionController
 from suave.ros_service_utils import call_service_with_timeout
 from suave_msgs.action import RechargeBattery as RechargeBatteryAction
 
@@ -48,21 +50,25 @@ class RechargeBattery(Node):
         """Create the recharge battery node."""
         super().__init__(node_name, **kwargs)
         self.cli_group = MutuallyExclusiveCallbackGroup()
+        self._position_callback_group = MutuallyExclusiveCallbackGroup()
         self._action_server = None
+        self._controller = None
+        self.recharge_battery_cli = None
         self._legacy_recharge_stop = threading.Event()
         self._legacy_recharge_task = None
         self._deactivate_event = threading.Event()
         self._goal_executing = threading.Event()
-        self.trigger_configure()
-
-    def on_configure(self, state: State) -> TransitionCallbackReturn:
-        """Configure: declare parameters, create clients, and register action server."""
-        self.get_logger().info(self.get_name() + ': on_configure() is called.')
-
+        self.declare_parameter('ground_depth_gz', -20.0)
+        self.declare_parameter('altitude', 1.25)
         self.declare_parameter(
             'recharge_station_gz_pos', [-3.0, -2.0, -19.5])
         self.declare_parameter('recharge_retry_rate', 2.0)
         self.declare_parameter('use_action_server', False)
+        self.trigger_configure()
+
+    def on_configure(self, state: State) -> TransitionCallbackReturn:
+        """Create the configured clients and action server."""
+        self.get_logger().info(self.get_name() + ': on_configure() is called.')
 
         self.recharge_battery_cli = self.create_client(
             Trigger,
@@ -70,12 +76,13 @@ class RechargeBattery(Node):
             callback_group=self.cli_group
         )
 
-        self.ardusub = BlueROVGazebo('bluerov_recharge')
-        ardusub_executor = rclpy.executors.SingleThreadedExecutor()
-        ardusub_executor.add_node(self.ardusub)
-        self.thread = threading.Thread(
-            target=spin_srv, args=(ardusub_executor, ), daemon=True)
-        self.thread.start()
+        ground_depth = self.get_parameter(
+            'ground_depth_gz').get_parameter_value().double_value
+        self._controller = MavrosPositionController(
+            self,
+            ground_depth,
+            self._position_callback_group,
+        )
 
         self._action_server = ActionServer(
             self,
@@ -108,13 +115,19 @@ class RechargeBattery(Node):
 
     def _try_recharge_once(self) -> Optional[bool]:
         """Advance recharge once, returning None while it is in progress."""
+        if self._controller is None:
+            return None
+
         station_pose = self._get_recharge_station_pose()
-        setpoint = self.ardusub.setpoint_position_gz(
-            station_pose, fixed_altitude=True)
+        altitude = self.get_parameter(
+            'altitude').get_parameter_value().double_value
+
+        setpoint = self._controller.publish_gazebo_setpoint(
+            station_pose, altitude)
 
         if setpoint is None:
             return None
-        if not self.ardusub.check_setpoint_reached_xy(setpoint, 0.5):
+        if not self._controller.is_xy_setpoint_reached(setpoint, 0.5):
             return None
 
         service_result = call_service_with_timeout(
@@ -169,6 +182,8 @@ class RechargeBattery(Node):
                 not self._legacy_recharge_task.done()):
             return
         self._legacy_recharge_stop.clear()
+        if self.executor is None:
+            return
         self._legacy_recharge_task = self.executor.create_task(
             self._run_legacy_recharge)
 
@@ -195,25 +210,40 @@ class RechargeBattery(Node):
 
     def on_cleanup(self, state: State) -> TransitionCallbackReturn:
         """Clean up the node."""
+        self._deactivate_event.set()
         self._stop_legacy_recharge()
-        self.thread.join()
-        self.ardusub.destroy_node()
+        self._wait_for_legacy_recharge()
+        wait_for_action_completion(self)
+        self._destroy_configured_entities()
+        self.get_logger().info('on_cleanup() is called.')
+        return TransitionCallbackReturn.SUCCESS
+
+    def _wait_for_legacy_recharge(self) -> None:
+        """Wait for the legacy task to observe its stop event."""
+        while (self._legacy_recharge_task is not None and
+               not self._legacy_recharge_task.done()):
+            time.sleep(0.01)
+
+    def _destroy_configured_entities(self) -> None:
+        """Destroy entities owned by the configured lifecycle state."""
         if self._action_server is not None:
             self._action_server.destroy()
             self._action_server = None
-        self.get_logger().info('on_cleanup() is called.')
-        return TransitionCallbackReturn.SUCCESS
+        if self.recharge_battery_cli is not None:
+            self.destroy_client(self.recharge_battery_cli)
+            self.recharge_battery_cli = None
+        if self._controller is not None:
+            self._controller.destroy()
+            self._controller = None
 
     def on_shutdown(self, state: State) -> TransitionCallbackReturn:
         """Shut down the node."""
         self.get_logger().info('on_shutdown() is called.')
         self._deactivate_event.set()
         self._stop_legacy_recharge()
-        self.thread.join()
-        self.ardusub.destroy_node()
-        if self._action_server is not None:
-            self._action_server.destroy()
-            self._action_server = None
+        self._wait_for_legacy_recharge()
+        wait_for_action_completion(self)
+        self._destroy_configured_entities()
         return super().on_shutdown(state)
 
 
@@ -226,7 +256,7 @@ def main(args=None):
         executor.add_node(lc_node)
         try:
             executor.spin()
-        except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
+        except (KeyboardInterrupt, ExternalShutdownException):
             executor.shutdown()
             lc_node.destroy_node()
         finally:

@@ -168,6 +168,21 @@ def test_follow_pipeline_use_action_server_default_is_false(follow_node):
         'use_action_server').get_parameter_value().bool_value is False
 
 
+def test_follow_pipeline_can_cleanup_and_reconfigure(follow_node):
+    """Verify configured resources can be destroyed and recreated."""
+    follow_node.trigger_cleanup()
+
+    assert follow_node._controller is None
+    assert follow_node.get_path_service is None
+    assert follow_node.pipeline_inspected_pub is None
+
+    follow_node.trigger_configure()
+
+    assert follow_node._controller is not None
+    assert follow_node.get_path_service is not None
+    assert follow_node.pipeline_inspected_pub is not None
+
+
 def test_load_pipe_path_once_stores_service_path(monkeypatch, follow_node):
     """Verify the first path load stores a mutable pose list."""
     response = GetPath.Response()
@@ -231,8 +246,8 @@ def test_wait_until_reached_propagates_stop_reason(
     """Verify the reached wait loop checks the injected stop policy."""
     setpoint = _setpoint()
     monkeypatch.setattr(
-        follow_node.ardusub,
-        'check_setpoint_reached_xy',
+        follow_node._controller,
+        'is_xy_setpoint_reached',
         lambda candidate, threshold: False)
 
     returned_setpoint, stop_reason = \
@@ -251,8 +266,8 @@ def test_wait_until_reached_refreshes_stale_setpoint(
     refreshed_setpoint = _setpoint(1.0, 1.0)
     refreshes = []
     monkeypatch.setattr(
-        follow_node.ardusub,
-        'check_setpoint_reached_xy',
+        follow_node._controller,
+        'is_xy_setpoint_reached',
         lambda candidate, threshold: candidate is refreshed_setpoint)
     monkeypatch.setattr(
         follow_node,
@@ -440,7 +455,7 @@ def test_execute_follow_pipeline_maps_traversal_result(
 
 
 def test_legacy_abort_preserves_current_waypoint(monkeypatch, follow_node):
-    """Verify legacy abort uses shared traversal without losing its waypoint."""
+    """Verify legacy abort does not lose the current waypoint."""
     waypoint = _pose()
     follow_node.pipe_path = [waypoint]
     follow_node.abort_follow = True

@@ -13,9 +13,9 @@
   <test_depend>python3-pytest</test_depend>
 
   <exec_depend>mavros</exec_depend>
+  <exec_depend>rclpy</exec_depend>
   <exec_depend>suave_msgs</exec_depend>
   <exec_depend>mavros_msgs</exec_depend>
-  <exec_depend>mavros_wrapper</exec_depend>
   <exec_depend>ros_gz</exec_depend>
 
   <depend>geometry_msgs</depend>

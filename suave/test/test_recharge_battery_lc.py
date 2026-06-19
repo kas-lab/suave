@@ -107,7 +107,7 @@ def test_recharge_battery_use_action_server_default_is_false(recharge_node):
 
 
 def test_recharge_retry_rate_default_is_two_hertz(recharge_node):
-    """Verify the shared recharge runner defaults to two attempts per second."""
+    """Verify the recharge runner defaults to two attempts per second."""
     assert recharge_node.get_parameter(
         'recharge_retry_rate').get_parameter_value().double_value == 2.0
 
@@ -129,9 +129,9 @@ def test_try_recharge_once_in_progress_when_setpoint_unavailable(
         monkeypatch, recharge_node):
     """Verify a missing setpoint leaves recharge in progress."""
     monkeypatch.setattr(
-        recharge_node.ardusub,
-        'setpoint_position_gz',
-        lambda pose, fixed_altitude=True: None)
+        recharge_node._controller,
+        'publish_gazebo_setpoint',
+        lambda pose, altitude: None)
 
     assert recharge_node._try_recharge_once() is None
 
@@ -141,12 +141,12 @@ def test_try_recharge_once_in_progress_until_setpoint_reached(
     """Verify movement toward an unreached setpoint remains in progress."""
     setpoint = object()
     monkeypatch.setattr(
-        recharge_node.ardusub,
-        'setpoint_position_gz',
-        lambda pose, fixed_altitude=True: setpoint)
+        recharge_node._controller,
+        'publish_gazebo_setpoint',
+        lambda pose, altitude: setpoint)
     monkeypatch.setattr(
-        recharge_node.ardusub,
-        'check_setpoint_reached_xy',
+        recharge_node._controller,
+        'is_xy_setpoint_reached',
         lambda candidate, threshold: False)
 
     assert recharge_node._try_recharge_once() is None
@@ -158,12 +158,12 @@ def test_try_recharge_once_returns_true_when_service_succeeds(
     setpoint = object()
     response = Trigger.Response(success=True)
     monkeypatch.setattr(
-        recharge_node.ardusub,
-        'setpoint_position_gz',
-        lambda pose, fixed_altitude=True: setpoint)
+        recharge_node._controller,
+        'publish_gazebo_setpoint',
+        lambda pose, altitude: setpoint)
     monkeypatch.setattr(
-        recharge_node.ardusub,
-        'check_setpoint_reached_xy',
+        recharge_node._controller,
+        'is_xy_setpoint_reached',
         lambda candidate, threshold: True)
     monkeypatch.setattr(
         recharge_battery_lc,
@@ -179,12 +179,12 @@ def test_try_recharge_once_returns_false_when_service_fails(
     """Verify unavailable or rejected recharge service calls fail recharge."""
     setpoint = object()
     monkeypatch.setattr(
-        recharge_node.ardusub,
-        'setpoint_position_gz',
-        lambda pose, fixed_altitude=True: setpoint)
+        recharge_node._controller,
+        'publish_gazebo_setpoint',
+        lambda pose, altitude: setpoint)
     monkeypatch.setattr(
-        recharge_node.ardusub,
-        'check_setpoint_reached_xy',
+        recharge_node._controller,
+        'is_xy_setpoint_reached',
         lambda candidate, threshold: True)
     monkeypatch.setattr(
         recharge_battery_lc,
@@ -341,8 +341,6 @@ def test_lifecycle_exit_stops_legacy_runner(
     stops = []
     monkeypatch.setattr(
         recharge_node, '_stop_legacy_recharge', lambda: stops.append(True))
-    monkeypatch.setattr(recharge_node.thread, 'join', lambda: None)
-    monkeypatch.setattr(recharge_node.ardusub, 'destroy_node', lambda: None)
 
     getattr(recharge_node, callback_name)(None)
 
@@ -352,6 +350,19 @@ def test_lifecycle_exit_stops_legacy_runner(
 def test_recharge_node_has_no_legacy_timer(recharge_node):
     """Verify recharge scheduling is owned by the shared runner."""
     assert not hasattr(recharge_node, 'recharge_cb_timer')
+
+
+def test_recharge_node_can_cleanup_and_reconfigure(recharge_node):
+    """Verify configured resources can be destroyed and recreated."""
+    recharge_node.trigger_cleanup()
+
+    assert recharge_node._controller is None
+    assert recharge_node.recharge_battery_cli is None
+
+    recharge_node.trigger_configure()
+
+    assert recharge_node._controller is not None
+    assert recharge_node.recharge_battery_cli is not None
 
 
 def test_recharge_battery_lifecycle_state_set_on_activate(

@@ -15,18 +15,10 @@
 """Shared helpers for lifecycle-node action servers."""
 
 from functools import wraps
+import time
 
-import rclpy
 from rclpy.action import CancelResponse
 from rclpy.action import GoalResponse
-
-
-def spin_srv(executor):
-    """Spin the executor, ignoring shutdown-related errors."""
-    try:
-        executor.spin()
-    except (rclpy.executors.ExternalShutdownException, ValueError):
-        pass
 
 
 def lifecycle_state_is_active(node):
@@ -50,7 +42,7 @@ def use_action_server(node):
 
 
 def make_goal_callback(node):
-    """Return a goal callback gated by lifecycle state, action mode, and single-flight."""
+    """Return a goal callback gated by lifecycle state and action mode."""
     def goal_callback(goal_request):
         if not lifecycle_state_is_active(node):
             node.get_logger().warn('Goal rejected: node is not active.')
@@ -70,3 +62,9 @@ def make_goal_callback(node):
 def accept_cancel(goal_handle):
     """Accept action cancellation."""
     return CancelResponse.ACCEPT
+
+
+def wait_for_action_completion(node):
+    """Wait until the node's active action execute callback finishes."""
+    while node._goal_executing.is_set():
+        time.sleep(0.01)

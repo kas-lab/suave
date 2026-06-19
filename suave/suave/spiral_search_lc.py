@@ -23,6 +23,9 @@ import rclpy
 from rclpy.action import ActionServer
 from rclpy.action.server import ServerGoalHandle
 from rcl_interfaces.msg import ParameterDescriptor, SetParametersResult
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.executors import ExternalShutdownException
 from rclpy.lifecycle import Node
 from rclpy.lifecycle import State
 from rclpy.lifecycle import TransitionCallbackReturn
@@ -30,9 +33,9 @@ from rclpy.timer import Timer
 from std_msgs.msg import Bool
 from suave.action_server_utils import accept_cancel
 from suave.action_server_utils import make_goal_callback
-from suave.action_server_utils import spin_srv
 from suave.action_server_utils import use_action_server
-from suave.bluerov_gazebo import BlueROVGazebo
+from suave.action_server_utils import wait_for_action_completion
+from suave.mavros_position_controller import MavrosPositionController
 from suave_msgs.action import SpiralSearch
 
 
@@ -73,11 +76,15 @@ class SpiralSearcherLC(Node):
         super().__init__(node_name, **kwargs)
 
         self.goal_setpoint = None
+        self._position_callback_group = MutuallyExclusiveCallbackGroup()
+        self._controller = None
+        self._pipeline_detected_sub = None
 
         spiral_altitude_descriptor = ParameterDescriptor(
             description='Sets the spiral altitude of the UUV.')
         self.declare_parameter(
             'spiral_altitude', 2.0, spiral_altitude_descriptor)
+        self.declare_parameter('ground_depth_gz', -20.0)
         self.declare_parameter('use_action_server', False)
 
         self.param_change_callback_handle = \
@@ -103,75 +110,79 @@ class SpiralSearcherLC(Node):
 
     def publish(self):
         """Publish the next spiral setpoint when the node is enabled."""
-        if self._enabled is True:
-            self.spiral_altitude = self.get_parameter(
-                    'spiral_altitude').get_parameter_value().double_value
+        if self._enabled is False or self._controller is None:
+            return
 
-            # Initialize spiral center from the current MAVROS local pose the
-            # first time a local position is available (map frame == Gazebo
-            # frame, so this is the robot's actual start position).
-            if self.spiral_center_x is None or self.spiral_center_y is None:
-                if not self.ardusub.local_pos_received:
-                    return
-                local_pos = self.ardusub.local_pos.pose.position
-                self.spiral_center_x = local_pos.x
-                self.spiral_center_y = local_pos.y
+        self.spiral_altitude = self.get_parameter(
+                'spiral_altitude').get_parameter_value().double_value
 
-            # Narrow to plain floats so arithmetic below is unambiguous.
-            center_x = self.spiral_center_x
-            center_y = self.spiral_center_y
+        # Initialize spiral center from the current MAVROS local pose the
+        # first time a local position is available (map frame == Gazebo
+        # frame, so this is the robot's actual start position).
+        if self.spiral_center_x is None or self.spiral_center_y is None:
+            local_pose = self._controller.local_pose
+            if local_pose is None:
+                return
+            self.spiral_center_x = local_pose.pose.position.x
+            self.spiral_center_y = local_pose.pose.position.y
 
-            if self.old_spiral_altitude != self.spiral_altitude:
+        # Narrow to plain floats so arithmetic below is unambiguous.
+        center_x = self.spiral_center_x
+        center_y = self.spiral_center_y
+
+        if self.old_spiral_altitude != self.spiral_altitude:
+            self.spiral_count += 1
+
+        self.old_spiral_altitude = self.spiral_altitude
+        fov = math.pi/3
+        spiral_width = 2.0*self.spiral_altitude*math.tan(fov/2)
+
+        # In the time of writing, sometimes ardusub bugs and stops trying o reach the correct
+        # altitude when it reaches xy. Thus, we consider that it bugged when, after 10 iterations,
+        # the bluerov reaches XY but doesn't reach the correct altitude (Z)
+        altitude_bug = False
+        if self.goal_setpoint is not None and self.count > 10:
+            altitude_bug = self._controller.is_xy_setpoint_reached(
+                self.goal_setpoint, 0.4) \
+                and (not self._controller.is_setpoint_reached(
+                    self.goal_setpoint, 0.4))
+
+        if self.count > 10:
+            if altitude_bug is True:
+                self.z_delta -= 0.25
+            self._controller.publish_xy_setpoint(
+                center_x + self.spiral_x,
+                center_y + self.spiral_y,
+                self.spiral_altitude + self.z_delta)
+            self.count = 0
+
+        if self.goal_setpoint is None or \
+            self._controller.is_setpoint_reached(
+                self.goal_setpoint, 0.4):
+
+            x, y = spiral_points(
+                self.spiral_count,
+                self.spiral_x,
+                self.spiral_y,
+                resolution=0.1,
+                spiral_width=spiral_width)
+
+            self.goal_setpoint = self._controller.publish_xy_setpoint(
+                center_x + x,
+                center_y + y,
+                self.spiral_altitude + self.z_delta)
+            if self.goal_setpoint is not None:
+                # Store the true target z (without the bug-correction
+                # offset) so that check_setpoint_reached detects whether
+                # the vehicle has reached the intended altitude, not the
+                # corrected one.
+                self.goal_setpoint.pose.position.z -= self.z_delta
                 self.spiral_count += 1
-
-            self.old_spiral_altitude = self.spiral_altitude
-            fov = math.pi/3
-            spiral_width = 2.0*self.spiral_altitude*math.tan(fov/2)
-
-            altitude_bug = False
-            if self.goal_setpoint is not None and self.count > 10:
-                altitude_bug = self.ardusub.check_setpoint_reached_xy(
-                    self.goal_setpoint, 0.4) \
-                    and (not self.ardusub.check_setpoint_reached(
-                        self.goal_setpoint, 0.4))
-
-            if self.count > 10:
-                if altitude_bug is True:
-                    self.z_delta -= 0.25
-                self.ardusub.altitude = self.spiral_altitude + self.z_delta
-                self.ardusub.setpoint_position_local(
-                    center_x + self.spiral_x,
-                    center_y + self.spiral_y,
-                    fixed_altitude=True)
-                self.count = 0
-
-            if self.goal_setpoint is None or \
-               self.ardusub.check_setpoint_reached(self.goal_setpoint, 0.4):
-
-                x, y = spiral_points(
-                    self.spiral_count,
-                    self.spiral_x,
-                    self.spiral_y,
-                    resolution=0.1,
-                    spiral_width=spiral_width)
-
-                self.ardusub.altitude = self.spiral_altitude + self.z_delta
-                self.goal_setpoint = self.ardusub.setpoint_position_local(
-                    center_x + x,
-                    center_y + y,
-                    fixed_altitude=True)
-                if self.goal_setpoint is not None:
-                    # Store the true target z (without the bug-correction
-                    # offset) so that check_setpoint_reached detects whether
-                    # the vehicle has reached the intended altitude, not the
-                    # corrected one.
-                    self.goal_setpoint.pose.position.z -= self.z_delta
-                    self.spiral_count += 1
-                    self.spiral_x = x
-                    self.spiral_y = y
-                self.count = 0
-            else:
-                self.count += 1
+                self.spiral_x = x
+                self.spiral_y = y
+            self.count = 0
+        else:
+            self.count += 1
 
     def _reset_spiral_state(self) -> None:
         """Reset all spiral search state for a fresh run."""
@@ -236,14 +247,15 @@ class SpiralSearcherLC(Node):
             self._goal_executing.clear()
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
-        """Configure the node, start the spiral timer, and register the action server."""
+        """Create the controller, spiral timer, and action server."""
         self.get_logger().info('on_configure() is called.')
-        self.ardusub = BlueROVGazebo('bluerov_spiral_search')
-        ardusub_executor = rclpy.executors.SingleThreadedExecutor()
-        ardusub_executor.add_node(self.ardusub)
-        self.thread = threading.Thread(
-            target=spin_srv, args=(ardusub_executor, ), daemon=True)
-        self.thread.start()
+        ground_depth = self.get_parameter(
+            'ground_depth_gz').get_parameter_value().double_value
+        self._controller = MavrosPositionController(
+            self,
+            ground_depth,
+            self._position_callback_group,
+        )
 
         self._pipeline_detected_sub = self.create_subscription(
             Bool, 'pipeline/detected', self._pipeline_detected_cb, 10)
@@ -261,7 +273,7 @@ class SpiralSearcherLC(Node):
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
-        """Activate: start spiral immediately unless action server mode is on."""
+        """Start spiral movement unless action server mode is on."""
         self.get_logger().info("on_activate() is called.")
         self._reset_spiral_state()
         self._abort_event.clear()
@@ -284,26 +296,32 @@ class SpiralSearcherLC(Node):
 
     def on_cleanup(self, state: State) -> TransitionCallbackReturn:
         """Clean up the node."""
+        self._abort_event.set()
         self._stop_spiral()
-        self.thread.join()
-        self.ardusub.destroy_node()
+        wait_for_action_completion(self)
+        self._destroy_configured_entities()
+        self.get_logger().info('on_cleanup() is called.')
+        return TransitionCallbackReturn.SUCCESS
+
+    def _destroy_configured_entities(self) -> None:
+        """Destroy entities owned by the configured lifecycle state."""
         self._destroy_spiral_timer()
         if self._action_server is not None:
             self._action_server.destroy()
             self._action_server = None
-        self.get_logger().info('on_cleanup() is called.')
-        return TransitionCallbackReturn.SUCCESS
+        if self._pipeline_detected_sub is not None:
+            self.destroy_subscription(self._pipeline_detected_sub)
+            self._pipeline_detected_sub = None
+        if self._controller is not None:
+            self._controller.destroy()
+            self._controller = None
 
     def on_shutdown(self, state: State) -> TransitionCallbackReturn:
         """Shut down the node."""
         self._abort_event.set()
         self._stop_spiral()
-        self.thread.join()
-        self.ardusub.destroy_node()
-        self._destroy_spiral_timer()
-        if self._action_server is not None:
-            self._action_server.destroy()
-            self._action_server = None
+        wait_for_action_completion(self)
+        self._destroy_configured_entities()
         self.get_logger().info('on_shutdown() is called.')
         return TransitionCallbackReturn.SUCCESS
 
@@ -312,12 +330,12 @@ def main():
     """Run the spiral searcher lifecycle node."""
     rclpy.init()
 
-    executor = rclpy.executors.MultiThreadedExecutor()
+    executor = MultiThreadedExecutor()
     lc_node = SpiralSearcherLC('f_generate_search_path_node')
     executor.add_node(lc_node)
     try:
         executor.spin()
-    except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
+    except (KeyboardInterrupt, ExternalShutdownException):
         lc_node.destroy_node()
 
 

@@ -5,7 +5,7 @@ API
    :toctree: _autosummary
    :recursive:
 
-   suave.bluerov_gazebo
+   suave.mavros_position_controller
    suave.follow_pipeline_lc
    suave.pipeline_detection
    suave.pipeline_detection_wv
@@ -19,5 +19,5 @@ API
 .. teste
 .. ------
 ..
-.. .. automodule:: suave.bluerov_gazebo
+.. .. automodule:: suave.mavros_position_controller
 ..   :members:

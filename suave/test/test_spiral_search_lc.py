@@ -19,6 +19,7 @@ import time
 import pytest
 import rclpy
 
+from geometry_msgs.msg import PoseStamped
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from std_msgs.msg import Bool
@@ -237,3 +238,45 @@ def test_spiral_timer_is_stored_for_lifecycle_cleanup(spiral_node):
     """Verify configuration stores the timer under the managed attribute."""
     assert spiral_node._timer is not None
     assert not hasattr(spiral_node, '_timer_')
+
+
+def test_spiral_publish_passes_explicit_altitude(
+        monkeypatch, spiral_node):
+    """Verify spiral search passes its corrected altitude explicitly."""
+    local_pose = PoseStamped()
+    local_pose.pose.position.x = 10.0
+    local_pose.pose.position.y = 20.0
+    spiral_node._controller._local_pose = local_pose
+    spiral_node._enabled = True
+    spiral_node.z_delta = -0.25
+    calls = []
+
+    def publish_xy_setpoint(x, y, altitude):
+        calls.append((x, y, altitude))
+        return PoseStamped()
+
+    monkeypatch.setattr(
+        spiral_node._controller,
+        'publish_xy_setpoint',
+        publish_xy_setpoint,
+    )
+
+    spiral_node.publish()
+
+    assert calls
+    assert calls[-1][2] == pytest.approx(1.75)
+
+
+def test_spiral_node_can_cleanup_and_reconfigure(spiral_node):
+    """Verify spiral resources can be destroyed and recreated."""
+    spiral_node.trigger_cleanup()
+
+    assert spiral_node._controller is None
+    assert spiral_node._pipeline_detected_sub is None
+    assert spiral_node._timer is None
+
+    spiral_node.trigger_configure()
+
+    assert spiral_node._controller is not None
+    assert spiral_node._pipeline_detected_sub is not None
+    assert spiral_node._timer is not None
