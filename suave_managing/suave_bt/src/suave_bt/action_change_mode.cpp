@@ -14,26 +14,23 @@
 
 #include "suave_bt/action_change_mode.hpp"
 
-
 namespace suave_bt
 {
 using namespace std::placeholders;
 using namespace std::chrono_literals;
 
-ChangeMode::ChangeMode(
-  const std::string & name, const BT::NodeConfig & conf)
+ChangeMode::ChangeMode(const std::string & name, const BT::NodeConfig & conf)
 : BT::SyncActionNode(name, conf)
 {
   getInput("node_name", node_name_);
 
   node_ = config().blackboard->get<std::shared_ptr<suave_bt::SuaveMission>>("node");
-  previous_modes_ = config().blackboard->get<std::shared_ptr<std::map<std::string, std::string>>>(
-    "previous_modes");
+  previous_modes_ =
+    config().blackboard->get<std::shared_ptr<std::map<std::string, std::string>>>("previous_modes");
 
-  change_mode_cli_ = node_->create_client<system_modes_msgs::srv::ChangeMode>(
-    node_name_ + "/change_mode");
-  get_mode_cli_ = node_->create_client<system_modes_msgs::srv::GetMode>(
-    node_name_ + "/get_mode");
+  change_mode_cli_ =
+    node_->create_client<system_modes_msgs::srv::ChangeMode>(node_name_ + "/change_mode");
+  get_mode_cli_ = node_->create_client<system_modes_msgs::srv::GetMode>(node_name_ + "/get_mode");
 }
 
 BT::NodeStatus ChangeMode::tick()
@@ -41,7 +38,9 @@ BT::NodeStatus ChangeMode::tick()
   std::string mode_name;
   getInput("mode_name", mode_name);
 
-  if (previous_modes_->at(node_name_) == mode_name) {return BT::NodeStatus::SUCCESS;}
+  if (previous_modes_->at(node_name_) == mode_name) {
+    return BT::NodeStatus::SUCCESS;
+  }
 
   if (get_mode_cli_->service_is_ready()) {
     auto request = std::make_shared<system_modes_msgs::srv::GetMode::Request>();
@@ -66,8 +65,8 @@ BT::NodeStatus ChangeMode::tick()
 
           if (change_mode_result_->success) {
             RCLCPP_INFO(
-              node_->get_logger(), "Node %s mode changed to %s",
-              node_name_.c_str(), mode_name.c_str());
+              node_->get_logger(), "Node %s mode changed to %s", node_name_.c_str(),
+              mode_name.c_str());
             previous_modes_->at(node_name_) = mode_name;
             return BT::NodeStatus::SUCCESS;
           }
@@ -77,8 +76,7 @@ BT::NodeStatus ChangeMode::tick()
       }
 
       RCLCPP_INFO(
-        node_->get_logger(), "%s/change_mode service not available...",
-        node_name_.c_str());
+        node_->get_logger(), "%s/change_mode service not available...", node_name_.c_str());
       return BT::NodeStatus::FAILURE;
     } else {
       return BT::NodeStatus::FAILURE;
@@ -87,6 +85,5 @@ BT::NodeStatus ChangeMode::tick()
 
   RCLCPP_INFO(node_->get_logger(), "%s/get_mode service not available...", node_name_.c_str());
   return BT::NodeStatus::FAILURE;
-
 }
-} //namespace suave_bt
+}  // namespace suave_bt

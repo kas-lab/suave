@@ -12,43 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SUAVE_BT__RECHARGE_BATTERY_HPP_
-#define SUAVE_BT__RECHARGE_BATTERY_HPP_
+#ifndef SUAVE_BT__ACTION_RECHARGE_BATTERY_HPP_
+#define SUAVE_BT__ACTION_RECHARGE_BATTERY_HPP_
 
-#include "behaviortree_cpp/behavior_tree.h"
-#include "behaviortree_cpp/bt_factory.h"
+#include <string>
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/bool.hpp"
-
-#include "suave_bt/suave_mission.hpp"
-
-using namespace std::placeholders;
+#include "suave_bt/bt_action_client.hpp"
+#include "suave_msgs/action/recharge_battery.hpp"
 
 namespace suave_bt
 {
 
-class RechargeBattery : public BT::StatefulActionNode
+class RechargeBattery : public BtActionClient<suave_msgs::action::RechargeBattery>
 {
-
 public:
   RechargeBattery(const std::string & name, const BT::NodeConfig & conf);
 
-  BT::NodeStatus onStart() override;
+  static BT::PortsList providedPorts() {return providedBasicPorts();}
 
-  BT::NodeStatus onRunning() override;
+protected:
+  using Action = suave_msgs::action::RechargeBattery;
+  using WrappedResult = BtActionClient<Action>::WrappedResult;
 
-  void onHalted() override {}
-
-  static BT::PortsList providedPorts()
-  {
-    return BT::PortsList(
-      {
-      });
-  }
+  Action::Goal makeGoal() override;
+  BT::NodeStatus evaluateResult(const WrappedResult & result) override;
 
 private:
-  std::shared_ptr<suave_bt::SuaveMission> node_;
+  BT::NodeStatus onLegacyStart() override;
+  BT::NodeStatus onLegacyRunning() override;
 
   bool recharged_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr battery_level_sub_;
@@ -57,4 +50,4 @@ private:
 
 }  // namespace suave_bt
 
-#endif  // SUAVE_BT__RECHARGE_BATTERY_HPP_
+#endif  // SUAVE_BT__ACTION_RECHARGE_BATTERY_HPP_

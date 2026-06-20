@@ -12,24 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SUAVE_BT__CHANGE_MODE_HPP_
-#define SUAVE_BT__CHANGE_MODE_HPP_
+#ifndef SUAVE_BT__ACTION_CHANGE_MODE_HPP_
+#define SUAVE_BT__ACTION_CHANGE_MODE_HPP_
+
+#include <map>
+#include <memory>
+#include <string>
 
 #include "behaviortree_cpp/behavior_tree.h"
 #include "behaviortree_cpp/bt_factory.h"
-
 #include "rclcpp/rclcpp.hpp"
 #include "suave_bt/suave_mission.hpp"
 #include "system_modes_msgs/srv/change_mode.hpp"
 #include "system_modes_msgs/srv/get_mode.hpp"
-
 
 namespace suave_bt
 {
 
 class ChangeMode : public BT::SyncActionNode
 {
-
 public:
   ChangeMode(const std::string & name, const BT::NodeConfig & conf);
 
@@ -54,4 +55,4 @@ protected:
 
 }  // namespace suave_bt
 
-#endif  // SUAVE_BT__CHANGE_MODE_HPP_
+#endif  // SUAVE_BT__ACTION_CHANGE_MODE_HPP_

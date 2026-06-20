@@ -14,24 +14,20 @@
 
 #include "suave_bt/action_arm_thrusters.hpp"
 
-
 namespace suave_bt
 {
 using namespace std::placeholders;
 using namespace std::chrono_literals;
 
-ArmThrusters::ArmThrusters(
-  const std::string & name, const BT::NodeConfig & conf)
+ArmThrusters::ArmThrusters(const std::string & name, const BT::NodeConfig & conf)
 : BT::StatefulActionNode(name, conf)
 {
   node_ = config().blackboard->get<std::shared_ptr<suave_bt::SuaveMission>>("node");
-  arm_motors_cli_ = node_->create_client<mavros_msgs::srv::CommandBool>(
-    "mavros/cmd/arming");
+  arm_motors_cli_ = node_->create_client<mavros_msgs::srv::CommandBool>("mavros/cmd/arming");
 }
 
 BT::NodeStatus ArmThrusters::onRunning()
 {
-
   if (arm_motors_cli_->service_is_ready()) {
     auto request = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
     request->value = true;
@@ -55,4 +51,4 @@ BT::NodeStatus ArmThrusters::onRunning()
   RCLCPP_INFO(node_->get_logger(), "mavros/cmd/arming service not available, waiting again...");
   return BT::NodeStatus::RUNNING;
 }
-} //namespace suave_bt
+}  // namespace suave_bt

@@ -14,20 +14,24 @@ find_package(behaviortree_cpp REQUIRED)
 find_package(mavros_msgs REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(system_modes_msgs REQUIRED)
 find_package(diagnostic_msgs REQUIRED)
+find_package(suave_msgs REQUIRED)
 
 set(dependencies
   ament_index_cpp
   behaviortree_cpp
   mavros_msgs
   rclcpp
+  rclcpp_action
   std_msgs
   std_srvs
   system_modes_msgs
   diagnostic_msgs
+  suave_msgs
 )
 
 # include_directories(
@@ -46,6 +50,7 @@ add_library(action_set_guided_mode SHARED src/suave_bt/action_set_guided_mode.cp
 add_library(action_search_pipeline SHARED src/suave_bt/action_search_pipeline.cpp)
 add_library(action_inspect_pipeline SHARED src/suave_bt/action_inspect_pipeline.cpp)
 add_library(action_recharge_battery SHARED src/suave_bt/action_recharge_battery.cpp)
+add_library(action_recover_thrusters SHARED src/suave_bt/action_recover_thrusters.cpp)
 add_library(action_change_mode SHARED src/suave_bt/action_change_mode.cpp)
 
 
@@ -61,6 +66,7 @@ list(APPEND plugin_libs
   action_search_pipeline
   action_inspect_pipeline
   action_recharge_battery
+  action_recover_thrusters
   action_change_mode
 )
 
@@ -108,11 +114,19 @@ install(DIRECTORY
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  # the following line skips cpplint (only works in a git repo)
-  # comment the line when this package is in a git repo and when
-  # a copyright and license is added to all source files
-  set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
+
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(test_action_clients test/test_action_clients.cpp)
+  target_link_libraries(
+    test_action_clients
+    action_search_pipeline
+    action_inspect_pipeline
+    action_recharge_battery
+    action_recover_thrusters
+    suave_mission
+  )
+  ament_target_dependencies(test_action_clients ${dependencies})
 endif()
 
 ament_export_include_directories(include)

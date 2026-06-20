@@ -29,8 +29,11 @@
                 <change_mode node_name="f_maintain_motion"
                              mode_name="fd_all_thrusters"/>
               </Sequence>
-              <change_mode node_name="f_maintain_motion"
-                           mode_name="fd_recover_thrusters"/>
+              <Sequence>
+                <change_mode node_name="f_maintain_motion"
+                             mode_name="fd_recover_thrusters"/>
+                <recover_thrusters call_action_server="{use_action_server}"/>
+              </Sequence>
             </Fallback>
             <Fallback>
               <SequenceWithMemory>
@@ -53,7 +56,7 @@
                                    mode_name="fd_spiral_low"/>
                     </Sequence>
                   </Fallback>
-                  <search_pipeline/>
+                  <search_pipeline call_action_server="{use_action_server}"/>
                   <change_mode node_name="f_generate_search_path"
                                mode_name="fd_unground"/>
                 </ReactiveSequence>
@@ -61,7 +64,7 @@
                   <battery_level threshold="0.25"/>
                   <change_mode node_name="f_follow_pipeline"
                                mode_name="fd_follow_pipeline"/>
-                  <inspect_pipeline/>
+                  <inspect_pipeline call_action_server="{use_action_server}"/>
                   <change_mode node_name="f_follow_pipeline"
                                mode_name="fd_unground"/>
                   <change_mode node_name="f_maintain_motion"
@@ -75,7 +78,7 @@
                              mode_name="fd_unground"/>
                 <change_mode node_name="generate_recharge_path"
                              mode_name="normal"/>
-                <recharge/>
+                <recharge call_action_server="{use_action_server}"/>
                 <change_mode node_name="generate_recharge_path"
                              mode_name="inactive"/>
               </Sequence>
@@ -104,14 +107,24 @@
       <input_port name="mode_name"/>
     </Action>
     <Action ID="inspect_pipeline"
-            editable="true"/>
+            editable="true">
+      <input_port name="call_action_server"/>
+    </Action>
     <Condition ID="is_mission_aborted"
                editable="true"/>
     <Condition ID="is_pipeline_found"/>
     <Condition ID="is_pipeline_inspected"/>
-    <Action ID="recharge"/>
+    <Action ID="recharge">
+      <input_port name="call_action_server"/>
+    </Action>
+    <Action ID="recover_thrusters"
+            editable="true">
+      <input_port name="call_action_server"/>
+    </Action>
     <Action ID="search_pipeline"
-            editable="true"/>
+            editable="true">
+      <input_port name="call_action_server"/>
+    </Action>
     <Action ID="set_guided_mode"
             editable="true"/>
     <Condition ID="thrusters_ok"

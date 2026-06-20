@@ -15,15 +15,14 @@
 #ifndef SUAVE_BT__CONDITION_BATTERY_LEVEL_HPP_
 #define SUAVE_BT__CONDITION_BATTERY_LEVEL_HPP_
 
+#include <memory>
+#include <string>
+
 #include "behaviortree_cpp/behavior_tree.h"
 #include "behaviortree_cpp/bt_factory.h"
-
-#include "rclcpp/rclcpp.hpp"
 #include "diagnostic_msgs/msg/diagnostic_array.hpp"
-
+#include "rclcpp/rclcpp.hpp"
 #include "suave_bt/suave_mission.hpp"
-
-using namespace std::chrono_literals;
 
 namespace suave_bt
 {
@@ -31,9 +30,7 @@ namespace suave_bt
 class BatteryLevel : public BT::ConditionNode
 {
 public:
-  explicit BatteryLevel(
-    const std::string & xml_tag_name,
-    const BT::NodeConfig & conf);
+  explicit BatteryLevel(const std::string & xml_tag_name, const BT::NodeConfig & conf);
 
   BT::NodeStatus tick() override;
 
@@ -53,6 +50,6 @@ private:
   void diagnostics_cb(const diagnostic_msgs::msg::DiagnosticArray & msg);
 };
 
-} //namespace suave_bt
+}  // namespace suave_bt
 
 #endif  // SUAVE_BT__CONDITION_BATTERY_LEVEL_HPP_

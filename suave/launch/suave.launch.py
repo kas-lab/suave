@@ -73,6 +73,13 @@ def generate_launch_description():
             'Indicates whether system_modes should be launched [True/False]')
     )
 
+    use_action_server = LaunchConfiguration('use_action_server')
+    use_action_server_arg = DeclareLaunchArgument(
+        'use_action_server',
+        default_value='false',
+        description='Start managed behaviors through ROS action servers'
+    )
+
     mission_config_default = os.path.join(
         get_package_share_directory('suave_missions'),
         'config',
@@ -119,24 +126,28 @@ def generate_launch_description():
     spiral_search_node = Node(
         package='suave',
         executable='spiral_search',
+        parameters=[{'use_action_server': use_action_server}],
         output=print_output,
     )
 
     follow_pipeline_node = Node(
         package='suave',
         executable='follow_pipeline',
+        parameters=[{'use_action_server': use_action_server}],
         output=print_output,
     )
 
     recharge_battery_node = Node(
         package='suave',
         executable='recharge_battery',
+        parameters=[{'use_action_server': use_action_server}],
         output=print_output,
     )
 
     recover_thrusters_node = Node(
         package='suave',
         executable='recover_thrusters',
+        parameters=[{'use_action_server': use_action_server}],
         output=print_output,
     )
 
@@ -164,6 +175,7 @@ def generate_launch_description():
     return LaunchDescription([
         task_bridge_arg,
         system_modes_arg,
+        use_action_server_arg,
         silent_arg,
         OpaqueFunction(function=configure_logging),
         print_output_arg,

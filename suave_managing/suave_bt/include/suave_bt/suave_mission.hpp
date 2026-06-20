@@ -15,10 +15,11 @@
 #ifndef SUAVE_BT__SUAVE_MISSION_HPP_
 #define SUAVE_BT__SUAVE_MISSION_HPP_
 
-#include <iostream>
-#include <iomanip>
 #include <ctime>
+#include <iomanip>
+#include <iostream>
 #include <sstream>
+#include <string>
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float32.hpp"
@@ -29,19 +30,21 @@ namespace suave_bt
 
 class SuaveMission : public rclcpp::Node
 {
-
 public:
-  SuaveMission(std::string none_name);
+  explicit SuaveMission(
+    std::string none_name, const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
   bool time_limit_reached();
   void set_search_started();
   bool is_mission_aborted() {return mission_aborted_;}
+  bool use_action_server() const {return use_action_server_;}
   void finish_mission();
 
 private:
   rclcpp::Time start_time_;
   bool search_started_ = false;
   int time_limit_;
+  bool use_action_server_;
   rclcpp::Client<std_srvs::srv::Empty>::SharedPtr save_mission_results_cli;
 
   bool mission_aborted_;

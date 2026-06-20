@@ -30,6 +30,7 @@ def generate_launch_description():
     """Return the top-level configurable mission launch description."""
     mc_reasoning_time_filename = LaunchConfiguration(
         'mc_reasoning_time_filename')
+    use_action_server = LaunchConfiguration('use_action_server')
 
     adaptation_manager_arg = DeclareLaunchArgument(
         'adaptation_manager',
@@ -67,6 +68,12 @@ def generate_launch_description():
         'mc_reasoning_time_filename',
         default_value='metacontrol_reasoning_time',
         description='metacontrol reasoning time filename'
+    )
+
+    use_action_server_arg = DeclareLaunchArgument(
+        'use_action_server',
+        default_value='false',
+        description='Start BT-managed behaviors through ROS action servers'
     )
 
     pkg_suave_metacontrol_path = get_package_share_directory(
@@ -118,6 +125,8 @@ def generate_launch_description():
 
     suave_bt_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(suave_bt_launch_path),
+        launch_arguments={
+            'use_action_server': use_action_server}.items(),
         condition=LaunchConfigurationEquals('adaptation_manager', 'bt'))
 
     return LaunchDescription([
@@ -127,6 +136,7 @@ def generate_launch_description():
         battery_constraint_arg,
         battery_constraint_value_arg,
         mc_reasoning_time_filename_arg,
+        use_action_server_arg,
         suave_metacontrol_launch,
         suave_random_launch,
         suave_none_launch,

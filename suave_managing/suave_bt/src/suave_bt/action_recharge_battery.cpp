@@ -16,29 +16,38 @@
 
 namespace suave_bt
 {
-RechargeBattery::RechargeBattery(
-  const std::string & name, const BT::NodeConfig & conf)
-: BT::StatefulActionNode(name, conf), recharged_(false)
+RechargeBattery::RechargeBattery(const std::string & name, const BT::NodeConfig & conf)
+: BtActionClient(name, conf, "recharge_battery"), recharged_(false)
 {
-  node_ = config().blackboard->get<std::shared_ptr<suave_bt::SuaveMission>>("node");
-  battery_level_sub_ = this->node_->create_subscription<std_msgs::msg::Bool>(
-    "/battery_monitor/recharge/complete",
-    10,
-    std::bind(&RechargeBattery::battery_level_cb, this, _1));
+  if (!usesActionServer()) {
+    battery_level_sub_ = node_->create_subscription<std_msgs::msg::Bool>(
+      "/battery_monitor/recharge/complete", 10,
+      std::bind(&RechargeBattery::battery_level_cb, this, std::placeholders::_1));
+  }
 }
 
-void RechargeBattery::battery_level_cb(const std_msgs::msg::Bool & msg)
+void RechargeBattery::battery_level_cb(const std_msgs::msg::Bool & msg) {recharged_ = msg.data;}
+
+RechargeBattery::Action::Goal RechargeBattery::makeGoal() {return Action::Goal();}
+
+BT::NodeStatus RechargeBattery::evaluateResult(const WrappedResult & result)
 {
-  recharged_ = msg.data;
+  if (
+    result.code == rclcpp_action::ResultCode::SUCCEEDED && result.result != nullptr &&
+    result.result->success)
+  {
+    return BT::NodeStatus::SUCCESS;
+  }
+  return BT::NodeStatus::FAILURE;
 }
 
-BT::NodeStatus RechargeBattery::onStart()
+BT::NodeStatus RechargeBattery::onLegacyStart()
 {
   recharged_ = false;
   return BT::NodeStatus::RUNNING;
 }
 
-BT::NodeStatus RechargeBattery::onRunning()
+BT::NodeStatus RechargeBattery::onLegacyRunning()
 {
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
@@ -54,4 +63,4 @@ BT::NodeStatus RechargeBattery::onRunning()
   std::cout << "Recharging! " << std::endl;
   return BT::NodeStatus::RUNNING;
 }
-} //namespace suave_bt
+}  // namespace suave_bt

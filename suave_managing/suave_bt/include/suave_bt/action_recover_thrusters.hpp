@@ -1,4 +1,4 @@
-// Copyright 2023 Gustavo Rezende Silva
+// Copyright 2026 KAS Lab
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,28 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SUAVE_BT__ACTION_INSPECT_PIPELINE_HPP_
-#define SUAVE_BT__ACTION_INSPECT_PIPELINE_HPP_
+#ifndef SUAVE_BT__ACTION_RECOVER_THRUSTERS_HPP_
+#define SUAVE_BT__ACTION_RECOVER_THRUSTERS_HPP_
 
 #include <string>
 
-#include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/bool.hpp"
 #include "suave_bt/bt_action_client.hpp"
-#include "suave_msgs/action/follow_pipeline.hpp"
+#include "suave_msgs/action/recover_thrusters.hpp"
 
 namespace suave_bt
 {
 
-class InspectPipeline : public BtActionClient<suave_msgs::action::FollowPipeline>
+class RecoverThrusters : public BtActionClient<suave_msgs::action::RecoverThrusters>
 {
 public:
-  InspectPipeline(const std::string & name, const BT::NodeConfig & conf);
+  RecoverThrusters(const std::string & name, const BT::NodeConfig & config);
 
   static BT::PortsList providedPorts() {return providedBasicPorts();}
 
 protected:
-  using Action = suave_msgs::action::FollowPipeline;
+  using Action = suave_msgs::action::RecoverThrusters;
   using WrappedResult = BtActionClient<Action>::WrappedResult;
 
   Action::Goal makeGoal() override;
@@ -41,13 +39,8 @@ protected:
 
 private:
   BT::NodeStatus onLegacyStart() override;
-  BT::NodeStatus onLegacyRunning() override;
-
-  bool pipeline_inspected_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr pipeline_inspected_sub_;
-  void pipeline_inspected_cb(const std_msgs::msg::Bool & msg);
 };
 
 }  // namespace suave_bt
 
-#endif  // SUAVE_BT__ACTION_INSPECT_PIPELINE_HPP_
+#endif  // SUAVE_BT__ACTION_RECOVER_THRUSTERS_HPP_

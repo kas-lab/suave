@@ -47,6 +47,13 @@ def generate_launch_description():
     mission_type = LaunchConfiguration('mission_type')
     result_filename = LaunchConfiguration('result_filename')
     mission_config = LaunchConfiguration('mission_config')
+    use_action_server = LaunchConfiguration('use_action_server')
+
+    use_action_server_arg = DeclareLaunchArgument(
+        'use_action_server',
+        default_value='false',
+        description='Start managed behaviors through ROS action servers'
+    )
 
     mission_type_arg = DeclareLaunchArgument(
         'mission_type',
@@ -89,7 +96,8 @@ def generate_launch_description():
     suave_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(suave_launch_path),
         launch_arguments={
-            'task_bridge': 'False'}.items()
+            'task_bridge': 'False',
+            'use_action_server': use_action_server}.items()
     )
 
     mission_metrics_node = Node(
@@ -120,7 +128,9 @@ def generate_launch_description():
     suave_bt_node = Node(
         package='suave_bt',
         executable='suave_bt',
-        parameters=[mission_config]
+        parameters=[mission_config, {
+            'use_action_server': use_action_server,
+        }]
     )
 
     return LaunchDescription([
@@ -128,6 +138,7 @@ def generate_launch_description():
         mission_type_arg,
         result_filename_arg,
         mission_config_arg,
+        use_action_server_arg,
         silent_arg,
         OpaqueFunction(function=configure_logging),
         suave_launch,

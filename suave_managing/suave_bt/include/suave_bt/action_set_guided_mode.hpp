@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SUAVE_BT__SET_GUIDED_MODE_HPP_
-#define SUAVE_BT__SET_GUIDED_MODE_HPP_
+#ifndef SUAVE_BT__ACTION_SET_GUIDED_MODE_HPP_
+#define SUAVE_BT__ACTION_SET_GUIDED_MODE_HPP_
 
 #include <future>
+#include <string>
+
 #include "behaviortree_cpp/behavior_tree.h"
 #include "behaviortree_cpp/bt_factory.h"
-
-#include "rclcpp/rclcpp.hpp"
 #include "mavros_msgs/msg/state.hpp"
 #include "mavros_msgs/srv/set_mode.hpp"
-
+#include "rclcpp/rclcpp.hpp"
 #include "suave_bt/suave_mission.hpp"
 
 namespace suave_bt
@@ -30,7 +30,6 @@ namespace suave_bt
 
 class SetGuidedMode : public BT::StatefulActionNode
 {
-
 public:
   SetGuidedMode(const std::string & name, const BT::NodeConfig & conf);
 
@@ -40,12 +39,7 @@ public:
 
   BT::NodeStatus onRunning() override;
 
-  static BT::PortsList providedPorts()
-  {
-    return BT::PortsList(
-      {
-      });
-  }
+  static BT::PortsList providedPorts() {return BT::PortsList({});}
 
 protected:
   std::string mode_;
@@ -57,4 +51,4 @@ protected:
 
 }  // namespace suave_bt
 
-#endif  // SUAVE_BT__SET_GUIDED_MODE_HPP_
+#endif  // SUAVE_BT__ACTION_SET_GUIDED_MODE_HPP_

@@ -16,15 +16,14 @@
 
 namespace suave_bt
 {
-InspectPipeline::InspectPipeline(
-  const std::string & name, const BT::NodeConfig & conf)
-: BT::StatefulActionNode(name, conf), pipeline_inspected_(false)
+InspectPipeline::InspectPipeline(const std::string & name, const BT::NodeConfig & conf)
+: BtActionClient(name, conf, "follow_pipeline"), pipeline_inspected_(false)
 {
-  node_ = config().blackboard->get<std::shared_ptr<suave_bt::SuaveMission>>("node");
-  pipeline_inspected_sub_ = node_->create_subscription<std_msgs::msg::Bool>(
-    "/pipeline/inspected",
-    10,
-    std::bind(&InspectPipeline::pipeline_inspected_cb, this, _1));
+  if (!usesActionServer()) {
+    pipeline_inspected_sub_ = node_->create_subscription<std_msgs::msg::Bool>(
+      "/pipeline/inspected", 10,
+      std::bind(&InspectPipeline::pipeline_inspected_cb, this, std::placeholders::_1));
+  }
 }
 
 void InspectPipeline::pipeline_inspected_cb(const std_msgs::msg::Bool & msg)
@@ -32,7 +31,27 @@ void InspectPipeline::pipeline_inspected_cb(const std_msgs::msg::Bool & msg)
   pipeline_inspected_ = msg.data;
 }
 
-BT::NodeStatus InspectPipeline::onRunning()
+InspectPipeline::Action::Goal InspectPipeline::makeGoal()
+{
+  Action::Goal goal;
+  goal.timeout = 0.0;
+  return goal;
+}
+
+BT::NodeStatus InspectPipeline::evaluateResult(const WrappedResult & result)
+{
+  if (
+    result.code == rclcpp_action::ResultCode::SUCCEEDED && result.result != nullptr &&
+    result.result->success)
+  {
+    return BT::NodeStatus::SUCCESS;
+  }
+  return BT::NodeStatus::FAILURE;
+}
+
+BT::NodeStatus InspectPipeline::onLegacyStart() {return BT::NodeStatus::RUNNING;}
+
+BT::NodeStatus InspectPipeline::onLegacyRunning()
 {
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
@@ -48,4 +67,4 @@ BT::NodeStatus InspectPipeline::onRunning()
   std::cout << "Inspecting pipeline! " << std::endl;
   return BT::NodeStatus::RUNNING;
 }
-} //namespace suave_bt
+}  // namespace suave_bt

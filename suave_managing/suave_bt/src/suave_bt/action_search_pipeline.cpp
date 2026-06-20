@@ -16,15 +16,14 @@
 
 namespace suave_bt
 {
-SearchPipeline::SearchPipeline(
-  const std::string & name, const BT::NodeConfig & conf)
-: BT::StatefulActionNode(name, conf), pipeline_detected_(false)
+SearchPipeline::SearchPipeline(const std::string & name, const BT::NodeConfig & conf)
+: BtActionClient(name, conf, "spiral_search"), pipeline_detected_(false)
 {
-  node_ = config().blackboard->get<std::shared_ptr<suave_bt::SuaveMission>>("node");
-  pipeline_detection_sub_ = node_->create_subscription<std_msgs::msg::Bool>(
-    "/pipeline/detected",
-    10,
-    std::bind(&SearchPipeline::pipeline_detected_cb, this, _1));
+  if (!usesActionServer()) {
+    pipeline_detection_sub_ = node_->create_subscription<std_msgs::msg::Bool>(
+      "/pipeline/detected", 10,
+      std::bind(&SearchPipeline::pipeline_detected_cb, this, std::placeholders::_1));
+  }
 }
 
 void SearchPipeline::pipeline_detected_cb(const std_msgs::msg::Bool & msg)
@@ -32,14 +31,24 @@ void SearchPipeline::pipeline_detected_cb(const std_msgs::msg::Bool & msg)
   pipeline_detected_ = msg.data;
 }
 
-BT::NodeStatus SearchPipeline::onStart()
+SearchPipeline::Action::Goal SearchPipeline::makeGoal() {return Action::Goal();}
+
+BT::NodeStatus SearchPipeline::evaluateResult(const WrappedResult & result)
 {
-  //request node activation
-  this->node_->set_search_started();
-  return BT::NodeStatus::RUNNING;
+  if (
+    result.code == rclcpp_action::ResultCode::SUCCEEDED && result.result != nullptr &&
+    result.result->pipeline_found)
+  {
+    return BT::NodeStatus::SUCCESS;
+  }
+  return BT::NodeStatus::FAILURE;
 }
 
-BT::NodeStatus SearchPipeline::onRunning()
+void SearchPipeline::onStartRequested() {node_->set_search_started();}
+
+BT::NodeStatus SearchPipeline::onLegacyStart() {return BT::NodeStatus::RUNNING;}
+
+BT::NodeStatus SearchPipeline::onLegacyRunning()
 {
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
@@ -55,4 +64,4 @@ BT::NodeStatus SearchPipeline::onRunning()
   std::cout << "Searching for pipeline! " << std::endl;
   return BT::NodeStatus::RUNNING;
 }
-} //namespace suave_bt
+}  // namespace suave_bt
