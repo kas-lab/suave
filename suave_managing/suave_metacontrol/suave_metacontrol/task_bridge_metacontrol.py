@@ -19,6 +19,7 @@
 import sys
 
 from diagnostic_msgs.msg import KeyValue
+
 from mros2_msgs.action import ControlQos
 
 import rclpy
@@ -41,7 +42,7 @@ class TaskBridgeMetacontrol(TaskBridge):
             self, ControlQos, '/mros/objective',
             callback_group=self.client_cb_group)
 
-        self.current_objectives_handle = dict()
+        self.current_objectives_handle = {}
         self.task_functions_dict = {
             'search_pipeline': ['f_maintain_motion', 'f_generate_search_path'],
             'inspect_pipeline': ['f_maintain_motion', 'f_follow_pipeline'],

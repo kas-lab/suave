@@ -1,0 +1,3 @@
+docker run -it --rm --gpus all --runtime=nvidia --name suave_runner -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all -v /dev/dri:/dev/dri -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro -v $PWD/src/suave:/home/ubuntu-user/suave_ws/src/suave suave-headless:dev
+
+colcon test --event-handlers console_direct+ --packages-select suave

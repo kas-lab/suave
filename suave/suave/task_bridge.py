@@ -43,7 +43,7 @@ class TaskBridge(Node):
         )
 
         self.current_tasks = set()
-        self.task_functions_dict = dict()
+        self.task_functions_dict = {}
 
     def task_request(self, req, forward_request):
         """Apply a forwarding callback to every function required by a task."""

@@ -20,8 +20,7 @@ RUN apt-get update && apt-get install -y \
     libglx-mesa0 \
     ros-dev-tools \
     ros-humble-ament-cmake-flake8 \
-    python3-flake8-import-order \
-    python3-flake8-quotes \
+    python3-flake8-* \
     && rm -rf /var/lib/apt/lists/*
 
 RUN rosdep init

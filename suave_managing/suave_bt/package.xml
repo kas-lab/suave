@@ -17,6 +17,16 @@
   <depend>diagnostic_msgs</depend>
   <depend>behaviortree_cpp</depend>
   <depend>behaviortree_cpp_dbgsym</depend>
+  <depend>ament_index_cpp</depend>
+  <depend>rclcpp</depend>
+  <depend>lifecycle_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>suave_missions</exec_depend>
+  <exec_depend>suave_metrics</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
