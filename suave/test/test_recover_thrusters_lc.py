@@ -322,6 +322,16 @@ def test_service_wait_cancels_future_when_stop_is_requested():
 
         executor = Executor()
 
+        class Logger:
+            """Logger test double."""
+
+            def error(self, message):
+                """Accept an error message."""
+
+        def get_logger(self):
+            """Return a logger test double."""
+            return self.Logger()
+
     future = Future()
     response = call_service_with_timeout(
         Node(),
