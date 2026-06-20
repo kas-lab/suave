@@ -10,6 +10,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(behaviortree_cpp REQUIRED)
 find_package(mavros_msgs REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
@@ -25,6 +26,7 @@ set(dependencies
   ament_index_cpp
   behaviortree_cpp
   mavros_msgs
+  lifecycle_msgs
   rclcpp
   rclcpp_action
   std_msgs

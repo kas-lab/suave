@@ -17,6 +17,14 @@
   <exec_depend>suave_msgs</exec_depend>
   <exec_depend>mavros_msgs</exec_depend>
   <exec_depend>ros_gz</exec_depend>
+  <exec_depend>diagnostic_msgs</exec_depend>
+  <exec_depend>rcl_interfaces</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
+  <exec_depend>system_modes_msgs</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
 
   <depend>geometry_msgs</depend>
 
