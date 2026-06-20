@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 from pathlib import Path
 import shutil
 from unittest.mock import patch
@@ -27,11 +28,20 @@ import yaml
 def _minimal_runner_params():
     return [
         Parameter('experiments', Parameter.Type.STRING_ARRAY, [
-            '{"experiment_launch": "ros2 launch suave_bt suave_bt.launch.py",'
-            ' "num_runs": 1, "adaptation_manager": "bt",'
-            ' "mission_name": "suave"}'
+            _experiment('bt', 1)
         ])
     ]
+
+
+def _experiment(manager, num_runs):
+    return json.dumps({
+        'experiment_launch': (
+            'ros2 launch suave_bringup mission.launch.py '
+            f'adaptation_manager:={manager}'),
+        'num_runs': num_runs,
+        'adaptation_manager': manager,
+        'mission_name': 'suave',
+    })
 
 
 def test_create_experiment_folder():
@@ -45,13 +55,7 @@ def test_create_experiment_folder():
             Parameter(
                 'experiments',
                 Parameter.Type.STRING_ARRAY,
-                ["""{
-                  "experiment_launch":
-                    "ros2 launch suave_bt suave_bt.launch.py",
-                  "num_runs": 5,
-                  "adaptation_manager": "bt",
-                  "mission_name": "suave"
-                }"""])
+                [_experiment('bt', 5)])
         ]
         runner = ExperimentRunnerNode(parameter_overrides=params)
         result_path = runner.create_experiment_folder()
@@ -112,34 +116,10 @@ def test_randomize_experiments_configuration():
                 Parameter.Type.DOUBLE_ARRAY,
                 [-1.0, 1.0]),
             Parameter('experiments', Parameter.Type.STRING_ARRAY, [
-                """{
-                  "experiment_launch":
-                    "ros2 launch suave_bt suave_bt.launch.py",
-                  "num_runs": 5,
-                  "adaptation_manager": "bt",
-                  "mission_name": "suave"
-                }""",
-                """{
-                  "experiment_launch":
-                  "ros2 launch suave_metacontrol suave_metacontrol.launch.py",
-                  "num_runs": 10,
-                  "adaptation_manager": "metacontrol",
-                  "mission_name": "suave"
-                }""",
-                """{
-                  "experiment_launch":
-                    "ros2 launch suave_random suave_random.launch.py",
-                  "num_runs": 2,
-                  "adaptation_manager": "random",
-                  "mission_name": "suave"
-                }""",
-                """{
-                  "experiment_launch":
-                    "ros2 launch suave_none suave_none.launch.py",
-                  "num_runs": 2,
-                  "adaptation_manager": "none",
-                  "mission_name": "suave"
-                }"""
+                _experiment('bt', 5),
+                _experiment('metacontrol', 10),
+                _experiment('random', 2),
+                _experiment('none', 2),
             ])
         ]
         runner = ExperimentRunnerNode(parameter_overrides=params)
@@ -219,31 +199,12 @@ def test_generate_mission_config_files():
             Parameter(
                 'experiments',
                 Parameter.Type.STRING_ARRAY,
-                ["""{
-                  "experiment_launch":
-                    "ros2 launch suave_bt suave_bt.launch.py",
-                  "num_runs": 5,
-                  "adaptation_manager": "bt",
-                  "mission_name": "suave"
-                }""", """{
-                  "experiment_launch":
-                  "ros2 launch suave_metacontrol suave_metacontrol.launch.py",
-                  "num_runs": 10,
-                  "adaptation_manager": "metacontrol",
-                  "mission_name": "suave"
-                }""", """{
-                  "experiment_launch":
-                    "ros2 launch suave_random suave_random.launch.py",
-                  "num_runs": 2,
-                  "adaptation_manager": "random",
-                  "mission_name": "suave"
-                }""", """{
-                  "experiment_launch":
-                    "ros2 launch suave_none suave_none.launch.py",
-                  "num_runs": 2,
-                  "adaptation_manager": "none",
-                  "mission_name": "suave"
-                }"""])]
+                [
+                    _experiment('bt', 5),
+                    _experiment('metacontrol', 10),
+                    _experiment('random', 2),
+                    _experiment('none', 2),
+                ])]
         runner = ExperimentRunnerNode(parameter_overrides=params)
         runner.randomize_experiments_configuration()
         result_path = Path('/tmp/suave/results/test_generate_mission_config/')

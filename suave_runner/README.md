@@ -61,7 +61,7 @@ ros2 run suave_runner suave_runner \
   --ros-args \
   -p gui:=True \
   -p experiments:='[
-    "{\"experiment_launch\": \"ros2 launch suave_metacontrol suave_metacontrol.launch.py\", \
+    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=metacontrol\", \
       \"num_runs\": 1, \
       \"adaptation_manager\": \"metacontrol\", \
       \"mission_name\": \"suave\"}"
@@ -78,7 +78,7 @@ ros2 run suave_runner suave_runner \
   --ros-args \
   -p gui:=False \
   -p experiments:='[
-    "{\"experiment_launch\": \"ros2 launch suave_bt suave_bt.launch.py use_action_server:=true\", \
+    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt use_action_server:=true\", \
       \"num_runs\": 20, \
       \"adaptation_manager\": \"bt\", \
       \"mission_name\": \"suave\"}"
@@ -93,7 +93,7 @@ ros2 run suave_runner suave_runner \
   -p gui:=False \
   -p experiment_logging:=True \
   -p experiments:='[
-    "{\"experiment_launch\": \"ros2 launch suave_random suave_random.launch.py\", \
+    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=random\", \
       \"num_runs\": 2, \
       \"adaptation_manager\": \"random\", \
       \"mission_name\": \"suave\"}"
@@ -108,7 +108,7 @@ ros2 run suave_runner suave_runner \
   -p gui:=False \
   -p experiment_logging:=True \
   -p experiments:='[
-    "{\"experiment_launch\": \"ros2 launch suave_none suave_none.launch.py\", \
+    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=none\", \
       \"num_runs\": 6, \
       \"adaptation_manager\": \"none\", \
       \"mission_name\": \"suave\"}"

@@ -10,19 +10,22 @@ defined in `bts/suave.xml` and `bts/suave_extended.xml`.
 Run the standard tree with the legacy lifecycle behavior:
 
 ```bash
-ros2 launch suave_bt suave_bt.launch.py
+ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt
 ```
 
 Run it using ROS 2 actions:
 
 ```bash
-ros2 launch suave_bt suave_bt.launch.py use_action_server:=true
+ros2 launch suave_bringup mission.launch.py \
+  adaptation_manager:=bt use_action_server:=true
 ```
 
 The extended mission supports the same argument:
 
 ```bash
-ros2 launch suave_bt suave_bt_extended.launch.py use_action_server:=true
+ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt \
+  bt_executable:=suave_bt_extended mission_type:=suave_extended \
+  use_action_server:=true
 ```
 
 ## `use_action_server`
@@ -45,7 +48,7 @@ in `suave_runner/config/runner_config.yml`:
 
 ```json
 {
-  "experiment_launch": "ros2 launch suave_bt suave_bt.launch.py use_action_server:=true",
+  "experiment_launch": "ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt use_action_server:=true",
   "num_runs": 10,
   "adaptation_manager": "bt",
   "mission_name": "suave"

@@ -108,6 +108,7 @@ RUN vcs import src < suave.repos --recursive
 
 RUN rm -rf $HOME/suave_ws/src/suave && mkdir -p $HOME/suave_ws/src/suave
 COPY --chown=ubuntu-user:ubuntu-user suave/ $HOME/suave_ws/src/suave/suave/
+COPY --chown=ubuntu-user:ubuntu-user suave_bringup/ $HOME/suave_ws/src/suave/suave_bringup/
 COPY --chown=ubuntu-user:ubuntu-user suave_managing/ $HOME/suave_ws/src/suave/suave_managing/
 COPY --chown=ubuntu-user:ubuntu-user suave_metrics/ $HOME/suave_ws/src/suave/suave_metrics/
 COPY --chown=ubuntu-user:ubuntu-user suave_missions/ $HOME/suave_ws/src/suave/suave_missions/

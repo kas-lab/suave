@@ -12,11 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Provide the no-manager launch description."""
-
-from launch import LaunchDescription
-
-
-def generate_launch_description():
-    """Return an empty description for the no-manager configuration."""
-    return LaunchDescription()
+"""Top-level launch composition for SUAVE."""

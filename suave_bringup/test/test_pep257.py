@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Provide the no-manager launch description."""
+"""Test docstrings with ament PEP 257 tooling."""
 
-from launch import LaunchDescription
+from ament_pep257.main import main
+import pytest
 
 
-def generate_launch_description():
-    """Return an empty description for the no-manager configuration."""
-    return LaunchDescription()
+@pytest.mark.linter
+@pytest.mark.pep257
+def test_pep257():
+    """Check source files for PEP 257 violations."""
+    assert main(argv=['.', 'test']) == 0

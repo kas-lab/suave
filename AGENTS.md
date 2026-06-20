@@ -8,7 +8,7 @@ Runtime stack: ROS 2 Humble, Gazebo Harmonic, ArduSub/ArduPilot SITL, MAVROS, Be
 
 ## Project Structure & Module Organization
 
-Core managed-system Python nodes live in `suave/suave/`, with launch files and sim config in `suave/launch/` and `suave/config/`. Monitoring nodes are in `suave_monitor/`, missions and mission configs in `suave_missions/`, metrics in `suave_metrics/`, auxiliary tools in `suave_tools/`, and experiment orchestration plus statistical analysis in `suave_runner/`. Managing subsystems are under `suave_managing/`, including `suave_none`, `suave_random`, `suave_metacontrol`, and the C++ BehaviorTree.CPP package `suave_bt`. Custom services are defined in `suave_msgs/srv/`. Tests are usually in each package's `test/` directory. Docker assets are in `docker/`, runner scripts in `runner/`, and documentation in `docs/source/`.
+Core managed-system Python nodes live in `suave/suave/`, with launch files and sim config in `suave/launch/` and `suave/config/`. Top-level mission/manager composition is in `suave_bringup/`. Monitoring nodes are in `suave_monitor/`, missions and mission configs in `suave_missions/`, metrics in `suave_metrics/`, auxiliary tools in `suave_tools/`, and experiment orchestration plus statistical analysis in `suave_runner/`. Managing subsystems are under `suave_managing/`, including `suave_none`, `suave_random`, `suave_metacontrol`, and the C++ BehaviorTree.CPP package `suave_bt`. Custom services are defined in `suave_msgs/srv/`. Tests are usually in each package's `test/` directory. Docker assets are in `docker/`, runner scripts in `runner/`, and documentation in `docs/source/`.
 
 ## Build, Test, and Development Commands
 
@@ -34,7 +34,7 @@ colcon test-result --verbose
 python3 -m pytest -q <package>/test
 
 # Test all SUAVE packages
-colcon test --event-handlers console_cohesion+ --packages-select suave suave_bt suave_metacontrol suave_metrics suave_missions suave_monitor suave_msgs suave_none suave_random suave_runner suave_tools
+colcon test --event-handlers console_cohesion+ --packages-select suave suave_base suave_bt suave_bringup suave_metacontrol suave_metrics suave_missions suave_monitor suave_msgs suave_none suave_random suave_runner suave_tools
 
 # Auto-format C++ in the package being edited
 ament_uncrustify --reformat
@@ -56,10 +56,10 @@ sim_vehicle.py -L RATBeach -v ArduSub --model=JSON --console
 ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
 
 # Mission, defaulting to no adaptation manager
-ros2 launch suave_missions mission.launch.py
+ros2 launch suave_bringup mission.launch.py
 
 # Mission with a specific manager
-ros2 launch suave_missions mission.launch.py adaptation_manager:=bt result_filename:=measurement_1
+ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt result_filename:=measurement_1
 ```
 
 Valid `adaptation_manager` values are `none`, `metacontrol`, `random`, and `bt`. The preferred campaign runner is `ros2 launch suave_runner suave_runner.launch.py`; its config is `suave_runner/config/runner_config.yml` and results default to `~/suave/results/`. The shell runner is `cd runner && ./runner.sh [true|false] [metacontrol|random|none|bt] [time|distance] <runs>`, with `headless_runner.sh` using `screen` instead of `xfce4-terminal`.
@@ -92,7 +92,7 @@ GitHub Actions must use full commit SHAs rather than mutable action tags. Keep a
 
 A compliant managing subsystem must interact with `/diagnostics` (`diagnostic_msgs/DiagnosticArray`), `/task/request` and `/task/cancel` (`suave_msgs/srv/Task`), and system_modes `ChangeMode` services: `/f_maintain_motion/change_mode`, `/f_generate_search_path/change_mode`, and `/f_follow_pipeline/change_mode`.
 
-When adding a managing subsystem, include SUAVE's base launch with `task_bridge` disabled and wire the new package into `suave_missions/launch/mission.launch.py` behind an `adaptation_manager` condition.
+There are two ways to connect a managing subsystem. For **external packages**, include `suave_base/launch/suave_base.launch.py` (which starts the managed system and metrics with `task_bridge` disabled) and add your manager nodes alongside it — no changes to the suave repo are needed. For **built-in managers contributed upstream**, keep the manager launch file manager-only and wire it into `suave_bringup/launch/mission.launch.py` behind an `adaptation_manager` condition; `suave_bringup` owns the managed system, mission node, and metrics composition in that path.
 
 ## Runner and Metrics IPC
 

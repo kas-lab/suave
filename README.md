@@ -14,6 +14,8 @@ This repository is organized as following:
 - The package [suave](https://github.com/kas-lab/suave/tree/main/suave) contains the managed subsystem functionalities
 - The package [suave_monitor](https://github.com/kas-lab/suave/tree/main/suave_monitor) contains the monitor nodes
 - The package [suave_missions](https://github.com/kas-lab/suave/tree/main/suave_missions) contains the AUV's missions
+- The package [suave_base](https://github.com/kas-lab/suave/tree/main/suave_base) provides a reusable base launch (managed system + metrics) for external managing systems
+- The package [suave_bringup](https://github.com/kas-lab/suave/tree/main/suave_bringup) composes missions with the built-in managing subsystems
 - The package [suave_metrics](https://github.com/kas-lab/suave/tree/main/suave_metrics) contains a node used for collecting mission metrics
 - The package [suave_metacontrol](https://github.com/kas-lab/suave/tree/main/suave_managing/suave_metacontrol) contains the metacontrol implementation of the managing subsystem
 - The package [suave_random](https://github.com/kas-lab/suave/tree/main/suave_managing/suave_random) contains the implementation of a random managing subsystems
@@ -314,7 +316,7 @@ ros2 run suave_runner suave_runner \
   --ros-args \
   -p gui:=False \
   -p experiments:='[
-    "{\"experiment_launch\": \"ros2 launch suave_bt suave_bt.launch.py\", \
+    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt\", \
       \"num_runs\": 2, \
       \"adaptation_manager\": \"bt\", \
       \"mission_name\": \"suave\"}"
@@ -331,7 +333,8 @@ To run the BT manager through ROS 2 actions, add
 `use_action_server:=true` to the experiment launch command, for example:
 
 ```text
-ros2 launch suave_bt suave_bt.launch.py use_action_server:=true
+ros2 launch suave_bringup mission.launch.py \
+  adaptation_manager:=bt use_action_server:=true
 ```
 
 ### Without the runner
@@ -369,7 +372,7 @@ ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
 
 Run:
 ```Bash
-ros2 launch suave_missions mission.launch.py
+ros2 launch suave_bringup mission.launch.py
 ```
 
 **Mission results:** The mission results will be saved in the path specified in the [mission_config.yaml](https://github.com/kas-lab/suave/blob/main/suave_missions/config/mission_config.yaml) file.
@@ -384,13 +387,13 @@ Launching the mission file without launch arguments will start a time-constraine
     (default: 'none')
 
 'mission_type':
-    BT mission label written to metrics
+    Mission label written to metrics
     (default: 'time_constrained_mission')
 
 'result_filename':
     Filename for the mission measured metrics
     available values: any name
-    (default: empty; the selected manager uses its metrics default)
+    (default: empty; the metrics node uses its default filename)
 
 'use_action_server':
     For the BT manager, start managed behaviors through ROS 2 actions
@@ -403,13 +406,13 @@ The arguments can be defined by adding the above arguments with the notation `<n
 An example of running with metacontrol and saving to a file called 'measurement_1':
 
 ```Bash
-ros2 launch suave_missions mission.launch.py adaptation_manager:=metacontrol result_filename:=measurement_1
+ros2 launch suave_bringup mission.launch.py adaptation_manager:=metacontrol result_filename:=measurement_1
 ```
 
 An example of running the BT manager in action-server mode:
 
 ```Bash
-ros2 launch suave_missions mission.launch.py \
+ros2 launch suave_bringup mission.launch.py \
   adaptation_manager:=bt use_action_server:=true
 ```
 
@@ -430,36 +433,13 @@ SUAVE's ROS2 interfaces are:
 Thus, to connect a different managing subsystem to SUAVE, it must subscribe to `/diagnostics` to get monitoring information, send adaptation goals (task) requests via `/task/request` and `/task/cancel`, and send reconfiguration requests via `/f_maintain_motion/change_mode`, `/f_generate_search_path/change_mode`, or `/f_follow_pipeline/change_mode`.
 
 
-In order to use the new managing subsystem with the launchfile [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_missions/launch/mission.launch.py) as explained in the [run suave](#run-suave) section, a new launchfile must be created for the new managing subsystem (check [suave_metacontrol.launch.py](https://github.com/kas-lab/suave/blob/main/suave_metacontrol/launch/suave_metacontrol.launch.py) for an example), and the new launch file must be included in the [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_missions/launch/mission.launch.py) file.
+There are two ways to connect a new managing subsystem:
 
+**External package (recommended for standalone managing systems):** Add `exec_depend` on `suave_base` in your `package.xml` and include [`suave_base.launch.py`](https://github.com/kas-lab/suave/blob/main/suave_base/launch/suave_base.launch.py) from your launch file. This starts the managed system and metrics without requiring any changes to the suave repository.
 
-The new launch file must include SUAVE's base launch:
-```python
-suave_launch_path = os.path.join(
-        pkg_suave_path,
-        'launch',
-        'suave.launch.py')
+**Built-in manager (contributed upstream):** Create a manager-only launch file, declare the package as a `suave_bringup` dependency, and include it behind an `adaptation_manager` condition in [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_bringup/launch/mission.launch.py). The manager launch must not start the managed system, mission node, or metrics.
 
-suave_launch = IncludeLaunchDescription(
-    PythonLaunchDescriptionSource(suave_launch_path),
-    launch_arguments={
-        'task_bridge': 'False'}.items()
-)
-```
-
-To include it in [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_missions/launch/mission.launch.py), add the following code replacing \[new_managing_subsystem\] with the proper name:
-
-```python
-[new_managing_subsystem]_launch_path = os.path.join(
-        pkg_suave_metacontrol_path,
-        'launch',
-        '[new_managing_subsystem].launch.py')
-
-[new_managing_subsystem]_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([new_managing_subsystem]_launch_path),
-        condition=LaunchConfigurationEquals('adaptation_manager',
-                    '[new_managing_subsystem]'))
-```
+See the [Extending SUAVE](docs/source/extend.md) page for full details and examples.
 
 ### Extend SUAVE
 

@@ -7,6 +7,8 @@ cd ../../
 
 colcon build --symlink-install --packages-select \
     suave \
+    suave_base \
+    suave_bringup \
     suave_bt \
     suave_metacontrol \
     suave_metrics \
@@ -22,6 +24,8 @@ source install/setup.bash
 
 colcon test --event-handlers console_direct+ --packages-select \
     suave \
+    suave_base \
+    suave_bringup \
     suave_bt \
     suave_metacontrol \
     suave_metrics \
