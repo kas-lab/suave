@@ -22,6 +22,7 @@ from typing import Callable
 from typing import Optional
 
 from rclpy.action import ActionServer
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.executors import ExternalShutdownException
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.lifecycle import Node
@@ -54,6 +55,7 @@ class RecoverThrustersLC(Node):
         super().__init__(node_name, **kwargs)
         self.set_parameters_service = None
         self._action_server = None
+        self._service_callback_group = MutuallyExclusiveCallbackGroup()
         self._abort_event = threading.Event()
         self._goal_executing = threading.Event()
         self._legacy_recovery_finished = threading.Event()
@@ -72,7 +74,8 @@ class RecoverThrustersLC(Node):
         self.diagnostics_publisher = self.create_publisher(
             DiagnosticArray, '/diagnostics', 10)
         self.set_parameters_service = self.create_client(
-            SetParameters, 'mavros/param/set_parameters')
+            SetParameters, 'mavros/param/set_parameters',
+            callback_group=self._service_callback_group)
         self._action_server = ActionServer(
             self,
             RecoverThrusters,

@@ -54,9 +54,6 @@ def call_service_with_timeout(
             node.get_logger().error(
                 'Future not completed {}'.format(cli.srv_name))
             return None
-        node.executor.spin_until_future_complete(
-            future,
-            timeout_sec=min(poll_interval, remaining),
-        )
+        time.sleep(min(poll_interval, remaining))
 
     return future.result()
