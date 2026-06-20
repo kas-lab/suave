@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install -y \
     libglx-mesa0 \
     ros-dev-tools \
     ros-humble-ament-cmake-flake8 \
+    python3-flake8-import-order \
+    python3-flake8-quotes \
     && rm -rf /var/lib/apt/lists/*
 
 RUN rosdep init
@@ -125,6 +127,10 @@ RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
 RUN ["/bin/bash", "-c", "sudo ./src/mavros/mavros/scripts/install_geographiclib_datasets.sh"]
 
 RUN pip3 install -r $HOME/requirements.txt
+
+# ArduPilot installs a newer user-local flake8 which is incompatible with the
+# Ubuntu Jammy flake8 plugins used by the ROS 2 Humble lint environment.
+RUN pip3 install flake8==4.0.1
 
 RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
     && colcon build --symlink-install \
