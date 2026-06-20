@@ -16,6 +16,7 @@
   <depend>suave</depend>
   <depend>suave_monitor</depend>
   <depend>suave_missions</depend>
+  <depend>suave_bringup</depend>
   <depend>ament_index_python</depend>
   <depend>launch</depend>
   <depend>launch_ros</depend>

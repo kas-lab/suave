@@ -12,11 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Provide the no-manager launch description."""
+"""Test Python style with ament Flake8."""
 
-from launch import LaunchDescription
+from ament_flake8.main import main_with_errors
+import pytest
 
 
-def generate_launch_description():
-    """Return an empty description for the no-manager configuration."""
-    return LaunchDescription()
+@pytest.mark.flake8
+@pytest.mark.linter
+def test_flake8():
+    """Check source files for Flake8 violations."""
+    rc, errors = main_with_errors(argv=[])
+    assert rc == 0, 'Found %d code style errors / warnings:\n' % len(errors) + \
+        '\n'.join(errors)

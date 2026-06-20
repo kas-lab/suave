@@ -76,7 +76,7 @@ ros2 run suave_runner suave_runner \
   --ros-args \
   -p gui:=False \
   -p experiments:='[
-    "{\"experiment_launch\": \"ros2 launch suave_bt suave_bt.launch.py\", \
+    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt\", \
       \"num_runs\": 2, \
       \"adaptation_manager\": \"bt\", \
       \"mission_name\": \"suave\"}"

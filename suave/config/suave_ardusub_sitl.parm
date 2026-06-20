@@ -1,0 +1,6 @@
+# SUAVE-specific ArduSub SITL overrides.
+#
+# The SITL AHRS backend uses the simulator state directly. This avoids waiting
+# for EKF3 GPS convergence before GUIDED mode is accepted in repeatable
+# simulation runs.
+AHRS_EKF_TYPE 10

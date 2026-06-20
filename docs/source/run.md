@@ -48,7 +48,7 @@ ros2 run suave_runner suave_runner \
   --ros-args \
   -p gui:=False \
   -p experiments:='[
-    "{\"experiment_launch\": \"ros2 launch suave_bt suave_bt.launch.py\", \
+    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt\", \
       \"num_runs\": 2, \
       \"adaptation_manager\": \"bt\", \
       \"mission_name\": \"suave\"}"
@@ -61,7 +61,7 @@ ros2 run suave_runner suave_runner \
   --ros-args \
   -p gui:=True \
   -p experiments:='[
-    "{\"experiment_launch\": \"ros2 launch suave_bt suave_bt.launch.py\", \
+    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt\", \
       \"num_runs\": 2, \
       \"adaptation_manager\": \"bt\", \
       \"mission_name\": \"suave\"}"
@@ -75,7 +75,7 @@ To run the BT manager through ROS 2 actions, append
 ros2 run suave_runner suave_runner \
   --ros-args \
   -p experiments:='[
-    "{\"experiment_launch\": \"ros2 launch suave_bt suave_bt.launch.py use_action_server:=true\", \
+    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt use_action_server:=true\", \
       \"num_runs\": 2, \
       \"adaptation_manager\": \"bt\", \
       \"mission_name\": \"suave\"}"
@@ -123,7 +123,7 @@ Each entry in `experiments` is a JSON string with four fields:
 experiments:
   - |
     {
-      "experiment_launch": "ros2 launch suave_bt suave_bt.launch.py",
+      "experiment_launch": "ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt",
       "num_runs": 10,
       "adaptation_manager": "bt",
       "mission_name": "suave"
@@ -157,7 +157,7 @@ ros2 run suave_runner suave_runner \
   --ros-args \
   -p resume_result_path:=~/suave/results/2026_06_19_10-30-00 \
   -p experiments:='[
-    "{\"experiment_launch\": \"ros2 launch suave_bt suave_bt.launch.py\", \
+    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt\", \
       \"num_runs\": 10, \
       \"adaptation_manager\": \"bt\", \
       \"mission_name\": \"suave\"}"
@@ -204,7 +204,7 @@ ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
 
 Run:
 ```Bash
-ros2 launch suave_missions mission.launch.py
+ros2 launch suave_bringup mission.launch.py
 ```
 
 **Mission results:** The mission results will be saved in the path specified in the [mission_config.yaml](https://github.com/kas-lab/suave/blob/main/suave_missions/config/mission_config.yaml) file.
@@ -221,10 +221,10 @@ Launching the mission file without launch arguments will start a time-constraine
 'result_filename':
     Filename for the mission measured metrics
     available values: any name
-    (default: empty; the selected manager uses its metrics default)
+    (default: empty; the metrics node uses its default filename)
 
 'mission_type':
-    BT mission label written to metrics
+    Mission label written to metrics
     (default: 'time_constrained_mission')
 
 'use_action_server':
@@ -238,12 +238,12 @@ The arguments can be defined by adding the above arguments with the notation `<n
 An example of running a mission with metacontrol saving to a file called 'measurement_1':
 
 ```Bash
-ros2 launch suave_missions mission.launch.py adaptation_manager:=metacontrol result_filename:=measurement_1
+ros2 launch suave_bringup mission.launch.py adaptation_manager:=metacontrol result_filename:=measurement_1
 ```
 
 An example of running the BT manager in action-server mode:
 
 ```Bash
-ros2 launch suave_missions mission.launch.py \
+ros2 launch suave_bringup mission.launch.py \
   adaptation_manager:=bt use_action_server:=true
 ```

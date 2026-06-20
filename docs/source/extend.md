@@ -14,36 +14,53 @@ SUAVE's ROS 2 interfaces are:
 
 Thus, to connect a different managing subsystem to SUAVE, it must subscribe to `/diagnostics` to get monitoring information, send adaptation goals (task) requests via `/task/request` and `/task/cancel`, and send reconfiguration requests via `/f_maintain_motion/change_mode`, `/f_generate_search_path/change_mode`, or `/f_follow_pipeline/change_mode`.
 
+There are two ways to wire a new managing subsystem into a running SUAVE stack depending on where the manager lives.
 
-In order to use the new managing subsystem with the launchfile [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_missions/launch/mission.launch.py) as explained in the run suave section, a new launchfile must be created for the new managing subsystem (check [suave_metacontrol.launch.py](https://github.com/kas-lab/suave/blob/main/suave_metacontrol/launch/suave_metacontrol.launch.py) for an example), and the new launch file must be included in the [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_missions/launch/mission.launch.py) file.
+### Option A — External package (recommended for standalone managing systems)
 
+Add `suave_base` as an `exec_depend` in your package's `package.xml`:
 
-The new launch file must include SUAVE's base launch:
-```python
-suave_launch_path = os.path.join(
-        pkg_suave_path,
-        'launch',
-        'suave.launch.py')
-
-suave_launch = IncludeLaunchDescription(
-    PythonLaunchDescriptionSource(suave_launch_path),
-    launch_arguments={
-        'task_bridge': 'False'}.items()
-)
+```xml
+<exec_depend>suave_base</exec_depend>
 ```
 
-To include it in [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_missions/launch/mission.launch.py), add the following code replacing \[new_managing_subsystem\] with the proper name:
+In your launch file, include `suave_base.launch.py` to start the managed system and metrics, then add your manager nodes:
 
 ```python
-[new_managing_subsystem]_launch_path = os.path.join(
-        pkg_suave_metacontrol_path,
-        'launch',
-        '[new_managing_subsystem].launch.py')
+from ament_index_python.packages import get_package_share_directory
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+import os
 
-[new_managing_subsystem]_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([new_managing_subsystem]_launch_path),
-        condition=LaunchConfigurationEquals('adaptation_manager',
-                    '[new_managing_subsystem]'))
+suave_base = IncludeLaunchDescription(
+    PythonLaunchDescriptionSource(
+        os.path.join(
+            get_package_share_directory('suave_base'),
+            'launch', 'suave_base.launch.py')),
+    launch_arguments={
+        'adaptation_manager': 'my_manager',
+        'result_path': result_path,
+    }.items())
+
+# ... your manager nodes below
+```
+
+`suave_base.launch.py` starts the managed system (with `task_bridge` disabled — your manager owns task routing) and the mission metrics node. It does **not** start a mission node, add that separately if your manager relies on it.
+
+### Option B — Built-in manager (contributed upstream to the suave repo)
+
+Create a manager-only launch file (see [suave_metacontrol.launch.py](https://github.com/kas-lab/suave/blob/main/suave_managing/suave_metacontrol/launch/suave_metacontrol.launch.py) for an example). The manager launch must not start the managed system, mission node, or metrics — `suave_bringup` owns that composition.
+
+Declare the manager package as an `exec_depend` of `suave_bringup`, then add it to [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_bringup/launch/mission.launch.py) behind an `adaptation_manager` condition:
+
+```python
+IncludeLaunchDescription(
+    PythonLaunchDescriptionSource(
+        os.path.join(
+            get_package_share_directory('[new_managing_subsystem]'),
+            'launch', '[new_managing_subsystem].launch.py')),
+    condition=LaunchConfigurationEquals(
+        'adaptation_manager', '[new_managing_subsystem]'))
 ```
 
 ## Extend SUAVE

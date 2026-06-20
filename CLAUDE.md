@@ -14,7 +14,9 @@ Runtime stack: ROS 2 Humble · Gazebo Harmonic · ArduSub/ArduPilot SITL · MAVR
 |---|---|
 | `suave/` | Managed subsystem: functionalities, launch files, sim config |
 | `suave_monitor/` | Monitor nodes (thruster, battery, water visibility) — publish diagnostics |
-| `suave_missions/` | Mission planners and launch files |
+| `suave_base/` | Reusable base launch (managed system + metrics, no manager) for external managing systems |
+| `suave_bringup/` | Top-level mission and manager launch composition for built-in managers |
+| `suave_missions/` | Mission planners, configuration, and mission-only launches |
 | `suave_metrics/` | Metrics collection |
 | `suave_runner/` | Experiment runner and statistical analysis |
 | `suave_tools/` | Auxiliary tools (PlotJuggler config, etc.) |
@@ -86,10 +88,10 @@ sim_vehicle.py -L RATBeach -v ArduSub --model=JSON --console
 ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
 
 # Mission (default: no adaptation manager)
-ros2 launch suave_missions mission.launch.py
+ros2 launch suave_bringup mission.launch.py
 
 # Mission with a specific manager
-ros2 launch suave_missions mission.launch.py adaptation_manager:=bt result_filename:=measurement_1
+ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt result_filename:=measurement_1
 # adaptation_manager values: none | metacontrol | random | bt
 
 # Experiment runner (ROS2, config-file driven — preferred for campaigns)
@@ -144,7 +146,7 @@ A compliant managing subsystem must interact with:
 - **`/task/request`** and **`/task/cancel`** — `suave_msgs/srv/Task`
 - **system_modes** `ChangeMode` services: `/f_maintain_motion/change_mode`, `/f_generate_search_path/change_mode`, `/f_follow_pipeline/change_mode`
 
-When adding a new managing subsystem: include SUAVE's base launch with `task_bridge` disabled and wire the new package into `suave_missions/launch/mission.launch.py` via an `adaptation_manager` condition.
+For **external managing systems**, include `suave_base/launch/suave_base.launch.py` (starts managed system + metrics with `task_bridge=False`) and add manager nodes alongside — no changes to this repo needed. For **built-in managers** contributed upstream, keep the launch file manager-only and wire it into `suave_bringup/launch/mission.launch.py` via an `adaptation_manager` condition.
 
 ## Runner / Metrics IPC
 `mission_metrics/done` (`std_msgs/Bool`) signals run completion. Both the `MissionMetrics` publisher and `ExperimentRunnerNode` subscriber must declare `RELIABLE` reliability + `TRANSIENT_LOCAL` durability (depth 1). Mismatched QoS causes DDS to silently drop the connection.

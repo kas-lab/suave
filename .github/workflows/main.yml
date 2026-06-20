@@ -19,6 +19,8 @@ jobs:
         with:
           package-name: |
             suave
+            suave_base
+            suave_bringup
             suave_bt
             suave_metacontrol
             suave_metrics

@@ -11,12 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Provide the no-manager launch description."""
-
-from launch import LaunchDescription
-
-
-def generate_launch_description():
-    """Return an empty description for the no-manager configuration."""
-    return LaunchDescription()

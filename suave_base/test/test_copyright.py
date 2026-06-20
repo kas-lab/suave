@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Provide the no-manager launch description."""
+"""Test copyright headers with ament tooling."""
 
-from launch import LaunchDescription
+from ament_copyright.main import main
+import pytest
 
 
-def generate_launch_description():
-    """Return an empty description for the no-manager configuration."""
-    return LaunchDescription()
+@pytest.mark.copyright
+@pytest.mark.linter
+def test_copyright():
+    """Check source files for copyright notices."""
+    assert main(argv=['.', 'test']) == 0
