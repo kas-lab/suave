@@ -3,11 +3,11 @@
 ## Connecting managing subsystems
 
 SUAVE is designed to allow for different managing subsystems to be used, as long as they adhere to the correct ROS 2 interfaces.
-SUAVE's ROS2 interfaces are:
+SUAVE's ROS 2 interfaces are:
 
-1. The `/diagnostics` topic, which is where monitoring information is published. This topic uses the [diagnostic_msgs/DiagnosticArray](https://docs.ros2.org/foxy/api/diagnostic_msgs/msg/DiagnosticArray.html) message type
+1. The `/diagnostics` topic, which is where monitoring information is published. This topic uses the [diagnostic_msgs/DiagnosticArray](https://docs.ros.org/en/humble/p/diagnostic_msgs/msg/DiagnosticArray.html) message type
 2. The `/task/request` and `/task/cancel` services, which are used to request and cancel tasks, respectively. Both services use the [suave_msgs/Task](https://github.com/kas-lab/suave/blob/main/suave_msgs/srv/Task.srv) service type
-3. Three [system_modes](https://github.com/micro-ROS/system_modes) services to change SUAVE's LifeCycle nodes mode. These services use the [system_modes_msgs/ChangeMode](https://github.com/micro-ROS/system_modes/blob/master/system_modes_msgs/srv/ChangeMode.srv) service type:
+3. Three [system_modes](https://github.com/micro-ROS/system_modes) services to change SUAVE's lifecycle-node modes. These services use the [system_modes_msgs/ChangeMode](https://github.com/micro-ROS/system_modes/blob/master/system_modes_msgs/srv/ChangeMode.srv) service type:
     1. Service `/f_maintain_motion/change_mode` to change the Maintain Motion node modes
     2. Service `/f_generate_search_path/change_mode` to change the Generate Search Path node modes
     3. Service `/f_follow_pipeline/change_mode` to change the Follow Pipeline node modes
@@ -48,4 +48,17 @@ To include it in [mission.launch.py](https://github.com/kas-lab/suave/blob/main/
 
 ## Extend SUAVE
 
-To extend SUAVE with new functionalities, it is only required to add new LifeCycle nodes that implement the new functionalities (check [spiral_search_lc.py](https://github.com/kas-lab/suave/blob/main/suave/suave/spiral_search_lc.py) for an example), and add its different modes to the [system_modes](https://github.com/micro-ROS/system_modes) configuration file [suave_modes.yaml](https://github.com/kas-lab/suave/blob/main/suave/config/suave_modes.yaml). Note, that if you create a new configuration file, you should replace the [suave_modes.yaml](https://github.com/kas-lab/suave/blob/main/suave/config/suave_modes.yaml) path with the new file path.
+To extend SUAVE with new functionalities, add lifecycle nodes that implement the new functionalities (check [spiral_search_lc.py](https://github.com/kas-lab/suave/blob/main/suave/suave/spiral_search_lc.py) for an example), and add their modes to the [system_modes](https://github.com/micro-ROS/system_modes) configuration file [suave_modes.yaml](https://github.com/kas-lab/suave/blob/main/suave/config/suave_modes.yaml). If you create a new configuration file, replace the `suave_modes.yaml` path used by the system-modes launch file.
+
+### Optional ROS 2 action execution
+
+Managed lifecycle nodes may additionally expose a ROS 2 action server. Existing
+nodes use the Boolean `use_action_server` parameter, defaulting to `false`, to
+select whether behavior starts on lifecycle activation or after an accepted
+goal. Create action servers during lifecycle configuration so they remain
+discoverable, stop active callbacks before cleanup, and support cancellation
+inside long-running waits. New action definitions belong in `suave_msgs/action/`.
+
+ROS 2 actions are an optional execution mechanism and do not replace the
+standard diagnostics, task, and mode-change interfaces required from managing
+subsystems.

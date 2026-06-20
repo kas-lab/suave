@@ -70,12 +70,15 @@ ros2 run suave_runner suave_runner \
 
 ## Behavior Tree
 
+Append `use_action_server:=true` to `experiment_launch` to have the BT invoke
+managed behaviors through ROS 2 actions:
+
 ```Bash
 ros2 run suave_runner suave_runner \
   --ros-args \
   -p gui:=False \
   -p experiments:='[
-    "{\"experiment_launch\": \"ros2 launch suave_bt suave_bt.launch.py\", \
+    "{\"experiment_launch\": \"ros2 launch suave_bt suave_bt.launch.py use_action_server:=true\", \
       \"num_runs\": 20, \
       \"adaptation_manager\": \"bt\", \
       \"mission_name\": \"suave\"}"

@@ -86,12 +86,12 @@ Pull and run an experiment campaign:
 ```Bash
 docker run -it --shm-size=512m \
   ghcr.io/kas-lab/suave-headless:main \
-  ./runner/headless_runner.sh false metacontrol time 2
+  ./src/suave/runner/headless_runner.sh false metacontrol time 2
 ```
 
 The runner arguments are the same as `runner.sh`:
 1. `true` or `false` — whether to show a GUI (use `false` for headless)
-2. `metacontrol`, `random`, or `none` — adaptation manager
+2. `metacontrol`, `random`, `none`, or `bt` — adaptation manager
 3. `time` or `distance` — mission type
 4. Number of runs (integer)
 
@@ -101,7 +101,7 @@ To save results to your host machine, mount a volume to `/home/ubuntu-user/suave
 docker run -it --shm-size=512m \
   -v $HOME/suave_results:/home/ubuntu-user/suave/results \
   ghcr.io/kas-lab/suave-headless:main \
-  ./runner/headless_runner.sh false metacontrol time 2
+  ./src/suave/runner/headless_runner.sh false metacontrol time 2
 ```
 
 **NVIDIA GPU support:** If your machine has an NVIDIA GPU, install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) and use:
@@ -111,7 +111,7 @@ docker run -it --rm --gpus all --runtime=nvidia --shm-size=512m \
   -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all \
   -v $HOME/suave_results:/home/ubuntu-user/suave/results \
   ghcr.io/kas-lab/suave-headless:main \
-  ./runner/headless_runner.sh false metacontrol time 2
+  ./src/suave/runner/headless_runner.sh false metacontrol time 2
 ```
 
 ### Build Docker images locally
@@ -222,12 +222,16 @@ If you want to get the most updated version of the repo:
 wget https://raw.githubusercontent.com/kas-lab/suave/main/suave.repos
 vcs import src < suave.repos --recursive
 ```
-**SEAMS2023:** If you want to get the version submitted to SEAMS 2023 instead of the most updated version get the following dependencies instead:
+For a reproducible release installation, download `suave.repos` from the
+matching Git tag instead of `main`.
 
-```Bash
-wget https://raw.githubusercontent.com/kas-lab/suave/9e6468896ce766376557ca9522d84f92b70129f1/suave.rosinstall
-vcs import src < suave.rosinstall --recursive
-```
+**SEAMS 2023 artifact:** The exact source submitted with the published paper
+is preserved at commit
+[`9e64688`](https://github.com/kas-lab/suave/tree/9e6468896ce766376557ca9522d84f92b70129f1).
+Because that artifact uses a historical dependency set, the recommended way
+to reproduce it is the archived `ghcr.io/kas-lab/suave:seams2023` container
+image. Use the `main` or release-tag instructions above for current
+development.
 
 Before building the `ros_gz` package (one of the dependencies), you need to export the gazebo version:
 
@@ -320,7 +324,14 @@ ros2 run suave_runner suave_runner \
 Or using a launch file with a [config file](https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner_config.yml):
 
 ```Bash
-ros2 launch suave_runner suave_runner.launch.py
+ros2 launch suave_runner suave_runner_launch.py
+```
+
+To run the BT manager through ROS 2 actions, add
+`use_action_server:=true` to the experiment launch command, for example:
+
+```text
+ros2 launch suave_bt suave_bt.launch.py use_action_server:=true
 ```
 
 ### Without the runner
@@ -373,22 +384,33 @@ Launching the mission file without launch arguments will start a time-constraine
     (default: 'none')
 
 'mission_type':
-    Type of mission to be executed
-    available values: time_constrained_mission/const_dist_mission
+    BT mission label written to metrics
     (default: 'time_constrained_mission')
 
 'result_filename':
     Filename for the mission measured metrics
     available values: any name
-    (default: 'time_constrained_mission_results')
+    (default: empty; the selected manager uses its metrics default)
+
+'use_action_server':
+    For the BT manager, start managed behaviors through ROS 2 actions
+    available values: true/false
+    (default: false)
 ```
 
 The arguments can be defined by adding the above arguments with the notation `<name>:=<value>` to the end of the command line.
 
-An example of running the constant distance mission with metacontrol saving to a file called 'measurement_1':
+An example of running with metacontrol and saving to a file called 'measurement_1':
 
 ```Bash
-ros2 launch suave_missions mission.launch.py adaptation_manager:=metacontrol mission_type:=const_dist_mission result_filename:=measurement_1
+ros2 launch suave_missions mission.launch.py adaptation_manager:=metacontrol result_filename:=measurement_1
+```
+
+An example of running the BT manager in action-server mode:
+
+```Bash
+ros2 launch suave_missions mission.launch.py \
+  adaptation_manager:=bt use_action_server:=true
 ```
 
 ## Extending SUAVE and connecting managing subsystems
@@ -459,23 +481,23 @@ sudo apt update && sudo apt upgrade
 
 **Update ArduSub:**
 
-Due to ArduSub usage of submodules, it is simpler to just remove the whole ardupilo repo and build it from scratch again.
+Due to ArduSub usage of submodules, it is simpler to remove the whole ArduPilot repository and build it from scratch again.
 
 ```Bash
 rm -rf ~/ardupilot
 ```
 
-To find the latest version of ArduSub go to the [ardupilot repo](https://github.com/ArduPilot/ardupilot) and look for the newest branch of ArduSub. At the time of this writing, the latest branch is [Sub-4.1](https://github.com/ArduPilot/ardupilot/commits/Sub-4.1) at commit [e9f46b9](https://github.com/ArduPilot/ardupilot/tree/e9f46b91cda16cf7a48eb9861fea13e452c5c08c). After you know the latest branch or commit you want to get, follow the [install ardusub](https://github.com/kas-lab/suave#install-ardusub) instructions replacing the commit in `git checkout e9f46b9` with the commit/branch you selected.
+To find the latest version of ArduSub go to the [ardupilot repo](https://github.com/ArduPilot/ardupilot) and look for the newest branch of ArduSub. This repository is tested with [ArduSub commit `571e8c7`](https://github.com/ArduPilot/ardupilot/tree/571e8c7bd3793fce1bc5184a2f6586feb8a616e5). Follow the [install ArduSub](#install-ardusub) instructions with the selected commit or branch.
 
 **Update MAVROS:**
-To update MAVROS, you can either change its version in the [suave.rosinstall](https://github.com/kas-lab/suave/blob/8f0e47571fc6c7524139fcb7ef20d9157d73a3e6/suave.rosinstall#L9) file with the newest version of [mavros](https://github.com/mavlink/mavros), or simply change the version to ros2. Then you need to pull the repo:
+To update MAVROS, change its version in [suave.repos](https://github.com/kas-lab/suave/blob/main/suave.repos) to the desired [MAVROS](https://github.com/mavlink/mavros) version or branch, then pull the workspace repositories:
 
 ```Bash
 cd ~/suave_ws/
 vcs pull src
 ```
 
-Alternatively, instead of updating the suave.rosinstall file, you can just update mavros manually:
+Alternatively, update MAVROS manually:
 
 ```Bash
 cd ~/suave_ws/src/mavros

@@ -6,6 +6,18 @@
 Welcome to SUAVE's documentation!
 =================================
 
+SUAVE (Self-adaptive Underwater Autonomous Vehicle Exemplar) is a ROS 2 Humble
+exemplar for pipeline-search and inspection missions. It separates the managed
+vehicle functionality from pluggable managing subsystems, making adaptation
+approaches directly comparable through common ROS 2 interfaces.
+
+Quick start
+-----------
+
+The supported Docker image is the fastest way to try SUAVE. See
+:doc:`docker` for image setup, then :doc:`run` for mission and experiment
+commands. For a local source installation, follow :doc:`installation`.
+
 .. toctree::
  Home <self>
  installation

@@ -12,7 +12,7 @@ The **managed subsystem** implements the AUV's mission functionalities. The **ma
 
 ## Managed subsystem
 
-The managed subsystem is implemented in the `suave` package. It runs on top of ArduSub/MAVROS and exposes three reconfigurable **functionalities**, each implemented as a ROS 2 lifecycle node managed by [system_modes](https://github.com/micro-ROS/system_modes).
+The managed subsystem is implemented in the `suave` package. It runs on top of ArduSub/MAVROS and exposes four reconfigurable **functionalities**, each implemented as a ROS 2 lifecycle node managed by [system_modes](https://github.com/micro-ROS/system_modes).
 
 ### Functionalities and their modes
 
@@ -49,6 +49,20 @@ The managed subsystem is implemented in the `suave` package. It runs on top of A
 
 The mode configurations are defined in [`suave/config/suave_modes.yaml`](https://github.com/kas-lab/suave/blob/main/suave/config/suave_modes.yaml).
 
+### Lifecycle and action execution
+
+The search, inspection, recovery, and recharge lifecycle nodes support two
+execution policies through `use_action_server`:
+
+- With the default `false`, lifecycle activation starts the behavior.
+- With `true`, lifecycle activation prepares the node and an accepted ROS 2
+  action goal starts the behavior.
+
+The Behavior Tree manager can use the second policy to send goals to
+`spiral_search`, `follow_pipeline`, `recover_thrusters`, and
+`recharge_battery`. Its launch file passes one value to both the lifecycle
+nodes and the BT blackboard so the execution policy stays consistent.
+
 ---
 
 ## Monitor subsystem
@@ -57,7 +71,7 @@ The `suave_monitor` package contains three monitor nodes that continuously obser
 
 | Node | Observes | Published key |
 |---|---|---|
-| `thruster_monitor` | Simulated thruster status | `c_thruster_<N>` = `TRUE`/`FALSE` |
+| `thruster_monitor` | Simulated thruster status | `c_thruster_<N>` = `FALSE`/`RECOVERED` |
 | `water_visibility_observer` | Simulated water visibility | `water_visibility` = float (m) |
 | `battery_monitor` | Simulated battery state | `battery_level` = float (0–1) |
 

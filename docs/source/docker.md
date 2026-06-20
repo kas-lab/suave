@@ -47,7 +47,7 @@ Run an experiment campaign and save results to your host machine:
 docker run -it --shm-size=512m \
   -v $HOME/suave_results:/home/ubuntu-user/suave/results \
   ghcr.io/kas-lab/suave-headless:main \
-  ./runner/headless_runner.sh false metacontrol time 2
+  ./src/suave/runner/headless_runner.sh false metacontrol time 2
 ```
 
 The runner arguments are: `[true|false] [metacontrol|random|none|bt] [time|distance] <runs>`.

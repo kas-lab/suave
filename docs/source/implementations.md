@@ -26,9 +26,20 @@ Launch: `ros2 launch suave_metacontrol suave_metacontrol.launch.py`
 
 ### Behavior Tree (`suave_bt`)
 
-Implements adaptation logic as a [BehaviorTree.CPP](https://www.behaviortree.dev/) behavior tree. Each condition node reads diagnostics and each action node calls a `system_modes` reconfiguration service. The tree structure makes the adaptation policy explicit and easy to inspect or modify.
+Implements adaptation logic as a [BehaviorTree.CPP](https://www.behaviortree.dev/) behavior tree. Condition nodes read diagnostics and action nodes select lifecycle modes through `system_modes`. The tree can either observe behaviors started by lifecycle activation or invoke the managed behaviors through ROS 2 actions. The tree structure makes the adaptation policy explicit and easy to inspect or modify.
 
 Launch: `ros2 launch suave_bt suave_bt.launch.py`
+
+Enable ROS 2 action execution with:
+
+```bash
+ros2 launch suave_bt suave_bt.launch.py use_action_server:=true
+```
+
+`use_action_server` defaults to `false`. When enabled, the BT sends goals to
+`spiral_search`, `follow_pipeline`, `recover_thrusters`, and
+`recharge_battery`; the launch file applies the same setting to the managed
+lifecycle nodes.
 
 ---
 
