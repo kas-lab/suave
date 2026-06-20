@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 1.5.0
+
+### Added
+
+1. ROS action servers for all four lifecycle nodes (`spiral_search`, `follow_pipeline`, `recharge_battery`, `recover_thrusters`). A `use_action_server` parameter (default `false`) keeps the existing lifecycle-transition-driven behavior; when `true`, each node waits for an action goal before starting its behavior.
+
+2. New action message types in `suave_msgs`: `SpiralSearch`, `FollowPipeline`, `RechargeBattery`, `RecoverThrusters`.
+
+3. Action client support in `suave_bt`: the BT nodes `search_pipeline`, `inspect_pipeline`, `recharge`, and `recover_thrusters` can now operate in either legacy mode (polling lifecycle transitions) or action-server mode (sending ROS goals). Controlled by a `use_action_server` launch argument that propagates to both the managing BT node and the managed lifecycle nodes.
+
+4. `suave_runner`: experiment logs are now saved per-run under `<result_path>/logs/run_{exp_idx}_{run_idx}/`.
+
+5. `suave_runner`: crashed campaigns can be resumed from an existing result folder via the `resume_result_path` parameter.
+
+6. `suave_runner`: statistical analysis module.
+
+7. Repository contributor guide.
+
+8. Public Python API documentation.
+
+### Changed
+
+1. Removed `BlueROVGazebo` nested ROS node from lifecycle nodes. Navigation is now handled by a lightweight `MavrosPositionController` owned by each lifecycle node — no child node or private executor. The `suave` package no longer depends on `mavros_wrapper`.
+
+2. `mavros/local_position/pose` is now published directly in the Gazebo/map frame. Frame offset conversions have been removed from all navigation nodes.
+
+3. `suave_runner` no longer uses a `.done` file for run-completion signaling.
+
+### Fixed
+
+1. `result_filename` argument not propagated correctly in launch files.
+
+2. Runner crash when no thruster events were recorded in a run.
+
 ## 1.4.0
 
 ### Added
