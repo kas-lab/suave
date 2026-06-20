@@ -16,6 +16,7 @@
 
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.node import Node
+
 from suave_msgs.srv import Task
 
 
@@ -92,13 +93,13 @@ class TaskBridge(Node):
 
     def forward_task_request(self, function):
         """Report that subclasses must define task-request forwarding."""
-        self.get_logger().info("forward_task_request method not defined")
+        self.get_logger().info('forward_task_request method not defined')
         return False
 
     def forward_task_cancel_request(self, function):
         """Report that subclasses must define cancellation forwarding."""
         self.get_logger().info(
-            "forward_task_cancel_request method not defined")
+            'forward_task_cancel_request method not defined')
         return False
 
     def call_service(self, cli, request):

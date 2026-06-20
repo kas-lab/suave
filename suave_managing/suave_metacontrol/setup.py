@@ -1,7 +1,8 @@
 """Package the SUAVE metacontrol manager and resources."""
 
-import os
 from glob import glob
+import os
+
 from setuptools import setup
 
 package_name = 'suave_metacontrol'

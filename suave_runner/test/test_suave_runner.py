@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import shutil
-import yaml
 from pathlib import Path
+import shutil
 from unittest.mock import patch
 
 import rclpy
 from rclpy.parameter import Parameter
-
 from std_msgs.msg import Bool
 
 from suave_runner.suave_runner import ExperimentRunnerNode
+import yaml
 
 
 def _minimal_runner_params():
@@ -40,26 +39,26 @@ def test_create_experiment_folder():
     try:
         params = [
             Parameter(
-                "result_path",
+                'result_path',
                 Parameter.Type.STRING,
-                "/tmp/suave/results"),
+                '/tmp/suave/results'),
             Parameter(
-                "experiments",
+                'experiments',
                 Parameter.Type.STRING_ARRAY,
-                ['''{
+                ["""{
                   "experiment_launch":
                     "ros2 launch suave_bt suave_bt.launch.py",
                   "num_runs": 5,
                   "adaptation_manager": "bt",
                   "mission_name": "suave"
-                }'''])
+                }"""])
         ]
         runner = ExperimentRunnerNode(parameter_overrides=params)
         result_path = runner.create_experiment_folder()
         assert result_path.is_dir()
     finally:
         result_path.rmdir()
-        path = Path("/tmp/suave")
+        path = Path('/tmp/suave')
         shutil.rmtree(path)
         rclpy.shutdown()
 
@@ -83,64 +82,64 @@ def test_randomize_experiments_configuration():
     rclpy.init()
     try:
         params = [
-            Parameter("gui", Parameter.Type.BOOL, True),
-            Parameter("experiment_logging", Parameter.Type.BOOL, True),
+            Parameter('gui', Parameter.Type.BOOL, True),
+            Parameter('experiment_logging', Parameter.Type.BOOL, True),
             Parameter(
-                "mission_config_pkg",
+                'mission_config_pkg',
                 Parameter.Type.STRING,
-                "suave_missions"),
+                'suave_missions'),
             Parameter(
-                "mission_config_file",
+                'mission_config_file',
                 Parameter.Type.STRING,
-                "config/mission_config.yaml"),
+                'config/mission_config.yaml'),
             Parameter(
-                "water_visibility_sec_shift",
+                'water_visibility_sec_shift',
                 Parameter.Type.DOUBLE,
                 0.0),
             Parameter(
-                "water_visibility_sec_shift_random_interval",
+                'water_visibility_sec_shift_random_interval',
                 Parameter.Type.DOUBLE_ARRAY,
                 [-10.0, 10.0]),
-            Parameter("random_interval", Parameter.Type.INTEGER, 5),
-            Parameter("initial_pos_x", Parameter.Type.DOUBLE, -16.0),
-            Parameter("initial_pos_y", Parameter.Type.DOUBLE, 2.0),
+            Parameter('random_interval', Parameter.Type.INTEGER, 5),
+            Parameter('initial_pos_x', Parameter.Type.DOUBLE, -16.0),
+            Parameter('initial_pos_y', Parameter.Type.DOUBLE, 2.0),
             Parameter(
-                "initial_pos_x_random_interval",
+                'initial_pos_x_random_interval',
                 Parameter.Type.DOUBLE_ARRAY,
                 [-1.0, 1.0]),
             Parameter(
-                "initial_pos_y_random_interval",
+                'initial_pos_y_random_interval',
                 Parameter.Type.DOUBLE_ARRAY,
                 [-1.0, 1.0]),
-            Parameter("experiments", Parameter.Type.STRING_ARRAY, [
-                '''{
+            Parameter('experiments', Parameter.Type.STRING_ARRAY, [
+                """{
                   "experiment_launch":
                     "ros2 launch suave_bt suave_bt.launch.py",
                   "num_runs": 5,
                   "adaptation_manager": "bt",
                   "mission_name": "suave"
-                }''',
-                '''{
+                }""",
+                """{
                   "experiment_launch":
                   "ros2 launch suave_metacontrol suave_metacontrol.launch.py",
                   "num_runs": 10,
                   "adaptation_manager": "metacontrol",
                   "mission_name": "suave"
-                }''',
-                '''{
+                }""",
+                """{
                   "experiment_launch":
                     "ros2 launch suave_random suave_random.launch.py",
                   "num_runs": 2,
                   "adaptation_manager": "random",
                   "mission_name": "suave"
-                }''',
-                '''{
+                }""",
+                """{
                   "experiment_launch":
                     "ros2 launch suave_none suave_none.launch.py",
                   "num_runs": 2,
                   "adaptation_manager": "none",
                   "mission_name": "suave"
-                }'''
+                }"""
             ])
         ]
         runner = ExperimentRunnerNode(parameter_overrides=params)
@@ -188,66 +187,66 @@ def test_generate_mission_config_files():
     try:
         params = [
             Parameter(
-                "gui", Parameter.Type.BOOL, True),
+                'gui', Parameter.Type.BOOL, True),
             Parameter(
-                "experiment_logging", Parameter.Type.BOOL, True),
+                'experiment_logging', Parameter.Type.BOOL, True),
             Parameter(
-                "mission_config_pkg",
+                'mission_config_pkg',
                 Parameter.Type.STRING,
-                "suave_missions"),
+                'suave_missions'),
             Parameter(
-                "mission_config_file",
+                'mission_config_file',
                 Parameter.Type.STRING,
-                "config/mission_config.yaml"),
+                'config/mission_config.yaml'),
             Parameter(
-                "water_visibility_sec_shift",
+                'water_visibility_sec_shift',
                 Parameter.Type.DOUBLE,
                 0.0),
             Parameter(
-                "water_visibility_sec_shift_random_interval",
+                'water_visibility_sec_shift_random_interval',
                 Parameter.Type.DOUBLE_ARRAY,
                 [-10.0, 10.0]),
             Parameter(
-                "thruster_events",
+                'thruster_events',
                 Parameter.Type.STRING_ARRAY,
-                ["(1,failure,35)", "(3,failure,35)"]),
+                ['(1,failure,35)', '(3,failure,35)']),
             Parameter(
-                "thruster_events_random_interval",
+                'thruster_events_random_interval',
                 Parameter.Type.DOUBLE_ARRAY,
                 [-10.0, 10.0]),
             Parameter(
-                "random_interval", Parameter.Type.INTEGER, 5),
+                'random_interval', Parameter.Type.INTEGER, 5),
             Parameter(
-                "experiments",
+                'experiments',
                 Parameter.Type.STRING_ARRAY,
-                ['''{
+                ["""{
                   "experiment_launch":
                     "ros2 launch suave_bt suave_bt.launch.py",
                   "num_runs": 5,
                   "adaptation_manager": "bt",
                   "mission_name": "suave"
-                }''', '''{
+                }""", """{
                   "experiment_launch":
                   "ros2 launch suave_metacontrol suave_metacontrol.launch.py",
                   "num_runs": 10,
                   "adaptation_manager": "metacontrol",
                   "mission_name": "suave"
-                }''', '''{
+                }""", """{
                   "experiment_launch":
                     "ros2 launch suave_random suave_random.launch.py",
                   "num_runs": 2,
                   "adaptation_manager": "random",
                   "mission_name": "suave"
-                }''', '''{
+                }""", """{
                   "experiment_launch":
                     "ros2 launch suave_none suave_none.launch.py",
                   "num_runs": 2,
                   "adaptation_manager": "none",
                   "mission_name": "suave"
-                }'''])]
+                }"""])]
         runner = ExperimentRunnerNode(parameter_overrides=params)
         runner.randomize_experiments_configuration()
-        result_path = Path("/tmp/suave/results/test_generate_mission_config/")
+        result_path = Path('/tmp/suave/results/test_generate_mission_config/')
         if result_path.is_dir() is False:
             result_path.mkdir(parents=True)
         config_files = runner.generate_mission_config_files(
@@ -287,7 +286,7 @@ def test_generate_mission_config_files():
             for i in range(5, 10))
 
     finally:
-        path = Path("/tmp/suave")
+        path = Path('/tmp/suave')
         shutil.rmtree(path)
         rclpy.shutdown()
 

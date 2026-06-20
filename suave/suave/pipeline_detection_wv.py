@@ -16,11 +16,13 @@
 
 """Detect pipelines while accounting for observed water visibility."""
 
-import rclpy
 from diagnostic_msgs.msg import DiagnosticArray
-from suave.pipeline_detection import PipelineDetection
+
+import rclpy
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
+
+from suave.pipeline_detection import PipelineDetection
 
 
 class PipelineDetectionWV(PipelineDetection):
@@ -43,9 +45,9 @@ class PipelineDetectionWV(PipelineDetection):
     def diagnostics_cb(self, msg):
         """Update the current water visibility from diagnostic values."""
         for status in msg.status:
-            if status.message == "QA status":
+            if status.message == 'QA status':
                 for value in status.values:
-                    if value.key == "water_visibility":
+                    if value.key == 'water_visibility':
                         self.water_visibility = float(value.value)
 
     def compare_poses(self, bluerov_pose, pipe_pose):

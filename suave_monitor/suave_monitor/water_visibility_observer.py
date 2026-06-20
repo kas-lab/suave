@@ -16,15 +16,17 @@
 
 """Publish a time-varying water-visibility quality attribute."""
 
+import math
+import sys
+
 from diagnostic_msgs.msg import DiagnosticArray
 from diagnostic_msgs.msg import DiagnosticStatus
 from diagnostic_msgs.msg import KeyValue
 from mavros_msgs.msg import State
 
-import math
 import rclpy
+
 from rclpy.node import Node
-import sys
 
 
 class WaterVisibilityObserver(Node):
@@ -53,7 +55,7 @@ class WaterVisibilityObserver(Node):
 
     def status_cb(self, msg):
         """Start visibility measurements when guided mode begins."""
-        if msg.mode == "GUIDED":
+        if msg.mode == 'GUIDED':
             self.initial_time = self.get_clock().now().to_msg().sec
             self.qa_publisher_timer = self.create_timer(
                 self.qa_publishing_period, self.qa_publisher_cb)
@@ -79,14 +81,14 @@ class WaterVisibilityObserver(Node):
             (2*math.pi/water_visibility_period)*(t + sec_shift)) + v_delta
 
         key_value = KeyValue()
-        key_value.key = "water_visibility"
+        key_value.key = 'water_visibility'
         key_value.value = str(water_visibility)
 
         status_msg = DiagnosticStatus()
         status_msg.level = DiagnosticStatus.OK
         status_msg.name = (
-            "water_visibility_observer: Water visibility measurement")
-        status_msg.message = "QA status"
+            'water_visibility_observer: Water visibility measurement')
+        status_msg.message = 'QA status'
         status_msg.values.append(key_value)
 
         diag_msg = DiagnosticArray()
@@ -98,7 +100,7 @@ class WaterVisibilityObserver(Node):
 
 def main():
     """Run the water-visibility observer node."""
-    print("Starting water_visibility observer node")
+    print('Starting water_visibility observer node')
 
     rclpy.init(args=sys.argv)
 

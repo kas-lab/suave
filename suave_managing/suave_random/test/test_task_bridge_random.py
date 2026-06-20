@@ -17,12 +17,13 @@
 import importlib.util
 from pathlib import Path
 
+from launch_ros.actions import Node
+
 import pytest
 import rclpy
-import yaml
 
-from launch_ros.actions import Node
 from suave_random.task_bridge_random import TaskBridgeRandom
+import yaml
 
 
 @pytest.fixture(scope='module', autouse=True)

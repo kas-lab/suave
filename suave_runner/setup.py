@@ -14,8 +14,9 @@
 
 """Package SUAVE experiment orchestration and analysis tools."""
 
-import os
 from glob import glob
+import os
+
 from setuptools import setup
 
 package_name = 'suave_runner'

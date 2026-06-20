@@ -14,6 +14,8 @@
 
 """Define the pipeline search-and-inspection mission."""
 
+from diagnostic_msgs.msg import DiagnosticArray
+
 from mavros_msgs.msg import State
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
@@ -23,8 +25,6 @@ from std_srvs.srv import Empty
 
 
 from suave_missions.mission_planner import MissionPlanner
-
-from diagnostic_msgs.msg import DiagnosticArray
 
 
 class InspectionMission(MissionPlanner):
@@ -77,7 +77,7 @@ class InspectionMission(MissionPlanner):
 
     def perform_mission(self):
         """Arm the vehicle, enter guided mode, and execute mission tasks."""
-        self.get_logger().info("Pipeline inspection mission starting!!")
+        self.get_logger().info('Pipeline inspection mission starting!!')
         self.timer = self.create_rate(1)
 
         while not self.status.armed:
@@ -111,7 +111,7 @@ class InspectionMission(MissionPlanner):
                                 'battery_constraint_value').value
                             if float(value.value) < constraint:
                                 self.get_logger().warn(
-                                    "Low battery! Mission abort.")
+                                    'Low battery! Mission abort.')
                                 self.abort_mission = True
                                 self.call_service(
                                     self.save_mission_results_cli,

@@ -17,11 +17,13 @@
 from pathlib import Path
 
 import pytest
+
 import rclpy
 from rclpy.parameter import Parameter
-import yaml
 
 from suave_metrics.mission_metrics import MissionMetrics
+
+import yaml
 
 
 @pytest.fixture

@@ -15,9 +15,6 @@
 """Schedule thruster failures and recoveries and publish diagnostics."""
 
 import sys
-import rclpy
-
-from rclpy.node import Node
 
 from diagnostic_msgs.msg import DiagnosticArray
 from diagnostic_msgs.msg import DiagnosticStatus
@@ -26,6 +23,10 @@ from mavros_msgs.msg import State
 from rcl_interfaces.msg import Parameter
 from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.srv import SetParameters
+
+import rclpy
+
+from rclpy.node import Node
 
 
 def read_thruster_events(events):
@@ -145,7 +146,7 @@ class ThrusterMonitor(Node):
 
 def main():
     """Run the thruster monitor node."""
-    print("Starting thruster monitor node")
+    print('Starting thruster monitor node')
 
     rclpy.init(args=sys.argv)
 

@@ -14,16 +14,18 @@
 
 """Simulate and publish the vehicle battery quality attribute."""
 
+import sys
+
 from diagnostic_msgs.msg import DiagnosticArray
 from diagnostic_msgs.msg import DiagnosticStatus
 from diagnostic_msgs.msg import KeyValue
 from mavros_msgs.msg import State
-from std_srvs.srv import Trigger
-from std_msgs.msg import Bool
 
 import rclpy
+
 from rclpy.node import Node
-import sys
+from std_msgs.msg import Bool
+from std_srvs.srv import Trigger
 
 
 class BatteryMonitor(Node):
@@ -57,7 +59,7 @@ class BatteryMonitor(Node):
 
     def status_cb(self, msg):
         """Start battery updates when the vehicle enters guided mode."""
-        if msg.mode == "GUIDED":
+        if msg.mode == 'GUIDED':
             self.last_time = self.get_clock().now().to_msg().sec
             self.qa_publisher_timer = self.create_timer(
                 self.qa_publishing_period, self.qa_publisher_cb)
@@ -83,13 +85,13 @@ class BatteryMonitor(Node):
         self.battery_level = v
 
         key_value = KeyValue()
-        key_value.key = "battery_level"
+        key_value.key = 'battery_level'
         key_value.value = str(self.battery_level)
 
         status_msg = DiagnosticStatus()
         status_msg.level = DiagnosticStatus.OK
-        status_msg.name = "battery_monitor: Battery level"
-        status_msg.message = "QA status"
+        status_msg.name = 'battery_monitor: Battery level'
+        status_msg.message = 'QA status'
         status_msg.values.append(key_value)
 
         diag_msg = DiagnosticArray()
@@ -109,7 +111,7 @@ class BatteryMonitor(Node):
 
 def main():
     """Run the battery monitor node."""
-    print("Starting battery_monitor observer node")
+    print('Starting battery_monitor observer node')
 
     rclpy.init(args=sys.argv)
 

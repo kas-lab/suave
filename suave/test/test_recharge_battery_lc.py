@@ -14,19 +14,22 @@
 
 """Tests for the recharge battery lifecycle node action server."""
 
-import pytest
-import rclpy
-
-from rclpy.action import ActionClient
-from rclpy.node import Node
-from std_srvs.srv import Trigger
-
 from action_test_utils import send_goal_and_wait
 from action_test_utils import spin_nodes_in_executors
 from action_test_utils import wait_for_condition
-from suave.action_server_utils import lifecycle_state_is_active
+
+import pytest
+
+import rclpy
+from rclpy.action import ActionClient
+from rclpy.node import Node
+
+from std_srvs.srv import Trigger
+
 from suave import recharge_battery_lc
+from suave.action_server_utils import lifecycle_state_is_active
 from suave.recharge_battery_lc import RechargeBattery
+
 from suave_msgs.action import RechargeBattery as RechargeBatteryAction
 
 

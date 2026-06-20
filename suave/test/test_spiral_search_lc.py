@@ -16,18 +16,22 @@
 
 import time
 
-import pytest
-import rclpy
-
-from geometry_msgs.msg import PoseStamped
-from rclpy.action import ActionClient
-from rclpy.node import Node
-from std_msgs.msg import Bool
-
 from action_test_utils import send_goal_and_wait
 from action_test_utils import spin_nodes_in_executors
 from action_test_utils import wait_for_action_result
+
+from geometry_msgs.msg import PoseStamped
+
+import pytest
+
+import rclpy
+from rclpy.action import ActionClient
+from rclpy.node import Node
+
+from std_msgs.msg import Bool
+
 from suave.spiral_search_lc import SpiralSearcherLC
+
 from suave_msgs.action import SpiralSearch
 
 

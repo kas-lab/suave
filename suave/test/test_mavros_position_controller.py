@@ -17,11 +17,13 @@
 import threading
 import time
 
-import pytest
-import rclpy
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseStamped
+
+import pytest
+
+import rclpy
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node

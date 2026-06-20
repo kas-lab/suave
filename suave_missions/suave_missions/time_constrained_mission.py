@@ -16,6 +16,7 @@
 """Run pipeline inspection with a configurable mission time limit."""
 
 import sys
+
 import rclpy
 
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup

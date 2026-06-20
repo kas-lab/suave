@@ -16,11 +16,13 @@
 """Bridge tasks to randomly selected system modes."""
 
 import random
-import rclpy
 import sys
 
+import rclpy
 from rclpy.executors import MultiThreadedExecutor
+
 from suave.task_bridge_none import TaskBridgeNone
+
 from system_modes_msgs.srv import GetAvailableModes
 
 

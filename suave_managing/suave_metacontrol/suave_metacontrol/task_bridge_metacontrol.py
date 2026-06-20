@@ -17,14 +17,15 @@
 """Bridge mission tasks to MROS quality objectives."""
 
 import sys
-import rclpy
 
 from diagnostic_msgs.msg import KeyValue
 from mros2_msgs.action import ControlQos
 
-from rclpy.executors import MultiThreadedExecutor
-from rclpy.callback_groups import ReentrantCallbackGroup
+import rclpy
 from rclpy.action import ActionClient
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
+
 from suave.task_bridge import TaskBridge
 
 
@@ -52,7 +53,7 @@ class TaskBridgeMetacontrol(TaskBridge):
         """Submit an MROS objective and return whether it was accepted."""
         future = self.send_mros_objective(function)
 
-        self.get_logger().info("Waiting for mros_objective future to complete")
+        self.get_logger().info('Waiting for mros_objective future to complete')
         self.executor.spin_until_future_complete(future, timeout_sec=5.0)
         if future.done() is False:
             self.get_logger().warning(
@@ -114,7 +115,7 @@ class TaskBridgeMetacontrol(TaskBridge):
     def feedback_callback(self, feedback_msg):
         """Log status feedback received for an MROS objective."""
         feedback = feedback_msg.feedback
-        self.get_logger().info(">> Feedback received:")
+        self.get_logger().info('>> Feedback received:')
         self.get_logger().info(
             '    Solving: {0} of type {1}'.format(
                 feedback.qos_status.objective_id,
@@ -133,7 +134,7 @@ class TaskBridgeMetacontrol(TaskBridge):
 
 def main():
     """Run the metacontrol task bridge node."""
-    print("Starting task bridge node")
+    print('Starting task bridge node')
 
     rclpy.init(args=sys.argv)
 

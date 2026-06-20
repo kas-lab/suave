@@ -17,11 +17,13 @@
 """Bridge mission tasks directly to system-mode changes."""
 
 import sys
-import rclpy
 
-from rclpy.executors import MultiThreadedExecutor
+import rclpy
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
+
 from suave.task_bridge import TaskBridge
+
 from system_modes_msgs.srv import ChangeMode
 
 

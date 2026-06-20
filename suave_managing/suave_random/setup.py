@@ -14,8 +14,9 @@
 
 """Package the SUAVE random adaptation manager and resources."""
 
-import os
 from glob import glob
+import os
+
 from setuptools import setup
 
 package_name = 'suave_random'

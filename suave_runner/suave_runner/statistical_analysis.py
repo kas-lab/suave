@@ -14,16 +14,15 @@
 
 """Compare SUAVE experiment metrics using nonparametric statistics."""
 
-import pandas as pd
-from scipy.stats import shapiro
-# from scipy.stats import levene
-from scipy.stats import mannwhitneyu
-
 import json
 from pathlib import Path
 
+import pandas as pd
 import rclpy
 from rclpy.node import Node
+from scipy.stats import mannwhitneyu
+# from scipy.stats import levene
+from scipy.stats import shapiro
 
 
 class SuaveData:
@@ -44,13 +43,13 @@ class SuaveData:
         _, p = shapiro(data)
 
         print(
-            f"\n{self.managing_system} {data_name}: "
-            f"Shapiro-Wilk p-value = {p:.5f}")
+            f'\n{self.managing_system} {data_name}: '
+            f'Shapiro-Wilk p-value = {p:.5f}')
 
         if p < 0.05:
-            print(f"{self.managing_system} {data_name}: NOT normal")
+            print(f'{self.managing_system} {data_name}: NOT normal')
         else:
-            print(f"{self.managing_system} {data_name}: normal")
+            print(f'{self.managing_system} {data_name}: normal')
 
     def test_normality(self):
         """Test normality for each loaded metric."""
@@ -119,46 +118,46 @@ class StatisticalAnalysis(Node):
     def u_test(self, i, j, data_i, data_j):
         """Compare two managing systems and store their metric p-values."""
         _, p_sp = mannwhitneyu(
-            data_i.time_search, data_j.time_search, alternative="less")
+            data_i.time_search, data_j.time_search, alternative='less')
         self.results_matrix_sp.iloc[i, j] = p_sp
 
         _, p_di = mannwhitneyu(data_i.distance_inspect,
-                               data_j.distance_inspect, alternative="greater")
+                               data_j.distance_inspect, alternative='greater')
         self.results_matrix_di.iloc[i, j] = p_di
 
         _, p_mrt = mannwhitneyu(
             data_i.mean_reaction_time,
             data_j.mean_reaction_time,
-            alternative="less")
+            alternative='less')
         self.results_matrix_mrt.iloc[i, j] = p_mrt
 
         if p_sp < 0.05:
             print(
-                f"Result: {data_i.managing_system} time to find pipeline is "
-                f"lower than {data_j.managing_system}")
+                f'Result: {data_i.managing_system} time to find pipeline is '
+                f'lower than {data_j.managing_system}')
         else:
             print(
-                f"Result: {data_i.managing_system} time to find pipeline is "
-                f"NOT lower than and {data_j.managing_system} time to find "
-                "pipeline.")
+                f'Result: {data_i.managing_system} time to find pipeline is '
+                f'NOT lower than and {data_j.managing_system} time to find '
+                'pipeline.')
 
         if p_di < 0.05:
             print(
-                f"Result: {data_i.managing_system} distance inspected is "
-                f"greater than {data_j.managing_system}")
+                f'Result: {data_i.managing_system} distance inspected is '
+                f'greater than {data_j.managing_system}')
         else:
             print(
-                f"Result: {data_i.managing_system} distance inspected is NOT "
-                f"greater than {data_j.managing_system} distance inspected.")
+                f'Result: {data_i.managing_system} distance inspected is NOT '
+                f'greater than {data_j.managing_system} distance inspected.')
 
         if p_mrt < 0.05:
             print(
-                f"Result: {data_i.managing_system} mean reaction time is "
-                f"lower than {data_j.managing_system}")
+                f'Result: {data_i.managing_system} mean reaction time is '
+                f'lower than {data_j.managing_system}')
         else:
             print(
-                f"Result: {data_i.managing_system} mean reaction time is NOT "
-                f"lower than {data_j.managing_system} mean reaction times.")
+                f'Result: {data_i.managing_system} mean reaction time is NOT '
+                f'lower than {data_j.managing_system} mean reaction times.')
 
     def perform_analysis(self):
         """Run all pairwise comparisons and save their result matrices."""

@@ -71,21 +71,21 @@ class MissionPlanner(Node):
 
     def perform_mission(self):
         """Report that subclasses must define mission behavior."""
-        self.get_logger().warning("No mission defined!!!")
+        self.get_logger().warning('No mission defined!!!')
 
     def perform_task(self, task_name, condition):
         """Run a task until its completion condition or mission abortion."""
         self.task_timer = self.create_rate(10)
-        task_status = "completed"
+        task_status = 'completed'
         if self.abort_mission is False:
             self.get_logger().info('Starting {} task'.format(task_name))
             self.request_task(task_name)
             while condition() is not True:
                 if self.abort_mission is True:
-                    task_status = "aborted"
+                    task_status = 'aborted'
                     break
                 self.task_timer.sleep()
         else:
-            task_status = "aborted"
+            task_status = 'aborted'
         self.get_logger().info('Task {0} {1}'.format(task_name, task_status))
         self.cancel_task(task_name)

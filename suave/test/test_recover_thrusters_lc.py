@@ -13,28 +13,30 @@
 # limitations under the License.
 
 """Tests for the recover thrusters lifecycle node."""
-
 import threading
 import time
 
+from action_test_utils import send_goal_and_wait
+from action_test_utils import spin_nodes_in_executors
+from action_test_utils import wait_for_action_result
+from action_test_utils import wait_for_condition
+
 import pytest
-import rclpy
 
 from rcl_interfaces.msg import Parameter
 from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.msg import ParameterValue
 from rcl_interfaces.msg import SetParametersResult
 from rcl_interfaces.srv import SetParameters
+
+import rclpy
 from rclpy.action import ActionClient
 from rclpy.node import Node
 
-from action_test_utils import send_goal_and_wait
-from action_test_utils import spin_nodes_in_executors
-from action_test_utils import wait_for_action_result
-from action_test_utils import wait_for_condition
 from suave import recover_thrusters_lc
 from suave.recover_thrusters_lc import RecoverThrustersLC
 from suave.ros_service_utils import call_service_with_timeout
+
 from suave_msgs.action import RecoverThrusters
 
 
@@ -255,7 +257,7 @@ def test_recover_thrusters_no_action_server_mode_starts_on_activate(
     recover_node.trigger_activate()
 
     assert wait_for_condition(lambda: bool(started), 5.0), (
-        "_recover_thrusters() was not called on activation")
+        '_recover_thrusters() was not called on activation')
     recover_node._recover_thrusters = original
     recover_node.trigger_deactivate()
 

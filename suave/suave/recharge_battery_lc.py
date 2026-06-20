@@ -16,22 +16,22 @@
 
 import threading
 import time
-
 from typing import Callable
 from typing import Optional
+
+from geometry_msgs.msg import Point
+from geometry_msgs.msg import Pose
 
 import rclpy
 from rclpy.action import ActionServer
 from rclpy.action.server import ServerGoalHandle
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
-from rclpy.executors import MultiThreadedExecutor
 from rclpy.executors import ExternalShutdownException
+from rclpy.executors import MultiThreadedExecutor
 from rclpy.lifecycle import Node
 from rclpy.lifecycle import State
 from rclpy.lifecycle import TransitionCallbackReturn
 
-from geometry_msgs.msg import Point
-from geometry_msgs.msg import Pose
 from std_srvs.srv import Trigger
 
 from suave.action_server_utils import accept_cancel
@@ -40,6 +40,7 @@ from suave.action_server_utils import use_action_server
 from suave.action_server_utils import wait_for_action_completion
 from suave.mavros_position_controller import MavrosPositionController
 from suave.ros_service_utils import call_service_with_timeout
+
 from suave_msgs.action import RechargeBattery as RechargeBatteryAction
 
 
@@ -204,7 +205,7 @@ class RechargeBattery(Node):
 
     def on_deactivate(self, state: State) -> TransitionCallbackReturn:
         """Deactivate the node."""
-        self.get_logger().info("on_deactivate() is called.")
+        self.get_logger().info('on_deactivate() is called.')
         self._deactivate_event.set()
         self._stop_legacy_recharge()
         return super().on_deactivate(state)

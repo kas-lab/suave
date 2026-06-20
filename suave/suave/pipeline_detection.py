@@ -18,14 +18,16 @@
 
 import math
 
-import rclpy
-from rclpy.node import Node
-from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
-from rclpy.executors import MultiThreadedExecutor
-
-from std_msgs.msg import Bool
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseArray
+
+import rclpy
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.node import Node
+
+from std_msgs.msg import Bool
+
 from suave_msgs.srv import GetPath
 
 

@@ -15,18 +15,22 @@
 """Run repeatable SUAVE experiment campaigns and collect their results."""
 
 import asyncio
-import multiprocessing
-import threading
-import subprocess
-import time
-import os
-import signal
-import json
-import random
-import yaml
 from datetime import datetime
+import json
+import multiprocessing
+import os
 from pathlib import Path
+import random
+import signal
+import subprocess
+import threading
+import time
 
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch import LaunchService
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 import rclpy
 import rclpy.executors
 from rclpy.node import Node
@@ -34,16 +38,9 @@ from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
-
 from std_msgs.msg import Bool
-
-from launch import LaunchDescription
-from launch import LaunchService
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.actions import IncludeLaunchDescription
-from ament_index_python.packages import get_package_share_directory
-
 from suave_monitor.thruster_monitor import read_thruster_events
+import yaml
 
 MISSION_DONE_QOS = QoSProfile(
     reliability=QoSReliabilityPolicy.RELIABLE,
@@ -154,7 +151,7 @@ class ExperimentRunnerNode(Node):
         if not self.experiments:
             self.get_logger().error(
                 "Parameter 'experiments' must be a non-empty list of JSON "
-                "objects.")
+                'objects.')
             return
 
         self.wv_sec_shift = self.get_parameter(
@@ -188,7 +185,7 @@ class ExperimentRunnerNode(Node):
         )
 
         self.get_logger().info(
-            f"Runner initialized for {len(self.experiments)} experiments.")
+            f'Runner initialized for {len(self.experiments)} experiments.')
 
     def handle_termination(self):
         """Request campaign termination and unblock mission waiting."""
@@ -253,32 +250,32 @@ class ExperimentRunnerNode(Node):
                 process.join(timeout=10)
             if process.is_alive():
                 self.get_logger().warn(
-                    f"Launch process {process.pid} did not exit cleanly.")
+                    f'Launch process {process.pid} did not exit cleanly.')
         self.processes_stop_events.clear()
 
     def kill_gz_sim(self):
         """Terminate remaining Gazebo Sim processes."""
         try:
-            subprocess.run(["pkill", "-f", "gz sim"], check=False)
+            subprocess.run(['pkill', '-f', 'gz sim'], check=False)
         except Exception as e:
-            print(f"Error killing gz sim processes: {e}")
+            print(f'Error killing gz sim processes: {e}')
 
     def shutdown_all_processes(self):
         """Stop ArduPilot, ROS launch processes, Gazebo, and log output."""
-        self.terminate_process(self.ardupilot_proc, "ArduPilot")
+        self.terminate_process(self.ardupilot_proc, 'ArduPilot')
         self.shutdown_all_launch_processes()
         self.kill_gz_sim()
         ardupilot_log = getattr(self, '_ardupilot_log', None)
         if ardupilot_log:
             ardupilot_log.close()
             self._ardupilot_log = None
-        self.get_logger().info("All processes terminated.")
+        self.get_logger().info('All processes terminated.')
 
     def terminate_process(self, proc, name):
         """Terminate a running subprocess and its process group."""
         if proc and proc.poll() is None:
             self.get_logger().info(
-                f"Terminating {name} process group {os.getpgid(proc.pid)}...")
+                f'Terminating {name} process group {os.getpgid(proc.pid)}...')
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
 
     def create_experiment_folder(self):
@@ -287,30 +284,30 @@ class ExperimentRunnerNode(Node):
             'resume_result_path').get_parameter_value().string_value
         if resume_path:
             result_path = Path(resume_path).expanduser()
-            self.get_logger().info(f"Resuming campaign from {result_path}")
+            self.get_logger().info(f'Resuming campaign from {result_path}')
         else:
             result_path_ = self.get_parameter(
                 'result_path').get_parameter_value().string_value
             result_path = Path(result_path_).expanduser() / \
-                datetime.now().strftime("%Y_%m_%d_%H-%M-%S")
+                datetime.now().strftime('%Y_%m_%d_%H-%M-%S')
         if not result_path.is_dir():
             result_path.mkdir(parents=True)
         return result_path
 
     def initialize_experiment(self, experiment, exp_idx):
         """Extract normalized launch and result settings for an experiment."""
-        exp_launch = experiment.get("experiment_launch")
-        num_runs = experiment.get("num_runs", 1)
-        adaptation_manager = experiment.get("adaptation_manager", "")
-        mission_type = experiment.get("mission_name", f"mission_{exp_idx}")
+        exp_launch = experiment.get('experiment_launch')
+        num_runs = experiment.get('num_runs', 1)
+        adaptation_manager = experiment.get('adaptation_manager', '')
+        mission_type = experiment.get('mission_name', f'mission_{exp_idx}')
 
-        result_filename = f"{adaptation_manager}_{mission_type}"
+        result_filename = f'{adaptation_manager}_{mission_type}'
 
         return exp_launch, num_runs, result_filename, adaptation_manager
 
     def launch_ardupilot(self, log_path: Path):
         """Start ArduPilot and redirect its output to a run log."""
-        self.get_logger().info("    Launching ArduPilot...")
+        self.get_logger().info('    Launching ArduPilot...')
         self._ardupilot_log = open(log_path, 'w')
         self.ardupilot_proc = subprocess.Popen(
             self.ardupilot_cmd,
@@ -319,7 +316,7 @@ class ExperimentRunnerNode(Node):
             preexec_fn=os.setsid  # Launch in a new process group
         )
         self.get_logger().info(
-            "    Sleeping 10 seconds before launching SUAVE simulation...")
+            '    Sleeping 10 seconds before launching SUAVE simulation...')
         time.sleep(10)
 
     def launch_suave_simulation(self, run_idx, log_dir: Path):
@@ -345,8 +342,8 @@ class ExperimentRunnerNode(Node):
         sim_args['z'] = str(self.initial_pos_z_array[run_idx])
 
         self.get_logger().info(
-            f"    Launching SUAVE simulation from {sim_path} with args: "
-            f"{sim_args}")
+            f'    Launching SUAVE simulation from {sim_path} with args: '
+            f'{sim_args}')
         sim_launch = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(sim_path),
             launch_arguments=list(sim_args.items())
@@ -357,7 +354,7 @@ class ExperimentRunnerNode(Node):
             sim_launch_ld, log_dir)
         self.processes_stop_events.append((sim_process, sim_stop_event))
         self.get_logger().info(
-            "    Sleeping 10 seconds before launching next nodes...")
+            '    Sleeping 10 seconds before launching next nodes...')
         time.sleep(10)
 
     def launch_experiment(
@@ -388,7 +385,7 @@ class ExperimentRunnerNode(Node):
         exp_args['mission_config'] = mission_config_file
 
         self.get_logger().info(
-            f"    Launching Experiment from {exp_path} with args: {exp_args}")
+            f'    Launching Experiment from {exp_path} with args: {exp_args}')
         exp_launch_desc = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(exp_path),
             launch_arguments=exp_args.items()
@@ -416,13 +413,13 @@ class ExperimentRunnerNode(Node):
 
             if not exp_launch:
                 self.get_logger().warn(
-                    f"Skipping experiment {exp_idx + 1}: Missing "
+                    f'Skipping experiment {exp_idx + 1}: Missing '
                     "'experiment_launch'")
                 continue
 
             self.get_logger().info(
-                f"Running experiment {exp_idx + 1}/{len(self.experiments)} "
-                f"for {num_runs} runs with {adaptation_manager}")
+                f'Running experiment {exp_idx + 1}/{len(self.experiments)} '
+                f'for {num_runs} runs with {adaptation_manager}')
 
             for run_idx in range(num_runs):
                 if self.terminate_flag:
@@ -431,8 +428,8 @@ class ExperimentRunnerNode(Node):
                 done_marker = result_path / f'run_{exp_idx}_{run_idx}.done'
                 if done_marker.exists():
                     self.get_logger().info(
-                        f"  Skipping {adaptation_manager} run "
-                        f"{run_idx + 1}/{num_runs} (checkpoint found).")
+                        f'  Skipping {adaptation_manager} run '
+                        f'{run_idx + 1}/{num_runs} (checkpoint found).')
                     continue
 
                 run_log_dir = result_path / 'logs' / f'run_{exp_idx}_{run_idx}'
@@ -440,7 +437,7 @@ class ExperimentRunnerNode(Node):
 
                 self._mission_done_event.clear()
                 self.get_logger().info(
-                    f"  Run {adaptation_manager} {run_idx + 1}/{num_runs}")
+                    f'  Run {adaptation_manager} {run_idx + 1}/{num_runs}')
 
                 try:
                     self.launch_ardupilot(run_log_dir / 'ardupilot.log')
@@ -453,11 +450,11 @@ class ExperimentRunnerNode(Node):
                         str(mission_config_file_array[run_idx]),
                         run_log_dir / 'experiment')
                 except Exception as e:
-                    self.get_logger().error(f"Failed to launch processes: {e}")
+                    self.get_logger().error(f'Failed to launch processes: {e}')
                     break
 
                 self.get_logger().info(
-                    "    Waiting for mission_metrics/done...")
+                    '    Waiting for mission_metrics/done...')
                 start_time = time.time()
                 mission_complete = False
 
@@ -467,25 +464,25 @@ class ExperimentRunnerNode(Node):
                         break
                     if time.time() - start_time > self.run_duration:
                         self.get_logger().warn(
-                            "    Timeout waiting for mission_metrics/done.")
+                            '    Timeout waiting for mission_metrics/done.')
                         break
 
                 self.shutdown_all_processes()
 
                 if self.terminate_flag:
                     self.get_logger().info(
-                        "Termination requested. Stopping early.")
+                        'Termination requested. Stopping early.')
                     break
 
                 if mission_complete:
                     done_marker.touch()
 
                 self.get_logger().info(
-                    f"  Run {run_idx + 1} completed "
-                    f"(success: {mission_complete}).")
+                    f'  Run {run_idx + 1} completed '
+                    f'(success: {mission_complete}).')
                 time.sleep(10)
 
-        self.get_logger().info("All experiment runs completed or aborted.")
+        self.get_logger().info('All experiment runs completed or aborted.')
 
     def generate_mission_config_files(self, result_path):
         """Generate per-run mission configurations with randomized events."""
@@ -513,8 +510,8 @@ class ExperimentRunnerNode(Node):
                     '/thruster_monitor']['ros__parameters']
                 event_shift = self.thruster_events_array[idx]
                 thruster_params['thruster_events'] = [
-                    f"({event[0]},{event[1]},"
-                    f"{float(event[2]) + float(event_shift)})"
+                    f'({event[0]},{event[1]},'
+                    f'{float(event[2]) + float(event_shift)})'
                     for event in self.thruster_events
                 ]
 

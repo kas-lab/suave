@@ -19,23 +19,27 @@ import threading
 import time
 from typing import Optional
 
+from rcl_interfaces.msg import ParameterDescriptor, SetParametersResult
+
 import rclpy
 from rclpy.action import ActionServer
 from rclpy.action.server import ServerGoalHandle
-from rcl_interfaces.msg import ParameterDescriptor, SetParametersResult
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
-from rclpy.executors import MultiThreadedExecutor
 from rclpy.executors import ExternalShutdownException
+from rclpy.executors import MultiThreadedExecutor
 from rclpy.lifecycle import Node
 from rclpy.lifecycle import State
 from rclpy.lifecycle import TransitionCallbackReturn
 from rclpy.timer import Timer
+
 from std_msgs.msg import Bool
+
 from suave.action_server_utils import accept_cancel
 from suave.action_server_utils import make_goal_callback
 from suave.action_server_utils import use_action_server
 from suave.action_server_utils import wait_for_action_completion
 from suave.mavros_position_controller import MavrosPositionController
+
 from suave_msgs.action import SpiralSearch
 
 
@@ -274,7 +278,7 @@ class SpiralSearcherLC(Node):
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
         """Start spiral movement unless action server mode is on."""
-        self.get_logger().info("on_activate() is called.")
+        self.get_logger().info('on_activate() is called.')
         self._reset_spiral_state()
         self._abort_event.clear()
         if not use_action_server(self):
@@ -283,7 +287,7 @@ class SpiralSearcherLC(Node):
 
     def on_deactivate(self, state: State) -> TransitionCallbackReturn:
         """Deactivate the node and stop spiral behavior."""
-        self.get_logger().info("on_deactivate() is called.")
+        self.get_logger().info('on_deactivate() is called.')
         self._abort_event.set()
         self._stop_spiral()
         return super().on_deactivate(state)

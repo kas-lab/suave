@@ -16,13 +16,17 @@
 
 from dataclasses import dataclass
 from enum import Enum
+
 import math
-import time
-import rclpy
 import threading
+import time
 from typing import Callable
 from typing import Optional
 
+from geometry_msgs.msg import Pose
+from geometry_msgs.msg import PoseStamped
+
+import rclpy
 from rclpy.action import ActionServer
 from rclpy.action.server import ServerGoalHandle
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
@@ -31,10 +35,9 @@ from rclpy.lifecycle import State
 from rclpy.lifecycle import TransitionCallbackReturn
 from rclpy.timer import Rate
 
-from geometry_msgs.msg import Pose
-from geometry_msgs.msg import PoseStamped
-from suave_msgs.action import FollowPipeline
-from suave_msgs.srv import GetPath
+from std_msgs.msg import Bool
+from std_msgs.msg import Float32
+
 from suave.action_server_utils import accept_cancel
 from suave.action_server_utils import make_goal_callback
 from suave.action_server_utils import use_action_server
@@ -42,8 +45,8 @@ from suave.action_server_utils import wait_for_action_completion
 from suave.mavros_position_controller import MavrosPositionController
 from suave.ros_service_utils import call_service_with_timeout
 
-from std_msgs.msg import Bool
-from std_msgs.msg import Float32
+from suave_msgs.action import FollowPipeline
+from suave_msgs.srv import GetPath
 
 
 class _FollowStopReason(Enum):
@@ -92,7 +95,7 @@ class PipelineFollowerLC(Node):
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         """Create configured publishers, clients, and the action server."""
-        self.get_logger().info("on_configure() is called.")
+        self.get_logger().info('on_configure() is called.')
 
         self.get_path_timer = self.create_rate(5)
         self.get_path_service = self.create_client(
@@ -123,7 +126,7 @@ class PipelineFollowerLC(Node):
             cancel_callback=accept_cancel,
         )
 
-        self.get_logger().info("on_configure() completed")
+        self.get_logger().info('on_configure() completed')
         return TransitionCallbackReturn.SUCCESS
 
     def _make_result(
@@ -310,7 +313,7 @@ class PipelineFollowerLC(Node):
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
         """Start pipeline following unless action server mode is on."""
-        self.get_logger().info("on_activate() is called.")
+        self.get_logger().info('on_activate() is called.')
         self.abort_follow = False
         self._abort_event.clear()
         if not self.get_path_service.wait_for_service(timeout_sec=1.0):
@@ -332,7 +335,7 @@ class PipelineFollowerLC(Node):
 
     def on_deactivate(self, state: State) -> TransitionCallbackReturn:
         """Deactivate the node and stop pipeline following."""
-        self.get_logger().info("on_deactivate() is called.")
+        self.get_logger().info('on_deactivate() is called.')
         self._abort_event.set()
         self.abort_follow = True
         if hasattr(self, 'follow_task') and self.follow_task is not None:
@@ -380,7 +383,7 @@ class PipelineFollowerLC(Node):
 
     def follow_pipeline(self) -> None:
         """Follow the pipeline path (legacy lifecycle-activation mode)."""
-        self.get_logger().info("Follow pipeline started")
+        self.get_logger().info('Follow pipeline started')
         self.last_point = None
         self.distance_inspected = 0.0
 

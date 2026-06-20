@@ -14,20 +14,23 @@
 
 """Tests for the follow pipeline lifecycle node action server."""
 
-import pytest
-import rclpy
+from action_test_utils import send_goal_and_wait
+from action_test_utils import spin_nodes_in_executors
 
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseStamped
+
+import pytest
+
+import rclpy
 from rclpy.action import ActionClient
 from rclpy.node import Node
 
-from action_test_utils import send_goal_and_wait
-from action_test_utils import spin_nodes_in_executors
 from suave import follow_pipeline_lc
 from suave.follow_pipeline_lc import _FollowStopReason
 from suave.follow_pipeline_lc import _FollowTraversalResult
 from suave.follow_pipeline_lc import PipelineFollowerLC
+
 from suave_msgs.action import FollowPipeline
 from suave_msgs.srv import GetPath
 

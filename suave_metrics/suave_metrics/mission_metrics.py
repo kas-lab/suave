@@ -13,32 +13,37 @@
 # limitations under the License.
 """module used to save metrics."""
 import csv
-import sys
 from datetime import datetime
 from pathlib import Path
+
 import statistics
+import sys
+
+from diagnostic_msgs.msg import DiagnosticArray
+
+from geometry_msgs.msg import Pose
+
+from lifecycle_msgs.msg import TransitionEvent
+
+from mavros_msgs.msg import State
+
+from rcl_interfaces.msg import ParameterEvent
+from rcl_interfaces.srv import GetParameters
 
 import rclpy
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
-from rclpy.time import Time
-
-from diagnostic_msgs.msg import DiagnosticArray
-from geometry_msgs.msg import Pose
-from mavros_msgs.msg import State
-from std_msgs.msg import Bool
-from std_msgs.msg import Float32
-from std_srvs.srv import Empty
-from rcl_interfaces.msg import ParameterEvent
-from rcl_interfaces.srv import GetParameters
-from lifecycle_msgs.msg import TransitionEvent
-
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
+from rclpy.time import Time
 
+from std_msgs.msg import Bool
+from std_msgs.msg import Float32
+
+from std_srvs.srv import Empty
 
 DEFAULT_WATER_VISIBILITY_THRESHOLDS = [3.25, 2.25, 1.25]
 
@@ -184,7 +189,7 @@ class MissionMetrics(Node):
 
         self.param_change_sub = self.create_subscription(
             ParameterEvent,
-            "/parameter_events",
+            '/parameter_events',
             self.param_change_cb,
             self.qos,
             callback_group=ReentrantCallbackGroup()
@@ -308,7 +313,7 @@ class MissionMetrics(Node):
     def check_thrusther(self, diagnostic_status, time):
         """Record the first reported thruster failure."""
         for value in diagnostic_status.values:
-            if value.key.startswith("c_thruster_") and value.value == "FALSE":
+            if value.key.startswith('c_thruster_') and value.value == 'FALSE':
                 if self.thrusters_failed is False:
                     self.thrusters_failed = True
                     self.thrusters_failed_time = time
@@ -335,7 +340,7 @@ class MissionMetrics(Node):
 
     def maintain_motion_transition_cb(self, msg):
         """Record reaction time when motion recovers after thruster failure."""
-        if msg.goal_state.label == "active" and self.thrusters_failed is True:
+        if msg.goal_state.label == 'active' and self.thrusters_failed is True:
             reaction_time = self.get_clock().now() - self.thrusters_failed_time
             reaction_time = reaction_time.nanoseconds * 1e-9
             self.component_recovery_time.append(reaction_time)
@@ -346,7 +351,7 @@ class MissionMetrics(Node):
 
     def generate_recharge_path_transition_cb(self, msg):
         """Record reaction time when a recharge path becomes active."""
-        if msg.goal_state.label == "active" and self.battery_low is True:
+        if msg.goal_state.label == 'active' and self.battery_low is True:
             reaction_time = self.get_clock().now() - self.battery_low_time
             reaction_time = reaction_time.nanoseconds * 1e-9
             self.battery_reaction_time.append(reaction_time)
@@ -358,14 +363,14 @@ class MissionMetrics(Node):
         """Record reaction time for a corrective search-altitude update."""
         time = self.get_clock().now()
         if (
-            msg.node == "/f_generate_search_path_node" and
+            msg.node == '/f_generate_search_path_node' and
             self.wrong_altitude is True
         ):
             expected_altitude = self.get_expected_spiral_altitude(
                 self.measured_wv)
             for param in msg.changed_parameters:
                 if (
-                    param.name == "spiral_altitude" and
+                    param.name == 'spiral_altitude' and
                     param.value.double_value == expected_altitude
                 ):
                     reaction_time = time - self.wrong_altitude_time
@@ -422,7 +427,7 @@ class MissionMetrics(Node):
             'mean reaction time (s)',
         ]
 
-        date = datetime.now().strftime("%d-%b-%Y-%H-%M-%S")
+        date = datetime.now().strftime('%d-%b-%Y-%H-%M-%S')
         mean_reaction_time = 0.0
         try:
             mean_reaction_time = statistics.fmean(
