@@ -73,12 +73,15 @@ typename rclcpp_action::Server<ActionT>::SharedPtr make_success_server(
 template<typename BtNodeT, typename ActionT>
 BT::NodeStatus run_action(
   const std::string & registration_name, const std::string & action_name,
-  ResultInitializer<ActionT> initialize_result, bool call_action_server = true)
+  ResultInitializer<ActionT> initialize_result, bool use_action_server = true)
 {
   static std::atomic<int> test_index{0};
   const auto suffix = std::to_string(test_index++);
+  rclcpp::NodeOptions options;
+  options.parameter_overrides(
+    {rclcpp::Parameter("use_action_server", use_action_server)});
   auto mission = std::make_shared<suave_bt::SuaveMission>(
-    "test_mission_node_" + suffix);
+    "test_mission_node_" + suffix, options);
   auto server_node = std::make_shared<rclcpp::Node>(
     "test_action_server_" + suffix);
   auto server = make_success_server<ActionT>(
@@ -88,12 +91,10 @@ BT::NodeStatus run_action(
   factory.registerNodeType<BtNodeT>(registration_name);
   auto blackboard = BT::Blackboard::create();
   blackboard->set<std::shared_ptr<suave_bt::SuaveMission>>("node", mission);
-  blackboard->set<bool>("use_action_server", call_action_server);
   blackboard->set<std::string>("test_action_name", action_name);
   const std::string xml =
     "<root BTCPP_format=\"4\" main_tree_to_execute=\"Main\">"
-    "<BehaviorTree ID=\"Main\"><" + registration_name +
-    " call_action_server=\"{use_action_server}\"/>"
+    "<BehaviorTree ID=\"Main\"><" + registration_name + "/>"
     "</BehaviorTree></root>";
   auto tree = factory.createTreeFromText(xml, blackboard);
 
@@ -130,7 +131,7 @@ public:
 
   static BT::PortsList providedPorts()
   {
-    return providedBasicPorts();
+    return {};
   }
 
 private:
@@ -174,7 +175,6 @@ BT::NodeStatus evaluate_result(ResultInitializer<ActionT> initialize_result)
     "result_evaluator_" + std::to_string(evaluator_index++));
   auto blackboard = BT::Blackboard::create();
   blackboard->set<std::shared_ptr<suave_bt::SuaveMission>>("node", mission);
-  blackboard->set<bool>("use_action_server", false);
   BT::NodeConfig config;
   config.blackboard = blackboard;
   ResultEvaluator<BtNodeT, ActionT> evaluator("evaluator", config);
@@ -255,7 +255,10 @@ TEST_F(ActionClientTest, rejected_goal_maps_to_failure)
 {
   using Action = suave_msgs::action::RechargeBattery;
   using GoalHandle = rclcpp_action::ServerGoalHandle<Action>;
-  auto mission = std::make_shared<suave_bt::SuaveMission>("rejection_test_mission");
+  rclcpp::NodeOptions options;
+  options.parameter_overrides({rclcpp::Parameter("use_action_server", true)});
+  auto mission = std::make_shared<suave_bt::SuaveMission>(
+    "rejection_test_mission", options);
   auto server_node = std::make_shared<rclcpp::Node>("rejection_test_server");
   auto server = rclcpp_action::create_server<Action>(
     server_node,
@@ -272,11 +275,10 @@ TEST_F(ActionClientTest, rejected_goal_maps_to_failure)
   factory.registerNodeType<TestRechargeClient>("test_action");
   auto blackboard = BT::Blackboard::create();
   blackboard->set<std::shared_ptr<suave_bt::SuaveMission>>("node", mission);
-  blackboard->set<bool>("use_action_server", true);
   blackboard->set<std::string>("test_action_name", "reject_recharge");
   auto tree = factory.createTreeFromText(
     "<root BTCPP_format=\"4\"><BehaviorTree ID=\"Main\">"
-    "<test_action call_action_server=\"true\"/>"
+    "<test_action/>"
     "</BehaviorTree></root>", blackboard);
 
   rclcpp::executors::MultiThreadedExecutor executor;
@@ -300,7 +302,10 @@ TEST_F(ActionClientTest, halt_cancels_an_accepted_goal)
   using GoalHandle = rclcpp_action::ServerGoalHandle<Action>;
   std::atomic<bool> cancel_requested{false};
   std::shared_ptr<GoalHandle> active_goal;
-  auto mission = std::make_shared<suave_bt::SuaveMission>("cancel_test_mission");
+  rclcpp::NodeOptions options;
+  options.parameter_overrides({rclcpp::Parameter("use_action_server", true)});
+  auto mission = std::make_shared<suave_bt::SuaveMission>(
+    "cancel_test_mission", options);
   auto server_node = std::make_shared<rclcpp::Node>("cancel_test_server");
   auto server = rclcpp_action::create_server<Action>(
     server_node,
@@ -320,11 +325,10 @@ TEST_F(ActionClientTest, halt_cancels_an_accepted_goal)
   factory.registerNodeType<TestRechargeClient>("test_action");
   auto blackboard = BT::Blackboard::create();
   blackboard->set<std::shared_ptr<suave_bt::SuaveMission>>("node", mission);
-  blackboard->set<bool>("use_action_server", true);
   blackboard->set<std::string>("test_action_name", "cancel_recharge");
   auto tree = factory.createTreeFromText(
     "<root BTCPP_format=\"4\"><BehaviorTree ID=\"Main\">"
-    "<test_action call_action_server=\"true\"/>"
+    "<test_action/>"
     "</BehaviorTree></root>", blackboard);
 
   rclcpp::executors::MultiThreadedExecutor executor;
@@ -351,19 +355,20 @@ TEST_F(ActionClientTest, halt_cancels_an_accepted_goal)
 TEST_F(ActionClientTest, time_limit_stops_waiting_for_action_server)
 {
   rclcpp::NodeOptions options;
-  options.parameter_overrides({rclcpp::Parameter("time_limit", 0)});
+  options.parameter_overrides(
+    {rclcpp::Parameter("time_limit", 0),
+      rclcpp::Parameter("use_action_server", true)});
   auto mission = std::make_shared<suave_bt::SuaveMission>(
     "time_limit_test_mission", options);
   auto blackboard = BT::Blackboard::create();
   blackboard->set<std::shared_ptr<suave_bt::SuaveMission>>("node", mission);
-  blackboard->set<bool>("use_action_server", true);
   blackboard->set<std::string>("test_action_name", "missing_action_server");
 
   BT::BehaviorTreeFactory factory;
   factory.registerNodeType<TestRechargeClient>("test_action");
   auto tree = factory.createTreeFromText(
     "<root BTCPP_format=\"4\"><BehaviorTree ID=\"Main\">"
-    "<test_action call_action_server=\"true\"/>"
+    "<test_action/>"
     "</BehaviorTree></root>", blackboard);
 
   EXPECT_EQ(tree.rootNode()->executeTick(), BT::NodeStatus::RUNNING);
@@ -437,18 +442,19 @@ TEST_F(ActionClientTest, recover_action_mode_succeeds_when_action_succeeds)
 TEST_F(ActionClientTest, search_pipeline_calls_set_search_started_on_action_start)
 {
   rclcpp::NodeOptions options;
-  options.parameter_overrides({rclcpp::Parameter("time_limit", 0)});
+  options.parameter_overrides(
+    {rclcpp::Parameter("time_limit", 0),
+      rclcpp::Parameter("use_action_server", true)});
   auto mission = std::make_shared<suave_bt::SuaveMission>(
     "search_started_test_mission", options);
   auto blackboard = BT::Blackboard::create();
   blackboard->set<std::shared_ptr<suave_bt::SuaveMission>>("node", mission);
-  blackboard->set<bool>("use_action_server", true);
 
   BT::BehaviorTreeFactory factory;
   factory.registerNodeType<suave_bt::SearchPipeline>("search_pipeline");
   auto tree = factory.createTreeFromText(
     "<root BTCPP_format=\"4\"><BehaviorTree ID=\"Main\">"
-    "<search_pipeline call_action_server=\"true\"/>"
+    "<search_pipeline/>"
     "</BehaviorTree></root>", blackboard);
 
   // onStart fires onStartRequested which calls set_search_started

@@ -83,7 +83,6 @@ int main(int argc, char * argv[])
 
   auto blackboard = BT::Blackboard::create();
   blackboard->set<std::shared_ptr<suave_bt::SuaveMission>>("node", node);
-  blackboard->set<bool>("use_action_server", node->use_action_server());
   blackboard->set<std::shared_ptr<std::map<std::string, std::string>>>(
     "previous_modes", std::make_shared<std::map<std::string, std::string>>(previous_modes));
 

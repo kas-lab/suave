@@ -28,7 +28,7 @@ class RecoverThrusters : public BtActionClient<suave_msgs::action::RecoverThrust
 public:
   RecoverThrusters(const std::string & name, const BT::NodeConfig & config);
 
-  static BT::PortsList providedPorts() {return providedBasicPorts();}
+  static BT::PortsList providedPorts() {return {};}
 
 protected:
   using Action = suave_msgs::action::RecoverThrusters;

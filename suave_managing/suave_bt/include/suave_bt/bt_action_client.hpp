@@ -44,31 +44,20 @@ public:
   : BT::StatefulActionNode(name, config)
   {
     node_ = config.blackboard->get<std::shared_ptr<SuaveMission>>("node");
-    use_action_server_ = config.blackboard->get<bool>("use_action_server");
-    if (use_action_server_) {
-      action_client_ = rclcpp_action::create_client<ActionT>(node_, action_name);
+    if (usesActionServer()) {
+      const std::string param_name = action_name + "_action_name";
+      if (!node_->has_parameter(param_name)) {
+        node_->declare_parameter(param_name, action_name);
+      }
+      const std::string resolved_action_name = node_->get_parameter(param_name).as_string();
+      action_client_ = rclcpp_action::create_client<ActionT>(node_, resolved_action_name);
     }
-  }
-
-  static BT::PortsList providedBasicPorts()
-  {
-    return {BT::InputPort<bool>(
-        "call_action_server", false, "Send a goal instead of observing legacy lifecycle behavior")};
   }
 
   BT::NodeStatus onStart() override
   {
-    if (!getInput("call_action_server", call_action_server_)) {
-      throw BT::RuntimeError("missing required input [call_action_server]");
-    }
-    if (call_action_server_ != use_action_server_) {
-      throw BT::RuntimeError(
-              "input [call_action_server] does not match blackboard "
-              "[use_action_server]");
-    }
-
     onStartRequested();
-    if (!call_action_server_) {
+    if (!usesActionServer()) {
       return onLegacyStart();
     }
 
@@ -94,7 +83,7 @@ public:
 
   BT::NodeStatus onRunning() override
   {
-    if (!call_action_server_) {
+    if (!usesActionServer()) {
       return onLegacyRunning();
     }
 
@@ -137,7 +126,7 @@ public:
 
   void onHalted() override
   {
-    if (!call_action_server_) {
+    if (!usesActionServer()) {
       onLegacyHalted();
       return;
     }
@@ -153,7 +142,7 @@ protected:
   virtual BT::NodeStatus onLegacyRunning() {return BT::NodeStatus::RUNNING;}
   virtual void onLegacyHalted() {}
 
-  bool usesActionServer() const {return use_action_server_;}
+  bool usesActionServer() const {return node_->use_action_server();}
 
   std::shared_ptr<SuaveMission> node_;
 
@@ -223,8 +212,6 @@ private:
   typename GoalHandle::SharedPtr goal_handle_;
   std::optional<WrappedResult> result_;
   std::mutex action_mutex_;
-  bool call_action_server_ = false;
-  bool use_action_server_ = false;
   bool goal_rejected_ = false;
   bool halt_requested_ = false;
   bool waiting_for_server_ = false;
