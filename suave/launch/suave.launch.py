@@ -80,6 +80,15 @@ def generate_launch_description():
         description='Start managed behaviors through ROS action servers'
     )
 
+    recover_thrusters_use_action_server = LaunchConfiguration(
+        'recover_thrusters_use_action_server')
+    recover_thrusters_use_action_server_arg = DeclareLaunchArgument(
+        'recover_thrusters_use_action_server',
+        default_value=use_action_server,
+        description='Override use_action_server for the recover '
+                    'thrusters node only'
+    )
+
     mission_config_default = os.path.join(
         get_package_share_directory('suave_missions'),
         'config',
@@ -147,7 +156,9 @@ def generate_launch_description():
     recover_thrusters_node = Node(
         package='suave',
         executable='recover_thrusters',
-        parameters=[{'use_action_server': use_action_server}],
+        parameters=[{
+            'use_action_server': recover_thrusters_use_action_server,
+        }],
         output=print_output,
     )
 
@@ -176,6 +187,7 @@ def generate_launch_description():
         task_bridge_arg,
         system_modes_arg,
         use_action_server_arg,
+        recover_thrusters_use_action_server_arg,
         silent_arg,
         OpaqueFunction(function=configure_logging),
         print_output_arg,
