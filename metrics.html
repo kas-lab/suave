@@ -1,0 +1,248 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metrics Reference &mdash; SUAVE 1.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e0a75244"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Troubleshooting" href="troubleshooting.html" />
+    <link rel="prev" title="Managing Subsystem Implementations" href="implementations.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SUAVE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Install SUAVE locally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker.html">Use SUAVE with Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run.html">Run SUAVE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">System Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extend.html">Extending SUAVE and connecting managing subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementations.html">Managing Subsystem Implementations</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Metrics Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#output-location">Output location</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#main-summary-file-result-filename-csv">Main summary file — <code class="docutils literal notranslate"><span class="pre">&lt;result_filename&gt;.csv</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#per-event-files">Per-event files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#result-filename-component-recovery-time-csv"><code class="docutils literal notranslate"><span class="pre">&lt;result_filename&gt;_component_recovery_time.csv</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#result-filename-wv-reaction-time-csv"><code class="docutils literal notranslate"><span class="pre">&lt;result_filename&gt;_wv_reaction_time.csv</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#result-filename-battery-reaction-time-csv"><code class="docutils literal notranslate"><span class="pre">&lt;result_filename&gt;_battery_reaction_time.csv</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#notes-on-mean-reaction-time">Notes on <code class="docutils literal notranslate"><span class="pre">mean_reaction_time</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mission-config-parameters">Mission config parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="related.html">Related works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citing.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SUAVE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Metrics Reference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/metrics.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="metrics-reference">
+<h1>Metrics Reference<a class="headerlink" href="#metrics-reference" title="Link to this heading"></a></h1>
+<p>SUAVE automatically records mission metrics at the end of each run via the <code class="docutils literal notranslate"><span class="pre">mission_metrics</span></code> node (<code class="docutils literal notranslate"><span class="pre">suave_metrics</span></code> package). Results are written as CSV files to a configurable output directory.</p>
+<section id="output-location">
+<h2>Output location<a class="headerlink" href="#output-location" title="Link to this heading"></a></h2>
+<p>By default results are saved to <code class="docutils literal notranslate"><span class="pre">~/suave/results/</span></code>. This can be changed via the <code class="docutils literal notranslate"><span class="pre">result_path</span></code> ROS parameter or the <code class="docutils literal notranslate"><span class="pre">result_path</span></code> field in <code class="docutils literal notranslate"><span class="pre">runner_config.yml</span></code>.</p>
+<p>Each run produces a main summary file plus up to three optional per-event files, all using the same base filename (<code class="docutils literal notranslate"><span class="pre">result_filename</span></code>).</p>
+</section>
+<section id="main-summary-file-result-filename-csv">
+<h2>Main summary file — <code class="docutils literal notranslate"><span class="pre">&lt;result_filename&gt;.csv</span></code><a class="headerlink" href="#main-summary-file-result-filename-csv" title="Link to this heading"></a></h2>
+<p>One row is appended per completed run.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mission</span> <span class="pre">name</span></code></p></td>
+<td><p>string</p></td>
+<td><p>Mission label — concatenation of <code class="docutils literal notranslate"><span class="pre">mission_name</span></code> and <code class="docutils literal notranslate"><span class="pre">adaptation_manager</span></code> parameters</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">datetime</span></code></p></td>
+<td><p>string</p></td>
+<td><p>Timestamp when results were saved (<code class="docutils literal notranslate"><span class="pre">DD-Mon-YYYY-HH-MM-SS</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">initial</span> <span class="pre">pos</span> <span class="pre">(x,y)</span></code></p></td>
+<td><p>string</p></td>
+<td><p>AUV spawn position in the Gazebo world frame</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mission</span> <span class="pre">duration</span> <span class="pre">(s)</span></code></p></td>
+<td><p>int</p></td>
+<td><p>Elapsed time from GUIDED mode start to mission end</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">pipeline</span> <span class="pre">found</span></code></p></td>
+<td><p>bool</p></td>
+<td><p>Whether the pipeline was detected during the mission</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">time</span> <span class="pre">searching</span> <span class="pre">pipeline</span> <span class="pre">(s)</span></code></p></td>
+<td><p>int</p></td>
+<td><p>Time from mission start to pipeline detection (equals mission duration if not found)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">distance</span> <span class="pre">inspected</span> <span class="pre">(m)</span></code></p></td>
+<td><p>float</p></td>
+<td><p>Total pipeline distance covered during inspection</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mean</span> <span class="pre">reaction</span> <span class="pre">time</span> <span class="pre">(s)</span></code></p></td>
+<td><p>float</p></td>
+<td><p>Mean reaction time across all adaptation events (see below); 0.0 if no events occurred</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="per-event-files">
+<h2>Per-event files<a class="headerlink" href="#per-event-files" title="Link to this heading"></a></h2>
+<p>These files are only created if at least one event of the corresponding type occurred. Each has columns: <code class="docutils literal notranslate"><span class="pre">mission_name</span></code>, <code class="docutils literal notranslate"><span class="pre">datetime</span></code>, <code class="docutils literal notranslate"><span class="pre">reaction</span> <span class="pre">time</span> <span class="pre">(s)</span></code>.</p>
+<section id="result-filename-component-recovery-time-csv">
+<h3><code class="docutils literal notranslate"><span class="pre">&lt;result_filename&gt;_component_recovery_time.csv</span></code><a class="headerlink" href="#result-filename-component-recovery-time-csv" title="Link to this heading"></a></h3>
+<p>One row per <strong>thruster failure event</strong>. Reaction time is measured from the moment a thruster is reported as failed in <code class="docutils literal notranslate"><span class="pre">/diagnostics</span></code> to when <code class="docutils literal notranslate"><span class="pre">f_maintain_motion_node</span></code> transitions back to <code class="docutils literal notranslate"><span class="pre">active</span></code> (indicating the managing subsystem issued the recovery reconfiguration).</p>
+</section>
+<section id="result-filename-wv-reaction-time-csv">
+<h3><code class="docutils literal notranslate"><span class="pre">&lt;result_filename&gt;_wv_reaction_time.csv</span></code><a class="headerlink" href="#result-filename-wv-reaction-time-csv" title="Link to this heading"></a></h3>
+<p>One row per <strong>water visibility change event</strong>. Reaction time is measured from the moment the measured water visibility causes a mismatch with the current spiral altitude to when <code class="docutils literal notranslate"><span class="pre">f_generate_search_path_node</span></code> adopts the correct altitude (via parameter change on <code class="docutils literal notranslate"><span class="pre">/f_generate_search_path_node</span></code>).</p>
+</section>
+<section id="result-filename-battery-reaction-time-csv">
+<h3><code class="docutils literal notranslate"><span class="pre">&lt;result_filename&gt;_battery_reaction_time.csv</span></code><a class="headerlink" href="#result-filename-battery-reaction-time-csv" title="Link to this heading"></a></h3>
+<p>One row per <strong>low battery event</strong>. Reaction time is measured from when battery level drops below the threshold (default 0.25) to when <code class="docutils literal notranslate"><span class="pre">generate_recharge_path_node</span></code> transitions to <code class="docutils literal notranslate"><span class="pre">active</span></code>.</p>
+</section>
+</section>
+<section id="notes-on-mean-reaction-time">
+<h2>Notes on <code class="docutils literal notranslate"><span class="pre">mean_reaction_time</span></code><a class="headerlink" href="#notes-on-mean-reaction-time" title="Link to this heading"></a></h2>
+<p>The mean reaction time in the summary file averages across <strong>all three</strong> event types (thruster, water visibility, battery). When comparing managing subsystems, consider inspecting the per-event files to separate performance on each disturbance type.</p>
+</section>
+<section id="mission-config-parameters">
+<h2>Mission config parameters<a class="headerlink" href="#mission-config-parameters" title="Link to this heading"></a></h2>
+<p>The following <code class="docutils literal notranslate"><span class="pre">mission_metrics</span></code> ROS parameters affect what is recorded:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">result_path</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">~/suave/results</span></code></p></td>
+<td><p>Output directory</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">result_filename</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mission_results</span></code></p></td>
+<td><p>Base filename (without <code class="docutils literal notranslate"><span class="pre">.csv</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">adaptation_manager</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">none</span></code></p></td>
+<td><p>Label appended to <code class="docutils literal notranslate"><span class="pre">mission_name</span></code> in output</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mission_name</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">inspection</span></code></p></td>
+<td><p>Mission label</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">water_visibility_threshold</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[3.25,</span> <span class="pre">2.25,</span> <span class="pre">1.25]</span></code></p></td>
+<td><p>Water visibility thresholds for altitude selection</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">expected_altitude</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[3.0,</span> <span class="pre">2.0,</span> <span class="pre">1.0]</span></code></p></td>
+<td><p>Expected spiral altitudes corresponding to each threshold</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">battery_limit</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.25</span></code></p></td>
+<td><p>Battery fraction below which a low-battery event is triggered</p></td>
+</tr>
+</tbody>
+</table>
+<p>The deprecated misspelling <code class="docutils literal notranslate"><span class="pre">water_visibiity_threshold</span></code> remains accepted for
+backward compatibility, but new configurations should use
+<code class="docutils literal notranslate"><span class="pre">water_visibility_threshold</span></code>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="implementations.html" class="btn btn-neutral float-left" title="Managing Subsystem Implementations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="troubleshooting.html" class="btn btn-neutral float-right" title="Troubleshooting" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gustavo Rezende, Juliane Päßler, Jeroen Zwanepol, Elvin Alberts, Lizeth Tarifa, Ilias Gerostathopoulos, Einar Johnsen, Carlos Hernández.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

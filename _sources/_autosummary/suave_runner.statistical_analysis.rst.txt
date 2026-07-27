@@ -1,0 +1,38 @@
+﻿suave\_runner.statistical\_analysis
+===================================
+
+.. automodule:: suave_runner.statistical_analysis
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      main
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+   
+      StatisticalAnalysis
+      SuaveData
+   
+   
+
+   
+   
+   
+
+
+

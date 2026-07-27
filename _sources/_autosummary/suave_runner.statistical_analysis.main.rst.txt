@@ -1,0 +1,6 @@
+suave\_runner.statistical\_analysis.main
+========================================
+
+.. currentmodule:: suave_runner.statistical_analysis
+
+.. autofunction:: main

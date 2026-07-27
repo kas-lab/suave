@@ -1,0 +1,205 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Extending SUAVE and connecting managing subsystems &mdash; SUAVE 1.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e0a75244"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Managing Subsystem Implementations" href="implementations.html" />
+    <link rel="prev" title="System Architecture" href="architecture.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SUAVE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Install SUAVE locally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker.html">Use SUAVE with Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run.html">Run SUAVE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">System Architecture</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Extending SUAVE and connecting managing subsystems</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#connecting-managing-subsystems">Connecting managing subsystems</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#option-a-external-package-recommended-for-standalone-managing-systems">Option A — External package (recommended for standalone managing systems)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#option-b-built-in-manager-contributed-upstream-to-the-suave-repo">Option B — Built-in manager (contributed upstream to the suave repo)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#extend-suave">Extend SUAVE</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#optional-ros-2-action-execution">Optional ROS 2 action execution</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="implementations.html">Managing Subsystem Implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="related.html">Related works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citing.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SUAVE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Extending SUAVE and connecting managing subsystems</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/extend.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="extending-suave-and-connecting-managing-subsystems">
+<h1>Extending SUAVE and connecting managing subsystems<a class="headerlink" href="#extending-suave-and-connecting-managing-subsystems" title="Link to this heading"></a></h1>
+<section id="connecting-managing-subsystems">
+<h2>Connecting managing subsystems<a class="headerlink" href="#connecting-managing-subsystems" title="Link to this heading"></a></h2>
+<p>SUAVE is designed to allow for different managing subsystems to be used, as long as they adhere to the correct ROS 2 interfaces.
+SUAVE’s ROS 2 interfaces are:</p>
+<ol class="arabic simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">/diagnostics</span></code> topic, which is where monitoring information is published. This topic uses the <a class="reference external" href="https://docs.ros.org/en/humble/p/diagnostic_msgs/msg/DiagnosticArray.html">diagnostic_msgs/DiagnosticArray</a> message type</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">/task/request</span></code> and <code class="docutils literal notranslate"><span class="pre">/task/cancel</span></code> services, which are used to request and cancel tasks, respectively. Both services use the <a class="reference external" href="https://github.com/kas-lab/suave/blob/main/suave_msgs/srv/Task.srv">suave_msgs/Task</a> service type</p></li>
+<li><p>Three <a class="reference external" href="https://github.com/micro-ROS/system_modes">system_modes</a> services to change SUAVE’s lifecycle-node modes. These services use the <a class="reference external" href="https://github.com/micro-ROS/system_modes/blob/master/system_modes_msgs/srv/ChangeMode.srv">system_modes_msgs/ChangeMode</a> service type:</p>
+<ol class="arabic simple">
+<li><p>Service <code class="docutils literal notranslate"><span class="pre">/f_maintain_motion/change_mode</span></code> to change the Maintain Motion node modes</p></li>
+<li><p>Service <code class="docutils literal notranslate"><span class="pre">/f_generate_search_path/change_mode</span></code> to change the Generate Search Path node modes</p></li>
+<li><p>Service <code class="docutils literal notranslate"><span class="pre">/f_follow_pipeline/change_mode</span></code> to change the Follow Pipeline node modes</p></li>
+</ol>
+</li>
+</ol>
+<p>Thus, to connect a different managing subsystem to SUAVE, it must subscribe to <code class="docutils literal notranslate"><span class="pre">/diagnostics</span></code> to get monitoring information, send adaptation goals (task) requests via <code class="docutils literal notranslate"><span class="pre">/task/request</span></code> and <code class="docutils literal notranslate"><span class="pre">/task/cancel</span></code>, and send reconfiguration requests via <code class="docutils literal notranslate"><span class="pre">/f_maintain_motion/change_mode</span></code>, <code class="docutils literal notranslate"><span class="pre">/f_generate_search_path/change_mode</span></code>, or <code class="docutils literal notranslate"><span class="pre">/f_follow_pipeline/change_mode</span></code>.</p>
+<p>There are two ways to wire a new managing subsystem into a running SUAVE stack depending on where the manager lives.</p>
+<section id="option-a-external-package-recommended-for-standalone-managing-systems">
+<h3>Option A — External package (recommended for standalone managing systems)<a class="headerlink" href="#option-a-external-package-recommended-for-standalone-managing-systems" title="Link to this heading"></a></h3>
+<p>Add <code class="docutils literal notranslate"><span class="pre">suave_base</span></code> as an <code class="docutils literal notranslate"><span class="pre">exec_depend</span></code> in your package’s <code class="docutils literal notranslate"><span class="pre">package.xml</span></code>:</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;exec_depend&gt;</span>suave_base<span class="nt">&lt;/exec_depend&gt;</span>
+</pre></div>
+</div>
+<p>In your launch file, include <code class="docutils literal notranslate"><span class="pre">suave_base.launch.py</span></code> to start the managed system and metrics, then add your manager nodes:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ament_index_python.packages</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_package_share_directory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">launch.actions</span><span class="w"> </span><span class="kn">import</span> <span class="n">IncludeLaunchDescription</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">launch.launch_description_sources</span><span class="w"> </span><span class="kn">import</span> <span class="n">PythonLaunchDescriptionSource</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="n">suave_base</span> <span class="o">=</span> <span class="n">IncludeLaunchDescription</span><span class="p">(</span>
+    <span class="n">PythonLaunchDescriptionSource</span><span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="n">get_package_share_directory</span><span class="p">(</span><span class="s1">&#39;suave_base&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;launch&#39;</span><span class="p">,</span> <span class="s1">&#39;suave_base.launch.py&#39;</span><span class="p">)),</span>
+    <span class="n">launch_arguments</span><span class="o">=</span><span class="p">{</span>
+        <span class="s1">&#39;adaptation_manager&#39;</span><span class="p">:</span> <span class="s1">&#39;my_manager&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;result_path&#39;</span><span class="p">:</span> <span class="n">result_path</span><span class="p">,</span>
+    <span class="p">}</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+
+<span class="c1"># ... your manager nodes below</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">suave_base.launch.py</span></code> starts the managed system (with <code class="docutils literal notranslate"><span class="pre">task_bridge</span></code> disabled — your manager owns task routing) and the mission metrics node. It does <strong>not</strong> start a mission node, add that separately if your manager relies on it.</p>
+</section>
+<section id="option-b-built-in-manager-contributed-upstream-to-the-suave-repo">
+<h3>Option B — Built-in manager (contributed upstream to the suave repo)<a class="headerlink" href="#option-b-built-in-manager-contributed-upstream-to-the-suave-repo" title="Link to this heading"></a></h3>
+<p>Create a manager-only launch file (see <a class="reference external" href="https://github.com/kas-lab/suave/blob/main/suave_managing/suave_metacontrol/launch/suave_metacontrol.launch.py">suave_metacontrol.launch.py</a> for an example). The manager launch must not start the managed system, mission node, or metrics — <code class="docutils literal notranslate"><span class="pre">suave_bringup</span></code> owns that composition.</p>
+<p>Declare the manager package as an <code class="docutils literal notranslate"><span class="pre">exec_depend</span></code> of <code class="docutils literal notranslate"><span class="pre">suave_bringup</span></code>, then add it to <a class="reference external" href="https://github.com/kas-lab/suave/blob/main/suave_bringup/launch/mission.launch.py">mission.launch.py</a> behind an <code class="docutils literal notranslate"><span class="pre">adaptation_manager</span></code> condition:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">IncludeLaunchDescription</span><span class="p">(</span>
+    <span class="n">PythonLaunchDescriptionSource</span><span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="n">get_package_share_directory</span><span class="p">(</span><span class="s1">&#39;[new_managing_subsystem]&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;launch&#39;</span><span class="p">,</span> <span class="s1">&#39;[new_managing_subsystem].launch.py&#39;</span><span class="p">)),</span>
+    <span class="n">condition</span><span class="o">=</span><span class="n">LaunchConfigurationEquals</span><span class="p">(</span>
+        <span class="s1">&#39;adaptation_manager&#39;</span><span class="p">,</span> <span class="s1">&#39;[new_managing_subsystem]&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="extend-suave">
+<h2>Extend SUAVE<a class="headerlink" href="#extend-suave" title="Link to this heading"></a></h2>
+<p>To extend SUAVE with new functionalities, add lifecycle nodes that implement the new functionalities (check <a class="reference external" href="https://github.com/kas-lab/suave/blob/main/suave/suave/spiral_search_lc.py">spiral_search_lc.py</a> for an example), and add their modes to the <a class="reference external" href="https://github.com/micro-ROS/system_modes">system_modes</a> configuration file <a class="reference external" href="https://github.com/kas-lab/suave/blob/main/suave/config/suave_modes.yaml">suave_modes.yaml</a>. If you create a new configuration file, replace the <code class="docutils literal notranslate"><span class="pre">suave_modes.yaml</span></code> path used by the system-modes launch file.</p>
+<section id="optional-ros-2-action-execution">
+<h3>Optional ROS 2 action execution<a class="headerlink" href="#optional-ros-2-action-execution" title="Link to this heading"></a></h3>
+<p>Managed lifecycle nodes may additionally expose a ROS 2 action server. Existing
+nodes use the Boolean <code class="docutils literal notranslate"><span class="pre">use_action_server</span></code> parameter, defaulting to <code class="docutils literal notranslate"><span class="pre">false</span></code>, to
+select whether behavior starts on lifecycle activation or after an accepted
+goal. Create action servers during lifecycle configuration so they remain
+discoverable, stop active callbacks before cleanup, and support cancellation
+inside long-running waits. New action definitions belong in <code class="docutils literal notranslate"><span class="pre">suave_msgs/action/</span></code>.</p>
+<p>ROS 2 actions are an optional execution mechanism and do not replace the
+standard diagnostics, task, and mode-change interfaces required from managing
+subsystems.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="architecture.html" class="btn btn-neutral float-left" title="System Architecture" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="implementations.html" class="btn btn-neutral float-right" title="Managing Subsystem Implementations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gustavo Rezende, Juliane Päßler, Jeroen Zwanepol, Elvin Alberts, Lizeth Tarifa, Ilias Gerostathopoulos, Einar Johnsen, Carlos Hernández.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,28 @@
+SuaveData
+=========
+
+.. currentmodule:: suave_runner.statistical_analysis
+
+.. autoclass:: SuaveData
+
+   
+
+   
+    .. automethod:: __init__
+    .. automethod:: test_normality
+    .. automethod:: test_normality_
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SuaveData.__init__
+      ~SuaveData.test_normality
+      ~SuaveData.test_normality_
+   
+   
+
+   
+   
+   

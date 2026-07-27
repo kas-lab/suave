@@ -1,0 +1,35 @@
+StatisticalAnalysis
+===================
+
+.. currentmodule:: suave_runner.statistical_analysis
+
+.. autoclass:: StatisticalAnalysis
+
+   
+
+   
+    .. automethod:: __init__
+    .. automethod:: perform_analysis
+    .. automethod:: save_data_frames
+    .. automethod:: u_test
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~StatisticalAnalysis.__init__
+      ~StatisticalAnalysis.perform_analysis
+      ~StatisticalAnalysis.save_data_frames
+      ~StatisticalAnalysis.u_test
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+   
+   

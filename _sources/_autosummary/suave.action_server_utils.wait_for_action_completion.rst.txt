@@ -1,0 +1,6 @@
+suave.action\_server\_utils.wait\_for\_action\_completion
+=========================================================
+
+.. currentmodule:: suave.action_server_utils
+
+.. autofunction:: wait_for_action_completion

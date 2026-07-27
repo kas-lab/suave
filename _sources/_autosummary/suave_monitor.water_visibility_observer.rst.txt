@@ -1,0 +1,37 @@
+﻿suave\_monitor.water\_visibility\_observer
+==========================================
+
+.. automodule:: suave_monitor.water_visibility_observer
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      main
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+   
+      WaterVisibilityObserver
+   
+   
+
+   
+   
+   
+
+
+

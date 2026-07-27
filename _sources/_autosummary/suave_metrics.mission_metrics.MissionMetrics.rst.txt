@@ -1,0 +1,72 @@
+MissionMetrics
+==============
+
+.. currentmodule:: suave_metrics.mission_metrics
+
+.. autoclass:: MissionMetrics
+
+   
+
+   
+    .. automethod:: __init__
+    .. automethod:: append_csv
+    .. automethod:: call_service
+    .. automethod:: check_altitude
+    .. automethod:: check_battery
+    .. automethod:: check_thrusther
+    .. automethod:: diagnostics_cb
+    .. automethod:: distance_inspected_cb
+    .. automethod:: gazebo_pos_cb
+    .. automethod:: generate_recharge_path_transition_cb
+    .. automethod:: get_expected_spiral_altitude
+    .. automethod:: get_spiral_altitude
+    .. automethod:: get_water_visibility_thresholds
+    .. automethod:: maintain_motion_transition_cb
+    .. automethod:: param_change_cb
+    .. automethod:: pipeline_detected_cb
+    .. automethod:: pipeline_inspected_cb
+    .. automethod:: save_metrics
+    .. automethod:: save_mission_results
+    .. automethod:: save_mission_results_cb
+    .. automethod:: status_cb
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MissionMetrics.__init__
+      ~MissionMetrics.append_csv
+      ~MissionMetrics.call_service
+      ~MissionMetrics.check_altitude
+      ~MissionMetrics.check_battery
+      ~MissionMetrics.check_thrusther
+      ~MissionMetrics.diagnostics_cb
+      ~MissionMetrics.distance_inspected_cb
+      ~MissionMetrics.gazebo_pos_cb
+      ~MissionMetrics.generate_recharge_path_transition_cb
+      ~MissionMetrics.get_expected_spiral_altitude
+      ~MissionMetrics.get_spiral_altitude
+      ~MissionMetrics.get_water_visibility_thresholds
+      ~MissionMetrics.maintain_motion_transition_cb
+      ~MissionMetrics.param_change_cb
+      ~MissionMetrics.pipeline_detected_cb
+      ~MissionMetrics.pipeline_inspected_cb
+      ~MissionMetrics.save_metrics
+      ~MissionMetrics.save_mission_results
+      ~MissionMetrics.save_mission_results_cb
+      ~MissionMetrics.status_cb
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~MissionMetrics.result_path
+      ~MissionMetrics.result_filename
+      ~MissionMetrics.adaptation_manager
+   
+   

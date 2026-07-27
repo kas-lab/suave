@@ -1,0 +1,6 @@
+suave\_monitor.thruster\_monitor.main
+=====================================
+
+.. currentmodule:: suave_monitor.thruster_monitor
+
+.. autofunction:: main

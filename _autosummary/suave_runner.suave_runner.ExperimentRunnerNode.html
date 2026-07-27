@@ -1,0 +1,309 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExperimentRunnerNode &mdash; SUAVE 1.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e0a75244"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="suave_runner.statistical_analysis" href="suave_runner.statistical_analysis.html" />
+    <link rel="prev" title="suave_runner.suave_runner.main" href="suave_runner.suave_runner.main.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            SUAVE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Install SUAVE locally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docker.html">Use SUAVE with Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../run.html">Run SUAVE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">System Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../extend.html">Extending SUAVE and connecting managing subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../implementations.html">Managing Subsystem Implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../metrics.html">Metrics Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../related.html">Related works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../citing.html">Citation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="suave.mavros_position_controller.html">suave.mavros_position_controller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave.action_server_utils.html">suave.action_server_utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave.follow_pipeline_lc.html">suave.follow_pipeline_lc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave.pipeline_detection.html">suave.pipeline_detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave.pipeline_detection_wv.html">suave.pipeline_detection_wv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave.recover_thrusters_lc.html">suave.recover_thrusters_lc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave.recharge_battery_lc.html">suave.recharge_battery_lc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave.ros_service_utils.html">suave.ros_service_utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave.spiral_search_lc.html">suave.spiral_search_lc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave.task_bridge.html">suave.task_bridge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave.task_bridge_none.html">suave.task_bridge_none</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave_monitor.thruster_monitor.html">suave_monitor.thruster_monitor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave_monitor.battery_monitor.html">suave_monitor.battery_monitor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave_monitor.water_visibility_observer.html">suave_monitor.water_visibility_observer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="suave_metrics.mission_metrics.html">suave_metrics.mission_metrics</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="suave_runner.suave_runner.html">suave_runner.suave_runner</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="suave_runner.suave_runner.main.html">suave_runner.suave_runner.main</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">ExperimentRunnerNode</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#suave_runner.suave_runner.ExperimentRunnerNode"><code class="docutils literal notranslate"><span class="pre">ExperimentRunnerNode</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="suave_runner.statistical_analysis.html">suave_runner.statistical_analysis</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SUAVE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">API</a></li>
+          <li class="breadcrumb-item"><a href="suave_runner.suave_runner.html">suave_runner.suave_runner</a></li>
+      <li class="breadcrumb-item active">ExperimentRunnerNode</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/suave_runner.suave_runner.ExperimentRunnerNode.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="experimentrunnernode">
+<h1>ExperimentRunnerNode<a class="headerlink" href="#experimentrunnernode" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="suave_runner.suave_runner.ExperimentRunnerNode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">suave_runner.suave_runner.</span></span><span class="sig-name descname"><span class="pre">ExperimentRunnerNode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#suave_runner.suave_runner.ExperimentRunnerNode" title="Link to this definition"></a></dt>
+<dd><p>Orchestrate simulation and adaptation experiments.</p>
+<blockquote>
+<div><dl class="py method">
+<dt class="sig sig-object py" id="suave_runner.suave_runner.ExperimentRunnerNode.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#suave_runner.suave_runner.ExperimentRunnerNode.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize campaign configuration and process state.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave_runner.suave_runner.ExperimentRunnerNode.append_array_random_interval">
+<span class="sig-name descname"><span class="pre">append_array_random_interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_interval</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#suave_runner.suave_runner.ExperimentRunnerNode.append_array_random_interval" title="Link to this definition"></a></dt>
+<dd><p>Append a value using a delta refreshed at fixed run intervals.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave_runner.suave_runner.ExperimentRunnerNode.create_experiment_folder">
+<span class="sig-name descname"><span class="pre">create_experiment_folder</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suave_runner.suave_runner.ExperimentRunnerNode.create_experiment_folder" title="Link to this definition"></a></dt>
+<dd><p>Return a resumed or newly created campaign result directory.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave_runner.suave_runner.ExperimentRunnerNode.generate_mission_config_files">
+<span class="sig-name descname"><span class="pre">generate_mission_config_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result_path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#suave_runner.suave_runner.ExperimentRunnerNode.generate_mission_config_files" title="Link to this definition"></a></dt>
+<dd><p>Generate per-run mission configurations with randomized events.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave_runner.suave_runner.ExperimentRunnerNode.handle_termination">
+<span class="sig-name descname"><span class="pre">handle_termination</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suave_runner.suave_runner.ExperimentRunnerNode.handle_termination" title="Link to this definition"></a></dt>
+<dd><p>Request campaign termination and unblock mission waiting.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave_runner.suave_runner.ExperimentRunnerNode.initialize_experiment">
+<span class="sig-name descname"><span class="pre">initialize_experiment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exp_idx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#suave_runner.suave_runner.ExperimentRunnerNode.initialize_experiment" title="Link to this definition"></a></dt>
+<dd><p>Extract normalized launch and result settings for an experiment.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave_runner.suave_runner.ExperimentRunnerNode.kill_gz_sim">
+<span class="sig-name descname"><span class="pre">kill_gz_sim</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suave_runner.suave_runner.ExperimentRunnerNode.kill_gz_sim" title="Link to this definition"></a></dt>
+<dd><p>Terminate remaining Gazebo Sim processes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave_runner.suave_runner.ExperimentRunnerNode.launch_ardupilot">
+<span class="sig-name descname"><span class="pre">launch_ardupilot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#suave_runner.suave_runner.ExperimentRunnerNode.launch_ardupilot" title="Link to this definition"></a></dt>
+<dd><p>Start ArduPilot and redirect its output to a run log.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave_runner.suave_runner.ExperimentRunnerNode.launch_experiment">
+<span class="sig-name descname"><span class="pre">launch_experiment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exp_launch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result_filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mission_config_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#suave_runner.suave_runner.ExperimentRunnerNode.launch_experiment" title="Link to this definition"></a></dt>
+<dd><p>Launch the mission and managing system for one experiment run.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave_runner.suave_runner.ExperimentRunnerNode.launch_suave_simulation">
+<span class="sig-name descname"><span class="pre">launch_suave_simulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#suave_runner.suave_runner.ExperimentRunnerNode.launch_suave_simulation" title="Link to this definition"></a></dt>
+<dd><p>Launch the SUAVE simulation for a configured run position.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave_runner.suave_runner.ExperimentRunnerNode.randomize_experiments_configuration">
+<span class="sig-name descname"><span class="pre">randomize_experiments_configuration</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suave_runner.suave_runner.ExperimentRunnerNode.randomize_experiments_configuration" title="Link to this definition"></a></dt>
+<dd><p>Generate reproducible perturbations for all runs.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave_runner.suave_runner.ExperimentRunnerNode.run_experiments">
+<span class="sig-name descname"><span class="pre">run_experiments</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suave_runner.suave_runner.ExperimentRunnerNode.run_experiments" title="Link to this definition"></a></dt>
+<dd><p>Execute configured campaigns with resumable checkpoints.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave_runner.suave_runner.ExperimentRunnerNode.shutdown_all_launch_processes">
+<span class="sig-name descname"><span class="pre">shutdown_all_launch_processes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suave_runner.suave_runner.ExperimentRunnerNode.shutdown_all_launch_processes" title="Link to this definition"></a></dt>
+<dd><p>Request shutdown of every tracked ROS launch process.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave_runner.suave_runner.ExperimentRunnerNode.shutdown_all_processes">
+<span class="sig-name descname"><span class="pre">shutdown_all_processes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#suave_runner.suave_runner.ExperimentRunnerNode.shutdown_all_processes" title="Link to this definition"></a></dt>
+<dd><p>Stop ArduPilot, ROS launch processes, Gazebo, and log output.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave_runner.suave_runner.ExperimentRunnerNode.start_launch_process">
+<span class="sig-name descname"><span class="pre">start_launch_process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">launch_description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LaunchDescription</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#suave_runner.suave_runner.ExperimentRunnerNode.start_launch_process" title="Link to this definition"></a></dt>
+<dd><p>Start a ROS launch description in an isolated child process.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="suave_runner.suave_runner.ExperimentRunnerNode.terminate_process">
+<span class="sig-name descname"><span class="pre">terminate_process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#suave_runner.suave_runner.ExperimentRunnerNode.terminate_process" title="Link to this definition"></a></dt>
+<dd><p>Terminate a running subprocess and its process group.</p>
+</dd></dl>
+
+</div></blockquote>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#suave_runner.suave_runner.ExperimentRunnerNode.__init__" title="suave_runner.suave_runner.ExperimentRunnerNode.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(**kwargs)</p></td>
+<td><p>Initialize campaign configuration and process state.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#suave_runner.suave_runner.ExperimentRunnerNode.append_array_random_interval" title="suave_runner.suave_runner.ExperimentRunnerNode.append_array_random_interval"><code class="xref py py-obj docutils literal notranslate"><span class="pre">append_array_random_interval</span></code></a>(array, value, ...)</p></td>
+<td><p>Append a value using a delta refreshed at fixed run intervals.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#suave_runner.suave_runner.ExperimentRunnerNode.create_experiment_folder" title="suave_runner.suave_runner.ExperimentRunnerNode.create_experiment_folder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_experiment_folder</span></code></a>()</p></td>
+<td><p>Return a resumed or newly created campaign result directory.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#suave_runner.suave_runner.ExperimentRunnerNode.generate_mission_config_files" title="suave_runner.suave_runner.ExperimentRunnerNode.generate_mission_config_files"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_mission_config_files</span></code></a>(result_path)</p></td>
+<td><p>Generate per-run mission configurations with randomized events.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#suave_runner.suave_runner.ExperimentRunnerNode.handle_termination" title="suave_runner.suave_runner.ExperimentRunnerNode.handle_termination"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_termination</span></code></a>()</p></td>
+<td><p>Request campaign termination and unblock mission waiting.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#suave_runner.suave_runner.ExperimentRunnerNode.initialize_experiment" title="suave_runner.suave_runner.ExperimentRunnerNode.initialize_experiment"><code class="xref py py-obj docutils literal notranslate"><span class="pre">initialize_experiment</span></code></a>(experiment, exp_idx)</p></td>
+<td><p>Extract normalized launch and result settings for an experiment.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#suave_runner.suave_runner.ExperimentRunnerNode.kill_gz_sim" title="suave_runner.suave_runner.ExperimentRunnerNode.kill_gz_sim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kill_gz_sim</span></code></a>()</p></td>
+<td><p>Terminate remaining Gazebo Sim processes.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#suave_runner.suave_runner.ExperimentRunnerNode.launch_ardupilot" title="suave_runner.suave_runner.ExperimentRunnerNode.launch_ardupilot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">launch_ardupilot</span></code></a>(log_path)</p></td>
+<td><p>Start ArduPilot and redirect its output to a run log.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#suave_runner.suave_runner.ExperimentRunnerNode.launch_experiment" title="suave_runner.suave_runner.ExperimentRunnerNode.launch_experiment"><code class="xref py py-obj docutils literal notranslate"><span class="pre">launch_experiment</span></code></a>(exp_launch, result_path, ...)</p></td>
+<td><p>Launch the mission and managing system for one experiment run.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#suave_runner.suave_runner.ExperimentRunnerNode.launch_suave_simulation" title="suave_runner.suave_runner.ExperimentRunnerNode.launch_suave_simulation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">launch_suave_simulation</span></code></a>(run_idx, log_dir)</p></td>
+<td><p>Launch the SUAVE simulation for a configured run position.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#suave_runner.suave_runner.ExperimentRunnerNode.randomize_experiments_configuration" title="suave_runner.suave_runner.ExperimentRunnerNode.randomize_experiments_configuration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">randomize_experiments_configuration</span></code></a>()</p></td>
+<td><p>Generate reproducible perturbations for all runs.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#suave_runner.suave_runner.ExperimentRunnerNode.run_experiments" title="suave_runner.suave_runner.ExperimentRunnerNode.run_experiments"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_experiments</span></code></a>()</p></td>
+<td><p>Execute configured campaigns with resumable checkpoints.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#suave_runner.suave_runner.ExperimentRunnerNode.shutdown_all_launch_processes" title="suave_runner.suave_runner.ExperimentRunnerNode.shutdown_all_launch_processes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shutdown_all_launch_processes</span></code></a>()</p></td>
+<td><p>Request shutdown of every tracked ROS launch process.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#suave_runner.suave_runner.ExperimentRunnerNode.shutdown_all_processes" title="suave_runner.suave_runner.ExperimentRunnerNode.shutdown_all_processes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shutdown_all_processes</span></code></a>()</p></td>
+<td><p>Stop ArduPilot, ROS launch processes, Gazebo, and log output.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#suave_runner.suave_runner.ExperimentRunnerNode.start_launch_process" title="suave_runner.suave_runner.ExperimentRunnerNode.start_launch_process"><code class="xref py py-obj docutils literal notranslate"><span class="pre">start_launch_process</span></code></a>(launch_description, log_dir)</p></td>
+<td><p>Start a ROS launch description in an isolated child process.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#suave_runner.suave_runner.ExperimentRunnerNode.terminate_process" title="suave_runner.suave_runner.ExperimentRunnerNode.terminate_process"><code class="xref py py-obj docutils literal notranslate"><span class="pre">terminate_process</span></code></a>(proc, name)</p></td>
+<td><p>Terminate a running subprocess and its process group.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+</tbody>
+</table>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="suave_runner.suave_runner.main.html" class="btn btn-neutral float-left" title="suave_runner.suave_runner.main" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="suave_runner.statistical_analysis.html" class="btn btn-neutral float-right" title="suave_runner.statistical_analysis" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gustavo Rezende, Juliane Päßler, Jeroen Zwanepol, Elvin Alberts, Lizeth Tarifa, Ilias Gerostathopoulos, Einar Johnsen, Carlos Hernández.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

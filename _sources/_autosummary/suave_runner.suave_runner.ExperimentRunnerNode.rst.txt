@@ -1,0 +1,59 @@
+ExperimentRunnerNode
+====================
+
+.. currentmodule:: suave_runner.suave_runner
+
+.. autoclass:: ExperimentRunnerNode
+
+   
+
+   
+    .. automethod:: __init__
+    .. automethod:: append_array_random_interval
+    .. automethod:: create_experiment_folder
+    .. automethod:: generate_mission_config_files
+    .. automethod:: handle_termination
+    .. automethod:: initialize_experiment
+    .. automethod:: kill_gz_sim
+    .. automethod:: launch_ardupilot
+    .. automethod:: launch_experiment
+    .. automethod:: launch_suave_simulation
+    .. automethod:: randomize_experiments_configuration
+    .. automethod:: run_experiments
+    .. automethod:: shutdown_all_launch_processes
+    .. automethod:: shutdown_all_processes
+    .. automethod:: start_launch_process
+    .. automethod:: terminate_process
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ExperimentRunnerNode.__init__
+      ~ExperimentRunnerNode.append_array_random_interval
+      ~ExperimentRunnerNode.create_experiment_folder
+      ~ExperimentRunnerNode.generate_mission_config_files
+      ~ExperimentRunnerNode.handle_termination
+      ~ExperimentRunnerNode.initialize_experiment
+      ~ExperimentRunnerNode.kill_gz_sim
+      ~ExperimentRunnerNode.launch_ardupilot
+      ~ExperimentRunnerNode.launch_experiment
+      ~ExperimentRunnerNode.launch_suave_simulation
+      ~ExperimentRunnerNode.randomize_experiments_configuration
+      ~ExperimentRunnerNode.run_experiments
+      ~ExperimentRunnerNode.shutdown_all_launch_processes
+      ~ExperimentRunnerNode.shutdown_all_processes
+      ~ExperimentRunnerNode.start_launch_process
+      ~ExperimentRunnerNode.terminate_process
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+   
+   
