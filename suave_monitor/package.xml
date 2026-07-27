@@ -16,6 +16,8 @@
   <depend>mavros_msgs</depend>
   <depend>std_msgs</depend>
   <depend>rcl_interfaces</depend>
+  <depend>rclpy</depend>
+  <depend>std_srvs</depend>
 
   <export>
     <build_type>ament_python</build_type>

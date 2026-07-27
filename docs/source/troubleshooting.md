@@ -14,13 +14,13 @@ sudo apt update && sudo apt upgrade
 
 **Update ArduSub:**
 
-Due to ArduSub usage of submodules, it is simpler to just remove the whole ardupilo repo and build it from scratch again.
+Due to ArduSub usage of submodules, it is simpler to remove the whole ArduPilot repository and build it from scratch again.
 
 ```Bash
 rm -rf ~/ardupilot
 ```
 
-To find the latest version of ArduSub go to the [ardupilot repo](https://github.com/ArduPilot/ardupilot) and look for the newest branch of ArduSub. At the time of this writing, the latest branch is [Sub-4.7.0-beta4](https://github.com/ArduPilot/ardupilot/tree/571e8c7bd3793fce1bc5184a2f6586feb8a616e5). After you know the latest branch or commit you want to get, follow the [install ardusub](https://github.com/kas-lab/suave#install-ardusub) instructions replacing the commit in `git checkout 571e8c7bd3793fce1bc5184a2f6586feb8a616e5` with the commit/branch you selected.
+SUAVE is tested with [ArduSub commit `571e8c7`](https://github.com/ArduPilot/ardupilot/tree/571e8c7bd3793fce1bc5184a2f6586feb8a616e5). To test a different version, select a branch or commit from the [ArduPilot repository](https://github.com/ArduPilot/ardupilot), follow the [ArduSub installation instructions](installation.md#install-ardusub), and rebuild the workspace. ArduPilot, MAVROS, and the Gazebo plugin must remain mutually compatible.
 
 **Update MAVROS:**
 To update MAVROS, change its version in the [suave.repos](https://github.com/kas-lab/suave/blob/main/suave.repos) file with the newest version of [mavros](https://github.com/mavlink/mavros), or simply change the version to `ros2`. Then pull the repo:

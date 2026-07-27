@@ -10,25 +10,37 @@ These are included in the SUAVE repository and available out of the box.
 
 A pass-through managing subsystem that performs no adaptation. Useful as a **lower-bound baseline** when comparing adaptation strategies.
 
-Launch: `ros2 launch suave_none suave_none.launch.py`
+Launch: `ros2 launch suave_bringup mission.launch.py adaptation_manager:=none`
 
 ### Random (`suave_random`)
 
 Applies adaptations at random intervals without analysing the system state. Useful as a **random baseline** to verify that structured adaptation adds value over chance.
 
-Launch: `ros2 launch suave_random suave_random.launch.py`
+Launch: `ros2 launch suave_bringup mission.launch.py adaptation_manager:=random`
 
 ### Metacontrol (`suave_metacontrol`)
 
 Uses [MROS2](https://github.com/meta-control/mc_mros_reasoner), the ROS 2 implementation of the [Metacontrol](https://research.tudelft.nl/en/publications/model-based-self-awareness-patterns-for-autonomy) framework. The system is modelled in an OWL ontology ([TOMASys](https://github.com/meta-control/mc_mdl_tomasys)) with SWRL rules encoding adaptation logic. The reasoner infers which function design best satisfies the current quality attribute requirements and issues the corresponding `system_modes` reconfiguration.
 
-Launch: `ros2 launch suave_metacontrol suave_metacontrol.launch.py`
+Launch: `ros2 launch suave_bringup mission.launch.py adaptation_manager:=metacontrol`
 
 ### Behavior Tree (`suave_bt`)
 
-Implements adaptation logic as a [BehaviorTree.CPP](https://www.behaviortree.dev/) behavior tree. Each condition node reads diagnostics and each action node calls a `system_modes` reconfiguration service. The tree structure makes the adaptation policy explicit and easy to inspect or modify.
+Implements adaptation logic as a [BehaviorTree.CPP](https://www.behaviortree.dev/) behavior tree. Condition nodes read diagnostics and action nodes select lifecycle modes through `system_modes`. The tree can either observe behaviors started by lifecycle activation or invoke the managed behaviors through ROS 2 actions. The tree structure makes the adaptation policy explicit and easy to inspect or modify.
 
-Launch: `ros2 launch suave_bt suave_bt.launch.py`
+Launch: `ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt`
+
+Enable ROS 2 action execution with:
+
+```bash
+ros2 launch suave_bringup mission.launch.py \
+  adaptation_manager:=bt use_action_server:=true
+```
+
+`use_action_server` defaults to `false`. When enabled, the BT sends goals to
+`spiral_search`, `follow_pipeline`, `recover_thrusters`, and
+`recharge_battery`; the launch file applies the same setting to the managed
+lifecycle nodes.
 
 ---
 
@@ -52,4 +64,4 @@ Planta is a PDDL-based managing subsystem. The adaptation problem is captured in
 
 ## Adding your own
 
-See the [Extending SUAVE](extend.md) page for the interface requirements and launch file conventions needed to connect a new managing subsystem.
+See the [Extending SUAVE](extend.md) page for the interface requirements and launch file conventions. For external packages, the recommended starting point is including [`suave_base.launch.py`](https://github.com/kas-lab/suave/blob/main/suave_base/launch/suave_base.launch.py) from the `suave_base` package, which starts the managed system and metrics without requiring any changes to the suave repository.

@@ -12,13 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Provide the common ROS task-to-function bridge implementation."""
+
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.node import Node
+
 from suave_msgs.srv import Task
 
 
 class TaskBridge(Node):
+    """Map task requests and cancellations to adaptation functions."""
+
     def __init__(self):
+        """Initialize task services and task-tracking state."""
         super().__init__('adpatation_goal_bridge')
 
         self.task_cb_group = MutuallyExclusiveCallbackGroup()
@@ -37,9 +43,10 @@ class TaskBridge(Node):
         )
 
         self.current_tasks = set()
-        self.task_functions_dict = dict()
+        self.task_functions_dict = {}
 
     def task_request(self, req, forward_request):
+        """Apply a forwarding callback to every function required by a task."""
         response = Task.Response()
         if req.task_name not in self.task_functions_dict:
             self.get_logger().error(
@@ -71,27 +78,32 @@ class TaskBridge(Node):
         return response
 
     def task_request_cb(self, req, res):
+        """Forward a task request and record it when successful."""
         response = self.task_request(req, self.forward_task_request)
         if response.success is True:
             self.current_tasks.add(req.task_name)
         return response
 
     def task_cancel_cb(self, req, response):
+        """Forward a task cancellation and remove the active task."""
         response = self.task_request(req, self.forward_task_cancel_request)
         if response.success is True and req.task_name in self.current_tasks:
             self.current_tasks.remove(req.task_name)
         return response
 
     def forward_task_request(self, function):
-        self.get_logger().info("forward_task_request method not defined")
+        """Report that subclasses must define task-request forwarding."""
+        self.get_logger().info('forward_task_request method not defined')
         return False
 
     def forward_task_cancel_request(self, function):
+        """Report that subclasses must define cancellation forwarding."""
         self.get_logger().info(
-            "forward_task_cancel_request method not defined")
+            'forward_task_cancel_request method not defined')
         return False
 
     def call_service(self, cli, request):
+        """Call a ROS service and return its response within a bounded wait."""
         if cli.wait_for_service(timeout_sec=5.0) is False:
             self.get_logger().error(
                 'service not available {}'.format(cli.srv_name))

@@ -1,4 +1,4 @@
-name: Main
+name: tests
 on:
   pull_request:
   push:
@@ -7,18 +7,20 @@ on:
 
 jobs:
   build_docker:
-    name: Build suave pkgs
+    name: Build and test suave pkgs
     runs-on: ubuntu-latest
     container:
       image: rostooling/setup-ros-docker:ubuntu-jammy-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Build pkgs
-        uses: ros-tooling/action-ros-ci@0.3.5
+        uses: ros-tooling/action-ros-ci@c8bee402c95e6b4a47c9bb5ce69de4c692128d3a # 0.4.5
         with:
           package-name: |
             suave
+            suave_base
+            suave_bringup
             suave_bt
             suave_metacontrol
             suave_metrics

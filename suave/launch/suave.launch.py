@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Launch the managed SUAVE system and its supporting nodes."""
+
 import os
 
 from ament_index_python.packages import get_package_share_directory
@@ -29,6 +31,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    """Return the managed-system launch description."""
     silent = LaunchConfiguration('silent')
 
     def configure_logging(context, *args, **kwargs):
@@ -59,13 +62,31 @@ def generate_launch_description():
     task_bridge_arg = DeclareLaunchArgument(
         'task_bridge',
         default_value='True',
-        description='Indicates whether task_bridge should be launched [True/False]'
+        description=(
+            'Indicates whether task_bridge should be launched [True/False]')
     )
 
     system_modes_arg = DeclareLaunchArgument(
         'system_modes',
         default_value='True',
-        description='Indicates whether system_modes should be launched [True/False]'
+        description=(
+            'Indicates whether system_modes should be launched [True/False]')
+    )
+
+    use_action_server = LaunchConfiguration('use_action_server')
+    use_action_server_arg = DeclareLaunchArgument(
+        'use_action_server',
+        default_value='false',
+        description='Start managed behaviors through ROS action servers'
+    )
+
+    recover_thrusters_use_action_server = LaunchConfiguration(
+        'recover_thrusters_use_action_server')
+    recover_thrusters_use_action_server_arg = DeclareLaunchArgument(
+        'recover_thrusters_use_action_server',
+        default_value=use_action_server,
+        description='Override use_action_server for the recover '
+                    'thrusters node only'
     )
 
     mission_config_default = os.path.join(
@@ -114,24 +135,30 @@ def generate_launch_description():
     spiral_search_node = Node(
         package='suave',
         executable='spiral_search',
+        parameters=[{'use_action_server': use_action_server}],
         output=print_output,
     )
 
     follow_pipeline_node = Node(
         package='suave',
         executable='follow_pipeline',
+        parameters=[{'use_action_server': use_action_server}],
         output=print_output,
     )
 
     recharge_battery_node = Node(
         package='suave',
         executable='recharge_battery',
+        parameters=[{'use_action_server': use_action_server}],
         output=print_output,
     )
 
     recover_thrusters_node = Node(
         package='suave',
         executable='recover_thrusters',
+        parameters=[{
+            'use_action_server': recover_thrusters_use_action_server,
+        }],
         output=print_output,
     )
 
@@ -159,6 +186,8 @@ def generate_launch_description():
     return LaunchDescription([
         task_bridge_arg,
         system_modes_arg,
+        use_action_server_arg,
+        recover_thrusters_use_action_server_arg,
         silent_arg,
         OpaqueFunction(function=configure_logging),
         print_output_arg,

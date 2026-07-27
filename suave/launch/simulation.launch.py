@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Launch the SUAVE simulator and vehicle support nodes."""
+
 import os
 
 from ament_index_python.packages import get_package_share_directory
@@ -27,6 +29,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    """Return the configurable SUAVE simulation launch description."""
     silent = LaunchConfiguration('silent')
 
     def configure_logging(context, *args, **kwargs):
@@ -137,7 +140,9 @@ def generate_launch_description():
     gz_pipe_pose_bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
-        arguments=['/model/min_pipes_pipeline/pose@geometry_msgs/msg/PoseArray@gz.msgs.Pose_V'],
+        arguments=[
+            '/model/min_pipes_pipeline/pose@geometry_msgs/msg/PoseArray@'
+            'gz.msgs.Pose_V'],
         output=print_output,
         name='gz_pipe_pose_bridge',
     )

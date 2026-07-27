@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Package the core SUAVE managed-system nodes and resources."""
+
 from glob import glob
 
 import os
+
 from setuptools import setup
 
 package_name = 'suave'
@@ -37,7 +40,7 @@ setup(
     maintainer='gus',
     maintainer_email='g.rezendesilva@tudelft.nl',
     description='TODO: Package description',
-    license='TODO: License declaration',
+    license='Apache-2.0',
     extras_require={
         'test': [
             'pytest',

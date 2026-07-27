@@ -13,17 +13,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Bridge tasks to randomly selected system modes."""
+
 import random
-import rclpy
 import sys
 
+import rclpy
 from rclpy.executors import MultiThreadedExecutor
+
 from suave.task_bridge_none import TaskBridgeNone
+
 from system_modes_msgs.srv import GetAvailableModes
 
 
 class TaskBridgeRandom(TaskBridgeNone):
+    """Periodically select random available modes for active tasks."""
+
     def __init__(self):
+        """Initialize mode clients and the periodic adaptation timer."""
         super().__init__()
 
         self.declare_parameter('adapt_period', 15)
@@ -51,12 +58,14 @@ class TaskBridgeRandom(TaskBridgeNone):
         )
 
     def reasoner_cb(self):
+        """Reconfigure every function belonging to an active task."""
         for task_name in self.current_tasks:
             function_names = self.task_functions_dict[task_name]
             for function in function_names:
                 self.forward_task_request(function)
 
     def forward_task_request(self, function):
+        """Switch a function to a randomly selected available mode."""
         modes_cli = self.available_modes_cli[function]
         mode_name = random.choice(
             self.call_service(
@@ -67,6 +76,7 @@ class TaskBridgeRandom(TaskBridgeNone):
 
 
 def main():
+    """Run the random task bridge node."""
     print('Starting random task bridge node')
 
     rclpy.init(args=sys.argv)

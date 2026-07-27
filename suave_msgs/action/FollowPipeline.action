@@ -1,0 +1,10 @@
+# Goal
+float32 timeout
+---
+# Result
+float32 distance_inspected
+bool success
+bool timed_out
+---
+# Feedback
+float32 distance_inspected

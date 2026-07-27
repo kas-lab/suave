@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Define the pipeline search-and-inspection mission."""
+
+from diagnostic_msgs.msg import DiagnosticArray
+
 from mavros_msgs.msg import State
 from mavros_msgs.srv import CommandBool
 from mavros_msgs.srv import SetMode
@@ -22,11 +26,12 @@ from std_srvs.srv import Empty
 
 from suave_missions.mission_planner import MissionPlanner
 
-from diagnostic_msgs.msg import DiagnosticArray
-
 
 class InspectionMission(MissionPlanner):
+    """Coordinate vehicle startup, pipeline search, and inspection tasks."""
+
     def __init__(self, node_name='inspection_mission'):
+        """Initialize vehicle state, mission events, and MAVROS clients."""
         super().__init__(node_name)
 
         self.status = State()
@@ -71,7 +76,8 @@ class InspectionMission(MissionPlanner):
         self.declare_parameter('battery_constraint_value', 0.2)
 
     def perform_mission(self):
-        self.get_logger().info("Pipeline inspection mission starting!!")
+        """Arm the vehicle, enter guided mode, and execute mission tasks."""
+        self.get_logger().info('Pipeline inspection mission starting!!')
         self.timer = self.create_rate(1)
 
         while not self.status.armed:
@@ -94,6 +100,7 @@ class InspectionMission(MissionPlanner):
         self.perform_task('inspect_pipeline', lambda: self.pipeline_inspected)
 
     def battery_level_cb(self, msg):
+        """Abort and save when the battery constraint is violated."""
         battery_constraint_arg = self.get_parameter('battery_constraint').value
         if battery_constraint_arg is True:
             for status in msg.status:
@@ -104,7 +111,7 @@ class InspectionMission(MissionPlanner):
                                 'battery_constraint_value').value
                             if float(value.value) < constraint:
                                 self.get_logger().warn(
-                                    "Low battery! Mission abort.")
+                                    'Low battery! Mission abort.')
                                 self.abort_mission = True
                                 self.call_service(
                                     self.save_mission_results_cli,
@@ -114,23 +121,28 @@ class InspectionMission(MissionPlanner):
                             break
 
     def status_cb(self, msg):
+        """Update the latest MAVROS vehicle state."""
         self.status = msg
 
     def pipeline_detected_cb(self, msg):
+        """Update pipeline detection state and record first detection time."""
         self.pipeline_detected = msg.data
         if self.pipeline_detected is True:
             self.pipeline_detected_time = self.get_clock().now()
             self.destroy_subscription(self.pipeline_detected_sub)
 
     def pipeline_inspected_cb(self, msg):
+        """Update whether pipeline inspection has completed."""
         self.pipeline_inspected = msg.data
 
     def arm_motors(self, arm_motors_bool):
+        """Request the desired motor arming state."""
         req = CommandBool.Request()
         req.value = arm_motors_bool
         return self.call_service(self.arm_motors_service, req)
 
     def set_mode(self, mode):
+        """Request a MAVROS custom mode."""
         req = SetMode.Request()
         req.custom_mode = mode
         return self.call_service(self.set_mode_service, req)

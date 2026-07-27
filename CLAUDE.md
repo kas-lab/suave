@@ -14,7 +14,9 @@ Runtime stack: ROS 2 Humble · Gazebo Harmonic · ArduSub/ArduPilot SITL · MAVR
 |---|---|
 | `suave/` | Managed subsystem: functionalities, launch files, sim config |
 | `suave_monitor/` | Monitor nodes (thruster, battery, water visibility) — publish diagnostics |
-| `suave_missions/` | Mission planners and launch files |
+| `suave_base/` | Reusable base launch (managed system + metrics, no manager) for external managing systems |
+| `suave_bringup/` | Top-level mission and manager launch composition for built-in managers |
+| `suave_missions/` | Mission planners, configuration, and mission-only launches |
 | `suave_metrics/` | Metrics collection |
 | `suave_runner/` | Experiment runner and statistical analysis |
 | `suave_tools/` | Auxiliary tools (PlotJuggler config, etc.) |
@@ -28,7 +30,7 @@ Runtime stack: ROS 2 Humble · Gazebo Harmonic · ArduSub/ArduPilot SITL · MAVR
 
 ## Build & Test
 
-Run anything related to SUAVE execution inside the `suave_runner` container, including tests, ROS launches, `colcon`, and direct `pytest` runs. The host machine is not assumed to have SUAVE or ROS dependencies installed. Use the container's default sourced workspace configuration; do not override `PYTHONPATH`, `ROS_LOG_DIR`, or similar ROS/Python environment variables unless the user explicitly asks.
+Run anything related to SUAVE execution inside the `suave_runner` container, including tests, ROS launches, `colcon`, and direct `pytest` runs. The host machine is not assumed to have SUAVE or ROS dependencies installed. Use the container's default sourced workspace configuration; do not override `PYTHONPATH`, `ROS_LOG_DIR`, or similar ROS/Python environment variables unless the user explicitly asks. Exception: `suave_runner`'s `_run_launchfile` intentionally sets `ROS_LOG_DIR` per-run to redirect node logs into the result folder.
 
 Default container command pattern:
 
@@ -59,6 +61,12 @@ source install/setup.bash
 colcon test --packages-select <package_name> --event-handlers console_direct+
 colcon test-result --verbose
 
+# Test all suave packages at once
+colcon test --event-handlers console_cohesion+ --packages-select suave suave_bt suave_metacontrol suave_metrics suave_missions suave_monitor suave_msgs suave_none suave_random suave_runner suave_tools
+
+# Auto-fix C++ style (run from inside the package directory)
+ament_uncrustify --reformat
+
 # Run Python tests directly (after sourcing)
 python3 -m pytest -q <package>/test
 ```
@@ -80,10 +88,10 @@ sim_vehicle.py -L RATBeach -v ArduSub --model=JSON --console
 ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
 
 # Mission (default: no adaptation manager)
-ros2 launch suave_missions mission.launch.py
+ros2 launch suave_bringup mission.launch.py
 
 # Mission with a specific manager
-ros2 launch suave_missions mission.launch.py adaptation_manager:=bt result_filename:=measurement_1
+ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt result_filename:=measurement_1
 # adaptation_manager values: none | metacontrol | random | bt
 
 # Experiment runner (ROS2, config-file driven — preferred for campaigns)
@@ -125,6 +133,12 @@ Dockerfiles are intentionally lowercase (`docker/dockerfile-*`). When checking `
 
 **Version pinning:** git SHAs live in `docker/versions.env`; Python package versions live in `requirements.txt` (repo root). `build_docker_images.sh` sources `versions.env` and forwards SHAs as `--build-arg`.
 
+## Navigation / MAVROS Frame Convention
+
+`suave/config/suave_mavros_apm_config.yaml` sets `local_position.frame_id: map`, so `mavros/local_position/pose` is published in the **Gazebo/world frame** — no conversion between Gazebo-sourced coordinates and MAVROS local positions is needed.
+`MavrosPositionController.has_local_pose` is the readiness gate before sending any setpoint. The controller creates position ROS entities through its owning lifecycle node; it is not a separately spun node.
+Spiral search (`spiral_search_lc.py`) initialises its center from the robot's MAVROS local position on activation — not from world origin.
+
 ## ROS Interfaces for Managing Subsystems
 
 A compliant managing subsystem must interact with:
@@ -132,12 +146,20 @@ A compliant managing subsystem must interact with:
 - **`/task/request`** and **`/task/cancel`** — `suave_msgs/srv/Task`
 - **system_modes** `ChangeMode` services: `/f_maintain_motion/change_mode`, `/f_generate_search_path/change_mode`, `/f_follow_pipeline/change_mode`
 
-When adding a new managing subsystem: include SUAVE's base launch with `task_bridge` disabled and wire the new package into `suave_missions/launch/mission.launch.py` via an `adaptation_manager` condition.
+For **external managing systems**, include `suave_base/launch/suave_base.launch.py` (starts managed system + metrics with `task_bridge=False`) and add manager nodes alongside — no changes to this repo needed. For **built-in managers** contributed upstream, keep the launch file manager-only and wire it into `suave_bringup/launch/mission.launch.py` via an `adaptation_manager` condition.
+
+## Runner / Metrics IPC
+`mission_metrics/done` (`std_msgs/Bool`) signals run completion. Both the `MissionMetrics` publisher and `ExperimentRunnerNode` subscriber must declare `RELIABLE` reliability + `TRANSIENT_LOCAL` durability (depth 1). Mismatched QoS causes DDS to silently drop the connection.
+Per-run logs are written to `<result_path>/logs/run_{exp_idx}_{run_idx}/`: `ardupilot.log` (raw SITL stdout/stderr), `simulation/` and `experiment/` (ROS node logs via `ROS_LOG_DIR`).
+`resume_result_path` parameter resumes a crashed campaign from an existing result folder; `random_seed` (default `100`) controls perturbation reproducibility.
 
 ## Code Conventions
 
 **Python (`ament_python` packages):**
 - Python code must pass flake8 and pep257.
+- Use **single-line docstrings** throughout — multi-line docstrings trigger D213.
+- Nested `def` inside a function (common in launch files) needs a blank line before it (E306).
+- Empty `__init__.py` files with only a copyright header must not have a trailing blank line (W391).
 - Add the standard `Copyright 2026 KAS Lab` Apache-2.0 header to Python files:
   ```
   # Copyright 2026 KAS Lab
@@ -160,6 +182,10 @@ When adding a new managing subsystem: include SUAVE's base launch with `task_bri
 - `extras_require={'test': ['pytest']}` — do not use deprecated `tests_require`.
 - PEP8/flake8-clean imports; pep257 docstrings on new public modules/classes/functions.
 
+**Copyright tests:**
+- New Python packages need `test/test_copyright.py` **without** `@pytest.mark.skip` (the skip is only a placeholder until headers are added).
+- C++ packages: `set(ament_cmake_copyright_FOUND TRUE)` in CMakeLists disables the copyright check — remove it once all headers are in place.
+
 **C++ (`suave_bt`, `suave_msgs`):**
 - C++17, `-Wall -Wextra -Wpedantic`. Headers under `include/suave_bt`, implementations under `src/suave_bt`.
 - BT node names registered in `src/suave_bt.cpp`; XML trees in `bts/`.
@@ -174,8 +200,38 @@ When adding a new managing subsystem: include SUAVE's base launch with `task_bri
 ## Documentation
 
 `docs/source/` is a Sphinx GitHub Pages site that mirrors README content — keep both in sync when updating installation steps, Docker commands, or runner docs. Pages: `installation`, `docker`, `run`, `architecture`, `extend`, `implementations`, `metrics`, `troubleshooting`, `related`, `citing`, `api`.
+When changing `suave_runner` behavior or parameters, update **both** `suave_runner/README.md` and `docs/source/run.md`.
 
 The VCS dependencies file is `suave.repos` (vcs format). The old name `suave.rosinstall` is obsolete — do not reference it.
+
+## Action Server Pattern (suave lifecycle nodes)
+
+Action servers are registered in `on_configure()` so they remain discoverable. The `use_action_server` parameter defaults to `False`: legacy behavior starts from lifecycle activation when false, while action mode waits for a goal when true.
+
+Use `make_goal_callback()`, `accept_cancel`, `use_action_server()`, and `lifecycle_state_is_active()` from `suave/suave/action_server_utils.py`; do not restore per-node callback copies or separate active flags.
+Use `wait_for_action_completion()` before destroying resources used by an active execute callback during lifecycle cleanup or shutdown.
+On ROS 2 Humble, `node._state_machine.current_state` is `(state_id, state_label)`, so the shared active-state helper checks element `1` for `active`. `_state_machine` is internal rclpy API, which is why access stays centralized.
+
+**Threading events required per node:**
+- `_abort_event = threading.Event()` in `__init__`; cleared in `on_activate`, set in `on_deactivate` and `on_shutdown`. Execute callbacks check it to call `abort()` on deactivation-interrupted goals.
+- `_goal_executing = threading.Event()` in `__init__`; set at execute-callback entry, cleared in `finally`. `make_goal_callback` checks it via `getattr` for the single-flight guard — nodes without it get no guard.
+- `on_cleanup` must call `self._action_server.destroy()` — omitting it leaks a second action server on the same name during configure→cleanup→configure cycles.
+- `on_shutdown` must set `_abort_event` even if `on_deactivate` already does — `on_shutdown` can be called from `active` state, bypassing deactivation.
+
+**Stop-predicate callables:** Pass `goal_handle.is_cancel_requested` as `lambda: goal_handle.is_cancel_requested`, not as a direct value. `is_cancel_requested` is a property (returns bool), not a method — passing it directly captures a one-time snapshot.
+
+**Stop-reason enums:** When a node uses a `_StopReason`-style enum, add a `DEACTIVATED` variant. Map it to `goal_handle.abort()` in the execute callback so deactivation is distinguished from client-requested cancellation.
+
+Keep action callbacks as policy wrappers around node-local core behavior. Core routines return explicit outcomes; action wrappers map them to `succeed()`, `abort()`, or `canceled()`, while lifecycle wrappers own task start and stop. Action mode must not leave a legacy timer or worker running concurrently. Long-running navigation must check its injected stop policy inside every setpoint wait, reached wait, and retry loop. Keep an in-progress path waypoint queued until it is reached so timeout, cancellation, or lifecycle deactivation can resume safely.
+
+Use `call_service_with_timeout()` from `suave/suave/ros_service_utils.py` for bounded service waits. It uses `call_async()` and then waits for completion; do not describe or name it as a synchronous ROS call. On Humble, `Node.create_rate()` returns `rclpy.timer.Rate`; there is no importable `rclpy.rate.Rate`.
+
+**Testing action servers:** Use `spin_nodes_in_executors()` and the future/result helpers from `suave/test/action_test_utils.py`. The helper node and node under test need separate executors because re-entrant `spin_until_future_complete()` can otherwise fail with `ValueError: generator already executing`. Cover terminal-state mapping and cancellation/timeout inside inner waits, not only goal acceptance. `rclpy.shutdown() has been called` can appear on stderr after successful package tests; only treat it as known noise when pytest and colcon report success.
+Mock `GoalHandle` objects in unit tests need `is_cancel_requested = False` when the execute callback wraps it in a lambda stop predicate. Monkeypatched core methods that accept `cancel_requested=None` must be patched as `lambda cancel_requested=None: <value>` — a plain `lambda: <value>` will fail when the kwarg is passed.
+
+**New action types:** Put definitions in `suave_msgs/action/`; add `find_package(action_msgs REQUIRED)` and `DEPENDENCIES action_msgs` in `suave_msgs/CMakeLists.txt`, plus `<depend>action_msgs</depend>` in `suave_msgs/package.xml`. Python action support comes from the ROS package `rclpy`; `rclpy_action` is not a valid rosdep dependency.
+
+**Name collision:** If a class name matches an action type, alias the action import, for example `from suave_msgs.action import RechargeBattery as RechargeBatteryAction`.
 
 ## Before Finishing Changes
 

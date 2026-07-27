@@ -19,9 +19,18 @@ RUN apt-get update && apt-get install -y \
     libgl1-mesa-dri \
     libglx-mesa0 \
     ros-dev-tools \
+    ros-humble-ament-cmake-flake8 \
+    python3-flake8-* \
     && rm -rf /var/lib/apt/lists/*
 
 RUN rosdep init
+
+RUN sudo apt-get update && sudo apt-get install -y \
+    openjdk-25-jdk \
+    && sudo rm -rf /var/lib/apt/lists/*
+
+ENV JAVA_HOME=/usr/lib/jvm/java-25-openjdk-amd64
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 ### Install Gazebo
 RUN curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg && \
@@ -59,7 +68,7 @@ RUN git checkout $ARDUSUB_COMMIT
 RUN git submodule update --init --recursive
 RUN USER=ubuntu-user Tools/environment_install/install-prereqs-ubuntu.sh -y
 
-RUN pip3 install -r $HOME/requirements.txt
+RUN sudo pip3 install -r $HOME/requirements.txt
 
 ENV PATH=/opt/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH
 ENV PATH=$PATH:$HOME/ardupilot/Tools/autotest
@@ -99,6 +108,7 @@ RUN vcs import src < suave.repos --recursive
 
 RUN rm -rf $HOME/suave_ws/src/suave && mkdir -p $HOME/suave_ws/src/suave
 COPY --chown=ubuntu-user:ubuntu-user suave/ $HOME/suave_ws/src/suave/suave/
+COPY --chown=ubuntu-user:ubuntu-user suave_bringup/ $HOME/suave_ws/src/suave/suave_bringup/
 COPY --chown=ubuntu-user:ubuntu-user suave_managing/ $HOME/suave_ws/src/suave/suave_managing/
 COPY --chown=ubuntu-user:ubuntu-user suave_metrics/ $HOME/suave_ws/src/suave/suave_metrics/
 COPY --chown=ubuntu-user:ubuntu-user suave_missions/ $HOME/suave_ws/src/suave/suave_missions/
@@ -116,10 +126,16 @@ RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
 
 RUN ["/bin/bash", "-c", "sudo ./src/mavros/mavros/scripts/install_geographiclib_datasets.sh"]
 
+RUN pip3 install -r $HOME/requirements.txt
+
+# ArduPilot installs a newer user-local flake8 which is incompatible with the
+# Ubuntu Jammy flake8 plugins used by the ROS 2 Humble lint environment.
+RUN pip3 install flake8==4.0.1
+
 RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
     && colcon build --symlink-install \
     && echo 'source ~/suave_ws/install/setup.bash' >> ~/.bashrc"]
 
 RUN sudo apt autoremove -y && sudo rm -rf /var/lib/apt/lists/
 
-WORKDIR $HOME/suave_ws/src/suave
+WORKDIR $HOME/suave_ws/

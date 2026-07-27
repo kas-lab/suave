@@ -29,8 +29,11 @@
                 <change_mode node_name="f_maintain_motion"
                              mode_name="fd_all_thrusters"/>
               </Sequence>
-              <change_mode node_name="f_maintain_motion"
-                           mode_name="fd_recover_thrusters"/>
+              <Sequence>
+                <change_mode node_name="f_maintain_motion"
+                             mode_name="fd_recover_thrusters"/>
+                <recover_thrusters/>
+              </Sequence>
             </Fallback>
             <Fallback>
               <SequenceWithMemory>
@@ -110,6 +113,8 @@
     <Condition ID="is_pipeline_found"/>
     <Condition ID="is_pipeline_inspected"/>
     <Action ID="recharge"/>
+    <Action ID="recover_thrusters"
+            editable="true"/>
     <Action ID="search_pipeline"
             editable="true"/>
     <Action ID="set_guided_mode"

@@ -10,7 +10,6 @@
   <exec_depend>mavros</exec_depend>
   <exec_depend>suave_msgs</exec_depend>
   <exec_depend>mavros_msgs</exec_depend>
-  <exec_depend>mavros_wrapper</exec_depend>
   <exec_depend>ros_gz</exec_depend>
   <exec_depend>rclpy</exec_depend>
   <exec_depend>lifecycle_msgs</exec_depend>
@@ -21,6 +20,10 @@
   <exec_depend>mros2_reasoner</exec_depend>
   <exec_depend>mc_mdl_tomasys</exec_depend>
   <exec_depend>mros_ontology</exec_depend>
+  <exec_depend>diagnostic_msgs</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

@@ -14,27 +14,38 @@ jobs:
     runs-on: ubuntu-latest
     container: ubuntu:22.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: ros-tooling/setup-ros@0.7.14
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: ros-tooling/setup-ros@649ef6bcd696da05bc27ceb3fab69d810c0daeab # 0.7.19
         with:
           required-ros-distributions: humble
-      - uses: ros-tooling/action-ros-ci@0.3.5
+      - uses: ros-tooling/action-ros-ci@3a640b10f09b756dabe556dac5413aba369f71b0 # 0.4.8
         id: action_ros_ci_step
         with:
-          package-name: suave suave_monitor suave_metrics suave_msgs suave_missions suave_metacontrol system_modes mavros mavros_wrapper mros2_reasoner mros2_msgs suave_runner
+          package-name: |
+            suave
+            suave_monitor
+            suave_metrics
+            suave_msgs
+            suave_missions
+            suave_metacontrol
+            system_modes
+            mavros
+            mros2_reasoner
+            mros2_msgs
+            suave_runner
           target-ros2-distro: humble
           skip-tests: true
           vcs-repo-file-url: ${{ github.workspace }}/suave.repos
       - name: Install dependencies
         run: |
-          pip install sphinx sphinx_rtd_theme myst_parser sphinx-autopackagesummary myst-parser
+          pip install -r docs/requirements.txt
       - name: Sphinx build
         shell: bash
         run: |
           source ${{ steps.action_ros_ci_step.outputs.ros-workspace-directory-name }}/install/setup.bash
-          sphinx-build docs/source docs/build
+          sphinx-build -W --keep-going docs/source docs/build
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         with:
           publish_branch: gh-pages

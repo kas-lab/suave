@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Launch the time-constrained SUAVE inspection mission."""
+
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
@@ -20,6 +22,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    """Return the time-constrained mission launch description."""
     mission_type = LaunchConfiguration('mission_type')
     result_path = LaunchConfiguration('result_path')
     result_filename = LaunchConfiguration('result_filename')

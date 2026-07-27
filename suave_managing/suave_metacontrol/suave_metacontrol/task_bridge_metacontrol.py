@@ -13,20 +13,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Bridge mission tasks to MROS quality objectives."""
+
 import sys
-import rclpy
 
 from diagnostic_msgs.msg import KeyValue
+
 from mros2_msgs.action import ControlQos
 
-from rclpy.executors import MultiThreadedExecutor
-from rclpy.callback_groups import ReentrantCallbackGroup
+import rclpy
 from rclpy.action import ActionClient
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
+
 from suave.task_bridge import TaskBridge
 
 
 class TaskBridgeMetacontrol(TaskBridge):
+    """Manage mission-task objectives through the MROS action interface."""
+
     def __init__(self):
+        """Initialize the MROS action client and task mappings."""
         super().__init__()
 
         self.client_cb_group = ReentrantCallbackGroup()
@@ -34,7 +42,7 @@ class TaskBridgeMetacontrol(TaskBridge):
             self, ControlQos, '/mros/objective',
             callback_group=self.client_cb_group)
 
-        self.current_objectives_handle = dict()
+        self.current_objectives_handle = {}
         self.task_functions_dict = {
             'search_pipeline': ['f_maintain_motion', 'f_generate_search_path'],
             'inspect_pipeline': ['f_maintain_motion', 'f_follow_pipeline'],
@@ -43,9 +51,10 @@ class TaskBridgeMetacontrol(TaskBridge):
         self.always_improve = ['f_generate_search_path']
 
     def forward_task_request(self, function):
+        """Submit an MROS objective and return whether it was accepted."""
         future = self.send_mros_objective(function)
 
-        self.get_logger().info("Waiting for mros_objective future to complete")
+        self.get_logger().info('Waiting for mros_objective future to complete')
         self.executor.spin_until_future_complete(future, timeout_sec=5.0)
         if future.done() is False:
             self.get_logger().warning(
@@ -57,6 +66,7 @@ class TaskBridgeMetacontrol(TaskBridge):
         return self.current_objectives_handle[function].accepted
 
     def forward_task_cancel_request(self, function):
+        """Cancel the active MROS objective for a mission function."""
         self.get_logger().info('cancel {}'.format(function))
         if function in self.current_objectives_handle:
             goal_handle = self.current_objectives_handle[function]
@@ -78,6 +88,7 @@ class TaskBridgeMetacontrol(TaskBridge):
             return True
 
     def send_mros_objective(self, function, nfrs=[]):
+        """Create and asynchronously submit an MROS quality objective."""
         goal_msg = ControlQos.Goal()
         goal_msg.qos_expected.objective_type = str(function)
         goal_msg.qos_expected.objective_id = 'obj_' + str(function) \
@@ -103,8 +114,9 @@ class TaskBridgeMetacontrol(TaskBridge):
         return action_future
 
     def feedback_callback(self, feedback_msg):
+        """Log status feedback received for an MROS objective."""
         feedback = feedback_msg.feedback
-        self.get_logger().info(">> Feedback received:")
+        self.get_logger().info('>> Feedback received:')
         self.get_logger().info(
             '    Solving: {0} of type {1}'.format(
                 feedback.qos_status.objective_id,
@@ -122,7 +134,8 @@ class TaskBridgeMetacontrol(TaskBridge):
 
 
 def main():
-    print("Starting task bridge node")
+    """Run the metacontrol task bridge node."""
+    print('Starting task bridge node')
 
     rclpy.init(args=sys.argv)
 

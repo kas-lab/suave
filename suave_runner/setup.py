@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+"""Package SUAVE experiment orchestration and analysis tools."""
+
 from glob import glob
+import os
+
 from setuptools import setup
 
 package_name = 'suave_runner'
@@ -29,14 +32,15 @@ setup(
                               'launch'), glob('launch/*launch.[pxy][yma]*')),
                 (os.path.join('share', package_name,
                               'config'), glob('config/*')),
-                (os.path.join('share', package_name, 'test'), glob('test/*.py')),],
+                (os.path.join('share', package_name, 'test'),
+                 glob('test/*.py')), ],
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='Gustavo Rezende',
     maintainer_email='g.rezendesilva@tudelft.nl',
     description='TODO: Package description',
     license='Apache-2.0',
-    extras_require = {
+    extras_require={
         'test': [
             'pytest',
         ],
@@ -44,7 +48,6 @@ setup(
     entry_points={
         'console_scripts':
         ['suave_runner = suave_runner.suave_runner:main',
-         'statistical_analysis = suave_runner.statistical_analysis:main'
-        ],
+         'statistical_analysis = suave_runner.statistical_analysis:main'],
     },
 )

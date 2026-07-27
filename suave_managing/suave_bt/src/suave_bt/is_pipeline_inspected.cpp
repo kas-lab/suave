@@ -20,26 +20,21 @@ namespace suave_bt
 using namespace std::placeholders;
 
 IsPipelineInspected::IsPipelineInspected(
-  const std::string & xml_tag_name,
-  const BT::NodeConfig & conf)
+  const std::string & xml_tag_name, const BT::NodeConfig & conf)
 : BT::ConditionNode(xml_tag_name, conf), _pipeline_inspected(false)
 {
   _node = config().blackboard->get<std::shared_ptr<suave_bt::SuaveMission>>("node");
 
   pipeline_inspected_sub_ = _node->create_subscription<std_msgs::msg::Bool>(
-    "/pipeline/inspected",
-    10,
-    std::bind(&IsPipelineInspected::pipeline_inspected_cb, this, _1));
+    "/pipeline/inspected", 10, std::bind(&IsPipelineInspected::pipeline_inspected_cb, this, _1));
 }
 
-void
-IsPipelineInspected::pipeline_inspected_cb(const std_msgs::msg::Bool & msg)
+void IsPipelineInspected::pipeline_inspected_cb(const std_msgs::msg::Bool & msg)
 {
   _pipeline_inspected = msg.data;
 }
 
-BT::NodeStatus
-IsPipelineInspected::tick()
+BT::NodeStatus IsPipelineInspected::tick()
 {
   return (_pipeline_inspected == true) ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
 }

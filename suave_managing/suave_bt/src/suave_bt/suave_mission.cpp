@@ -19,18 +19,17 @@ namespace suave_bt
 using namespace std::placeholders;
 using namespace std::chrono_literals;
 
-SuaveMission::SuaveMission(std::string none_name)
-: Node(none_name), search_started_(false), mission_aborted_(false)
+SuaveMission::SuaveMission(std::string none_name, const rclcpp::NodeOptions & options)
+: Node(none_name, options), search_started_(false), mission_aborted_(false)
 {
   this->declare_parameter("time_limit", 300);
+  this->declare_parameter("use_action_server", false);
   time_limit_ = this->get_parameter("time_limit").as_int();
+  use_action_server_ = this->get_parameter("use_action_server").as_bool();
 
-  save_mission_results_cli =
-    this->create_client<std_srvs::srv::Empty>("mission_metrics/save");
+  save_mission_results_cli = this->create_client<std_srvs::srv::Empty>("mission_metrics/save");
 
-  time_limit_timer_cb_group_ = create_callback_group(
-    rclcpp::CallbackGroupType::MutuallyExclusive);
-  // TODO: create parameter for timer rate?
+  time_limit_timer_cb_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
   time_limit_timer_ = this->create_wall_timer(
     100ms, std::bind(&SuaveMission::time_limit_cb, this), time_limit_timer_cb_group_);
 }
@@ -80,9 +79,11 @@ bool SuaveMission::request_save_mission_results()
 
 void SuaveMission::set_search_started()
 {
-  if (search_started_ == true) {return;}
+  if (search_started_ == true) {
+    return;
+  }
   start_time_ = this->get_clock()->now();
   search_started_ = true;
 }
 
-}
+}  // namespace suave_bt

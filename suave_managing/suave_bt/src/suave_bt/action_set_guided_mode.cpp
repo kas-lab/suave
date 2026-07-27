@@ -14,31 +14,21 @@
 
 #include "suave_bt/action_set_guided_mode.hpp"
 
-
 namespace suave_bt
 {
 using namespace std::placeholders;
 using namespace std::chrono_literals;
 
-SetGuidedMode::SetGuidedMode(
-  const std::string & name, const BT::NodeConfig & conf)
+SetGuidedMode::SetGuidedMode(const std::string & name, const BT::NodeConfig & conf)
 : BT::StatefulActionNode(name, conf)
 {
   _node = config().blackboard->get<std::shared_ptr<suave_bt::SuaveMission>>("node");
-  set_guided_cli_ = _node->create_client<mavros_msgs::srv::SetMode>(
-    "mavros/set_mode");
+  set_guided_cli_ = _node->create_client<mavros_msgs::srv::SetMode>("mavros/set_mode");
   mavros_state_sub_ = _node->create_subscription<mavros_msgs::msg::State>(
-    "mavros/state",
-    10,
-    std::bind(&SetGuidedMode::state_cb, this, _1));
+    "mavros/state", 10, std::bind(&SetGuidedMode::state_cb, this, _1));
 }
 
-void
-SetGuidedMode::state_cb(const mavros_msgs::msg::State & msg)
-{
-  mode_ = msg.mode;
-}
-
+void SetGuidedMode::state_cb(const mavros_msgs::msg::State & msg) {mode_ = msg.mode;}
 
 BT::NodeStatus SetGuidedMode::onRunning()
 {
@@ -66,4 +56,4 @@ BT::NodeStatus SetGuidedMode::onRunning()
 
   return BT::NodeStatus::RUNNING;
 }
-} //namespace suave_bt
+}  // namespace suave_bt

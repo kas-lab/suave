@@ -12,6 +12,7 @@
       - (3,failure,100) # choose a thruster that really makes it bad
     thruster_events_random_interval: [-100.0, 100.0]
     random_interval: 5 # how many experiment runs in each "random" interval
+    random_seed: 100 # fixed by default for reproducible perturbations
     initial_pos_x: -17.0
     initial_pos_y: 2.5
     initial_pos_x_random_interval: [0.0, 0.0]
@@ -19,28 +20,28 @@
     experiments: # List of experiments to run
       - |
         {
-          "experiment_launch": "ros2 launch suave_bt suave_bt.launch.py",
+          "experiment_launch": "ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt",
           "num_runs": 10,
           "adaptation_manager": "bt",
           "mission_name": "suave"
         }
       - |
         {
-          "experiment_launch": "ros2 launch suave_metacontrol suave_metacontrol.launch.py",
+          "experiment_launch": "ros2 launch suave_bringup mission.launch.py adaptation_manager:=metacontrol",
           "num_runs": 10,
           "adaptation_manager": "metacontrol",
           "mission_name": "suave"
         }
       - |
         {
-          "experiment_launch": "ros2 launch suave_random suave_random.launch.py",
+          "experiment_launch": "ros2 launch suave_bringup mission.launch.py adaptation_manager:=random",
           "num_runs": 10,
           "adaptation_manager": "random",
           "mission_name": "suave"
         }
       - |
         {
-          "experiment_launch": "ros2 launch suave_none suave_none.launch.py",
+          "experiment_launch": "ros2 launch suave_bringup mission.launch.py adaptation_manager:=none",
           "num_runs": 10,
           "adaptation_manager": "none",
           "mission_name": "suave"

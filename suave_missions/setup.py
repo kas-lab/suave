@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+"""Package SUAVE mission implementations and launch resources."""
+
 from glob import glob
+import os
+
 from setuptools import setup
 
 package_name = 'suave_missions'
@@ -36,7 +39,7 @@ setup(
     maintainer='ega',
     maintainer_email='e.g.alberts@',
     description='TODO: Package description',
-    license='TODO: License declaration',
+    license='Apache-2.0',
     extras_require={
         'test': [
             'pytest',
@@ -44,8 +47,6 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'const_dist_mission = ' +
-            'suave_missions.const_dist_mission:main',
             'time_constrained_mission = ' +
             'suave_missions.time_constrained_mission:main',
         ],

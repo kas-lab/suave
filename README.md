@@ -14,6 +14,8 @@ This repository is organized as following:
 - The package [suave](https://github.com/kas-lab/suave/tree/main/suave) contains the managed subsystem functionalities
 - The package [suave_monitor](https://github.com/kas-lab/suave/tree/main/suave_monitor) contains the monitor nodes
 - The package [suave_missions](https://github.com/kas-lab/suave/tree/main/suave_missions) contains the AUV's missions
+- The package [suave_base](https://github.com/kas-lab/suave/tree/main/suave_base) provides a reusable base launch (managed system + metrics) for external managing systems
+- The package [suave_bringup](https://github.com/kas-lab/suave/tree/main/suave_bringup) composes missions with the built-in managing subsystems
 - The package [suave_metrics](https://github.com/kas-lab/suave/tree/main/suave_metrics) contains a node used for collecting mission metrics
 - The package [suave_metacontrol](https://github.com/kas-lab/suave/tree/main/suave_managing/suave_metacontrol) contains the metacontrol implementation of the managing subsystem
 - The package [suave_random](https://github.com/kas-lab/suave/tree/main/suave_managing/suave_random) contains the implementation of a random managing subsystems
@@ -86,12 +88,12 @@ Pull and run an experiment campaign:
 ```Bash
 docker run -it --shm-size=512m \
   ghcr.io/kas-lab/suave-headless:main \
-  ./runner/headless_runner.sh false metacontrol time 2
+  ./src/suave/runner/headless_runner.sh false metacontrol time 2
 ```
 
 The runner arguments are the same as `runner.sh`:
 1. `true` or `false` — whether to show a GUI (use `false` for headless)
-2. `metacontrol`, `random`, or `none` — adaptation manager
+2. `metacontrol`, `random`, `none`, or `bt` — adaptation manager
 3. `time` or `distance` — mission type
 4. Number of runs (integer)
 
@@ -101,7 +103,7 @@ To save results to your host machine, mount a volume to `/home/ubuntu-user/suave
 docker run -it --shm-size=512m \
   -v $HOME/suave_results:/home/ubuntu-user/suave/results \
   ghcr.io/kas-lab/suave-headless:main \
-  ./runner/headless_runner.sh false metacontrol time 2
+  ./src/suave/runner/headless_runner.sh false metacontrol time 2
 ```
 
 **NVIDIA GPU support:** If your machine has an NVIDIA GPU, install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) and use:
@@ -111,7 +113,7 @@ docker run -it --rm --gpus all --runtime=nvidia --shm-size=512m \
   -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all \
   -v $HOME/suave_results:/home/ubuntu-user/suave/results \
   ghcr.io/kas-lab/suave-headless:main \
-  ./runner/headless_runner.sh false metacontrol time 2
+  ./src/suave/runner/headless_runner.sh false metacontrol time 2
 ```
 
 ### Build Docker images locally
@@ -222,12 +224,16 @@ If you want to get the most updated version of the repo:
 wget https://raw.githubusercontent.com/kas-lab/suave/main/suave.repos
 vcs import src < suave.repos --recursive
 ```
-**SEAMS2023:** If you want to get the version submitted to SEAMS 2023 instead of the most updated version get the following dependencies instead:
+For a reproducible release installation, download `suave.repos` from the
+matching Git tag instead of `main`.
 
-```Bash
-wget https://raw.githubusercontent.com/kas-lab/suave/9e6468896ce766376557ca9522d84f92b70129f1/suave.rosinstall
-vcs import src < suave.rosinstall --recursive
-```
+**SEAMS 2023 artifact:** The exact source submitted with the published paper
+is preserved at commit
+[`9e64688`](https://github.com/kas-lab/suave/tree/9e6468896ce766376557ca9522d84f92b70129f1).
+Because that artifact uses a historical dependency set, the recommended way
+to reproduce it is the archived `ghcr.io/kas-lab/suave:seams2023` container
+image. Use the `main` or release-tag instructions above for current
+development.
 
 Before building the `ros_gz` package (one of the dependencies), you need to export the gazebo version:
 
@@ -310,7 +316,7 @@ ros2 run suave_runner suave_runner \
   --ros-args \
   -p gui:=False \
   -p experiments:='[
-    "{\"experiment_launch\": \"ros2 launch suave_bt suave_bt.launch.py\", \
+    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt\", \
       \"num_runs\": 2, \
       \"adaptation_manager\": \"bt\", \
       \"mission_name\": \"suave\"}"
@@ -320,7 +326,15 @@ ros2 run suave_runner suave_runner \
 Or using a launch file with a [config file](https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner_config.yml):
 
 ```Bash
-ros2 launch suave_runner suave_runner.launch.py
+ros2 launch suave_runner suave_runner_launch.py
+```
+
+To run the BT manager through ROS 2 actions, add
+`use_action_server:=true` to the experiment launch command, for example:
+
+```text
+ros2 launch suave_bringup mission.launch.py \
+  adaptation_manager:=bt use_action_server:=true
 ```
 
 ### Without the runner
@@ -358,7 +372,7 @@ ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
 
 Run:
 ```Bash
-ros2 launch suave_missions mission.launch.py
+ros2 launch suave_bringup mission.launch.py
 ```
 
 **Mission results:** The mission results will be saved in the path specified in the [mission_config.yaml](https://github.com/kas-lab/suave/blob/main/suave_missions/config/mission_config.yaml) file.
@@ -373,22 +387,33 @@ Launching the mission file without launch arguments will start a time-constraine
     (default: 'none')
 
 'mission_type':
-    Type of mission to be executed
-    available values: time_constrained_mission/const_dist_mission
+    Mission label written to metrics
     (default: 'time_constrained_mission')
 
 'result_filename':
     Filename for the mission measured metrics
     available values: any name
-    (default: 'time_constrained_mission_results')
+    (default: empty; the metrics node uses its default filename)
+
+'use_action_server':
+    For the BT manager, start managed behaviors through ROS 2 actions
+    available values: true/false
+    (default: false)
 ```
 
 The arguments can be defined by adding the above arguments with the notation `<name>:=<value>` to the end of the command line.
 
-An example of running the constant distance mission with metacontrol saving to a file called 'measurement_1':
+An example of running with metacontrol and saving to a file called 'measurement_1':
 
 ```Bash
-ros2 launch suave_missions mission.launch.py adaptation_manager:=metacontrol mission_type:=const_dist_mission result_filename:=measurement_1
+ros2 launch suave_bringup mission.launch.py adaptation_manager:=metacontrol result_filename:=measurement_1
+```
+
+An example of running the BT manager in action-server mode:
+
+```Bash
+ros2 launch suave_bringup mission.launch.py \
+  adaptation_manager:=bt use_action_server:=true
 ```
 
 ## Extending SUAVE and connecting managing subsystems
@@ -408,36 +433,13 @@ SUAVE's ROS2 interfaces are:
 Thus, to connect a different managing subsystem to SUAVE, it must subscribe to `/diagnostics` to get monitoring information, send adaptation goals (task) requests via `/task/request` and `/task/cancel`, and send reconfiguration requests via `/f_maintain_motion/change_mode`, `/f_generate_search_path/change_mode`, or `/f_follow_pipeline/change_mode`.
 
 
-In order to use the new managing subsystem with the launchfile [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_missions/launch/mission.launch.py) as explained in the [run suave](#run-suave) section, a new launchfile must be created for the new managing subsystem (check [suave_metacontrol.launch.py](https://github.com/kas-lab/suave/blob/main/suave_metacontrol/launch/suave_metacontrol.launch.py) for an example), and the new launch file must be included in the [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_missions/launch/mission.launch.py) file.
+There are two ways to connect a new managing subsystem:
 
+**External package (recommended for standalone managing systems):** Add `exec_depend` on `suave_base` in your `package.xml` and include [`suave_base.launch.py`](https://github.com/kas-lab/suave/blob/main/suave_base/launch/suave_base.launch.py) from your launch file. This starts the managed system and metrics without requiring any changes to the suave repository.
 
-The new launch file must include SUAVE's base launch:
-```python
-suave_launch_path = os.path.join(
-        pkg_suave_path,
-        'launch',
-        'suave.launch.py')
+**Built-in manager (contributed upstream):** Create a manager-only launch file, declare the package as a `suave_bringup` dependency, and include it behind an `adaptation_manager` condition in [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_bringup/launch/mission.launch.py). The manager launch must not start the managed system, mission node, or metrics.
 
-suave_launch = IncludeLaunchDescription(
-    PythonLaunchDescriptionSource(suave_launch_path),
-    launch_arguments={
-        'task_bridge': 'False'}.items()
-)
-```
-
-To include it in [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_missions/launch/mission.launch.py), add the following code replacing \[new_managing_subsystem\] with the proper name:
-
-```python
-[new_managing_subsystem]_launch_path = os.path.join(
-        pkg_suave_metacontrol_path,
-        'launch',
-        '[new_managing_subsystem].launch.py')
-
-[new_managing_subsystem]_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([new_managing_subsystem]_launch_path),
-        condition=LaunchConfigurationEquals('adaptation_manager',
-                    '[new_managing_subsystem]'))
-```
+See the [Extending SUAVE](docs/source/extend.md) page for full details and examples.
 
 ### Extend SUAVE
 
@@ -459,23 +461,23 @@ sudo apt update && sudo apt upgrade
 
 **Update ArduSub:**
 
-Due to ArduSub usage of submodules, it is simpler to just remove the whole ardupilo repo and build it from scratch again.
+Due to ArduSub usage of submodules, it is simpler to remove the whole ArduPilot repository and build it from scratch again.
 
 ```Bash
 rm -rf ~/ardupilot
 ```
 
-To find the latest version of ArduSub go to the [ardupilot repo](https://github.com/ArduPilot/ardupilot) and look for the newest branch of ArduSub. At the time of this writing, the latest branch is [Sub-4.1](https://github.com/ArduPilot/ardupilot/commits/Sub-4.1) at commit [e9f46b9](https://github.com/ArduPilot/ardupilot/tree/e9f46b91cda16cf7a48eb9861fea13e452c5c08c). After you know the latest branch or commit you want to get, follow the [install ardusub](https://github.com/kas-lab/suave#install-ardusub) instructions replacing the commit in `git checkout e9f46b9` with the commit/branch you selected.
+To find the latest version of ArduSub go to the [ardupilot repo](https://github.com/ArduPilot/ardupilot) and look for the newest branch of ArduSub. This repository is tested with [ArduSub commit `571e8c7`](https://github.com/ArduPilot/ardupilot/tree/571e8c7bd3793fce1bc5184a2f6586feb8a616e5). Follow the [install ArduSub](#install-ardusub) instructions with the selected commit or branch.
 
 **Update MAVROS:**
-To update MAVROS, you can either change its version in the [suave.rosinstall](https://github.com/kas-lab/suave/blob/8f0e47571fc6c7524139fcb7ef20d9157d73a3e6/suave.rosinstall#L9) file with the newest version of [mavros](https://github.com/mavlink/mavros), or simply change the version to ros2. Then you need to pull the repo:
+To update MAVROS, change its version in [suave.repos](https://github.com/kas-lab/suave/blob/main/suave.repos) to the desired [MAVROS](https://github.com/mavlink/mavros) version or branch, then pull the workspace repositories:
 
 ```Bash
 cd ~/suave_ws/
 vcs pull src
 ```
 
-Alternatively, instead of updating the suave.rosinstall file, you can just update mavros manually:
+Alternatively, update MAVROS manually:
 
 ```Bash
 cd ~/suave_ws/src/mavros

@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+#include <chrono>
 #include <thread>
 
 #include "ament_index_cpp/get_package_share_directory.hpp"
@@ -35,6 +36,7 @@
 #include "suave_bt/action_set_guided_mode.hpp"
 #include "suave_bt/action_search_pipeline.hpp"
 #include "suave_bt/action_recharge_battery.hpp"
+#include "suave_bt/action_recover_thrusters.hpp"
 #include "suave_bt/action_inspect_pipeline.hpp"
 #include "suave_bt/action_change_mode.hpp"
 
@@ -42,8 +44,8 @@ int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
 
-  std::shared_ptr<suave_bt::SuaveMission> node = std::make_shared<suave_bt::SuaveMission>(
-    "mission_node");
+  std::shared_ptr<suave_bt::SuaveMission> node =
+    std::make_shared<suave_bt::SuaveMission>("mission_node");
 
   BT::BehaviorTreeFactory factory;
   BT::SharedLibrary loader;
@@ -51,6 +53,7 @@ int main(int argc, char * argv[])
   factory.registerNodeType<suave_bt::SearchPipeline>("search_pipeline");
   factory.registerNodeType<suave_bt::InspectPipeline>("inspect_pipeline");
   factory.registerNodeType<suave_bt::RechargeBattery>("recharge");
+  factory.registerNodeType<suave_bt::RecoverThrusters>("recover_thrusters");
 
   factory.registerNodeType<suave_bt::ArmThrusters>("arm_thrusters");
   factory.registerNodeType<suave_bt::SetGuidedMode>("set_guided_mode");
@@ -75,8 +78,7 @@ int main(int argc, char * argv[])
   auto blackboard = BT::Blackboard::create();
   blackboard->set<std::shared_ptr<suave_bt::SuaveMission>>("node", node);
   blackboard->set<std::shared_ptr<std::map<std::string, std::string>>>(
-    "previous_modes",
-    std::make_shared<std::map<std::string, std::string>>(previous_modes));
+    "previous_modes", std::make_shared<std::map<std::string, std::string>>(previous_modes));
 
   BT::Tree tree = factory.createTreeFromFile(xml_file, blackboard);
   // Connect the Groot2Publisher. This will allow Groot2 to
@@ -86,18 +88,18 @@ int main(int argc, char * argv[])
 
   rclcpp::executors::MultiThreadedExecutor executor;
   executor.add_node(node->get_node_base_interface());
-  std::thread t([&executor]() {
-      executor.spin();
-    });
+  std::thread t([&executor]() {executor.spin();});
 
   bool finish = false;
-  while (!finish & rclcpp::ok()) {
+  while (!finish && rclcpp::ok()) {
     finish = tree.rootNode()->executeTick() == BT::NodeStatus::SUCCESS;
-    std::this_thread::sleep_for(100ms);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
-  if (!node->is_mission_aborted()) {node->finish_mission();}
-  std::this_thread::sleep_for(1s);
+  if (!node->is_mission_aborted()) {
+    node->finish_mission();
+  }
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
   executor.cancel();
   t.join();

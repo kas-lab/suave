@@ -12,23 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SUAVE_BT__ARM_THRUSTERS_HPP_
-#define SUAVE_BT__ARM_THRUSTERS_HPP_
+#ifndef SUAVE_BT__ACTION_ARM_THRUSTERS_HPP_
+#define SUAVE_BT__ACTION_ARM_THRUSTERS_HPP_
+
+#include <string>
 
 #include "behaviortree_cpp/behavior_tree.h"
 #include "behaviortree_cpp/bt_factory.h"
-
-#include "rclcpp/rclcpp.hpp"
 #include "mavros_msgs/srv/command_bool.hpp"
+#include "rclcpp/rclcpp.hpp"
 #include "suave_bt/suave_mission.hpp"
-
 
 namespace suave_bt
 {
 
 class ArmThrusters : public BT::StatefulActionNode
 {
-
 public:
   ArmThrusters(const std::string & name, const BT::NodeConfig & conf);
 
@@ -38,12 +37,7 @@ public:
 
   void onHalted() override {}
 
-  static BT::PortsList providedPorts()
-  {
-    return BT::PortsList(
-      {
-      });
-  }
+  static BT::PortsList providedPorts() {return BT::PortsList({});}
 
 protected:
   suave_bt::SuaveMission::SharedPtr node_;
@@ -52,4 +46,4 @@ protected:
 
 }  // namespace suave_bt
 
-#endif  // SUAVE_BT__ARM_THRUSTERS_HPP_
+#endif  // SUAVE_BT__ACTION_ARM_THRUSTERS_HPP_

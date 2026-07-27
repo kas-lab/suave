@@ -17,8 +17,6 @@
 import importlib.util
 from pathlib import Path
 
-from launch.actions import DeclareLaunchArgument
-
 
 def _load_launch_description():
     launch_path = (
@@ -30,14 +28,7 @@ def _load_launch_description():
     return module.generate_launch_description()
 
 
-def test_launch_arguments_are_declared_once():
-    """Verify launch arguments are not duplicated."""
+def test_launch_contains_no_managed_system_nodes():
+    """Verify the no-manager package contributes no processes."""
     launch_description = _load_launch_description()
-    argument_names = [
-        entity.name
-        for entity in launch_description.entities
-        if isinstance(entity, DeclareLaunchArgument)
-    ]
-
-    assert len(argument_names) == len(set(argument_names))
-    assert argument_names.count('result_path') == 1
+    assert launch_description.entities == []

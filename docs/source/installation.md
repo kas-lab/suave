@@ -97,12 +97,21 @@ If you want to get the most updated version of the repo:
 wget https://raw.githubusercontent.com/kas-lab/suave/main/suave.repos
 vcs import src < suave.repos --recursive
 ```
-**SEAMS2023:** If you want to get the version submitted to SEAMS 2023 instead of the most updated version get the following dependencies instead:
+For a reproducible release installation, download `suave.repos` from the
+matching Git tag instead of `main`.
+
+**SEAMS 2023 artifact:** The exact source submitted with the published paper
+is preserved at commit
+[`9e64688`](https://github.com/kas-lab/suave/tree/9e6468896ce766376557ca9522d84f92b70129f1).
+Because that artifact uses a historical dependency set, the recommended way
+to reproduce it is the archived container image:
 
 ```Bash
-wget https://raw.githubusercontent.com/kas-lab/suave/9e6468896ce766376557ca9522d84f92b70129f1/suave.rosinstall
-vcs import src < suave.rosinstall --recursive
+docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password \
+  --security-opt seccomp=unconfined ghcr.io/kas-lab/suave:seams2023
 ```
+
+Use the `main` or release-tag instructions above for current development.
 
 Before building the `ros_gz` package (one of the dependencies), you need to export the gazebo version:
 

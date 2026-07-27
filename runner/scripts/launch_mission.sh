@@ -37,15 +37,15 @@ fi
 FILE=$3
 MCFILE=${FILE}"_mc_reasoning_time"
 
-if [ "$MANAGER" == "metacontrol" ] || [ "$MANAGER" == "random" ] || [[ "$MANAGER" == "none" ]];
-then
-    ros2 launch suave_missions mission.launch.py adaptation_manager:=$MANAGER mission_type:=$MTYPE result_filename:=$FILE mc_reasoning_time_filename:=$MCFILE
-elif [ "$MANAGER" == "bt" ];
-then
-  if [ "$MTYPE" == "extended" ];
-  then
-    ros2 launch suave_bt suave_bt_extended.launch.py result_filename:=$3
-  else
-    ros2 launch suave_bt suave_bt.launch.py result_filename:=$3
-  fi
+BT_EXECUTABLE="suave_bt"
+if [ "$MANAGER" == "bt" ] && [ "$MTYPE" == "extended" ]; then
+    BT_EXECUTABLE="suave_bt_extended"
+    MTYPE="suave_extended"
 fi
+
+ros2 launch suave_bringup mission.launch.py \
+    adaptation_manager:=$MANAGER \
+    mission_type:=$MTYPE \
+    bt_executable:=$BT_EXECUTABLE \
+    result_filename:=$FILE \
+    mc_reasoning_time_filename:=$MCFILE

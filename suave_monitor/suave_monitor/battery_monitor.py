@@ -12,21 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Simulate and publish the vehicle battery quality attribute."""
+
+import sys
+
 from diagnostic_msgs.msg import DiagnosticArray
 from diagnostic_msgs.msg import DiagnosticStatus
 from diagnostic_msgs.msg import KeyValue
 from mavros_msgs.msg import State
-from std_srvs.srv import Trigger
-from std_msgs.msg import Bool
 
 import rclpy
+
 from rclpy.node import Node
-import sys
+from std_msgs.msg import Bool
+from std_srvs.srv import Trigger
 
 
 class BatteryMonitor(Node):
+    """Publish battery depletion diagnostics and provide battery recharge."""
 
     def __init__(self):
+        """Initialize battery state, interfaces, and parameters."""
         super().__init__('battery_monitor')
 
         self.declare_parameter('qa_publishing_period', 1.0)
@@ -52,16 +58,19 @@ class BatteryMonitor(Node):
             State, 'mavros/state', self.status_cb, 10)
 
     def status_cb(self, msg):
-        if msg.mode == "GUIDED":
+        """Start battery updates when the vehicle enters guided mode."""
+        if msg.mode == 'GUIDED':
             self.last_time = self.get_clock().now().to_msg().sec
             self.qa_publisher_timer = self.create_timer(
                 self.qa_publishing_period, self.qa_publisher_cb)
             self.destroy_subscription(self.mavros_state_sub)
 
     def qa_publisher_cb(self):
+        """Publish the next battery-level measurement."""
         self.publish_battery_level()
 
     def publish_battery_level(self):
+        """Decrease battery level over elapsed time and publish diagnostics."""
         discharge_time = self.get_parameter('discharge_time').value
 
         current_time = self.get_clock().now().to_msg().sec
@@ -76,13 +85,13 @@ class BatteryMonitor(Node):
         self.battery_level = v
 
         key_value = KeyValue()
-        key_value.key = "battery_level"
+        key_value.key = 'battery_level'
         key_value.value = str(self.battery_level)
 
         status_msg = DiagnosticStatus()
         status_msg.level = DiagnosticStatus.OK
-        status_msg.name = "battery_monitor: Battery level"
-        status_msg.message = "QA status"
+        status_msg.name = 'battery_monitor: Battery level'
+        status_msg.message = 'QA status'
         status_msg.values.append(key_value)
 
         diag_msg = DiagnosticArray()
@@ -92,6 +101,7 @@ class BatteryMonitor(Node):
         self.diagnostics_publisher.publish(diag_msg)
 
     def recharge_battery_cb(self, req, res):
+        """Restore full battery level and report recharge completion."""
         self.battery_level = 1.0
         self.publish_battery_level()
         res.success = True
@@ -100,7 +110,8 @@ class BatteryMonitor(Node):
 
 
 def main():
-    print("Starting battery_monitor observer node")
+    """Run the battery monitor node."""
+    print('Starting battery_monitor observer node')
 
     rclpy.init(args=sys.argv)
 

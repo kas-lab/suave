@@ -53,6 +53,10 @@ The following `mission_metrics` ROS parameters affect what is recorded:
 | `result_filename` | `mission_results` | Base filename (without `.csv`) |
 | `adaptation_manager` | `none` | Label appended to `mission_name` in output |
 | `mission_name` | `inspection` | Mission label |
-| `water_visibiity_threshold` | `[3.25, 2.25, 1.25]` | Water visibility thresholds for altitude selection |
+| `water_visibility_threshold` | `[3.25, 2.25, 1.25]` | Water visibility thresholds for altitude selection |
 | `expected_altitude` | `[3.0, 2.0, 1.0]` | Expected spiral altitudes corresponding to each threshold |
 | `battery_limit` | `0.25` | Battery fraction below which a low-battery event is triggered |
+
+The deprecated misspelling `water_visibiity_threshold` remains accepted for
+backward compatibility, but new configurations should use
+`water_visibility_threshold`.

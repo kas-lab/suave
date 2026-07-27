@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Package SUAVE mission metric collection."""
+
 from setuptools import find_packages, setup
 
 package_name = 'suave_metrics'

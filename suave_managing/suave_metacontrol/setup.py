@@ -1,5 +1,8 @@
-import os
+"""Package the SUAVE metacontrol manager and resources."""
+
 from glob import glob
+import os
+
 from setuptools import setup
 
 package_name = 'suave_metacontrol'
@@ -22,7 +25,7 @@ setup(
     maintainer='jeroen',
     maintainer_email='j.zwanepol@hotmail.com',
     description='TODO: Package description',
-    license='TODO: License declaration',
+    license='Apache-2.0',
     extras_require={
         'test': [
             'pytest',
