@@ -66,7 +66,7 @@ class StatisticalAnalysis(Node):
         super().__init__('analysis', **kwargs)
 
         self.declare_parameter('result_path', '~/suave/results')
-        self.declare_parameter('filename', 'suave_statistical_analaysis')
+        self.declare_parameter('filename', 'suave_statistical_analysis')
         self.declare_parameter('data_files', [''])
 
         self.result_path = Path(self.get_parameter(

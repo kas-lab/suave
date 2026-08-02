@@ -15,7 +15,7 @@ ROS packages:
 - `suave_monitor/` (`ament_python`): monitor nodes such as `thruster_monitor`, `battery_monitor`, `water_visibility_observer` that publish diagnostics/status.
 - `suave_missions/` (`ament_python`): mission planners and launch files. Console scripts include `const_dist_mission` and `time_constrained_mission`.
 - `suave_metrics/` (`ament_python`): metrics collection, console script `mission_metrics`.
-- `suave_runner/` (`ament_python`): experiment runner and statistical analysis. Console scripts `suave_runner` and `statistical_analysis`; contains focused pytest tests. Its Dockerfile now lives at `docker/dockerfile-suave-headless` so it can copy the local checkout.
+- `suave_runner/` (`ament_python`): experiment orchestration and result analysis. Console scripts: `suave_runner`, `statistical_analysis`, and `summarize_results`; contains focused pytest tests. Its Dockerfile lives at `docker/dockerfile-suave-headless` so it can copy the local checkout.
 - `suave_tools/` (`ament_python`): auxiliary tools/config such as PlotJuggler config.
 - `suave_msgs/` (`ament_cmake`): ROS service definitions `Task.srv` and `GetPath.srv` via `rosidl_generate_interfaces`.
 - `suave_managing/suave_none/` (`ament_python`): no-manager variant launch package.

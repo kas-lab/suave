@@ -2,9 +2,9 @@
 
 Before finishing code changes:
 - Check `git status --short` and distinguish own edits from pre-existing user edits. This repository is often used with uncommitted experiment/Docker changes, so avoid reverting unrelated changes.
-- SUAVE validation must run inside the `suave_runner` Docker container. Do not run ROS/SUAVE tests, launches, `colcon`, or direct SUAVE `pytest` on the host; the host is not assumed to have SUAVE installed.
+- SUAVE validation must run inside the applicable development or integration container. Standalone containers are commonly named `suave` or `suave_runner`; `suave_rebetmc_ws` normally uses `suave_rebetmc`. Do not assume the host has ROS/SUAVE dependencies.
 - Use the container's default sourced workspace configuration. Do not override `PYTHONPATH`, `ROS_LOG_DIR`, or similar ROS/Python environment variables unless explicitly requested.
-- Default validation wrapper: `docker exec suave_runner bash -lc 'cd /home/ubuntu-user/suave_ws && source /opt/ros/humble/setup.bash && source install/setup.bash && <command>'`.
+- Validation wrapper: `docker exec <container-name> bash -lc 'cd /home/ubuntu-user/suave_ws && source /opt/ros/humble/setup.bash && source install/setup.bash && <command>'`.
 - Python files should include the standard `Copyright 2026 KAS Lab` Apache-2.0 header.
 - For Python package changes, run inside the container: `colcon test --packages-select <package_name> --event-handlers console_direct+`. For narrow focused tests, direct `python3 -m pytest -q -rs src/suave/<package>/test/<test_file>.py` is acceptable inside the same sourced container workspace.
 - For C++/message package changes, run inside the container: `colcon build --symlink-install --packages-select <package_name>` and then `colcon test --packages-select <package_name> --event-handlers console_direct+`.
@@ -17,4 +17,4 @@ Before finishing code changes:
 - For shell script changes, run `bash -n <script>` inside the container when the script belongs to SUAVE runtime/build workflows.
 - If touching MAVROS simulation wiring, preserve the working default `fcu_url` of `udp://0.0.0.0:14550@14555` unless intentionally changing the `sim_vehicle` port setup.
 - If adding a new managing subsystem, verify ROS interface compatibility with `/diagnostics`, `/task/request`, `/task/cancel`, and the system_modes change mode services.
-- Note any tests that could not be run because the `suave_runner` container is unavailable or missing required Gazebo/ArduSub/MAVROS/Docker dependencies.
+- Note any tests that could not be run because the applicable container is unavailable or missing required Gazebo/ArduSub/MAVROS/Docker dependencies.

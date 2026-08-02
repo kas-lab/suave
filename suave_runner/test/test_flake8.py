@@ -16,6 +16,19 @@ from ament_flake8.main import main_with_errors
 import pytest
 
 
+# ROS 2 Humble's pinned Flake8 plugin loader uses deprecated packaging APIs.
+# Keep these filters scoped to the Flake8 test so other deprecations remain
+# visible to the package test suite.
+pytestmark = [
+    pytest.mark.filterwarnings(
+        'ignore:SelectableGroups dict interface is deprecated.*'),
+    pytest.mark.filterwarnings(
+        'ignore:pkg_resources is deprecated as an API.*'),
+    pytest.mark.filterwarnings(
+        'ignore:Deprecated call to `pkg_resources\\.declare_namespace.*'),
+]
+
+
 @pytest.mark.flake8
 @pytest.mark.linter
 def test_flake8():

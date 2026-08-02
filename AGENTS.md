@@ -12,9 +12,21 @@ Core managed-system Python nodes live in `suave/suave/`, with launch files and s
 
 ## Build, Test, and Development Commands
 
-Run anything related to SUAVE execution inside the `suave_runner` container, including tests, ROS launches, `colcon`, and direct `pytest` runs. The host machine is not assumed to have SUAVE or ROS dependencies installed. Use the container's default sourced workspace configuration; do not override `PYTHONPATH`, `ROS_LOG_DIR`, or similar ROS/Python environment variables unless the user explicitly asks. The exception is `suave_runner`'s `_run_launchfile`, which intentionally sets `ROS_LOG_DIR` per run so node logs are stored with experiment results.
+Run anything related to SUAVE execution inside a SUAVE development container,
+including tests, ROS launches, `colcon`, and direct `pytest` runs. A standalone
+SUAVE container is commonly named `suave` or `suave_runner`. When SUAVE is
+mounted into a larger integration workspace, follow that workspace's guidance;
+for example, `suave_rebetmc_ws` normally uses the `suave_rebetmc` container.
+Confirm the running container and its mounts when the context is ambiguous. The
+host machine is not assumed to have SUAVE or ROS dependencies installed. Use
+the container's default sourced workspace configuration; do not override
+`PYTHONPATH`, `ROS_LOG_DIR`, or similar ROS/Python environment variables unless
+the user explicitly asks. The exception is `suave_runner`'s `_run_launchfile`,
+which intentionally sets `ROS_LOG_DIR` per run so node logs are stored with
+experiment results.
 
-Default container command pattern:
+Standalone headless-container command pattern (replace the container name when
+working in another integration container):
 
 ```bash
 docker exec suave_runner bash -lc 'cd /home/ubuntu-user/suave_ws && source /opt/ros/humble/setup.bash && source install/setup.bash && <command>'
@@ -44,7 +56,8 @@ After changing package data, launch files, setup metadata, or installed config f
 
 ## Running SUAVE
 
-Run SUAVE from inside the `suave_runner` container using the default workspace environment.
+Run SUAVE from inside the applicable development container using the default
+workspace environment.
 
 Use `cd runner && ./example_run.sh` for a full example. For manual runs:
 
@@ -174,4 +187,10 @@ Recent commits use short imperative subjects, for example `add statistical_analy
 
 ## Agent-Specific Instructions
 
-Before editing, check `git status --short` and preserve unrelated user changes. Prefer `rg` for searches and keep changes scoped to the relevant ROS package. For SUAVE validation, always run tests and runtime checks inside `suave_runner` with the container's default sourced environment. Before finishing, run `git status --short` again and distinguish your edits from pre-existing uncommitted experiment, simulator, or Docker changes. Do not revert unrelated work.
+Before editing, check `git status --short` and preserve unrelated user changes.
+Prefer `rg` for searches and keep changes scoped to the relevant ROS package.
+For SUAVE validation, always run tests and runtime checks inside the applicable
+SUAVE development or integration container with its default sourced
+environment. Before finishing, run `git status --short` again and distinguish
+your edits from pre-existing uncommitted experiment, simulator, or Docker
+changes. Do not revert unrelated work.
