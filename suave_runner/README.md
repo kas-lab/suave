@@ -33,6 +33,13 @@ reads these markers and skips any run whose marker already exists. Runs that
 timed out (no `mission_metrics/done` received) are **not** marked and will be
 retried.
 
+The runner also ends a run immediately when a launched process exits with a
+nonzero status or a subsystem publishes `mission/control_failure`. Failed runs
+are left without a marker, and the runner continues with the remaining runs.
+Process stdout, stderr, launch events, and ROS logs are retained below
+`logs/run_<exp_idx>_<run_idx>/`; setting `experiment_logging` to `false` only
+suppresses console output.
+
 To resume, pass the path of the existing result folder via `resume_result_path`:
 
 ```bash

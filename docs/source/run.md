@@ -149,6 +149,13 @@ After each **successful** run the runner writes a marker file
 (no result received within `run_duration`) are **not** marked and will be
 retried on resume.
 
+If any launched process exits with a nonzero status before mission completion,
+or a subsystem publishes `mission/control_failure`, the runner terminates that
+run immediately and continues with the remaining runs. The failed run receives
+no `.done` marker. Its launch events, process output, and ROS logs remain under
+`logs/run_<exp_idx>_<run_idx>/`. The `experiment_logging` flag controls console
+verbosity only; it does not disable these files.
+
 To resume, pass the path of the interrupted result folder via
 `resume_result_path`:
 

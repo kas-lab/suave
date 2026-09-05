@@ -14,12 +14,16 @@
 
 import json
 from pathlib import Path
+from queue import Empty
+from queue import Queue
 import shutil
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import rclpy
 from rclpy.parameter import Parameter
 from std_msgs.msg import Bool
+from std_msgs.msg import String
 
 from suave_runner.suave_runner import ExperimentRunnerNode
 import yaml
@@ -271,6 +275,85 @@ def test_mission_done_cb_ignores_false():
             parameter_overrides=_minimal_runner_params())
         runner._mission_done_cb(Bool(data=False))
         assert not runner._mission_done_event.is_set()
+    finally:
+        rclpy.shutdown()
+
+
+def test_mission_failed_cb_records_reason_and_sets_event():
+    rclpy.init()
+    try:
+        runner = ExperimentRunnerNode(
+            parameter_overrides=_minimal_runner_params())
+        runner._mission_failed_cb(String(data='planner crashed'))
+
+        assert runner._mission_failed_event.is_set()
+        assert runner._mission_failure_reason == 'planner crashed'
+    finally:
+        rclpy.shutdown()
+
+
+def test_record_process_exit_queues_nonzero_exit():
+    stop_event = SimpleNamespace(is_set=lambda: False)
+    failure_queue = Queue()
+    event = SimpleNamespace(
+        returncode=-6,
+        process_name='suave_planta_controller-12',
+        pid=123,
+        cmd=['suave_planta_controller', '--ros-args'],
+    )
+
+    ExperimentRunnerNode._record_process_exit(
+        stop_event, failure_queue, event, None)
+
+    assert failure_queue.get_nowait() == {
+        'process_name': 'suave_planta_controller-12',
+        'pid': 123,
+        'returncode': -6,
+        'cmd': 'suave_planta_controller --ros-args',
+    }
+
+
+def test_record_process_exit_ignores_zero_exit_and_shutdown():
+    failure_queue = Queue()
+    event = SimpleNamespace(
+        returncode=0,
+        process_name='owl_to_pddl-1',
+        pid=123,
+        cmd=['owl_to_pddl.py'],
+    )
+    running = SimpleNamespace(is_set=lambda: False)
+    stopping = SimpleNamespace(is_set=lambda: True)
+
+    ExperimentRunnerNode._record_process_exit(
+        running, failure_queue, event, None)
+    event.returncode = -15
+    ExperimentRunnerNode._record_process_exit(
+        stopping, failure_queue, event, None)
+
+    try:
+        failure_queue.get_nowait()
+        assert False, 'No process failure should have been queued'
+    except Empty:
+        pass
+
+
+def test_get_process_failure_reports_ardupilot_nonzero_exit():
+    rclpy.init()
+    try:
+        runner = ExperimentRunnerNode(
+            parameter_overrides=_minimal_runner_params())
+        runner.ardupilot_proc = SimpleNamespace(
+            poll=lambda: -6,
+            pid=456,
+            returncode=-6,
+        )
+
+        assert runner._get_process_failure() == {
+            'process_name': 'ArduPilot',
+            'pid': 456,
+            'returncode': -6,
+            'cmd': ' '.join(runner.ardupilot_cmd),
+        }
     finally:
         rclpy.shutdown()
 
