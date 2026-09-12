@@ -15,6 +15,7 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <thread>
@@ -22,13 +23,20 @@
 #include "gtest/gtest.h"
 
 #include "behaviortree_cpp/bt_factory.h"
+#include "lifecycle_msgs/msg/state.hpp"
+#include "lifecycle_msgs/srv/get_state.hpp"
+#include "rcl_interfaces/msg/parameter_type.hpp"
+#include "rcl_interfaces/srv/get_parameters.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
+#include "system_modes_msgs/srv/change_mode.hpp"
+#include "system_modes_msgs/srv/get_mode.hpp"
 #include "suave_msgs/action/follow_pipeline.hpp"
 #include "suave_msgs/action/recharge_battery.hpp"
 #include "suave_msgs/action/recover_thrusters.hpp"
 #include "suave_msgs/action/spiral_search.hpp"
 
+#include "suave_bt/action_change_mode.hpp"
 #include "suave_bt/action_inspect_pipeline.hpp"
 #include "suave_bt/action_recharge_battery.hpp"
 #include "suave_bt/action_recover_thrusters.hpp"
@@ -437,6 +445,178 @@ TEST_F(ActionClientTest, recover_action_mode_succeeds_when_action_succeeds)
     "recover_thrusters", "recover_thrusters",
     [](auto & result) {result.success = true;});
   EXPECT_EQ(status, BT::NodeStatus::SUCCESS);
+}
+
+// Drive a single <change_mode/> node against fake system_modes change_mode /
+// get_mode, lifecycle get_state and get_parameters services. `lifecycle_state_id`
+// is what the managed part node's get_state reports (PRIMARY_STATE_ACTIVE /
+// _INACTIVE); pass 0 for "no get_state server". `reported_mode` is what get_mode
+// returns (unused by the new code, kept to document intent). `spiral_altitude`
+// is what the part node's get_parameters reports for the spiral sub-mode check.
+// Pass provide_change_mode=false to omit that server.
+BT::NodeStatus run_change_mode(
+  const std::string & node_name, const std::string & mode_name,
+  uint8_t lifecycle_state_id, const std::string & reported_mode = "",
+  bool provide_change_mode = true, double spiral_altitude = 2.0)
+{
+  static std::atomic<int> change_mode_index{0};
+  const auto suffix = std::to_string(change_mode_index++);
+
+  auto mission = std::make_shared<suave_bt::SuaveMission>(
+    "change_mode_mission_" + suffix);
+  auto server_node = std::make_shared<rclcpp::Node>(
+    "change_mode_servers_" + suffix);
+
+  rclcpp::Service<system_modes_msgs::srv::ChangeMode>::SharedPtr change_mode_srv;
+  if (provide_change_mode) {
+    change_mode_srv = server_node->create_service<system_modes_msgs::srv::ChangeMode>(
+      node_name + "/change_mode",
+      [](const std::shared_ptr<system_modes_msgs::srv::ChangeMode::Request>,
+      std::shared_ptr<system_modes_msgs::srv::ChangeMode::Response> response) {
+        response->success = true;
+      });
+  }
+
+  auto get_mode_srv = server_node->create_service<system_modes_msgs::srv::GetMode>(
+    node_name + "/get_mode",
+    [reported_mode](
+      const std::shared_ptr<system_modes_msgs::srv::GetMode::Request>,
+      std::shared_ptr<system_modes_msgs::srv::GetMode::Response> response) {
+      response->current_mode = reported_mode;
+    });
+
+  rclcpp::Service<lifecycle_msgs::srv::GetState>::SharedPtr get_state_srv;
+  if (lifecycle_state_id != 0) {
+    get_state_srv = server_node->create_service<lifecycle_msgs::srv::GetState>(
+      node_name + "_node/get_state",
+      [lifecycle_state_id](
+        const std::shared_ptr<lifecycle_msgs::srv::GetState::Request>,
+        std::shared_ptr<lifecycle_msgs::srv::GetState::Response> response) {
+        response->current_state.id = lifecycle_state_id;
+      });
+  }
+
+  auto get_params_srv =
+    server_node->create_service<rcl_interfaces::srv::GetParameters>(
+    node_name + "_node/get_parameters",
+    [spiral_altitude](
+      const std::shared_ptr<rcl_interfaces::srv::GetParameters::Request>,
+      std::shared_ptr<rcl_interfaces::srv::GetParameters::Response> response) {
+      rcl_interfaces::msg::ParameterValue value;
+      value.type = rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE;
+      value.double_value = spiral_altitude;
+      response->values.push_back(value);
+    });
+
+  BT::BehaviorTreeFactory factory;
+  factory.registerNodeType<suave_bt::ChangeMode>("change_mode");
+  auto blackboard = BT::Blackboard::create();
+  blackboard->set<std::shared_ptr<suave_bt::SuaveMission>>("node", mission);
+  auto previous_modes = std::make_shared<std::map<std::string, std::string>>();
+  (*previous_modes)[node_name] = "";
+  blackboard->set<std::shared_ptr<std::map<std::string, std::string>>>(
+    "previous_modes", previous_modes);
+  const std::string xml =
+    "<root BTCPP_format=\"4\" main_tree_to_execute=\"Main\">"
+    "<BehaviorTree ID=\"Main\">"
+    "<change_mode node_name=\"" + node_name + "\" mode_name=\"" + mode_name + "\"/>"
+    "</BehaviorTree></root>";
+  auto tree = factory.createTreeFromText(xml, blackboard);
+
+  rclcpp::executors::MultiThreadedExecutor executor;
+  executor.add_node(mission);
+  executor.add_node(server_node);
+  std::thread spin_thread([&executor]() {executor.spin();});
+  std::this_thread::sleep_for(200ms);
+
+  BT::NodeStatus status = BT::NodeStatus::IDLE;
+  for (int attempt = 0; attempt < 20; ++attempt) {
+    status = tree.rootNode()->executeTick();
+    if (status != BT::NodeStatus::RUNNING) {
+      break;
+    }
+    std::this_thread::sleep_for(10ms);
+  }
+
+  executor.cancel();
+  spin_thread.join();
+  (void)change_mode_srv;
+  (void)get_mode_srv;
+  (void)get_state_srv;
+  (void)get_params_srv;
+  return status;
+}
+
+TEST_F(ActionClientTest, change_mode_succeeds_when_part_reaches_active)
+{
+  EXPECT_EQ(
+    run_change_mode(
+      "f_generate_search_path", "fd_spiral_medium",
+      lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE, "fd_spiral_medium"),
+    BT::NodeStatus::SUCCESS);
+}
+
+// Regression: system_modes reports the target mode (get_mode == mode_name, from
+// a stale parameter default) while the part node never activated. The old code
+// returned SUCCESS on the get_mode match; change_mode must now return FAILURE.
+TEST_F(ActionClientTest, change_mode_fails_when_part_never_activates)
+{
+  EXPECT_EQ(
+    run_change_mode(
+      "f_generate_search_path", "fd_spiral_medium",
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE, "fd_spiral_medium"),
+    BT::NodeStatus::FAILURE);
+}
+
+TEST_F(ActionClientTest, change_mode_unground_succeeds_when_part_inactive)
+{
+  EXPECT_EQ(
+    run_change_mode(
+      "f_generate_search_path", "fd_unground",
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE, "fd_spiral_medium"),
+    BT::NodeStatus::SUCCESS);
+}
+
+TEST_F(ActionClientTest, change_mode_fails_when_change_mode_service_missing)
+{
+  EXPECT_EQ(
+    run_change_mode(
+      "f_generate_search_path", "fd_spiral_medium",
+      lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE, "", false),
+    BT::NodeStatus::FAILURE);
+}
+
+// "inactive" (used for generate_recharge_path in the extended tree) must expect
+// the part node to be inactive, not active.
+TEST_F(ActionClientTest, change_mode_inactive_succeeds_when_part_inactive)
+{
+  EXPECT_EQ(
+    run_change_mode(
+      "generate_recharge_path", "inactive",
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE, "normal"),
+    BT::NodeStatus::SUCCESS);
+}
+
+TEST_F(ActionClientTest, change_mode_succeeds_when_spiral_altitude_matches)
+{
+  EXPECT_EQ(
+    run_change_mode(
+      "f_generate_search_path", "fd_spiral_high",
+      lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE, "fd_spiral_high",
+      true, 3.0),
+    BT::NodeStatus::SUCCESS);
+}
+
+// Sub-mode gap: the part node is active but stuck at the previous altitude
+// (2.0 == fd_spiral_medium) instead of the requested fd_spiral_high (3.0).
+TEST_F(ActionClientTest, change_mode_fails_when_spiral_altitude_stale)
+{
+  EXPECT_EQ(
+    run_change_mode(
+      "f_generate_search_path", "fd_spiral_high",
+      lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE, "fd_spiral_high",
+      true, 2.0),
+    BT::NodeStatus::FAILURE);
 }
 
 TEST_F(ActionClientTest, search_pipeline_calls_set_search_started_on_action_start)
