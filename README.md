@@ -377,6 +377,17 @@ ros2 launch suave_bringup mission.launch.py
 
 **Mission results:** The mission results will be saved in the path specified in the [mission_config.yaml](https://github.com/kas-lab/suave/blob/main/suave_missions/config/mission_config.yaml) file.
 
+Inspected distance accumulates across pauses and resumes, including recharge
+interruptions. The `pipeline/distance_inspected` topic and `FollowPipeline`
+action feedback and results report the cumulative distance along reached
+pipeline waypoints, excluding travel away from the pipeline to recharge.
+Deactivation preserves progress; cleanup followed by configuration starts a
+new inspection with zero distance and a fresh path request.
+Deactivation requests inspection to stop without waiting for its worker,
+allowing recharging to activate immediately. Reactivation waits for any old
+inspection worker to finish before resuming the saved path; cleanup and
+shutdown also wait before destroying resources.
+
 **Selecting the managing system and mission type:**
 Launching the mission file without launch arguments will start a time-constrained mission without a managing subsystem. To select a different managing subsystem or a different type of mission, the following launch arguments can be used:
 

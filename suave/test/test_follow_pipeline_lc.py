@@ -14,6 +14,9 @@
 
 """Tests for the follow pipeline lifecycle node action server."""
 
+import threading
+from unittest.mock import Mock
+
 from action_test_utils import send_goal_and_wait
 from action_test_utils import spin_nodes_in_executors
 
@@ -25,6 +28,7 @@ import pytest
 import rclpy
 from rclpy.action import ActionClient
 from rclpy.node import Node
+from rclpy.task import Task
 
 from suave import follow_pipeline_lc
 from suave.follow_pipeline_lc import _FollowStopReason
@@ -205,6 +209,8 @@ def test_load_pipe_path_once_reuses_cached_path(monkeypatch, follow_node):
     cached_path = [_pose()]
     follow_node.pipe_path = cached_path
     follow_node.first_inspection = False
+    follow_node.distance_inspected = 10.0
+    follow_node.last_point = _setpoint(10.0)
 
     def fail_if_called(node, client, request):
         raise AssertionError('path service should not be called')
@@ -214,6 +220,8 @@ def test_load_pipe_path_once_reuses_cached_path(monkeypatch, follow_node):
 
     assert follow_node._load_pipe_path_once() is True
     assert follow_node.pipe_path is cached_path
+    assert follow_node.distance_inspected == 10.0
+    assert follow_node.last_point.pose.position.x == 10.0
 
 
 def test_load_pipe_path_once_reports_service_failure(
@@ -468,3 +476,204 @@ def test_legacy_abort_preserves_current_waypoint(monkeypatch, follow_node):
 
     assert follow_node.pipe_path == [waypoint]
     assert follow_node.distance_inspected == 0.0
+
+
+@pytest.mark.parametrize('execution', ['legacy', 'action'])
+@pytest.mark.parametrize('stop_x', [0.0, 10.0, 12.0])
+def test_resume_matches_uninterrupted_inspection(
+        monkeypatch, follow_node, execution, stop_x):
+    """Preserve cumulative distance across repeated stops inside waypoint waits."""
+    distance_publisher = _Publisher()
+    inspected_publisher = _Publisher()
+    monkeypatch.setattr(
+        follow_node, 'pipeline_distance_inspected_pub', distance_publisher)
+    monkeypatch.setattr(
+        follow_node, 'pipeline_inspected_pub', inspected_publisher)
+    monkeypatch.setattr(follow_node, 'create_rate', lambda frequency: _Rate())
+    monkeypatch.setattr(
+        follow_node.get_path_service, 'wait_for_service',
+        lambda timeout_sec: True)
+    monkeypatch.setattr(
+        follow_node, '_get_pipeline_setpoint',
+        lambda pose: _setpoint(pose.position.x, pose.position.y))
+    response = GetPath.Response()
+    response.path.poses = [_pose(x) for x in (0.0, 10.0, 12.0, 14.0)]
+    monkeypatch.setattr(
+        follow_pipeline_lc, 'call_service_with_timeout',
+        lambda node, client, request: response)
+
+    def run_attempt(interrupt):
+        goal = Mock()
+        goal.request = FollowPipeline.Goal(timeout=0.0)
+        goal.is_cancel_requested = False
+        follow_node.abort_follow = False
+
+        def reached(setpoint, threshold):
+            if interrupt and setpoint.pose.position.x == stop_x:
+                follow_node.abort_follow = True
+                goal.is_cancel_requested = True
+                return False
+            return True
+
+        monkeypatch.setattr(
+            follow_node._controller, 'is_xy_setpoint_reached', reached)
+        if execution == 'legacy':
+            assert follow_node._load_pipe_path_once()
+            follow_node.follow_pipeline()
+        else:
+            result = follow_node._execute_follow_pipeline(goal)
+            assert result.distance_inspected == follow_node.distance_inspected
+            if interrupt:
+                goal.canceled.assert_called_once()
+            else:
+                goal.succeed.assert_called_once()
+            for call in goal.publish_feedback.call_args_list:
+                assert call.args[0].distance_inspected in (10.0, 12.0, 14.0)
+
+    # Establish the reference with no pauses.
+    run_attempt(False)
+    reference = follow_node.distance_inspected
+    assert reference == 14.0
+    reference_samples = [msg.data for msg in distance_publisher.messages]
+
+    # A new path starts a new inspection; subsequent attempts reuse it.
+    follow_node.first_inspection = True
+    distance_publisher.messages.clear()
+    inspected_publisher.messages.clear()
+    for _ in range(2):
+        run_attempt(True)
+        assert follow_node.pipe_path[0].position.x == stop_x
+        assert follow_node.distance_inspected == (10.0 if stop_x == 12 else 0.0)
+        assert inspected_publisher.messages == []
+
+    run_attempt(False)
+
+    assert follow_node.distance_inspected == reference
+    assert [msg.data for msg in distance_publisher.messages] == reference_samples
+    assert [msg.data for msg in inspected_publisher.messages] == [True]
+    assert follow_node.pipe_path == []
+
+
+def test_new_configuration_resets_inspection_progress(follow_node):
+    """Start a new mission after cleanup instead of retaining its old path."""
+    follow_node.pipe_path = [_pose(14.0)]
+    follow_node.first_inspection = False
+    follow_node.distance_inspected = 10.0
+    follow_node.last_point = _setpoint(10.0)
+
+    follow_node.trigger_cleanup()
+    follow_node.trigger_configure()
+
+    assert follow_node.pipe_path == []
+    assert follow_node.first_inspection is True
+    assert follow_node.distance_inspected == 0.0
+    assert follow_node.last_point is None
+
+
+@pytest.mark.parametrize('execution', ['legacy', 'action'])
+@pytest.mark.parametrize('resume', [False, True])
+def test_deactivation_returns_without_waiting_for_running_traversal(
+        monkeypatch, follow_node, execution, resume):
+    """Let recharge start immediately but serialize inspection resumption."""
+    entered = threading.Event()
+    release = threading.Event()
+    stopped = threading.Event()
+    resumed = threading.Event()
+    errors = []
+    follow_node.set_parameters([
+        rclpy.parameter.Parameter('use_action_server', value=True)])
+    monkeypatch.setattr(
+        follow_node.get_path_service, 'wait_for_service',
+        lambda timeout_sec: True)
+    follow_node.trigger_activate()
+    follow_node.first_inspection = False
+
+    def traverse(should_stop, on_progress=None):
+        entered.set()
+        if not release.wait(timeout=5.0):
+            raise AssertionError('test did not release traversal')
+        reason = should_stop()
+        if reason is None:
+            errors.append('deactivation cleared the stop request too early')
+        return _FollowTraversalResult(False, reason, 0.0, None)
+
+    monkeypatch.setattr(follow_node, '_follow_pipeline_path', traverse)
+    goal = Mock()
+    goal.request = FollowPipeline.Goal(timeout=0.0)
+    goal.is_cancel_requested = False
+    if execution == 'legacy':
+        task = Task(follow_node.follow_pipeline)
+        follow_node.follow_task = task
+    else:
+        task = Task(lambda: follow_node._execute_follow_pipeline(goal))
+    worker = threading.Thread(target=task)
+
+    def deactivate():
+        follow_node.trigger_deactivate()
+        stopped.set()
+
+    def reactivate():
+        follow_node.trigger_activate()
+        resumed.set()
+
+    stopper = threading.Thread(target=deactivate)
+    activator = threading.Thread(target=reactivate)
+    worker.start()
+    try:
+        assert entered.wait(timeout=2.0)
+        stopper.start()
+        assert follow_node._abort_event.wait(timeout=2.0)
+        assert stopped.wait(timeout=0.5)
+        assert worker.is_alive()
+        if resume:
+            activator.start()
+            assert not resumed.wait(timeout=0.05)
+    finally:
+        release.set()
+        worker.join(timeout=2.0)
+        if stopper.ident is not None:
+            stopper.join(timeout=2.0)
+        if activator.ident is not None:
+            activator.join(timeout=2.0)
+
+    assert not worker.is_alive()
+    assert not stopper.is_alive()
+    assert not activator.is_alive()
+    assert stopped.is_set()
+    assert resumed.is_set() is resume
+    assert task.exception() is None
+    assert errors == []
+
+
+def test_stop_after_waypoint_wait_does_not_commit_progress(
+        monkeypatch, follow_node):
+    """Ignore a reached waypoint if deactivation occurred during its wait."""
+    waypoint = _pose(12.0)
+    last_point = _setpoint(10.0)
+    follow_node.pipe_path = [waypoint]
+    follow_node.distance_inspected = 10.0
+    follow_node.last_point = last_point
+    distance_publisher = _Publisher()
+    inspected_publisher = _Publisher()
+    monkeypatch.setattr(
+        follow_node, 'pipeline_distance_inspected_pub', distance_publisher)
+    monkeypatch.setattr(
+        follow_node, 'pipeline_inspected_pub', inspected_publisher)
+    monkeypatch.setattr(follow_node, 'create_rate', lambda frequency: _Rate())
+    monkeypatch.setattr(
+        follow_node, '_get_pipeline_setpoint', lambda pose: _setpoint(12.0))
+
+    def reached_after_stop(pose, setpoint, rate, should_stop):
+        follow_node.abort_follow = True
+        return setpoint, None
+
+    monkeypatch.setattr(
+        follow_node, '_wait_until_setpoint_reached', reached_after_stop)
+
+    follow_node.follow_pipeline()
+
+    assert follow_node.pipe_path == [waypoint]
+    assert follow_node.distance_inspected == 10.0
+    assert follow_node.last_point is last_point
+    assert distance_publisher.messages == []
+    assert inspected_publisher.messages == []

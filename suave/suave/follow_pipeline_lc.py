@@ -75,8 +75,6 @@ class PipelineFollowerLC(Node):
         """Create the pipeline follower node."""
         super().__init__(node_name, **kwargs)
         self.abort_follow = False
-        self.distance_inspected = 0
-        self.first_inspection = True
         self._action_server = None
         self._abort_event = threading.Event()
         self._goal_executing = threading.Event()
@@ -96,6 +94,11 @@ class PipelineFollowerLC(Node):
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         """Create configured publishers, clients, and the action server."""
         self.get_logger().info('on_configure() is called.')
+
+        self.pipe_path = []
+        self.first_inspection = True
+        self.distance_inspected = 0.0
+        self.last_point = None
 
         self.get_path_timer = self.create_rate(5)
         self.get_path_service = self.create_client(
@@ -148,6 +151,8 @@ class PipelineFollowerLC(Node):
         if response is None:
             return False
         self.pipe_path = list(response.path.poses)
+        self.distance_inspected = 0.0
+        self.last_point = None
         self.first_inspection = False
         return True
 
@@ -217,43 +222,47 @@ class PipelineFollowerLC(Node):
             on_progress: Optional[
                 Callable[[float, PoseStamped], None]] = None,
             ) -> _FollowTraversalResult:
-        """Follow the path using caller-provided stop and progress policy."""
+        """Continue the path while retaining mission-wide inspection progress."""
         rate = self.create_rate(0.5)
-        last_point = None
-        distance_inspected = 0.0
 
         while self.pipe_path:
             stop_reason = should_stop()
             if stop_reason is not None:
                 return _FollowTraversalResult(
-                    False, stop_reason, distance_inspected, last_point)
+                    False, stop_reason,
+                    self.distance_inspected, self.last_point)
 
             gz_pose = self.pipe_path[0]
             setpoint, stop_reason = self._wait_for_setpoint(
                 gz_pose, rate, should_stop)
             if stop_reason is not None:
                 return _FollowTraversalResult(
-                    False, stop_reason, distance_inspected, last_point)
+                    False, stop_reason,
+                    self.distance_inspected, self.last_point)
 
             setpoint, stop_reason = self._wait_until_setpoint_reached(
                 gz_pose, setpoint, rate, should_stop)
+            if stop_reason is None:
+                stop_reason = should_stop()
             if stop_reason is not None:
                 return _FollowTraversalResult(
-                    False, stop_reason, distance_inspected, last_point)
+                    False, stop_reason,
+                    self.distance_inspected, self.last_point)
 
             self.pipe_path.pop(0)
-            if last_point is not None and setpoint is not None:
-                distance_inspected += self.calc_distance(
-                    last_point, setpoint)
-                self._publish_distance_progress(distance_inspected)
+            previous_point = self.last_point
+            self.last_point = setpoint
+            if previous_point is not None and setpoint is not None:
+                self.distance_inspected += self.calc_distance(
+                    previous_point, setpoint)
+                self._publish_distance_progress(self.distance_inspected)
                 if on_progress is not None:
-                    on_progress(distance_inspected, setpoint)
-            last_point = setpoint
+                    on_progress(self.distance_inspected, setpoint)
 
         self._publish_pipeline_inspected()
         self.get_logger().info('Follow pipeline completed')
         return _FollowTraversalResult(
-            True, None, distance_inspected, last_point)
+            True, None, self.distance_inspected, self.last_point)
 
     def _execute_follow_pipeline(
             self, goal_handle: ServerGoalHandle) -> FollowPipeline.Result:
@@ -266,12 +275,12 @@ class PipelineFollowerLC(Node):
             if not self.get_path_service.wait_for_service(timeout_sec=1.0):
                 self.get_logger().info(
                     'pipeline/get_path service not available')
-                result = self._make_result(False)
+                result = self._make_result(False, self.distance_inspected)
                 goal_handle.abort()
                 return result
 
             if not self._load_pipe_path_once():
-                result = self._make_result(False)
+                result = self._make_result(False, self.distance_inspected)
                 goal_handle.abort()
                 return result
 
@@ -314,6 +323,9 @@ class PipelineFollowerLC(Node):
     def on_activate(self, state: State) -> TransitionCallbackReturn:
         """Start pipeline following unless action server mode is on."""
         self.get_logger().info('on_activate() is called.')
+        # An earlier traversal must finish before its stop flags are cleared.
+        # This belongs on resume, not on the transition to recharging.
+        self._stop_following()
         self.abort_follow = False
         self._abort_event.clear()
         if not self.get_path_service.wait_for_service(timeout_sec=1.0):
@@ -336,18 +348,25 @@ class PipelineFollowerLC(Node):
     def on_deactivate(self, state: State) -> TransitionCallbackReturn:
         """Deactivate the node and stop pipeline following."""
         self.get_logger().info('on_deactivate() is called.')
+        self._stop_following(wait=False)
+        return super().on_deactivate(state)
+
+    def _stop_following(self, wait=True) -> None:
+        """Request a stop and optionally wait before reusing its resources."""
         self._abort_event.set()
         self.abort_follow = True
         if hasattr(self, 'follow_task') and self.follow_task is not None:
             self.follow_task.cancel()
-        return super().on_deactivate(state)
+            # Canceling an rclpy Task does not stop its running function.
+            while wait and self.follow_task.executing():
+                time.sleep(0.01)
+        if wait:
+            wait_for_action_completion(self)
 
     def on_cleanup(self, state: State) -> TransitionCallbackReturn:
         """Clean up the node."""
         self.get_logger().info('on_cleanup() is called.')
-        self._abort_event.set()
-        self.abort_follow = True
-        wait_for_action_completion(self)
+        self._stop_following()
         self._destroy_configured_entities()
         return TransitionCallbackReturn.SUCCESS
 
@@ -375,17 +394,13 @@ class PipelineFollowerLC(Node):
     def on_shutdown(self, state: State) -> TransitionCallbackReturn:
         """Shut down the node."""
         self.get_logger().info('on_shutdown() is called.')
-        self._abort_event.set()
-        self.abort_follow = True
-        wait_for_action_completion(self)
+        self._stop_following()
         self._destroy_configured_entities()
         return TransitionCallbackReturn.SUCCESS
 
     def follow_pipeline(self) -> None:
         """Follow the pipeline path (legacy lifecycle-activation mode)."""
         self.get_logger().info('Follow pipeline started')
-        self.last_point = None
-        self.distance_inspected = 0.0
 
         def should_stop() -> Optional[_FollowStopReason]:
             """Stop traversal when lifecycle deactivation requests it."""
@@ -393,16 +408,7 @@ class PipelineFollowerLC(Node):
                 return _FollowStopReason.LEGACY_ABORT
             return None
 
-        def update_legacy_progress(
-                distance_inspected: float, setpoint: PoseStamped) -> None:
-            """Store progress in the legacy lifecycle attributes."""
-            self.distance_inspected = distance_inspected
-            self.last_point = setpoint
-
-        traversal = self._follow_pipeline_path(
-            should_stop, on_progress=update_legacy_progress)
-        self.distance_inspected = traversal.distance_inspected
-        self.last_point = traversal.last_point
+        self._follow_pipeline_path(should_stop)
 
     def calc_distance(
             self, pose1: PoseStamped, pose2: PoseStamped) -> float:
