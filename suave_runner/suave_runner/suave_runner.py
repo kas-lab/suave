@@ -15,6 +15,7 @@
 """Run repeatable SUAVE experiment campaigns and collect their results."""
 
 import asyncio
+import csv
 from datetime import datetime
 import json
 import multiprocessing
@@ -612,6 +613,18 @@ class ExperimentRunnerNode(Node):
                     break
 
                 if mission_complete:
+                    broken_reason = self.detect_broken_run(run_log_dir)
+                    if broken_reason:
+                        mission_complete = False
+                        self.get_logger().error(
+                            f'    Run {run_idx + 1} flagged as broken '
+                            f'({broken_reason}); not checkpointing, it will '
+                            're-run on --resume.')
+                        self.record_broken_run(
+                            result_path, exp_idx, run_idx, adaptation_manager,
+                            result_filename, broken_reason)
+
+                if mission_complete:
                     done_marker.touch()
 
                 self.get_logger().info(
@@ -620,6 +633,64 @@ class ExperimentRunnerNode(Node):
                 time.sleep(10)
 
         self.get_logger().info('All experiment runs completed or aborted.')
+
+    def detect_broken_run(self, run_log_dir):
+        """Return a reason string if the finished run hit a known bug, else ''."""
+        return self._search_path_node_never_activated(run_log_dir)
+
+    def _search_path_node_never_activated(self, run_log_dir):
+        """Flag runs where the spiral search lifecycle node never activated."""
+        experiment_dir = run_log_dir / 'experiment'
+        candidates = []
+        for log_path in experiment_dir.glob('python3_*.log'):
+            try:
+                text = log_path.read_text(errors='replace')
+            except OSError:
+                continue
+            if 'f_generate_search_path_node' in text:
+                candidates.append((log_path.stat().st_mtime, text))
+        if not candidates:
+            return ''
+        # The run log dir is reused across --resume attempts; use the newest.
+        _, text = max(candidates, key=lambda item: item[0])
+        if ('on_configure() is called.' in text
+                and 'on_activate() is called.' not in text):
+            return ('f_generate_search_path_node configured but never activated'
+                    ' (system_modes mode transition lost)')
+        return ''
+
+    def record_broken_run(
+            self, result_path, exp_idx, run_idx, manager, result_filename,
+            reason):
+        """Log a broken run and move its metrics row into a rejected file."""
+        result_path = Path(result_path)
+        record = {
+            'run': f'run_{exp_idx}_{run_idx}',
+            'adaptation_manager': manager,
+            'reason': reason,
+            'timestamp': datetime.now().isoformat(),
+        }
+        with open(result_path / 'rejected_runs.jsonl', 'a') as handle:
+            handle.write(json.dumps(record) + '\n')
+
+        results_csv = result_path / f'{result_filename}.csv'
+        if not results_csv.is_file():
+            return
+        with open(results_csv, newline='') as handle:
+            rows = list(csv.reader(handle))
+        if len(rows) <= 1:
+            return
+        header = rows[0]
+        rejected_row = rows[-1]
+        with open(results_csv, 'w', newline='') as handle:
+            csv.writer(handle).writerows(rows[:-1])
+        rejected_csv = result_path / f'{result_filename}_rejected.csv'
+        write_header = not rejected_csv.is_file()
+        with open(rejected_csv, 'a', newline='') as handle:
+            writer = csv.writer(handle)
+            if write_header:
+                writer.writerow(header)
+            writer.writerow(rejected_row)
 
     def generate_mission_config_files(self, result_path):
         """Generate per-run mission configurations with randomized events."""
