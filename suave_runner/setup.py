@@ -52,6 +52,7 @@ setup(
          'mann_whitney_analysis = '
          'suave_runner.analysis.mann_whitney_analysis:main',
          'wilcoxon_analysis = suave_runner.analysis.wilcoxon_analysis:main',
-         'summarize_results = suave_runner.analysis.summarize_results:main'],
+         'summarize_results = suave_runner.analysis.summarize_results:main',
+         'run_batch = suave_runner.run_batch:main'],
     },
 )

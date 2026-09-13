@@ -24,6 +24,72 @@ The published image is available as `ghcr.io/kas-lab/suave-headless:main`.
 docker run -it --rm --gpus all --runtime=nvidia --name suave_runner -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all -v $HOME/suave/results:/home/ubuntu-user/suave/results -v /dev/dri:/dev/dri -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro ghcr.io/kas-lab/suave-headless:main
 ```
 
+## Batch runner
+
+To run several campaigns sequentially in one go, use the generic `run_batch`
+node, configured through a YAML manifest (see
+[config/batch_campaigns.yml](config/batch_campaigns.yml) for a runnable
+example covering `exp1`-`exp3` and `extended_exp1`-`extended_exp3` with the
+`bt`, `metacontrol`, `random`, and `none` managing systems -- this package
+does not contain the `planta` or `rosa_bt` managers, those live in the
+`suave_planta` and `suave_rosa_bt` repos):
+
+```bash
+ros2 launch suave_runner run_batch_launch.py
+```
+
+Or directly, pointing at any manifest:
+
+```bash
+ros2 run suave_runner run_batch \
+  --ros-args --params-file config/batch_campaigns.yml
+```
+
+**Note:** running every campaign back-to-back can take several hours to a few
+days, depending on the machine and `num_runs` per experiment -- plan to leave
+it running unattended (e.g. in `screen`/`tmux`) rather than waiting on it.
+
+This creates a timestamped batch directory under `~/suave/results/batches/`
+(e.g. `batch_20260913_104200/`) containing:
+
+- `state.json` -- the batch checkpoint, tracking each campaign's status
+  (`pending`, `running`, `completed`, `incomplete`, `failed`, or
+  `interrupted`)
+- `run_batch.log` -- the overall orchestration log
+- `<campaign_name>.log` -- combined stdout/stderr for each campaign (e.g.
+  `exp1.log`)
+- `campaigns/<campaign_name>/` -- each campaign's own results directory, in
+  the same layout `suave_runner` produces for a single campaign
+
+**Checking whether a batch needs to be resumed:** a batch finished cleanly if
+`run_batch.log` ends with `All campaigns completed successfully.`. If it
+stops early -- Ctrl+C, a crash, a failed campaign -- the log ends instead with
+a `Batch interrupted; ...` or `Batch finished with N incomplete, ...` line
+followed by the exact resume command to use. You can also check
+campaign-by-campaign at any time by inspecting `state.json`:
+
+```bash
+grep '"status"' ~/suave/results/batches/<batch_dir>/state.json
+```
+
+Any campaign not marked `"status": "completed"` still needs to (re)run.
+
+**Resuming an interrupted batch:** pass the batch's `state.json` as the
+`resume_state_file` parameter; campaigns already marked `completed` are
+skipped, and an `incomplete` campaign picks up from its last saved run
+instead of starting over:
+
+```bash
+ros2 run suave_runner run_batch --ros-args \
+  -p resume_state_file:=~/suave/results/batches/<batch_dir>/state.json
+```
+
+To run a custom subset or order of campaigns, write your own manifest (or
+edit `config/batch_campaigns.yml`) and pass it via `--params-file` before
+starting a new batch. `-p fail_fast:=true` stops the batch as soon as a
+campaign fails instead of continuing to the next one, and `-p dry_run:=true`
+prints the `ros2 run` command for each campaign without executing anything.
+
 ## Resuming a crashed campaign
 
 If the runner crashes or is interrupted mid-campaign, it can resume from where it

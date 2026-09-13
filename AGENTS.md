@@ -75,7 +75,7 @@ ros2 launch suave_bringup mission.launch.py
 ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt result_filename:=measurement_1
 ```
 
-Valid `adaptation_manager` values are `none`, `metacontrol`, `random`, and `bt`. The preferred campaign runner is `ros2 launch suave_runner suave_runner.launch.py`; its config is `suave_runner/config/runner_config.yml` and results default to `~/suave/results/`. The shell runner is `cd runner && ./runner.sh [true|false] [metacontrol|random|none|bt] [time|distance] <runs>`, with `headless_runner.sh` using `screen` instead of `xfce4-terminal`.
+Valid `adaptation_manager` values are `none`, `metacontrol`, `random`, and `bt`. The preferred campaign runner is `ros2 launch suave_runner suave_runner_launch.py`; its config is `suave_runner/config/runner_config.yml` and results default to `~/suave/results/`. To sequence multiple campaigns in one batch with checkpoint/resume, use `ros2 launch suave_runner run_batch_launch.py` (config: `suave_runner/config/batch_campaigns.yml`). The shell runner is `cd runner && ./runner.sh [true|false] [metacontrol|random|none|bt] [time|distance] <runs>`, with `headless_runner.sh` using `screen` instead of `xfce4-terminal`.
 
 MAVROS default FCU URL is `udp://0.0.0.0:14550@14555`, avoiding the need for `sim_vehicle --out=...`.
 
