@@ -20,9 +20,9 @@ import pandas as pd
 
 import pytest
 
-from suave_runner.summarize_results import calculate_statistics
-from suave_runner.summarize_results import main
-from suave_runner.summarize_results import render_latex_table
+from suave_runner.analysis.summarize_results import calculate_statistics
+from suave_runner.analysis.summarize_results import main
+from suave_runner.analysis.summarize_results import render_latex_table
 
 
 def _write_results(path, managing_system, rows):

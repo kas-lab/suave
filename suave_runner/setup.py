@@ -17,6 +17,7 @@
 from glob import glob
 import os
 
+from setuptools import find_packages
 from setuptools import setup
 
 package_name = 'suave_runner'
@@ -24,7 +25,7 @@ package_name = 'suave_runner'
 setup(
     name=package_name,
     version='0.0.0',
-    packages=[package_name],
+    packages=find_packages(include=[package_name, package_name + '.*']),
     data_files=[('share/ament_index/resource_index/packages',
                  ['resource/' + package_name]),
                 (os.path.join('share', package_name), ['package.xml']),
@@ -48,7 +49,9 @@ setup(
     entry_points={
         'console_scripts':
         ['suave_runner = suave_runner.suave_runner:main',
-         'statistical_analysis = suave_runner.statistical_analysis:main',
-         'summarize_results = suave_runner.summarize_results:main'],
+         'mann_whitney_analysis = '
+         'suave_runner.analysis.mann_whitney_analysis:main',
+         'wilcoxon_analysis = suave_runner.analysis.wilcoxon_analysis:main',
+         'summarize_results = suave_runner.analysis.summarize_results:main'],
     },
 )

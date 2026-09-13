@@ -12,7 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Compare SUAVE experiment metrics using nonparametric statistics."""
+"""Compare SUAVE experiment metrics using the Mann-Whitney U test."""
+
+#
+# Treats each managing system's samples as independent (unpaired) draws. For a
+# paired, run-matched alternative, see `wilcoxon_analysis.py` and
+# `WILCOXON_ANALYSIS_SPEC.md`.
 
 import json
 from pathlib import Path
@@ -58,7 +63,7 @@ class SuaveData:
         self.test_normality_('mean reaction time', self.mean_reaction_time)
 
 
-class StatisticalAnalysis(Node):
+class MannWhitneyAnalysis(Node):
     """Calculate pairwise Mann-Whitney U tests for experiment metrics."""
 
     def __init__(self, **kwargs):
@@ -179,7 +184,7 @@ def main(args=None):
     """Run the statistical analysis node."""
     rclpy.init(args=args)
     executor = rclpy.executors.SingleThreadedExecutor()
-    lc_node = StatisticalAnalysis()
+    lc_node = MannWhitneyAnalysis()
     executor.add_node(lc_node)
 
     try:
