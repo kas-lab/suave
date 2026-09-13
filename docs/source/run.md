@@ -643,3 +643,106 @@ use `p_adjusted` in the primary CSV when interpreting corrected results.
 A nonsignificant result does not establish equality. Independent pairs and
 reasonably symmetric paired differences are needed for the usual
 location-shift interpretation.
+
+
+## Batch Wilcoxon LaTeX tables
+
+Generate one table per experiment from an existing batch analysis, using the
+existing `latex_tables.py` renderer. From the sourced container workspace:
+
+```bash
+python3 src/suave/suave_runner/suave_runner/latex/wilcoxon_latex_tables_batch.py \
+  /home/ubuntu-user/suave/results/batches/all_experiments_20260904_093305
+```
+
+The wrapper discovers experiments under `<batch>/campaigns/` and reads each
+`<batch>/campaings_results/<experiment>/wilcoxon_analysis/*_results.csv`.
+It saves tables directly under the requested common directory:
+
+```text
+campaigns_latex_tables/wilcoxon_analysis/
+  exp1_wilcoxon.tex
+  exp2_wilcoxon.tex
+  exp3_wilcoxon.tex
+  extended_exp1_wilcoxon.tex
+  extended_exp2_wilcoxon.tex
+  extended_exp3_wilcoxon.tex
+```
+
+Each table contains search-time and distance-inspected blocks. It defaults
+to `p_adjusted` from the primary results CSV; it does not use the secondary
+raw-p-value matrices or recompute correction. Temporary matrices adapt those
+values to the existing renderer and are removed after generation. Run
+`wilcoxon_analysis_batch.py` first if analysis is missing; table generation
+does not rerun sorting or statistical tests.
+
+| Option | Meaning |
+|---|---|
+| `--results-root PATH` | Override `<batch>/campaings_results` |
+| `--output PATH` | Override the directory containing all generated tables |
+| `--p-values adjusted\|raw` | Display adjusted values by default; raw requires explicit selection |
+| `--alpha VALUE` | Color threshold, default 0.05 |
+
+Captions identify the p-value policy, one-sided alternatives, and the condition
+that both methods found the pipeline. Green cells indicate values below
+alpha; blue cells indicate other computed values. Colors use unrounded
+p-values, while printed values retain the renderer's three-decimal format.
+Values that would round to `0.000` are displayed as `<0.001`.
+A dash denotes a diagonal entry or a test not computed; details remain in
+the primary analysis CSV. The wrapper checks both metric blocks for complete,
+unique ordered pairs, consistent alternatives and correction policy, valid
+p-values, and notes explaining missing results.
+
+Known method labels use None, Random, BT, MC, ROSA, and PLANTA; captions
+explain that MC means Metacontrol. Tables follow the paper's pairwise-table
+layout: a 1.65 cm row-label column and 1.2 row spacing. Value columns are
+slightly wider at 1.3 cm so the names fit in the manuscript's font.
+Tables with up to three methods use `0.7\textwidth`; larger tables use
+`\textwidth`. Rerun the batch command to refresh existing `.tex` files.
+Other labels are escaped as literal LaTeX text. Table labels include the
+experiment name. Keep `latex_tables.py` alongside the batch script.
+
+The containing LaTeX document needs the following preamble support (reuse
+existing definitions when present):
+
+```latex
+\usepackage{array,graphicx,multirow}
+\usepackage[table]{xcolor}
+\definecolor{pvalue_green}{RGB}{210,245,210}
+\definecolor{pvalue_blue}{RGB}{210,225,245}
+```
+
+Include a generated table with `\input{path/to/exp1_wilcoxon.tex}`.
+Campaign failures are reported individually; other tables are still generated,
+and the script exits nonzero if any campaign fails.
+
+
+## Analysis and LaTeX script locations
+
+The Python tools are grouped under `suave_runner/suave_runner/`:
+
+- `analysis/`: Mann-Whitney and Wilcoxon analysis, batch Wilcoxon analysis,
+  result sorting, Q-Q plotting, and descriptive result summaries.
+- `latex/`: the table renderer and batch Wilcoxon LaTeX table generation.
+
+`suave_runner.py` and `run_batch.py` remain at the package root for experiment
+execution. The installed `mann_whitney_analysis`, `wilcoxon_analysis`, and
+`summarize_results` command names are unchanged; their entry points now load
+`suave_runner.analysis` modules. Existing launch `executable` names and YAML
+node names therefore remain valid. Python callers should import from
+`suave_runner.analysis` or `suave_runner.latex`.
+
+After updating the checkout, rebuild inside the sourced SUAVE container:
+
+```bash
+colcon build --symlink-install --packages-select suave_runner
+source install/setup.bash
+```
+
+Direct batch commands, from the workspace root:
+
+```bash
+python3 src/suave/suave_runner/suave_runner/analysis/wilcoxon_analysis_batch.py /path/to/batch
+python3 src/suave/suave_runner/suave_runner/analysis/qq_plot_batch.py /path/to/batch
+python3 src/suave/suave_runner/suave_runner/latex/wilcoxon_latex_tables_batch.py /path/to/batch
+```
