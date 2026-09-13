@@ -40,6 +40,12 @@ An overview of the system:
 
 The exemplar can either be used with [Docker](#use-suave-with-docker) or [installed locally](#install-suave-locally). The exemplar can be executed following this [instructions](#run-suave).
 
+The water-visibility monitor publishes the initial visibility from startup and
+keeps publishing it until the vehicle first enters GUIDED mode. Only then does
+the visibility schedule advance, so vehicle startup time does not shift the
+configured visibility changes. The initial value includes
+`water_visibility_sec_shift` evaluated at experiment time zero.
+
 A paper describing this exemplar was presented at SEAMS 2023 artifact track, you can find it [here](https://ieeexplore.ieee.org/abstract/document/10173938). And an open access pre-print can be found [here](https://arxiv.org/abs/2303.09220).
 
 ## Navigate the README

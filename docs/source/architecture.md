@@ -88,6 +88,14 @@ The `suave_monitor` package contains three monitor nodes that continuously obser
 
 All three publish at regular intervals. The managing subsystem is expected to maintain its own internal model by subscribing to `/diagnostics`.
 
+The water-visibility monitor also publishes immediately at startup. It holds the
+visibility function at experiment time zero until the first GUIDED state, then
+advances the function from that point. `water_visibility_sec_shift` applies to
+both the initial value and subsequent values. This makes the initial observation
+available before the vehicle starts without letting vehicle startup time shift
+the configured visibility changes. Managing subsystems that require visibility
+for their initial decisions should wait for that observation.
+
 ---
 
 ## Managing subsystem (pluggable)
