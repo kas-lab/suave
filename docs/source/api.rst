@@ -25,4 +25,6 @@ API
    suave_runner.analysis.wilcoxon_analysis
    suave_runner.analysis.sort_results
    suave_runner.analysis.summarize_results
+   suave_runner.analysis.qq_plot
+   suave_runner.analysis.qq_plot_batch
    suave_runner.analysis.wilcoxon_analysis_batch

@@ -364,6 +364,86 @@ The generated file can then be included with `\input`, for example:
 ```
 
 
+## Q-Q plots of paired differences
+
+`suave_runner/suave_runner/analysis/qq_plot.py` is a standalone Python script using
+pandas, NumPy, SciPy, and Matplotlib. It plots A minus B for visual assessment
+of the paired t-test normality assumption. It does not run formal normality
+tests or classify the data. The reference line is fitted to the differences.
+
+Run these examples from the sourced SUAVE workspace root inside the development
+container. Paths must be visible inside that container.
+
+Compare two method columns in one CSV (paired by row):
+
+```bash
+python3 src/suave/suave_runner/suave_runner/analysis/qq_plot.py results.csv \
+  --column-a suave --column-b baseline --output qq_suave_baseline.png
+```
+
+Compare the same metric in two sorted method CSVs:
+
+```bash
+python3 src/suave/suave_runner/suave_runner/analysis/qq_plot.py \
+  /path/to/campaign/sorted/planta_suave_sorted.csv \
+  /path/to/campaign/sorted/bt_suave_sorted.csv \
+  --column-a 'time searching pipeline (s)' \
+  --column-b 'time searching pipeline (s)' --output qq_search.png
+```
+
+Separate files must belong to the same campaign and have matching, unique,
+nonmissing `run_idx` values; row order does not matter. `--run-column` selects
+another pairing key. Unmatched or duplicate IDs cause an error. The caller
+must ensure those IDs refer to the same experimental configurations.
+`--label-a` and `--label-b` override method labels derived from filenames.
+
+Use the companion `qq_plot_batch.py` to generate every unordered method
+comparison within every campaign. Pass the batch root directly:
+
+```bash
+python3 src/suave/suave_runner/suave_runner/analysis/qq_plot_batch.py \
+  /home/ubuntu-user/suave/results/batches/all_experiments_20260904_093305
+```
+
+The batch script reuses the CSV script's validation and plotting functions;
+keep both scripts together. It accepts a batch root, its `campaigns` directory,
+or one campaign. It reads only `*_sorted.csv` files from each campaign's
+`sorted` folder and never pairs different campaigns. Search time and distance
+inspected are the default metrics; `--metrics` accepts an explicit list of
+metric column names.
+
+By default, results mirror the experiment folders under
+`<batch>/campaings_results/` (using this exact directory spelling):
+
+```text
+all_experiments_20260904_093305/
+  campaigns/
+    exp1/sorted/*.csv
+    exp2/sorted/*.csv
+    ...
+  campaings_results/
+    exp1/q-q-plots/*.png
+    exp2/q-q-plots/*.png
+    ...
+```
+
+`--output /path/to/qq_plots` overrides the batch output root; figures still
+go under `<output>/<experiment>/q-q-plots/`. The option
+`--format pdf|png|svg` selects the format (default PNG). The batch script
+always saves figures and requires no display. For explicit CSV comparisons,
+`qq_plot.py --output` selects a figure filename; omitting it displays the plot
+interactively. Run either script with `--help` for its full interface.
+
+Both selected columns must be numeric. A missing value removes the entire
+pair. Infinite values are rejected, and at least three complete pairs are
+required. All other complete pairs are included, including zero metrics and
+runs where `pipeline found` is false. This script does not apply the success
+filter used by the Wilcoxon analysis. It prints the number of valid pairs,
+removed pairs, mean, median, sample standard deviation (`ddof=1`), minimum,
+and maximum. Batch errors identify the campaign, files, and metric; remaining
+comparisons continue, with a nonzero exit status if any comparison fails.
+
+
 ## Batch paired Wilcoxon analysis
 
 `wilcoxon_analysis_batch.py` orchestrates the existing `wilcoxon_analysis.py`
