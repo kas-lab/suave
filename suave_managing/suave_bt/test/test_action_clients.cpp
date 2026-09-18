@@ -85,15 +85,20 @@ BT::NodeStatus run_action(
 {
   static std::atomic<int> test_index{0};
   const auto suffix = std::to_string(test_index++);
+  // Give the mock server a DDS-unique name so it never collides with a real
+  // suave lifecycle-node action server of the same name running concurrently
+  // in CI (colcon test runs packages in parallel on the same ROS domain).
+  const std::string test_action_name = "test_" + action_name + "_" + suffix;
   rclcpp::NodeOptions options;
   options.parameter_overrides(
-    {rclcpp::Parameter("use_action_server", use_action_server)});
+    {rclcpp::Parameter("use_action_server", use_action_server),
+      rclcpp::Parameter(action_name + "_action_name", test_action_name)});
   auto mission = std::make_shared<suave_bt::SuaveMission>(
     "test_mission_node_" + suffix, options);
   auto server_node = std::make_shared<rclcpp::Node>(
     "test_action_server_" + suffix);
   auto server = make_success_server<ActionT>(
-    server_node, action_name, initialize_result);
+    server_node, test_action_name, initialize_result);
 
   BT::BehaviorTreeFactory factory;
   factory.registerNodeType<BtNodeT>(registration_name);
