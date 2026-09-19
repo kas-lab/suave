@@ -325,8 +325,8 @@ def build_parser():
                         help='Output root; defaults to '
                         '<batch>/campaings_results')
     parser.add_argument('--correction', choices=('holm', 'none'),
-                        default='holm', help='Multiplicity correction '
-                        'within each campaign (default: holm)')
+                        default='none', help='Multiplicity correction '
+                        'within each campaign (default: none)')
     return parser
 
 

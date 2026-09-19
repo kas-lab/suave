@@ -146,7 +146,7 @@ def test_batch_output_pairing_filtering_and_correction(tmp_path):
     plot = tmp_path / 'campaings_results' / 'exp1' / 'q-q-plots' / 'keep.png'
     plot.parent.mkdir(parents=True)
     plot.write_bytes(b'existing plot')
-    assert batch.main([str(tmp_path)]) == 0
+    assert batch.main([str(tmp_path), '--correction', 'holm']) == 0
     for campaign, expected_rows in [('exp1', 12), ('exp2', 4)]:
         folder = (tmp_path / 'campaings_results' / campaign /
                   'wilcoxon_analysis')
