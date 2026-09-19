@@ -15,7 +15,7 @@ docker run -it --rm --gpus all --runtime=nvidia --name suave_runner -e DISPLAY=$
 ```
 
 ```bash
-docker run -it --rm --gpus all --runtime=nvidia --name suave_runner -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all -v /dev/dri:/dev/dri -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro -v $HOME/ros_workspaces/suave_rebetmc_ws/src/suave:/home/ubuntu-user/suave_ws/src/suave suave-headless:dev
+docker run -it --rm --gpus all --runtime=nvidia --name suave_runner -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all -v /dev/dri:/dev/dri -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro -v $HOME/ros_workspaces/suave_ws/src/suave:/home/ubuntu-user/suave_ws/src/suave suave-headless:dev
 ```
 
 The published image is available as `ghcr.io/kas-lab/suave-headless:main`.
@@ -28,11 +28,11 @@ docker run -it --rm --gpus all --runtime=nvidia --name suave_runner -e DISPLAY=$
 
 To run several campaigns sequentially in one go, use the generic `run_batch`
 node, configured through a YAML manifest (see
-[config/batch_campaigns.yml](config/batch_campaigns.yml) for a runnable
+[config/runner/batch_campaigns.yml](config/runner/batch_campaigns.yml) for a runnable
 example covering `exp1`-`exp3` and `extended_exp1`-`extended_exp3` with the
-`bt`, `metacontrol`, `random`, and `none` managing systems -- this package
-does not contain the `planta` or `rosa_bt` managers, those live in the
-`suave_planta` and `suave_rosa_bt` repos):
+`bt`, `metacontrol`, `random`, and `none` managing systems bundled with this
+package; a third-party managing system's own runner config can be added the
+same way, from its own repo):
 
 ```bash
 ros2 launch suave_runner run_batch_launch.py
@@ -42,7 +42,7 @@ Or directly, pointing at any manifest:
 
 ```bash
 ros2 run suave_runner run_batch \
-  --ros-args --params-file config/batch_campaigns.yml
+  --ros-args --params-file config/runner/batch_campaigns.yml
 ```
 
 **Note:** running every campaign back-to-back can take several hours to a few
@@ -85,7 +85,7 @@ ros2 run suave_runner run_batch --ros-args \
 ```
 
 To run a custom subset or order of campaigns, write your own manifest (or
-edit `config/batch_campaigns.yml`) and pass it via `--params-file` before
+edit `config/runner/batch_campaigns.yml`) and pass it via `--params-file` before
 starting a new batch. `-p fail_fast:=true` stops the batch as soon as a
 campaign fails instead of continuing to the next one, and `-p dry_run:=true`
 prints the `ros2 run` command for each campaign without executing anything.
@@ -125,7 +125,7 @@ folder; otherwise they are regenerated from the same random seed.
 
 The runner uses the `random_seed` ROS parameter when generating experiment
 perturbations. It defaults to `100` so benchmark runs are reproducible. Set a
-different integer in `config/runner_config.yml` or through `--ros-args -p
+different integer in `config/runner/runner_config.yml` or through `--ros-args -p
 random_seed:=<value>` to generate a different sequence.
 
 
@@ -309,6 +309,22 @@ ros2 run suave_runner wilcoxon_analysis \
   ]'
 ```
 
+For `exp1`-`exp3` and `extended_exp1`-`extended_exp3` (the campaigns bundled
+with this repo's own runner configs), a preconfigured launch file under
+`suave_runner/launch/analysis/` avoids typing out `data_files` by hand:
+
+```bash
+ros2 launch suave_runner exp1_analysis_launch.py \
+  results_root:=~/suave/results/sorted
+```
+
+`results_root` must point at that campaign's sorted-CSV directory;
+`output_root` (defaults to `results_root`) and `correction` (defaults to
+`holm`) can also be overridden. See
+[config/analysis/exp1_analysis_config.yml](config/analysis/exp1_analysis_config.yml)
+for the exact `data_files` mapping used -- edit a copy of it for a campaign
+whose managing systems differ from what's bundled.
+
 Parameters beyond those shared with `mann_whitney_analysis`:
 
 | Parameter | Default | Description |
@@ -380,10 +396,10 @@ sample standard deviation is also `N/A` when fewer than two applicable samples
 are available.
 
 Managing-system identifiers are derived from filenames and formatted for
-presentation. The known identifiers are `bt`, `metacontrol`, `none`, `random`,
-and `rebetmc`, displayed as `BT`, `Metacontrol`, `None`, `Random`, and
-`ReBeT-MC`, respectively. Other identifiers are converted from snake case to
-title case.
+presentation. The known identifiers are `bt`, `metacontrol`, `none`, and `random`,
+displayed as `BT`, `Metacontrol`, `None`, and `Random`, respectively.
+Other identifiers -- including third-party managing systems from other
+repos -- are converted from snake case to title case.
 
 Use `--latex` to also write a complete LaTeX table to
 `<results_path>/suave_results.tex`:
@@ -451,7 +467,7 @@ Compare the same metric in two sorted method CSVs:
 
 ```bash
 python3 src/suave/suave_runner/suave_runner/analysis/qq_plot.py \
-  /path/to/campaign/sorted/planta_suave_sorted.csv \
+  /path/to/campaign/sorted/metacontrol_suave_sorted.csv \
   /path/to/campaign/sorted/bt_suave_sorted.csv \
   --column-a 'time searching pipeline (s)' \
   --column-b 'time searching pipeline (s)' --output qq_search.png
@@ -642,8 +658,12 @@ unique ordered pairs, consistent alternatives and correction policy, valid
 p-values, and notes explaining missing results.
 
 Known method labels use None, Random, BT, MC, ROSA, and PLANTA; captions
-explain that MC means Metacontrol. Tables follow the paper's pairwise-table
-layout: a 1.65 cm row-label column and 1.2 row spacing. Value columns are
+explain that MC means Metacontrol. ROSA and PLANTA are labels for two
+third-party managing systems, each from its own separate repo (not bundled
+with this one) -- they only appear when their result CSVs are added
+alongside this repo's own for a combined comparison. Tables follow the
+paper's pairwise-table layout: a 1.65 cm row-label column and 1.2 row
+spacing. Value columns are
 slightly wider at 1.3 cm so the names fit in the manuscript's font.
 Tables with up to three methods use `0.7\textwidth`; larger tables use
 `\textwidth`. Rerun the batch command to refresh existing `.tex` files.

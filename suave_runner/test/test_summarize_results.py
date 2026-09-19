@@ -73,7 +73,7 @@ def test_calculate_statistics_uses_na_when_no_reactions_exist(tmp_path):
 def test_render_latex_table_formats_names_rates_and_na(tmp_path):
     """Render publication names, success rates, and unavailable values."""
     _write_results(tmp_path, 'none', _result_rows((0.0, 0.0, 0.0)))
-    _write_results(tmp_path, 'rebetmc', _result_rows())
+    _write_results(tmp_path, 'metacontrol', _result_rows())
 
     latex = render_latex_table(calculate_statistics(tmp_path))
 
@@ -85,7 +85,7 @@ def test_render_latex_table_formats_names_rates_and_na(tmp_path):
     assert r'None & 2/3 (66.67\%)' in latex
     assert 'None & 2/3 (66.67\\%) & $12.00' in latex
     assert '& N/A ' in latex
-    assert 'ReBeT-MC' in latex
+    assert 'Metacontrol' in latex
 
 
 def test_main_writes_default_latex_file(tmp_path, capsys):

@@ -2,7 +2,7 @@
 
 Before finishing code changes:
 - Check `git status --short` and distinguish own edits from pre-existing user edits. This repository is often used with uncommitted experiment/Docker changes, so avoid reverting unrelated changes.
-- SUAVE validation must run inside the applicable development or integration container. Standalone containers are commonly named `suave` or `suave_runner`; `suave_rebetmc_ws` normally uses `suave_rebetmc`. Do not assume the host has ROS/SUAVE dependencies.
+- SUAVE validation must run inside the applicable development or integration container. Standalone containers are commonly named `suave` or `suave_runner`; an integration workspace may use a differently named container instead. Do not assume the host has ROS/SUAVE dependencies.
 - Use the container's default sourced workspace configuration. Do not override `PYTHONPATH`, `ROS_LOG_DIR`, or similar ROS/Python environment variables unless explicitly requested.
 - Validation wrapper: `docker exec <container-name> bash -lc 'cd /home/ubuntu-user/suave_ws && source /opt/ros/humble/setup.bash && source install/setup.bash && <command>'`.
 - Python files should include the standard `Copyright 2026 KAS Lab` Apache-2.0 header.

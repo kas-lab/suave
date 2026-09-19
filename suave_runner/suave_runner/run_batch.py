@@ -26,13 +26,14 @@
 #       - |
 #         {
 #           "name": "exp1",
-#           "package": "suave_planta",
-#           "config_file": "config/exp1_runner_config.yml"
+#           "package": "suave_runner",
+#           "config_file": "config/runner/exp1_runner_config.yml"
 #         }
 #
-# "package" is any installed ROS package (resolved via `ros2 pkg prefix`)
-# and "config_file" is the params file path relative to that package's
-# share directory.
+# "package" is any installed ROS package (resolved via `ros2 pkg prefix`),
+# so a campaign can also point at a runner config from a third-party
+# managing system's own package, and "config_file" is the params file path
+# relative to that package's share directory.
 #
 # Usage:
 #   ros2 run suave_runner run_batch --ros-args --params-file batch.yml

@@ -1,0 +1,21 @@
+# Paths are resolved by the launch file through launch substitutions.
+# `results_root` must point at the directory holding extended_exp3's
+# run_idx-sorted CSVs, e.g. the --output directory from sort_results.py
+# (see the sort-suave-results skill) or a batch's
+# campaigns/extended_exp3/sorted/ directory.
+#
+# extended_exp3_runner_config.yml currently only runs the `bt` managing
+# system, so there is nothing to pair it against yet. Add more
+# `managing_system` entries here once that campaign's runner config grows
+# to include other systems.
+/wilcoxon_analysis:
+  ros__parameters:
+    result_path: '$(var output_root)'
+    filename: 'extended_exp3_wilcoxon'
+    correction: '$(var correction)'
+    data_files:
+      - |
+        {
+          "managing_system": "bt",
+          "data_file": "$(var results_root)/bt_suave_extended_sorted.csv"
+        }

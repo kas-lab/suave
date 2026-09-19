@@ -1,6 +1,6 @@
 # SUAVE Container Execution Rule
 
-Run SUAVE builds, tests, ROS commands, and runtime checks inside a development container. Standalone SUAVE containers are commonly named `suave` or `suave_runner`; integration workspaces may use another name. In `suave_rebetmc_ws`, normally use `suave_rebetmc` because SUAVE is mounted there. If the context is ambiguous, inspect running containers and mounts before choosing.
+Run SUAVE builds, tests, ROS commands, and runtime checks inside a development container. Standalone SUAVE containers are commonly named `suave` or `suave_runner`; an integration workspace that mounts SUAVE into a larger project may use a differently named container instead. If the context is ambiguous, inspect running containers and mounts before choosing.
 
 Do not assume the host machine has SUAVE or ROS dependencies installed. Do not run SUAVE tests or ROS commands on the host.
 

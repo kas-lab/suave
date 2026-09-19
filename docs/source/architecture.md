@@ -63,17 +63,6 @@ The Behavior Tree manager can use the second policy to send goals to
 `recharge_battery`. Its launch file passes one value to both the lifecycle
 nodes and the BT blackboard so the execution policy stays consistent.
 
-Inspected distance accumulates across pauses and resumes, including recharge
-interruptions. The `pipeline/distance_inspected` topic and `FollowPipeline`
-action feedback and results report the cumulative distance along reached
-pipeline waypoints, excluding travel away from the pipeline to recharge.
-Deactivation preserves progress; cleanup followed by configuration starts a
-new inspection with zero distance and a fresh path request.
-Deactivation requests inspection to stop without waiting for its worker,
-allowing recharging to activate immediately. Reactivation waits for any old
-inspection worker to finish before resuming the saved path; cleanup and
-shutdown also wait before destroying resources.
-
 ---
 
 ## Monitor subsystem

@@ -16,8 +16,7 @@
 
 #
 # Treats each managing system's samples as independent (unpaired) draws. For a
-# paired, run-matched alternative, see `wilcoxon_analysis.py` and
-# `WILCOXON_ANALYSIS_SPEC.md`.
+# paired, run-matched alternative, see `wilcoxon_analysis.py`.
 
 import json
 from pathlib import Path

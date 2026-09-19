@@ -96,11 +96,11 @@ ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt result_filena
 
 # Experiment runner (ROS2, config-file driven — preferred for campaigns)
 ros2 launch suave_runner suave_runner_launch.py
-# Config: suave_runner/config/runner_config.yml — controls experiments, disturbance timing, result_path
+# Config: suave_runner/config/runner/runner_config.yml — controls experiments, disturbance timing, result_path
 
 # Batch runner (sequences multiple campaigns; checkpoints to state.json for resume)
 ros2 launch suave_runner run_batch_launch.py
-# Config: suave_runner/config/batch_campaigns.yml — see suave_runner/README.md "Batch runner" section
+# Config: suave_runner/config/runner/batch_campaigns.yml — see suave_runner/README.md "Batch runner" section
 
 # Shell runner (simple positional args)
 cd runner && ./runner.sh [true|false] [metacontrol|random|none|bt] [time|distance] <runs>

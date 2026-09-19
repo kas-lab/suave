@@ -25,7 +25,8 @@ ROS packages:
 
 Configuration:
 - Mission configs live in `suave_missions/config/*.yaml`.
-- Runner config lives in `suave_runner/config/runner_config.yml` — controls experiments list, disturbance timing, result_path, GUI flag.
+- Runner config lives in `suave_runner/config/runner/runner_config.yml` — controls experiments list, disturbance timing, result_path, GUI flag.
+- Wilcoxon analysis config for the bundled campaigns lives in `suave_runner/config/analysis/*_analysis_config.yml`, paired with launch files under `suave_runner/launch/analysis/`.
 - Package data is installed through each package's `setup.py` or `CMakeLists.txt`.
 
 Known external managing subsystem implementations:

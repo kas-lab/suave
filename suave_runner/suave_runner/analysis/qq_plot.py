@@ -36,7 +36,7 @@ Run from the directory containing this script, for example:
     python3 qq_plot.py results.csv --column-a suave --column-b baseline \
         --output qq_suave_baseline.png
 
-    python3 qq_plot.py planta_sorted.csv bt_sorted.csv \
+    python3 qq_plot.py metacontrol_sorted.csv bt_sorted.csv \
         --column-a 'time searching pipeline (s)' \
         --column-b 'time searching pipeline (s)' --output qq_search.png
 

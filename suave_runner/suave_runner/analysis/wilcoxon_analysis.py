@@ -14,11 +14,6 @@
 
 """Compare SUAVE experiment metrics using the paired Wilcoxon signed-rank test."""
 
-#
-# Implements the design in `WILCOXON_ANALYSIS_SPEC.md`. Companion to
-# `mann_whitney_analysis.py`, which treats managing systems as independent
-# samples; this module pairs them by matched run.
-#
 # Every input CSV must already carry a `run_idx` column identifying which run
 # of that managing system each row is, produced by `sort_results.py` (see the
 # sort-suave-results skill). Pairing by row order or position is not

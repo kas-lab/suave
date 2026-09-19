@@ -44,7 +44,7 @@ BT mission node. The mission node stores it on the BT blackboard so all action
 nodes use the same mode. Do not configure the two sides independently.
 
 For a `suave_runner` campaign, include the argument in the experiment command
-in `suave_runner/config/runner_config.yml`:
+in `suave_runner/config/runner/runner_config.yml`:
 
 ```json
 {

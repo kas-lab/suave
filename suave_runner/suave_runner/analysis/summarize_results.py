@@ -36,7 +36,6 @@ DISPLAY_NAMES = {
     'metacontrol': 'Metacontrol',
     'none': 'None',
     'random': 'Random',
-    'rebetmc': 'ReBeT-MC',
 }
 MANAGING_SYSTEM_ORDER = tuple(DISPLAY_NAMES)
 

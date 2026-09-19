@@ -1,14 +1,16 @@
 # Example batch config for the generic `run_batch` entry point.
-# Lists the same six experiment campaigns as suave_planta's batch, minus the
-# "planta" and "rosa_bt" adaptation managers (those live in the suave_planta
-# and suave_rosa_bt repos, not in this one).
+# Lists six example campaigns (exp1-exp3, extended_exp1-extended_exp3) using
+# the `bt`, `metacontrol`, `random`, and `none` managing systems bundled with
+# this repo. A campaign can also point at a config from any other installed
+# package, so a third-party managing system's own runner config can be added
+# the same way, from its own repo.
 #
 #   ros2 launch suave_runner run_batch_launch.py
 #
 # Or directly:
 #
 #   ros2 run suave_runner run_batch --ros-args --params-file \
-#     $(ros2 pkg prefix suave_runner)/share/suave_runner/config/batch_campaigns.yml
+#     $(ros2 pkg prefix suave_runner)/share/suave_runner/config/runner/batch_campaigns.yml
 #
 # Resume an interrupted batch instead of restarting it:
 #
@@ -22,35 +24,35 @@
         {
           "name": "exp1",
           "package": "suave_runner",
-          "config_file": "config/exp1_runner_config.yml"
+          "config_file": "config/runner/exp1_runner_config.yml"
         }
       - |
         {
           "name": "exp2",
           "package": "suave_runner",
-          "config_file": "config/exp2_runner_config.yml"
+          "config_file": "config/runner/exp2_runner_config.yml"
         }
       - |
         {
           "name": "exp3",
           "package": "suave_runner",
-          "config_file": "config/exp3_runner_config.yml"
+          "config_file": "config/runner/exp3_runner_config.yml"
         }
       - |
         {
           "name": "extended_exp1",
           "package": "suave_runner",
-          "config_file": "config/extended_exp1_runner_config.yml"
+          "config_file": "config/runner/extended_exp1_runner_config.yml"
         }
       - |
         {
           "name": "extended_exp2",
           "package": "suave_runner",
-          "config_file": "config/extended_exp2_runner_config.yml"
+          "config_file": "config/runner/extended_exp2_runner_config.yml"
         }
       - |
         {
           "name": "extended_exp3",
           "package": "suave_runner",
-          "config_file": "config/extended_exp3_runner_config.yml"
+          "config_file": "config/runner/extended_exp3_runner_config.yml"
         }

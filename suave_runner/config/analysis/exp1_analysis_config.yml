@@ -1,0 +1,30 @@
+# Paths are resolved by the launch file through launch substitutions.
+# `results_root` must point at the directory holding exp1's run_idx-sorted
+# CSVs, e.g. the --output directory from sort_results.py (see the
+# sort-suave-results skill) or a batch's campaigns/exp1/sorted/ directory.
+/wilcoxon_analysis:
+  ros__parameters:
+    result_path: '$(var output_root)'
+    filename: 'exp1_wilcoxon'
+    correction: '$(var correction)'
+    data_files:
+      - |
+        {
+          "managing_system": "none",
+          "data_file": "$(var results_root)/none_suave_sorted.csv"
+        }
+      - |
+        {
+          "managing_system": "random",
+          "data_file": "$(var results_root)/random_suave_sorted.csv"
+        }
+      - |
+        {
+          "managing_system": "bt",
+          "data_file": "$(var results_root)/bt_suave_sorted.csv"
+        }
+      - |
+        {
+          "managing_system": "metacontrol",
+          "data_file": "$(var results_root)/metacontrol_suave_sorted.csv"
+        }

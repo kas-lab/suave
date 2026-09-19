@@ -24,7 +24,7 @@ Every run also touches a `run_{exp_idx}_{run_idx}.done` marker the moment it
 completes, in the same result directory as the CSVs, named with the
 authoritative run index for that managing system (`exp_idx` is the managing
 system's position in the campaign's `experiments` list, e.g. from
-`suave_planta/config/exp1_runner_config.yml`; `run_idx` is 0-based within
+`suave_runner/config/runner/exp1_runner_config.yml`; `run_idx` is 0-based within
 that system's runs). The script matches each CSV row's `datetime` to the
 nearest `.done` marker's modification time, in ascending order on both
 sides, and writes a new CSV sorted by the recovered `run_idx`.
@@ -50,23 +50,24 @@ python3 src/suave/suave_runner/suave_runner/sort_results.py \
 
 `--exp-idx` is that managing system's index in the campaign's `experiments`
 list (check the matching `*_runner_config.yml`, e.g. for `exp1`:
-`planta=0, rosa_bt=1, bt=2, metacontrol=3, random=4, none=5`; extended
-campaigns typically only have `planta=0, rosa_bt=1, bt=2`). `--done-dir`
+`bt=0, metacontrol=1, random=2, none=3`. `--done-dir`
 defaults to the CSV's own directory and rarely needs to be set explicitly.
 
 Whole campaign at once, via a JSON manifest (mirrors the `data_files`
-convention used in `suave_planta/config/*_analysis_config.yml`):
+convention used in `suave_runner/config/analysis/*_analysis_config.yml`):
 
 ```json
 [
-  {"managing_system": "none", "data_file": "/path/campaigns/exp1/none_suave.csv", "exp_idx": 5},
-  {"managing_system": "random", "data_file": "/path/campaigns/exp1/random_suave.csv", "exp_idx": 4},
-  {"managing_system": "bt", "data_file": "/path/campaigns/exp1/bt_suave.csv", "exp_idx": 2},
-  {"managing_system": "metacontrol", "data_file": "/path/campaigns/exp1/metacontrol_suave.csv", "exp_idx": 3},
-  {"managing_system": "rosa", "data_file": "/path/campaigns/exp1/rosa_bt_suave.csv", "exp_idx": 1},
-  {"managing_system": "planta", "data_file": "/path/campaigns/exp1/planta_suave.csv", "exp_idx": 0}
+  {"managing_system": "bt", "data_file": "/path/campaigns/exp1/bt_suave.csv", "exp_idx": 0},
+  {"managing_system": "metacontrol", "data_file": "/path/campaigns/exp1/metacontrol_suave.csv", "exp_idx": 1},
+  {"managing_system": "random", "data_file": "/path/campaigns/exp1/random_suave.csv", "exp_idx": 2},
+  {"managing_system": "none", "data_file": "/path/campaigns/exp1/none_suave.csv", "exp_idx": 3}
 ]
 ```
+
+A third-party managing system's own runner config can add more entries the
+same way, from its own repo -- `exp_idx` just needs to match that system's
+position in whichever campaign's `experiments` list actually launched it.
 
 ```bash
 python3 src/suave/suave_runner/suave_runner/sort_results.py \

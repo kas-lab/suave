@@ -124,6 +124,19 @@ def load_results(path):
     return frame
 
 
+CAMPAIGN_NAME_PATTERN = re.compile(r'^(extended_)?exp(\d+)$')
+
+
+def _campaign_title(name):
+    """Return the manuscript-style title for a campaign, e.g. 'Experiment 1'."""
+    match = CAMPAIGN_NAME_PATTERN.match(name)
+    if not match:
+        return name.replace('_', ' ')
+    extended, number = match.groups()
+    prefix = 'Extended experiment' if extended else 'Experiment'
+    return f'{prefix} {number}'
+
+
 def render_campaign(campaign, results_root, output_root, p_values, alpha):
     """Create one two-metric table using the existing matrix renderer."""
     folder = results_root / campaign.name / 'wilcoxon_analysis'
@@ -138,20 +151,20 @@ def render_campaign(campaign, results_root, output_root, p_values, alpha):
     keys += sorted(keys_present - set(keys))
     correction = frame['correction'].iloc[0]
     value_column = 'p_adjusted' if p_values == 'adjusted' else 'p_raw'
-    policy = ('Holm-adjusted p-values across both metrics within this campaign'
-              if p_values == 'adjusted' and correction == 'holm' else
-              'Unadjusted p-values')
-    title = escape_tex(campaign.name.replace('_', ' '))
+    p_value_desc = ('Holm-adjusted p-values'
+                    if p_values == 'adjusted' and correction == 'holm' else
+                    'Unadjusted p-values')
+    title = escape_tex(_campaign_title(campaign.name))
     caption = (
-        f'{title}: paired Wilcoxon signed-rank comparisons. {policy}. '
-        'For the row method minus the column method, the alternative is '
-        'less than zero for search time and greater than zero for distance. '
-        'Both methods must have found the pipeline for a pair to be used. '
-        f'Green cells indicate p-values below {alpha:g}; blue cells indicate '
-        'the remaining computed tests. Values are rounded to three decimal '
-        'places; values rounding to 0.000 are shown as $<0.001$. '
-        'Colors use unrounded values. A dash denotes a diagonal '
-        'entry or an uncomputed test.')
+        f'{title}: paired Wilcoxon signed-rank comparisons. Each cell '
+        f'reports the {p_value_desc} for the comparison between the '
+        'managing subsystem in the row and the one in the column for both '
+        r'the \emph{pipeline search time} and \emph{pipeline distance '
+        r'inspected} metrics. Cells with a green background indicate that '
+        'the alternative hypothesis was favored, and cells with a blue '
+        'background indicate that the null hypothesis cannot be rejected '
+        'in favor of the alternative hypothesis. Values rounding to 0.000 '
+        'are shown as $<0.001$.')
     if 'metacontrol' in keys:
         caption += " ``MC'' stands for Metacontrol."
     output = output_root / f'{campaign.name}_wilcoxon.tex'

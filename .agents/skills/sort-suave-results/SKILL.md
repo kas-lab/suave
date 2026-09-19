@@ -12,8 +12,9 @@ pairing.
 
 ## Repository and execution
 
-The PLANTA checkout is normally
-`/home/gus/ros_workspaces/planta_ws/src/suave`. Locate the corresponding
+The SUAVE checkout is normally
+`~/ros_workspaces/suave_ws/src/suave`, but do not assume this is the correct one,
+there migh be multiple working versions of suave in the same setup. Locate the corresponding
 SUAVE checkout when working elsewhere. Follow its `AGENTS.md`, including
 running SUAVE commands inside the applicable development or integration
 container with its default sourced environment. Translate paths through the
@@ -83,5 +84,5 @@ verified outputs can be reused without sorting again.
 Matching `run_idx` values identify shared perturbation configurations only
 within a campaign that actually reused those configurations across systems.
 Do not use the same numeric ID to pair unrelated campaigns. For subsequent
-Wilcoxon analysis, use `$wilcoxon-analysis` or consult the repository's
-`suave_runner/WILCOXON_ANALYSIS_SPEC.md` and analysis script directly.
+Wilcoxon analysis, use `$wilcoxon-analysis` or consult
+`suave_runner/suave_runner/analysis/wilcoxon_analysis.py` directly.

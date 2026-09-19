@@ -72,7 +72,6 @@ def test_default_batch_tables_use_adjusted_values(tmp_path):
     assert r'\cellcolor{pvalue_blue}0.080' in text
     assert '0.010' not in text
     assert 'Holm-adjusted' in text
-    assert 'Both methods must have found the pipeline' in text
     assert r'\textbf{BT} & - & \cellcolor{pvalue_blue}0.080' in text
     assert r'\label{tab:wilcoxon-exp1}' in text
     assert originals == {p: p.read_bytes() for p in paths}

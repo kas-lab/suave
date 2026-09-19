@@ -1,7 +1,7 @@
 # Suggested Commands
 
 Important SUAVE execution rule:
-- Run SUAVE builds, tests, ROS commands, and runtime checks inside a development container. Standalone containers are commonly named `suave` or `suave_runner`; `suave_rebetmc_ws` normally uses `suave_rebetmc`. Inspect container mounts if the context is ambiguous.
+- Run SUAVE builds, tests, ROS commands, and runtime checks inside a development container. Standalone containers are commonly named `suave` or `suave_runner`; an integration workspace may use a differently named container instead. Inspect container mounts if the context is ambiguous.
 - Do not assume the host has SUAVE or ROS dependencies installed. Do not run SUAVE tests or ROS commands on the host.
 - Use the container's default sourced workspace configuration; do not override `PYTHONPATH`, `ROS_LOG_DIR`, or similar ROS/Python environment variables unless explicitly requested.
 - Container wrapper: `docker exec <container-name> bash -lc 'cd /home/ubuntu-user/suave_ws && source /opt/ros/humble/setup.bash && source install/setup.bash && <command>'`.

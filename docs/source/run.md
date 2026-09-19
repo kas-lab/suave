@@ -82,7 +82,7 @@ ros2 run suave_runner suave_runner \
   ]'
 ```
 
-You can also use a launch file with a [config file](https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner_config.yml) to make it easier to run the experiments:
+You can also use a launch file with a [config file](https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner/runner_config.yml) to make it easier to run the experiments:
 
 ```Bash
 ros2 launch suave_runner suave_runner_launch.py
@@ -92,7 +92,7 @@ To run SUAVE with different managing subsystems, replace the `experiment_launch`
 
 ### Runner config reference
 
-`suave_runner/config/runner_config.yml` controls all experiment parameters. The key fields are:
+`suave_runner/config/runner/runner_config.yml` controls all experiment parameters. The key fields are:
 
 | Parameter | Default | Description |
 |---|---|---|
@@ -143,11 +143,11 @@ Multiple experiments can be listed and will be run sequentially. See the [Metric
 
 To run several campaigns sequentially in one go, use the generic `run_batch`
 node, configured through a YAML manifest (see
-[config/batch_campaigns.yml](https://github.com/kas-lab/suave/blob/main/suave_runner/config/batch_campaigns.yml)
+[config/runner/batch_campaigns.yml](https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner/batch_campaigns.yml)
 for a runnable example covering `exp1`-`exp3` and `extended_exp1`-`extended_exp3`
-with the `bt`, `metacontrol`, `random`, and `none` managing systems -- this
-repository does not contain the `planta` or `rosa_bt` managers, those live in
-the `suave_planta` and `suave_rosa_bt` repos):
+with the `bt`, `metacontrol`, `random`, and `none` managing systems bundled
+with this repository; a third-party managing system's own runner config can
+be added the same way, from its own repo):
 
 ```Bash
 ros2 launch suave_runner run_batch_launch.py
@@ -157,7 +157,7 @@ Or directly, pointing at any manifest:
 
 ```Bash
 ros2 run suave_runner run_batch \
-  --ros-args --params-file config/batch_campaigns.yml
+  --ros-args --params-file config/runner/batch_campaigns.yml
 ```
 
 **Note:** running every campaign back-to-back can take several hours to a few
@@ -200,7 +200,7 @@ ros2 run suave_runner run_batch --ros-args \
 ```
 
 To run a custom subset or order of campaigns, write your own manifest (or
-edit `config/batch_campaigns.yml`) and pass it via `--params-file` before
+edit `config/runner/batch_campaigns.yml`) and pass it via `--params-file` before
 starting a new batch. `-p fail_fast:=true` stops the batch as soon as a
 campaign fails instead of continuing to the next one, and `-p dry_run:=true`
 prints the `ros2 run` command for each campaign without executing anything.
@@ -242,9 +242,90 @@ run indices line up with the marker files. Per-run mission config files
 (`mission_config_run*.yaml`) are reused from the existing folder if present;
 otherwise they are regenerated using the same random seed.
 
+### Wilcoxon analysis (paired)
+
+The `wilcoxon_analysis` executable implements
+a paired Wilcoxon signed-rank test on matched runs across managing systems,
+instead of treating them as independent samples. There is a skill for agents for 
+performing the `wilcoxon-analysis`, check the skill for the full workflow. Summary:
+
+**Prerequisite: sort first.** Every input CSV must carry a `run_idx` column
+identifying which run of that managing system each row is. A `--resume`d
+campaign appends retried runs out of order, so this cannot be assumed from
+row position. Recover it first with `sort_results.py` (see the
+`sort-suave-results` skill):
+
+```bash
+python3 suave_runner/analysis/sort_results.py \
+  --csv ~/suave/results/bt_suave.csv --exp-idx 2 \
+  --output ~/suave/results/sorted/bt_suave_sorted.csv
+```
+
+Then run the paired analysis on the sorted CSVs:
+
+```bash
+ros2 run suave_runner wilcoxon_analysis \
+  --ros-args \
+  -p result_path:=~/suave/results/wilcoxon_analysis \
+  -p filename:=none_vs_bt \
+  -p correction:=holm \
+  -p data_files:='[
+    "{\"managing_system\": \"none\", \
+      \"data_file\": \"~/suave/results/sorted/none_suave_sorted.csv\"}",
+    "{\"managing_system\": \"bt\", \
+      \"data_file\": \"~/suave/results/sorted/bt_suave_sorted.csv\"}"
+  ]'
+```
+
+For `exp1`-`exp3` and `extended_exp1`-`extended_exp3` (the campaigns bundled
+with this repo's own runner configs), a preconfigured launch file under
+`suave_runner/launch/analysis/` avoids typing out `data_files` by hand:
+
+```bash
+ros2 launch suave_runner exp1_analysis_launch.py \
+  results_root:=~/suave/results/sorted
+```
+
+`results_root` must point at that campaign's sorted-CSV directory;
+`output_root` (defaults to `results_root`) and `correction` (defaults to
+`holm`) can also be overridden. See
+[config/analysis/exp1_analysis_config.yml](https://github.com/kas-lab/suave/blob/main/suave_runner/config/analysis/exp1_analysis_config.yml)
+for the exact `data_files` mapping used -- edit a copy of it for a campaign
+whose managing systems differ from what's bundled.
+
+Parameters beyond those shared with `mann_whitney_analysis`:
+
+| Parameter | Default | Description |
+|---|---|---|
+| `correction` | `holm` | Multiple-comparison correction across every pair and metric in the run; set to any other value to disable (raw p-values are then copied into `p_adjusted`) |
+
+Unlike `mann_whitney_analysis`, `data_files` here must point at
+`run_idx`-tagged, sorted CSVs. A missing `run_idx` column, a duplicate
+`run_idx`, or an unmatched run raises rather than falling back to row order.
+
+The command writes:
+
+- `<filename>_results.csv` -- the primary output, one row per ordered system
+  pair and metric (`search_time` and `distance_inspected`), with the
+  alternative hypothesis, pair counts
+  (declared / used / positive / negative / zero), median paired difference,
+  test statistic, raw and Holm-adjusted p-values, a matched rank-biserial
+  effect size, and the run indices excluded at each filtering step (missing
+  counterpart, pipeline not found for either metric);
+- `<filename>_time_search_pipeline.csv` and
+  `<filename>_distance_inspected.csv` -- secondary compatibility matrices in
+  the same shape `mann_whitney_analysis` writes (raw p-values, not
+  Holm-adjusted), so existing table-generation tooling can point at either.
+
+Both `search_time` and `distance_inspected` exclude any pair where either
+system did not find the pipeline. Search time is right-censored at the
+mission duration in that case, and inspection requires finding the pipeline.
+Both comparisons are therefore conditional on detection by both systems.
+Holm correction applies across the ordered system pairs for these two metrics.
+
 ### Mann-Whitney analysis
 
-The `mann_whitney_analysis` executable (formerly `statistical_analysis`)
+The `mann_whitney_analysis` executable
 compares mission-level metrics produced by two or more managing systems,
 treating each system's runs as independent samples. For each ordered pair of
 systems, it reports Shapiro-Wilk normality diagnostics and performs one-sided
@@ -312,72 +393,6 @@ below instead -- it controls for per-scenario difficulty and is more
 statistically powerful, but requires a run-identity column that a resumed
 campaign's raw CSVs do not carry by default.
 
-### Wilcoxon analysis (paired)
-
-The `wilcoxon_analysis` executable implements
-[`WILCOXON_ANALYSIS_SPEC.md`](https://github.com/kas-lab/suave/blob/main/suave_runner/WILCOXON_ANALYSIS_SPEC.md):
-a paired Wilcoxon signed-rank test on matched runs across managing systems,
-instead of treating them as independent samples. See the `wilcoxon-analysis`
-skill for the full workflow; summary:
-
-**Prerequisite: sort first.** Every input CSV must carry a `run_idx` column
-identifying which run of that managing system each row is. A `--resume`d
-campaign appends retried runs out of order, so this cannot be assumed from
-row position. Recover it first with `sort_results.py` (see the
-`sort-suave-results` skill):
-
-```bash
-python3 suave_runner/analysis/sort_results.py \
-  --csv ~/suave/results/bt_suave.csv --exp-idx 2 \
-  --output ~/suave/results/sorted/bt_suave_sorted.csv
-```
-
-Then run the paired analysis on the sorted CSVs:
-
-```bash
-ros2 run suave_runner wilcoxon_analysis \
-  --ros-args \
-  -p result_path:=~/suave/results/wilcoxon_analysis \
-  -p filename:=none_vs_bt \
-  -p correction:=holm \
-  -p data_files:='[
-    "{\"managing_system\": \"none\", \
-      \"data_file\": \"~/suave/results/sorted/none_suave_sorted.csv\"}",
-    "{\"managing_system\": \"bt\", \
-      \"data_file\": \"~/suave/results/sorted/bt_suave_sorted.csv\"}"
-  ]'
-```
-
-Parameters beyond those shared with `mann_whitney_analysis`:
-
-| Parameter | Default | Description |
-|---|---|---|
-| `correction` | `holm` | Multiple-comparison correction across every pair and metric in the run; set to any other value to disable (raw p-values are then copied into `p_adjusted`) |
-
-Unlike `mann_whitney_analysis`, `data_files` here must point at
-`run_idx`-tagged, sorted CSVs. A missing `run_idx` column, a duplicate
-`run_idx`, or an unmatched run raises rather than falling back to row order.
-
-The command writes:
-
-- `<filename>_results.csv` -- the primary output, one row per ordered system
-  pair and metric (`search_time` and `distance_inspected`), with the
-  alternative hypothesis, pair counts
-  (declared / used / positive / negative / zero), median paired difference,
-  test statistic, raw and Holm-adjusted p-values, a matched rank-biserial
-  effect size, and the run indices excluded at each filtering step (missing
-  counterpart, pipeline not found for either metric);
-- `<filename>_time_search_pipeline.csv` and
-  `<filename>_distance_inspected.csv` -- secondary compatibility matrices in
-  the same shape `mann_whitney_analysis` writes (raw p-values, not
-  Holm-adjusted), so existing table-generation tooling can point at either.
-
-Both `search_time` and `distance_inspected` exclude any pair where either
-system did not find the pipeline. Search time is right-censored at the
-mission duration in that case, and inspection requires finding the pipeline.
-Both comparisons are therefore conditional on detection by both systems.
-Holm correction applies across the ordered system pairs for these two metrics.
-
 ### Result summary
 
 The `summarize_results` executable produces descriptive statistics for all
@@ -420,8 +435,9 @@ are available.
 
 Managing-system identifiers are derived from filenames and formatted for
 presentation. The known identifiers are `bt`, `metacontrol`, `none`, `random`,
-and `rebetmc`, displayed as `BT`, `Metacontrol`, `None`, `Random`, and
-`ReBeT-MC`, respectively. Other identifiers are converted from snake case to
+displayed as `BT`, `Metacontrol`, `None`, and `Random`, respectively.
+Other identifiers -- including third-party managing systems from other
+repos -- are converted from snake case to
 title case.
 
 Use `--latex` to also write a complete LaTeX table to
@@ -569,7 +585,7 @@ Compare the same metric in two sorted method CSVs:
 
 ```bash
 python3 src/suave/suave_runner/suave_runner/analysis/qq_plot.py \
-  /path/to/campaign/sorted/planta_suave_sorted.csv \
+  /path/to/campaign/sorted/metacontrol_suave_sorted.csv \
   /path/to/campaign/sorted/bt_suave_sorted.csv \
   --column-a 'time searching pipeline (s)' \
   --column-b 'time searching pipeline (s)' --output qq_search.png
@@ -760,7 +776,11 @@ unique ordered pairs, consistent alternatives and correction policy, valid
 p-values, and notes explaining missing results.
 
 Known method labels use None, Random, BT, MC, ROSA, and PLANTA; captions
-explain that MC means Metacontrol. Tables follow the paper's pairwise-table
+explain that MC means Metacontrol. ROSA and PLANTA are labels for two
+third-party managing systems, each from its own separate repo (not bundled
+with this one) -- they only appear when their result CSVs are added
+alongside this repo's own for a combined comparison. Tables follow the
+paper's pairwise-table
 layout: a 1.65 cm row-label column and 1.2 row spacing. Value columns are
 slightly wider at 1.3 cm so the names fit in the manuscript's font.
 Tables with up to three methods use `0.7\textwidth`; larger tables use

@@ -299,19 +299,19 @@ def test_record_process_exit_queues_nonzero_exit():
     failure_queue = Queue()
     event = SimpleNamespace(
         returncode=-6,
-        process_name='suave_planta_controller-12',
+        process_name='suave_bt_controller-12',
         pid=123,
-        cmd=['suave_planta_controller', '--ros-args'],
+        cmd=['suave_bt_controller', '--ros-args'],
     )
 
     ExperimentRunnerNode._record_process_exit(
         stop_event, failure_queue, event, None)
 
     assert failure_queue.get_nowait() == {
-        'process_name': 'suave_planta_controller-12',
+        'process_name': 'suave_bt_controller-12',
         'pid': 123,
         'returncode': -6,
-        'cmd': 'suave_planta_controller --ros-args',
+        'cmd': 'suave_bt_controller --ros-args',
     }
 
 

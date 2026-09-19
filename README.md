@@ -40,12 +40,6 @@ An overview of the system:
 
 The exemplar can either be used with [Docker](#use-suave-with-docker) or [installed locally](#install-suave-locally). The exemplar can be executed following this [instructions](#run-suave).
 
-The water-visibility monitor publishes the initial visibility from startup and
-keeps publishing it until the vehicle first enters GUIDED mode. Only then does
-the visibility schedule advance, so vehicle startup time does not shift the
-configured visibility changes. The initial value includes
-`water_visibility_sec_shift` evaluated at experiment time zero.
-
 A paper describing this exemplar was presented at SEAMS 2023 artifact track, you can find it [here](https://ieeexplore.ieee.org/abstract/document/10173938). And an open access pre-print can be found [here](https://arxiv.org/abs/2303.09220).
 
 ## Navigate the README
@@ -329,7 +323,7 @@ ros2 run suave_runner suave_runner \
   ]'
 ```
 
-Or using a launch file with a [config file](https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner_config.yml):
+Or using a launch file with a [config file](https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner/runner_config.yml):
 
 ```Bash
 ros2 launch suave_runner suave_runner_launch.py
@@ -382,17 +376,6 @@ ros2 launch suave_bringup mission.launch.py
 ```
 
 **Mission results:** The mission results will be saved in the path specified in the [mission_config.yaml](https://github.com/kas-lab/suave/blob/main/suave_missions/config/mission_config.yaml) file.
-
-Inspected distance accumulates across pauses and resumes, including recharge
-interruptions. The `pipeline/distance_inspected` topic and `FollowPipeline`
-action feedback and results report the cumulative distance along reached
-pipeline waypoints, excluding travel away from the pipeline to recharge.
-Deactivation preserves progress; cleanup followed by configuration starts a
-new inspection with zero distance and a fresh path request.
-Deactivation requests inspection to stop without waiting for its worker,
-allowing recharging to activate immediately. Reactivation waits for any old
-inspection worker to finish before resuming the saved path; cleanup and
-shutdown also wait before destroying resources.
 
 **Selecting the managing system and mission type:**
 Launching the mission file without launch arguments will start a time-constrained mission without a managing subsystem. To select a different managing subsystem or a different type of mission, the following launch arguments can be used:

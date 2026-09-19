@@ -11,11 +11,12 @@ are outside this executable's scope.
 
 ## Repository and execution
 
-The PLANTA checkout is normally
-`/home/gus/ros_workspaces/planta_ws/src/suave`. Locate the corresponding
-SUAVE checkout when working elsewhere. Read its
-`suave_runner/WILCOXON_ANALYSIS_SPEC.md` for the statistical design and use
-the implementation as the ground truth for current behavior.
+The SUAVE checkout is normally
+`~/ros_workspaces/suave_ws/src/suave`. Locate the corresponding
+SUAVE checkout when working elsewhere. Read the statistical design and
+current behavior straight from
+`suave_runner/suave_runner/analysis/wilcoxon_analysis.py`'s module docstring
+and `METRICS` table -- that implementation is the ground truth.
 
 Follow that checkout's `AGENTS.md`: run SUAVE analysis inside its applicable
 development or integration container with the default sourced workspace.
@@ -48,8 +49,24 @@ make an updated executable available through `ros2 run`.
 
 ## Run the analysis
 
-Run this example in the sourced container, substituting actual input and
-output paths:
+For `exp1`-`exp3` and `extended_exp1`-`extended_exp3` (the campaigns bundled
+with this repo's own runner configs), prefer the matching launch file under
+`suave_runner/launch/analysis/`, e.g.:
+
+```bash
+ros2 launch suave_runner exp1_analysis_launch.py \
+  results_root:=/path/campaign/sorted
+```
+
+`results_root` must point at the directory holding that campaign's
+run_idx-sorted CSVs (e.g. `sort_results.py`'s `--output` directory, or a
+batch's `campaigns/exp1/sorted/`). `output_root` (defaults to
+`results_root`) and `correction` (defaults to `holm`) can also be overridden.
+See `suave_runner/config/analysis/exp1_analysis_config.yml` for the exact
+`data_files` mapping used -- add or edit an entry there (or in a copy) for a
+campaign whose managing systems differ from what's bundled.
+
+For any other combination of systems or campaigns, invoke the node directly:
 
 ```bash
 ros2 run suave_runner wilcoxon_analysis \
