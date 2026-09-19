@@ -1,0 +1,48 @@
+/suave_runner_node:
+  ros__parameters:
+    result_path: '~/suave/results'
+    gui: false # Enable GUI
+    experiment_logging: false # Enable silent mode
+    run_duration: 350 # max duration before aborting (needed for when something crashes)
+    mission_config_pkg: 'suave_missions'
+    mission_config_file: 'config/planta_exp1_mission_config.yaml'
+    water_visibility_sec_shift: 0.0
+    water_visibility_sec_shift_random_interval: [0.0, 0.0] # increase these values to increase the state, match the period
+    thruster_events:
+      - (1,failure,100)
+      - (3,failure,100) # choose a thruster that really makes it bad
+    thruster_events_random_interval: [-100.0, 100.0]
+    random_interval: 5 # how many experiment runs in each "random" interval
+    initial_pos_x: -17.0
+    initial_pos_y: 2.5
+    initial_pos_x_random_interval: [0.0, 0.0]
+    initial_pos_y_random_interval: [-0.5, 0.5]
+    experiments: # List of experiments to run
+      - |
+        {
+          "experiment_launch": "ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt",
+          "num_runs": 30,
+          "adaptation_manager": "bt",
+          "mission_name": "suave"
+        }
+      - |
+        {
+          "experiment_launch": "ros2 launch suave_bringup mission.launch.py adaptation_manager:=metacontrol",
+          "num_runs": 30,
+          "adaptation_manager": "metacontrol",
+          "mission_name": "suave"
+        }
+      - |
+        {
+          "experiment_launch": "ros2 launch suave_bringup mission.launch.py adaptation_manager:=random",
+          "num_runs": 30,
+          "adaptation_manager": "random",
+          "mission_name": "suave"
+        }
+      - |
+        {
+          "experiment_launch": "ros2 launch suave_bringup mission.launch.py adaptation_manager:=none",
+          "num_runs": 30,
+          "adaptation_manager": "none",
+          "mission_name": "suave"
+        }

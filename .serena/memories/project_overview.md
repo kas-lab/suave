@@ -20,6 +20,7 @@ Important entrypoints:
 - MAVROS simulation default FCU URL is `udp://0.0.0.0:14550@14555`; this avoids needing `sim_vehicle --out=127.0.0.1:14551`.
 - Mission: `ros2 launch suave_missions mission.launch.py` with launch args such as `adaptation_manager:=none|metacontrol|random|bt` and `result_filename:=...`.
 - Runner: `ros2 launch suave_runner suave_runner.launch.py` or `ros2 run suave_runner suave_runner --ros-args ...`.
+- Result analysis: `ros2 run suave_runner statistical_analysis --ros-args ...` for pairwise inference; `ros2 run suave_runner summarize_results <campaign-folder>` for descriptive statistics and optional LaTeX output.
 - Example runner script: `cd runner && ./example_run.sh`.
 
 Always check `git status --short` before edits; this repository is often used with local uncommitted experiment/Docker changes.

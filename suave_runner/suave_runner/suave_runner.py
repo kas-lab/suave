@@ -15,21 +15,27 @@
 """Run repeatable SUAVE experiment campaigns and collect their results."""
 
 import asyncio
+import csv
 from datetime import datetime
 import json
 import multiprocessing
 import os
 from pathlib import Path
+from queue import Empty
 import random
 import signal
 import subprocess
 import threading
 import time
+import traceback
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch import LaunchService
+from launch import logging as launch_logging
 from launch.actions import IncludeLaunchDescription
+from launch.actions import RegisterEventHandler
+from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 import rclpy
 import rclpy.executors
@@ -39,6 +45,7 @@ from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
 from std_msgs.msg import Bool
+from std_msgs.msg import String
 from suave_monitor.thruster_monitor import read_thruster_events
 import yaml
 
@@ -170,6 +177,7 @@ class ExperimentRunnerNode(Node):
 
         self.terminate_flag = False
         self.processes_stop_events = []
+        self.ardupilot_proc = None
 
         self.ardupilot_cmd = ['xvfb-run', '-a'] + \
             self.ardupilot_executable.split()
@@ -177,11 +185,20 @@ class ExperimentRunnerNode(Node):
             self.ardupilot_cmd = self.ardupilot_cmd[2:]
 
         self._mission_done_event = threading.Event()
+        self._mission_failed_event = threading.Event()
+        self._mission_failure_reason = ''
+        self._process_failure_queue = multiprocessing.Queue()
         self.create_subscription(
             Bool,
             'mission_metrics/done',
             self._mission_done_cb,
             MISSION_DONE_QOS,
+        )
+        self.create_subscription(
+            String,
+            'mission/control_failure',
+            self._mission_failed_cb,
+            10,
         )
 
         self.get_logger().info(
@@ -197,29 +214,115 @@ class ExperimentRunnerNode(Node):
         if msg.data:
             self._mission_done_event.set()
 
+    def _mission_failed_cb(self, msg: String):
+        self._mission_failure_reason = msg.data
+        self._mission_failed_event.set()
+
+    @staticmethod
+    def _record_process_exit(stop_event, failure_queue, event, _context):
+        if stop_event.is_set() or event.returncode == 0:
+            return None
+
+        failure_queue.put({
+            'process_name': event.process_name,
+            'pid': event.pid,
+            'returncode': event.returncode,
+            'cmd': ' '.join(map(str, event.cmd)),
+        })
+        return None
+
+    def _drain_process_failures(self):
+        while True:
+            try:
+                self._process_failure_queue.get_nowait()
+            except Empty:
+                return
+
+    def _get_process_failure(self):
+        try:
+            return self._process_failure_queue.get_nowait()
+        except Empty:
+            pass
+
+        if (self.ardupilot_proc is not None and
+                self.ardupilot_proc.poll() not in (None, 0)):
+            return {
+                'process_name': 'ArduPilot',
+                'pid': self.ardupilot_proc.pid,
+                'returncode': self.ardupilot_proc.returncode,
+                'cmd': ' '.join(self.ardupilot_cmd),
+            }
+
+        for process, stop_event, launch_name in self.processes_stop_events:
+            if (not stop_event.is_set() and process.exitcode is not None and
+                    process.exitcode != 0):
+                return {
+                    'process_name': f'{launch_name} launch service',
+                    'pid': process.pid,
+                    'returncode': process.exitcode,
+                    'cmd': '',
+                }
+        return None
+
+    @staticmethod
+    def _format_process_failure(failure):
+        details = (
+            f"{failure['process_name']} (pid {failure['pid']}) exited with "
+            f"code {failure['returncode']}")
+        if failure.get('cmd'):
+            details += f"; command: {failure['cmd']}"
+        return details
+
+    def _wait_for_startup(self, duration):
+        """Wait between launch stages while monitoring early failures."""
+        deadline = time.monotonic() + duration
+        while time.monotonic() < deadline:
+            if self.terminate_flag:
+                raise RuntimeError('Termination requested during startup')
+            failure = self._get_process_failure()
+            if failure is not None:
+                raise RuntimeError(self._format_process_failure(failure))
+            time.sleep(min(0.2, deadline - time.monotonic()))
+
     def start_launch_process(
-            self, launch_description: LaunchDescription, log_dir: Path):
+            self, launch_description: LaunchDescription, log_dir: Path,
+            launch_name: str):
         """Start a ROS launch description in an isolated child process."""
         stop_event = multiprocessing.Event()
         process = multiprocessing.Process(
             target=self._run_launchfile,
-            args=(stop_event, launch_description, log_dir),
+            args=(stop_event, launch_description, log_dir, launch_name,
+                  self._process_failure_queue),
         )
         process.start()
         return process, stop_event
 
-    def _run_launchfile(self, stop_event, launch_description, log_dir):
+    def _run_launchfile(
+            self, stop_event, launch_description, log_dir, launch_name,
+            failure_queue):
         # Ignore SIGINT in this process
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
         log_dir.mkdir(parents=True, exist_ok=True)
         os.environ['ROS_LOG_DIR'] = str(log_dir)
+        launch_logging.reset()
+        launch_logging.launch_config.log_dir = str(log_dir)
+
+        process_exit_handler = RegisterEventHandler(
+            OnProcessExit(
+                on_exit=lambda event, context: self._record_process_exit(
+                    stop_event, failure_queue, event, context)))
+        monitored_launch_description = LaunchDescription([
+            process_exit_handler,
+            launch_description,
+        ])
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
         launch_service = LaunchService()
-        launch_service.include_launch_description(launch_description)
+        launch_service.include_launch_description(
+            monitored_launch_description)
 
         async def runner():
             await launch_service.run_async()
@@ -239,12 +342,24 @@ class ExperimentRunnerNode(Node):
 
         try:
             loop.run_until_complete(task)
+        except BaseException:
+            failure_log = log_dir / 'launcher_exception.log'
+            with open(failure_log, 'a') as output:
+                traceback.print_exc(file=output)
+            if not stop_event.is_set():
+                failure_queue.put({
+                    'process_name': f'{launch_name} launch service',
+                    'pid': os.getpid(),
+                    'returncode': 1,
+                    'cmd': '',
+                })
+            raise
         finally:
             loop.close()
 
     def shutdown_all_launch_processes(self):
         """Request shutdown of every tracked ROS launch process."""
-        for process, stop_event in self.processes_stop_events:
+        for process, stop_event, _launch_name in self.processes_stop_events:
             if process.is_alive():
                 stop_event.set()
                 process.join(timeout=10)
@@ -317,7 +432,7 @@ class ExperimentRunnerNode(Node):
         )
         self.get_logger().info(
             '    Sleeping 10 seconds before launching SUAVE simulation...')
-        time.sleep(10)
+        self._wait_for_startup(10)
 
     def launch_suave_simulation(self, run_idx, log_dir: Path):
         """Launch the SUAVE simulation for a configured run position."""
@@ -351,11 +466,12 @@ class ExperimentRunnerNode(Node):
         sim_launch_ld = LaunchDescription()
         sim_launch_ld.add_action(sim_launch)
         sim_process, sim_stop_event = self.start_launch_process(
-            sim_launch_ld, log_dir)
-        self.processes_stop_events.append((sim_process, sim_stop_event))
+            sim_launch_ld, log_dir, 'simulation')
+        self.processes_stop_events.append(
+            (sim_process, sim_stop_event, 'simulation'))
         self.get_logger().info(
             '    Sleeping 10 seconds before launching next nodes...')
-        time.sleep(10)
+        self._wait_for_startup(10)
 
     def launch_experiment(
             self,
@@ -394,9 +510,9 @@ class ExperimentRunnerNode(Node):
         experiment_ld = LaunchDescription()
         experiment_ld.add_action(exp_launch_desc)
         experiment_process, experiment_stop_event = self.start_launch_process(
-            experiment_ld, log_dir)
+            experiment_ld, log_dir, 'experiment')
         self.processes_stop_events.append(
-            (experiment_process, experiment_stop_event))
+            (experiment_process, experiment_stop_event, 'experiment'))
 
     def run_experiments(self):
         """Execute configured campaigns with resumable checkpoints."""
@@ -436,6 +552,9 @@ class ExperimentRunnerNode(Node):
                 run_log_dir.mkdir(parents=True, exist_ok=True)
 
                 self._mission_done_event.clear()
+                self._mission_failed_event.clear()
+                self._mission_failure_reason = ''
+                self._drain_process_failures()
                 self.get_logger().info(
                     f'  Run {adaptation_manager} {run_idx + 1}/{num_runs}')
 
@@ -451,15 +570,29 @@ class ExperimentRunnerNode(Node):
                         run_log_dir / 'experiment')
                 except Exception as e:
                     self.get_logger().error(f'Failed to launch processes: {e}')
-                    break
+                    self.shutdown_all_processes()
+                    self.get_logger().info(
+                        f'  Run {run_idx + 1} completed (success: False).')
+                    time.sleep(10)
+                    continue
 
                 self.get_logger().info(
                     '    Waiting for mission_metrics/done...')
                 start_time = time.time()
                 mission_complete = False
+                run_failure = None
 
                 while not self.terminate_flag:
-                    if self._mission_done_event.wait(timeout=1.0):
+                    process_failure = self._get_process_failure()
+                    if process_failure is not None:
+                        run_failure = self._format_process_failure(
+                            process_failure)
+                        break
+                    if self._mission_failed_event.is_set():
+                        run_failure = self._mission_failure_reason or (
+                            'Experiment subsystem reported an unknown failure')
+                        break
+                    if self._mission_done_event.wait(timeout=0.2):
                         mission_complete = True
                         break
                     if time.time() - start_time > self.run_duration:
@@ -467,12 +600,29 @@ class ExperimentRunnerNode(Node):
                             '    Timeout waiting for mission_metrics/done.')
                         break
 
+                if run_failure:
+                    self.get_logger().error(
+                        f'    Run failed before mission completion: '
+                        f'{run_failure}')
+
                 self.shutdown_all_processes()
 
                 if self.terminate_flag:
                     self.get_logger().info(
                         'Termination requested. Stopping early.')
                     break
+
+                if mission_complete:
+                    broken_reason = self.detect_broken_run(run_log_dir)
+                    if broken_reason:
+                        mission_complete = False
+                        self.get_logger().error(
+                            f'    Run {run_idx + 1} flagged as broken '
+                            f'({broken_reason}); not checkpointing, it will '
+                            're-run on --resume.')
+                        self.record_broken_run(
+                            result_path, exp_idx, run_idx, adaptation_manager,
+                            result_filename, broken_reason)
 
                 if mission_complete:
                     done_marker.touch()
@@ -483,6 +633,64 @@ class ExperimentRunnerNode(Node):
                 time.sleep(10)
 
         self.get_logger().info('All experiment runs completed or aborted.')
+
+    def detect_broken_run(self, run_log_dir):
+        """Return a reason string if the finished run hit a known bug, else ''."""
+        return self._search_path_node_never_activated(run_log_dir)
+
+    def _search_path_node_never_activated(self, run_log_dir):
+        """Flag runs where the spiral search lifecycle node never activated."""
+        experiment_dir = run_log_dir / 'experiment'
+        candidates = []
+        for log_path in experiment_dir.glob('python3_*.log'):
+            try:
+                text = log_path.read_text(errors='replace')
+            except OSError:
+                continue
+            if 'f_generate_search_path_node' in text:
+                candidates.append((log_path.stat().st_mtime, text))
+        if not candidates:
+            return ''
+        # The run log dir is reused across --resume attempts; use the newest.
+        _, text = max(candidates, key=lambda item: item[0])
+        if ('on_configure() is called.' in text
+                and 'on_activate() is called.' not in text):
+            return ('f_generate_search_path_node configured but never activated'
+                    ' (system_modes mode transition lost)')
+        return ''
+
+    def record_broken_run(
+            self, result_path, exp_idx, run_idx, manager, result_filename,
+            reason):
+        """Log a broken run and move its metrics row into a rejected file."""
+        result_path = Path(result_path)
+        record = {
+            'run': f'run_{exp_idx}_{run_idx}',
+            'adaptation_manager': manager,
+            'reason': reason,
+            'timestamp': datetime.now().isoformat(),
+        }
+        with open(result_path / 'rejected_runs.jsonl', 'a') as handle:
+            handle.write(json.dumps(record) + '\n')
+
+        results_csv = result_path / f'{result_filename}.csv'
+        if not results_csv.is_file():
+            return
+        with open(results_csv, newline='') as handle:
+            rows = list(csv.reader(handle))
+        if len(rows) <= 1:
+            return
+        header = rows[0]
+        rejected_row = rows[-1]
+        with open(results_csv, 'w', newline='') as handle:
+            csv.writer(handle).writerows(rows[:-1])
+        rejected_csv = result_path / f'{result_filename}_rejected.csv'
+        write_header = not rejected_csv.is_file()
+        with open(rejected_csv, 'a', newline='') as handle:
+            writer = csv.writer(handle)
+            if write_header:
+                writer.writerow(header)
+            writer.writerow(rejected_row)
 
     def generate_mission_config_files(self, result_path):
         """Generate per-run mission configurations with randomized events."""

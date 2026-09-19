@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Launch the SUAVE experiment runner from its YAML configuration."""
+"""Launch the generic batch runner from its YAML campaign manifest."""
 
 import os
 
@@ -22,20 +22,21 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    """Return the configured experiment-runner launch description."""
+    """Return the configured batch-runner launch description."""
     # Get the path to the config file
     config_path = os.path.join(
         get_package_share_directory('suave_runner'),
         'config',
-        'runner_config.yml'
+        'runner',
+        'batch_campaigns.yml'
     )
 
-    # Launch the suave_runner node with the parameters loaded from YAML
+    # Launch the suave_runner batch node with the campaigns loaded from YAML
     return LaunchDescription([
         Node(
             package='suave_runner',
-            executable='suave_runner',
-            name='suave_runner_node',
+            executable='run_batch',
+            name='run_batch_node',
             output='screen',
             parameters=[config_path],
         )

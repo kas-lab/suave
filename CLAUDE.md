@@ -95,8 +95,12 @@ ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt result_filena
 # adaptation_manager values: none | metacontrol | random | bt
 
 # Experiment runner (ROS2, config-file driven — preferred for campaigns)
-ros2 launch suave_runner suave_runner.launch.py
-# Config: suave_runner/config/runner_config.yml — controls experiments, disturbance timing, result_path
+ros2 launch suave_runner suave_runner_launch.py
+# Config: suave_runner/config/runner/runner_config.yml — controls experiments, disturbance timing, result_path
+
+# Batch runner (sequences multiple campaigns; checkpoints to state.json for resume)
+ros2 launch suave_runner run_batch_launch.py
+# Config: suave_runner/config/runner/batch_campaigns.yml — see suave_runner/README.md "Batch runner" section
 
 # Shell runner (simple positional args)
 cd runner && ./runner.sh [true|false] [metacontrol|random|none|bt] [time|distance] <runs>
@@ -152,6 +156,7 @@ For **external managing systems**, include `suave_base/launch/suave_base.launch.
 `mission_metrics/done` (`std_msgs/Bool`) signals run completion. Both the `MissionMetrics` publisher and `ExperimentRunnerNode` subscriber must declare `RELIABLE` reliability + `TRANSIENT_LOCAL` durability (depth 1). Mismatched QoS causes DDS to silently drop the connection.
 Per-run logs are written to `<result_path>/logs/run_{exp_idx}_{run_idx}/`: `ardupilot.log` (raw SITL stdout/stderr), `simulation/` and `experiment/` (ROS node logs via `ROS_LOG_DIR`).
 `resume_result_path` parameter resumes a crashed campaign from an existing result folder; `random_seed` (default `100`) controls perturbation reproducibility.
+`run_batch`'s `resume_state_file` is a separate, batch-level resume mechanism — it points at a batch's `state.json`, not at a single campaign's result folder.
 
 ## Code Conventions
 

@@ -323,7 +323,7 @@ ros2 run suave_runner suave_runner \
   ]'
 ```
 
-Or using a launch file with a [config file](https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner_config.yml):
+Or using a launch file with a [config file](https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner/runner_config.yml):
 
 ```Bash
 ros2 launch suave_runner suave_runner_launch.py

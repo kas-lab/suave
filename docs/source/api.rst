@@ -21,4 +21,12 @@ API
    suave_monitor.water_visibility_observer
    suave_metrics.mission_metrics
    suave_runner.suave_runner
-   suave_runner.statistical_analysis
+   suave_runner.analysis.mann_whitney_analysis
+   suave_runner.analysis.wilcoxon_analysis
+   suave_runner.analysis.sort_results
+   suave_runner.analysis.summarize_results
+   suave_runner.analysis.qq_plot
+   suave_runner.analysis.qq_plot_batch
+   suave_runner.analysis.wilcoxon_analysis_batch
+   suave_runner.latex.latex_tables
+   suave_runner.latex.wilcoxon_latex_tables_batch

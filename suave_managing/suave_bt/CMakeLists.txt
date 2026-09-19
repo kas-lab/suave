@@ -14,6 +14,7 @@ find_package(ament_index_cpp REQUIRED)
 find_package(behaviortree_cpp REQUIRED)
 find_package(mavros_msgs REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
+find_package(rcl_interfaces REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(std_msgs REQUIRED)
@@ -27,6 +28,7 @@ set(dependencies
   behaviortree_cpp
   mavros_msgs
   lifecycle_msgs
+  rcl_interfaces
   rclcpp
   rclcpp_action
   std_msgs
@@ -122,6 +124,7 @@ if(BUILD_TESTING)
   ament_add_gtest(test_action_clients test/test_action_clients.cpp)
   target_link_libraries(
     test_action_clients
+    action_change_mode
     action_search_pipeline
     action_inspect_pipeline
     action_recharge_battery

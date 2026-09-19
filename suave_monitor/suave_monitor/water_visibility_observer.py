@@ -51,14 +51,15 @@ class WaterVisibilityObserver(Node):
         self.mavros_state_sub = self.create_subscription(
             State, 'mavros/state', self.status_cb, 10)
 
-        self.initial_time = self.get_clock().now().to_msg().sec
+        self.initial_time = None
+        self.qa_publisher_timer = self.create_timer(
+            self.qa_publishing_period, self.qa_publisher_cb)
+        self.qa_publisher_cb()
 
     def status_cb(self, msg):
-        """Start visibility measurements when guided mode begins."""
-        if msg.mode == 'GUIDED':
+        """Start advancing visibility at the first guided-mode observation."""
+        if msg.mode == 'GUIDED' and self.initial_time is None:
             self.initial_time = self.get_clock().now().to_msg().sec
-            self.qa_publisher_timer = self.create_timer(
-                self.qa_publishing_period, self.qa_publisher_cb)
             self.destroy_subscription(self.mavros_state_sub)
 
     def qa_publisher_cb(self):
@@ -75,7 +76,10 @@ class WaterVisibilityObserver(Node):
             'water_visibility_sec_shift').value
 
         current_time = self.get_clock().now().to_msg().sec
-        t = current_time - self.initial_time
+        # Publish the initial value during vehicle startup without advancing
+        # the experiment's visibility schedule before GUIDED.
+        t = (current_time - self.initial_time
+             if self.initial_time is not None else 0)
         v_delta = water_visibility_amp + water_visibility_min
         water_visibility = water_visibility_amp * math.cos(
             (2*math.pi/water_visibility_period)*(t + sec_shift)) + v_delta

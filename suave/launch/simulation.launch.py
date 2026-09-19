@@ -35,13 +35,15 @@ def generate_launch_description():
     def configure_logging(context, *args, **kwargs):
         if silent.perform(context) == 'true':
             import logging
-            logging.getLogger().setLevel(logging.ERROR)
+            import launch.logging
+            launch.logging.launch_config.get_screen_handler().setLevel(
+                logging.CRITICAL)
         return []
 
     silent_arg = DeclareLaunchArgument(
         'silent',
         default_value='false',
-        description='Suppress all output (launch logs + node logs)'
+        description='Suppress console output while retaining file logs'
     )
 
     remaro_worlds_path = get_package_share_directory('remaro_worlds')
@@ -57,8 +59,8 @@ def generate_launch_description():
     ])
     print_output_arg = DeclareLaunchArgument(
         'print_output',
-        default_value='screen',
-        description='Whether to print output to terminal (screen/log)'
+        default_value='both',
+        description='Process output destination (screen/log/both)'
     )
 
     gui = LaunchConfiguration('gui')
