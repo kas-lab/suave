@@ -61,7 +61,7 @@ ros2 launch suave_runner exp1_analysis_launch.py \
 `results_root` must point at the directory holding that campaign's
 run_idx-sorted CSVs (e.g. `sort_results.py`'s `--output` directory, or a
 batch's `campaigns/exp1/sorted/`). `output_root` (defaults to
-`results_root`) and `correction` (defaults to `holm`) can also be overridden.
+`results_root`) and `correction` (defaults to `none`) can also be overridden.
 See `suave_runner/config/analysis/exp1_analysis_config.yml` for the exact
 `data_files` mapping used -- add or edit an entry there (or in a copy) for a
 campaign whose managing systems differ from what's bundled.
@@ -73,14 +73,14 @@ ros2 run suave_runner wilcoxon_analysis \
   --ros-args \
   -p result_path:=/path/campaign/wilcoxon_analysis \
   -p filename:=campaign_wilcoxon \
-  -p correction:=holm \
+  -p correction:=none \
   -p data_files:='["{\"managing_system\": \"none\", \"data_file\": \"/path/campaign/sorted/none_suave_sorted.csv\"}", "{\"managing_system\": \"bt\", \"data_file\": \"/path/campaign/sorted/bt_suave_sorted.csv\"}"]'
 ```
 
 `data_files` is a ROS string array whose elements are JSON objects with
 `managing_system` and `data_file`. Use unique system labels. `correction`
-defaults to `holm`; currently any other value disables correction, so use
-an explicit value such as `none` only when no correction is intended.
+defaults to `none`; set it to `holm` explicitly to enable Holm-Bonferroni
+correction.
 
 ## Computation and reporting
 

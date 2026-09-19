@@ -268,7 +268,7 @@ ros2 run suave_runner wilcoxon_analysis \
   --ros-args \
   -p result_path:=~/suave/results/wilcoxon_analysis \
   -p filename:=none_vs_bt \
-  -p correction:=holm \
+  -p correction:=none \
   -p data_files:='[
     "{\"managing_system\": \"none\", \
       \"data_file\": \"~/suave/results/sorted/none_suave_sorted.csv\"}",
@@ -288,7 +288,7 @@ ros2 launch suave_runner exp1_analysis_launch.py \
 
 `results_root` must point at that campaign's sorted-CSV directory;
 `output_root` (defaults to `results_root`) and `correction` (defaults to
-`holm`) can also be overridden. See
+`none`) can also be overridden. See
 [config/analysis/exp1_analysis_config.yml](https://github.com/kas-lab/suave/blob/main/suave_runner/config/analysis/exp1_analysis_config.yml)
 for the exact `data_files` mapping used -- edit a copy of it for a campaign
 whose managing systems differ from what's bundled.
@@ -297,7 +297,7 @@ Parameters beyond those shared with `mann_whitney_analysis`:
 
 | Parameter | Default | Description |
 |---|---|---|
-| `correction` | `holm` | Multiple-comparison correction across every pair and metric in the run; set to any other value to disable (raw p-values are then copied into `p_adjusted`) |
+| `correction` | `none` | Multiple-comparison correction across every pair and metric in the run; set to `holm` to enable Holm-Bonferroni adjustment (raw p-values are copied into `p_adjusted` otherwise) |
 
 Unlike `mann_whitney_analysis`, `data_files` here must point at
 `run_idx`-tagged, sorted CSVs. A missing `run_idx` column, a duplicate
@@ -712,7 +712,7 @@ from the Q-Q script, which includes every complete numeric pair.
 
 Holm correction pools all computed ordered-pair tests across both metrics
 **within each campaign**, separately from the other campaigns. The default is
-`--correction holm`; `--correction none` explicitly disables adjustment.
+`--correction none`; `--correction holm` enables the adjustment.
 
 The primary `*_results.csv` reports raw and adjusted p-values, paired counts,
 positive/negative/zero differences, median difference, rank-biserial effect

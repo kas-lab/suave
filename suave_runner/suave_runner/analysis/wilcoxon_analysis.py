@@ -146,7 +146,7 @@ class WilcoxonAnalysis(Node):
         self.declare_parameter('result_path', '~/suave/results')
         self.declare_parameter('filename', 'suave_wilcoxon_analysis')
         self.declare_parameter('data_files', [''])
-        self.declare_parameter('correction', 'holm')
+        self.declare_parameter('correction', 'none')
 
         self.result_path = Path(self.get_parameter(
             'result_path').get_parameter_value().string_value).expanduser()

@@ -38,7 +38,7 @@ def generate_launch_description():
             'output_root', default_value=LaunchConfiguration('results_root'),
             description='Directory for output CSVs'),
         DeclareLaunchArgument(
-            'correction', default_value='holm', choices=['holm', 'none'],
+            'correction', default_value='none', choices=['holm', 'none'],
             description='Correction across both metrics and all method pairs'),
         Node(
             package='suave_runner', executable='wilcoxon_analysis',
