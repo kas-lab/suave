@@ -1,0 +1,6 @@
+suave\_runner.analysis.wilcoxon\_analysis\_batch.resolve\_config
+================================================================
+
+.. currentmodule:: suave_runner.analysis.wilcoxon_analysis_batch
+
+.. autofunction:: resolve_config

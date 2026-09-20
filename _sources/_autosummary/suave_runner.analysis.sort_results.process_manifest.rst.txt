@@ -1,0 +1,6 @@
+suave\_runner.analysis.sort\_results.process\_manifest
+======================================================
+
+.. currentmodule:: suave_runner.analysis.sort_results
+
+.. autofunction:: process_manifest

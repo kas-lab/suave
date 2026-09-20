@@ -1,0 +1,6 @@
+suave\_runner.latex.latex\_tables.main
+======================================
+
+.. currentmodule:: suave_runner.latex.latex_tables
+
+.. autofunction:: main

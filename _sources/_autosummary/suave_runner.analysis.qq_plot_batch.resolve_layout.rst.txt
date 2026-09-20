@@ -1,0 +1,6 @@
+suave\_runner.analysis.qq\_plot\_batch.resolve\_layout
+======================================================
+
+.. currentmodule:: suave_runner.analysis.qq_plot_batch
+
+.. autofunction:: resolve_layout

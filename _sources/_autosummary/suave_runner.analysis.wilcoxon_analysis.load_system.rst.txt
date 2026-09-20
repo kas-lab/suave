@@ -1,0 +1,6 @@
+suave\_runner.analysis.wilcoxon\_analysis.load\_system
+======================================================
+
+.. currentmodule:: suave_runner.analysis.wilcoxon_analysis
+
+.. autofunction:: load_system

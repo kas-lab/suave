@@ -1,0 +1,34 @@
+﻿suave\_runner.analysis.qq\_plot\_batch
+======================================
+
+.. automodule:: suave_runner.analysis.qq_plot_batch
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      build_parser
+      filename_component
+      main
+      resolve_layout
+      run_batch
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

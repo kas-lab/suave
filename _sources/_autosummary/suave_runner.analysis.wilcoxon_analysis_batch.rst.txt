@@ -1,0 +1,39 @@
+﻿suave\_runner.analysis.wilcoxon\_analysis\_batch
+================================================
+
+.. automodule:: suave_runner.analysis.wilcoxon_analysis_batch
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      analyze_campaign
+      build_parser
+      campaign_manifest
+      find_campaigns
+      main
+      resolve_config
+      sort_campaign
+      sorting_manifest
+      validate_csv
+      validate_frame
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

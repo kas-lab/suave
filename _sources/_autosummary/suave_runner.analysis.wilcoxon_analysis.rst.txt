@@ -1,0 +1,41 @@
+﻿suave\_runner.analysis.wilcoxon\_analysis
+=========================================
+
+.. automodule:: suave_runner.analysis.wilcoxon_analysis
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      holm_correction
+      load_system
+      main
+      paired_test
+      rank_biserial
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+   
+      WilcoxonAnalysis
+   
+   
+
+   
+   
+   
+
+
+

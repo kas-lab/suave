@@ -1,0 +1,6 @@
+suave\_runner.analysis.qq\_plot\_batch.filename\_component
+==========================================================
+
+.. currentmodule:: suave_runner.analysis.qq_plot_batch
+
+.. autofunction:: filename_component

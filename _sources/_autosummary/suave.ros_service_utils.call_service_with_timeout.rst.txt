@@ -1,0 +1,6 @@
+suave.ros\_service\_utils.call\_service\_with\_timeout
+======================================================
+
+.. currentmodule:: suave.ros_service_utils
+
+.. autofunction:: call_service_with_timeout

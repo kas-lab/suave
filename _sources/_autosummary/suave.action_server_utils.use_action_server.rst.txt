@@ -1,0 +1,6 @@
+suave.action\_server\_utils.use\_action\_server
+===============================================
+
+.. currentmodule:: suave.action_server_utils
+
+.. autofunction:: use_action_server

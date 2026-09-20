@@ -1,0 +1,6 @@
+suave\_runner.analysis.summarize\_results.main
+==============================================
+
+.. currentmodule:: suave_runner.analysis.summarize_results
+
+.. autofunction:: main

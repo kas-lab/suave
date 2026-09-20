@@ -1,0 +1,31 @@
+WilcoxonAnalysis
+================
+
+.. currentmodule:: suave_runner.analysis.wilcoxon_analysis
+
+.. autoclass:: WilcoxonAnalysis
+
+   
+
+   
+    .. automethod:: __init__
+    .. automethod:: perform_analysis
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~WilcoxonAnalysis.__init__
+      ~WilcoxonAnalysis.perform_analysis
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+   
+   

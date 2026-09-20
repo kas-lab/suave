@@ -1,0 +1,6 @@
+suave\_runner.analysis.wilcoxon\_analysis\_batch.sort\_campaign
+===============================================================
+
+.. currentmodule:: suave_runner.analysis.wilcoxon_analysis_batch
+
+.. autofunction:: sort_campaign

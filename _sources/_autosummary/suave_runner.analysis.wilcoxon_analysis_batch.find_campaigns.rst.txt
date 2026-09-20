@@ -1,0 +1,6 @@
+suave\_runner.analysis.wilcoxon\_analysis\_batch.find\_campaigns
+================================================================
+
+.. currentmodule:: suave_runner.analysis.wilcoxon_analysis_batch
+
+.. autofunction:: find_campaigns

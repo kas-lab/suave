@@ -1,0 +1,6 @@
+suave\_runner.analysis.wilcoxon\_analysis\_batch.build\_parser
+==============================================================
+
+.. currentmodule:: suave_runner.analysis.wilcoxon_analysis_batch
+
+.. autofunction:: build_parser

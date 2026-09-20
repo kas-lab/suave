@@ -1,0 +1,6 @@
+suave.action\_server\_utils.make\_goal\_callback
+================================================
+
+.. currentmodule:: suave.action_server_utils
+
+.. autofunction:: make_goal_callback

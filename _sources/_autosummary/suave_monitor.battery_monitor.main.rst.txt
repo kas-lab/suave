@@ -1,0 +1,6 @@
+suave\_monitor.battery\_monitor.main
+====================================
+
+.. currentmodule:: suave_monitor.battery_monitor
+
+.. autofunction:: main

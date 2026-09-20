@@ -1,0 +1,1017 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Run SUAVE &mdash; SUAVE 1.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e0a75244"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="System Architecture" href="architecture.html" />
+    <link rel="prev" title="Use SUAVE with Docker" href="docker.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SUAVE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Install SUAVE locally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker.html">Use SUAVE with Docker</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Run SUAVE</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#with-runner">With Runner</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#trying-it-out">Trying it out!</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#full-runner">Full Runner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#runner-config-reference">Runner config reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#batch-runner">Batch runner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#resuming-a-crashed-campaign">Resuming a crashed campaign</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wilcoxon-analysis-paired">Wilcoxon analysis (paired)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mann-whitney-analysis">Mann-Whitney analysis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#result-summary">Result summary</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#without-the-runner">Without the runner</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#start-ardusub">Start ArduSub</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#start-the-simulation">Start the simulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#start-suave-s-nodes">Start SUAVE’s nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#q-q-plots-of-paired-differences">Q-Q plots of paired differences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#batch-paired-wilcoxon-analysis">Batch paired Wilcoxon analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#batch-wilcoxon-latex-tables">Batch Wilcoxon LaTeX tables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#analysis-and-latex-script-locations">Analysis and LaTeX script locations</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">System Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extend.html">Extending SUAVE and connecting managing subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementations.html">Managing Subsystem Implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="related.html">Related works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citing.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SUAVE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Run SUAVE</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/run.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="run-suave">
+<h1>Run SUAVE<a class="headerlink" href="#run-suave" title="Link to this heading"></a></h1>
+<section id="with-runner">
+<h2>With Runner<a class="headerlink" href="#with-runner" title="Link to this heading"></a></h2>
+<section id="trying-it-out">
+<h3>Trying it out!<a class="headerlink" href="#trying-it-out" title="Link to this heading"></a></h3>
+<p>If you simply want to try out the exemplar, simply enter the following commands in a terminal:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/suave_ws/src/suave/runner/
+./example_run.sh
+</pre></div>
+</div>
+<p>Within a couple of minutes, some new terminals should open as well as the Gazebo simulator.
+A default mission is executed of inspecting the pipeline with a time limit.
+To follow the robot as it progresses along its mission make sure to right click and follow it in the entity tree of Gazebo as shown below:
+<img alt="BLUEROV Follow" src="https://github.com/kas-lab/suave/blob/652db0676ec2995c4cc0653ef5de0fc49edd00ac/docker/follow_bluerov.PNG" /></p>
+<p><strong>Please note</strong>: It can take a little while for the robot to get moving, it is an issue we are aware of. Once it does get a move on you should see it perform its mission for about 5 minutes.</p>
+</section>
+<section id="full-runner">
+<h3>Full Runner<a class="headerlink" href="#full-runner" title="Link to this heading"></a></h3>
+<p>There are two ways to run a full experiment campaign.</p>
+<p><strong>Option 1 — Shell runner</strong> (simple, positional arguments):</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/suave_ws/src/suave/runner/
+./runner.sh<span class="w"> </span><span class="nb">false</span><span class="w"> </span>metacontrol<span class="w"> </span><span class="nb">time</span><span class="w"> </span><span class="m">2</span>
+</pre></div>
+</div>
+<p>The script takes 4 positional arguments:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">true</span></code> or <code class="docutils literal notranslate"><span class="pre">false</span></code> — whether to show a GUI</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">metacontrol</span></code>, <code class="docutils literal notranslate"><span class="pre">random</span></code>, <code class="docutils literal notranslate"><span class="pre">none</span></code>, or <code class="docutils literal notranslate"><span class="pre">bt</span></code> — adaptation manager</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">time</span></code> or <code class="docutils literal notranslate"><span class="pre">distance</span></code> — mission type</p></li>
+<li><p>Number of runs (integer)</p></li>
+</ol>
+<p><strong>Option 2 — ROS 2 runner</strong> (config-file driven, recommended for larger campaigns):</p>
+<p>First make sure you source the suave workspace:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/suave_ws/
+<span class="nb">source</span><span class="w"> </span>install/setup.bash
+</pre></div>
+</div>
+<p>Then run:</p>
+<p>Without gui:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>suave_runner<span class="w"> </span>suave_runner<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--ros-args<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>gui:<span class="o">=</span>False<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>experiments:<span class="o">=</span><span class="s1">'[</span>
+<span class="s1">    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt\", \</span>
+<span class="s1">      \"num_runs\": 2, \</span>
+<span class="s1">      \"adaptation_manager\": \"bt\", \</span>
+<span class="s1">      \"mission_name\": \"suave\"}"</span>
+<span class="s1">  ]'</span>
+</pre></div>
+</div>
+<p>With gui:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>suave_runner<span class="w"> </span>suave_runner<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--ros-args<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>gui:<span class="o">=</span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>experiments:<span class="o">=</span><span class="s1">'[</span>
+<span class="s1">    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt\", \</span>
+<span class="s1">      \"num_runs\": 2, \</span>
+<span class="s1">      \"adaptation_manager\": \"bt\", \</span>
+<span class="s1">      \"mission_name\": \"suave\"}"</span>
+<span class="s1">  ]'</span>
+</pre></div>
+</div>
+<p>To run the BT manager through ROS 2 actions, append
+<code class="docutils literal notranslate"><span class="pre">use_action_server:=true</span></code> to its experiment command:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>suave_runner<span class="w"> </span>suave_runner<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--ros-args<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>experiments:<span class="o">=</span><span class="s1">'[</span>
+<span class="s1">    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt use_action_server:=true\", \</span>
+<span class="s1">      \"num_runs\": 2, \</span>
+<span class="s1">      \"adaptation_manager\": \"bt\", \</span>
+<span class="s1">      \"mission_name\": \"suave\"}"</span>
+<span class="s1">  ]'</span>
+</pre></div>
+</div>
+<p>You can also use a launch file with a <a class="reference external" href="https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner/runner_config.yml">config file</a> to make it easier to run the experiments:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>suave_runner<span class="w"> </span>suave_runner_launch.py
+</pre></div>
+</div>
+<p>To run SUAVE with different managing subsystems, replace the <code class="docutils literal notranslate"><span class="pre">experiment_launch</span></code> with the proper launch file.</p>
+</section>
+<section id="runner-config-reference">
+<h3>Runner config reference<a class="headerlink" href="#runner-config-reference" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">suave_runner/config/runner/runner_config.yml</span></code> controls all experiment parameters. The key fields are:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">result_path</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">~/suave/results</span></code></p></td>
+<td><p>Directory where CSV result files and per-run logs are written</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">gui</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+<td><p>Launch Gazebo with a visible window</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">experiment_logging</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+<td><p>Enable extra console output from the runner (ArduPilot and ROS node logs are always captured to <code class="docutils literal notranslate"><span class="pre">&lt;result_path&gt;/logs/run_&lt;exp&gt;_&lt;run&gt;/</span></code> regardless of this flag)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">run_duration</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">600</span></code></p></td>
+<td><p>Maximum seconds to wait for <code class="docutils literal notranslate"><span class="pre">mission_metrics/done</span></code> before timing out a run</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mission_config_pkg</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">suave_missions</span></code></p></td>
+<td><p>ROS package containing the mission config</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mission_config_file</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">config/runner_mission_config.yaml</span></code></p></td>
+<td><p>Path to mission config within that package</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ardupilot_executable</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">sim_vehicle.py</span> <span class="pre">-L</span> <span class="pre">RATBeach</span> <span class="pre">-v</span> <span class="pre">ArduSub</span> <span class="pre">--model=JSON</span></code></p></td>
+<td><p>Command used to start ArduPilot SITL</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">suave_simulation</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ros2</span> <span class="pre">launch</span> <span class="pre">suave</span> <span class="pre">simulation.launch.py</span></code></p></td>
+<td><p>Simulation launch command</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">initial_pos_x</span></code> / <code class="docutils literal notranslate"><span class="pre">y</span></code> / <code class="docutils literal notranslate"><span class="pre">z</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">-17.0</span></code> / <code class="docutils literal notranslate"><span class="pre">2.5</span></code> / <code class="docutils literal notranslate"><span class="pre">-18.5</span></code></p></td>
+<td><p>AUV spawn position in the Gazebo world; Y comes from the shipped runner config</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">initial_pos_x_random_interval</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[0.0,</span> <span class="pre">0.0]</span></code></p></td>
+<td><p>Random offset range applied to X spawn position each run</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">initial_pos_y_random_interval</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[-0.5,</span> <span class="pre">0.5]</span></code></p></td>
+<td><p>Random offset range applied to Y spawn position each run</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">initial_pos_z_random_interval</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[0.0,</span> <span class="pre">0.0]</span></code></p></td>
+<td><p>Random offset range applied to Z spawn position each run</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">water_visibility_sec_shift</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.0</span></code></p></td>
+<td><p>Fixed time offset (s) before the water visibility disturbance</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">water_visibility_sec_shift_random_interval</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[0.0,</span> <span class="pre">120.0]</span></code></p></td>
+<td><p>Random range added on top of the fixed offset</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">thruster_events</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[(1,failure,100),</span> <span class="pre">(3,failure,100)]</span></code></p></td>
+<td><p>List of thruster events: <code class="docutils literal notranslate"><span class="pre">(id,</span> <span class="pre">type,</span> <span class="pre">time_s)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">thruster_events_random_interval</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[-100.0,</span> <span class="pre">100.0]</span></code></p></td>
+<td><p>Random offset (s) applied to each thruster event time</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">random_interval</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">5</span></code></p></td>
+<td><p>Number of runs before re-randomising offsets</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">random_seed</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">100</span></code></p></td>
+<td><p>Seed for the perturbation RNG — fix this value for reproducible benchmark campaigns</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">resume_result_path</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code></p></td>
+<td><p>Path to an existing result folder to resume a crashed campaign (empty = start a new timestamped folder)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">experiments</span></code></p></td>
+<td><p><em>(see file)</em></p></td>
+<td><p>List of experiment definitions (see below)</p></td>
+</tr>
+</tbody>
+</table>
+<p>Each entry in <code class="docutils literal notranslate"><span class="pre">experiments</span></code> is a JSON string with four fields:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">experiments</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">{</span>
+<span class="w">      </span><span class="no">"experiment_launch": "ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt",</span>
+<span class="w">      </span><span class="no">"num_runs": 10,</span>
+<span class="w">      </span><span class="no">"adaptation_manager": "bt",</span>
+<span class="w">      </span><span class="no">"mission_name": "suave"</span>
+<span class="w">    </span><span class="no">}</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">experiment_launch</span></code></p></td>
+<td><p>Full <code class="docutils literal notranslate"><span class="pre">ros2</span> <span class="pre">launch</span></code> command and arguments for the managing subsystem; add <code class="docutils literal notranslate"><span class="pre">use_action_server:=true</span></code> here for BT action mode</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">num_runs</span></code></p></td>
+<td><p>Number of times to repeat this experiment</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">adaptation_manager</span></code></p></td>
+<td><p>Label written into result CSV files</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mission_name</span></code></p></td>
+<td><p>Mission label written into result CSV files</p></td>
+</tr>
+</tbody>
+</table>
+<p>Multiple experiments can be listed and will be run sequentially. See the <a class="reference internal" href="metrics.html"><span class="std std-doc">Metrics Reference</span></a> for details on output files.</p>
+</section>
+<section id="batch-runner">
+<h3>Batch runner<a class="headerlink" href="#batch-runner" title="Link to this heading"></a></h3>
+<p>To run several campaigns sequentially in one go, use the generic <code class="docutils literal notranslate"><span class="pre">run_batch</span></code>
+node, configured through a YAML manifest (see
+<a class="reference external" href="https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner/batch_campaigns.yml">config/runner/batch_campaigns.yml</a>
+for a runnable example covering <code class="docutils literal notranslate"><span class="pre">exp1</span></code>-<code class="docutils literal notranslate"><span class="pre">exp3</span></code> and <code class="docutils literal notranslate"><span class="pre">extended_exp1</span></code>-<code class="docutils literal notranslate"><span class="pre">extended_exp3</span></code>
+with the <code class="docutils literal notranslate"><span class="pre">bt</span></code>, <code class="docutils literal notranslate"><span class="pre">metacontrol</span></code>, <code class="docutils literal notranslate"><span class="pre">random</span></code>, and <code class="docutils literal notranslate"><span class="pre">none</span></code> managing systems bundled
+with this repository; a third-party managing system’s own runner config can
+be added the same way, from its own repo):</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>suave_runner<span class="w"> </span>run_batch_launch.py
+</pre></div>
+</div>
+<p>Or directly, pointing at any manifest:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>suave_runner<span class="w"> </span>run_batch<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--ros-args<span class="w"> </span>--params-file<span class="w"> </span>config/runner/batch_campaigns.yml
+</pre></div>
+</div>
+<p><strong>Note:</strong> running every campaign back-to-back can take several hours to a few
+days, depending on the machine and <code class="docutils literal notranslate"><span class="pre">num_runs</span></code> per experiment – plan to leave
+it running unattended (e.g. in <code class="docutils literal notranslate"><span class="pre">screen</span></code>/<code class="docutils literal notranslate"><span class="pre">tmux</span></code>) rather than waiting on it.</p>
+<p>This creates a timestamped batch directory under <code class="docutils literal notranslate"><span class="pre">~/suave/results/batches/</span></code>
+(e.g. <code class="docutils literal notranslate"><span class="pre">batch_20260913_104200/</span></code>) containing:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">state.json</span></code> – the batch checkpoint, tracking each campaign’s status
+(<code class="docutils literal notranslate"><span class="pre">pending</span></code>, <code class="docutils literal notranslate"><span class="pre">running</span></code>, <code class="docutils literal notranslate"><span class="pre">completed</span></code>, <code class="docutils literal notranslate"><span class="pre">incomplete</span></code>, <code class="docutils literal notranslate"><span class="pre">failed</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">interrupted</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">run_batch.log</span></code> – the overall orchestration log</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;campaign_name&gt;.log</span></code> – combined stdout/stderr for each campaign (e.g.
+<code class="docutils literal notranslate"><span class="pre">exp1.log</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">campaigns/&lt;campaign_name&gt;/</span></code> – each campaign’s own results directory, in
+the same layout <code class="docutils literal notranslate"><span class="pre">suave_runner</span></code> produces for a single campaign</p></li>
+</ul>
+<p><strong>Checking whether a batch needs to be resumed:</strong> a batch finished cleanly if
+<code class="docutils literal notranslate"><span class="pre">run_batch.log</span></code> ends with <code class="docutils literal notranslate"><span class="pre">All</span> <span class="pre">campaigns</span> <span class="pre">completed</span> <span class="pre">successfully.</span></code>. If it
+stops early – Ctrl+C, a crash, a failed campaign – the log ends instead with
+a <code class="docutils literal notranslate"><span class="pre">Batch</span> <span class="pre">interrupted;</span> <span class="pre">...</span></code> or <code class="docutils literal notranslate"><span class="pre">Batch</span> <span class="pre">finished</span> <span class="pre">with</span> <span class="pre">N</span> <span class="pre">incomplete,</span> <span class="pre">...</span></code> line
+followed by the exact resume command to use. You can also check
+campaign-by-campaign at any time by inspecting <code class="docutils literal notranslate"><span class="pre">state.json</span></code>:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>grep<span class="w"> </span><span class="s1">'"status"'</span><span class="w"> </span>~/suave/results/batches/&lt;batch_dir&gt;/state.json
+</pre></div>
+</div>
+<p>Any campaign not marked <code class="docutils literal notranslate"><span class="pre">&quot;status&quot;:</span> <span class="pre">&quot;completed&quot;</span></code> still needs to (re)run.</p>
+<p><strong>Resuming an interrupted batch:</strong> pass the batch’s <code class="docutils literal notranslate"><span class="pre">state.json</span></code> as the
+<code class="docutils literal notranslate"><span class="pre">resume_state_file</span></code> parameter; campaigns already marked <code class="docutils literal notranslate"><span class="pre">completed</span></code> are
+skipped, and an <code class="docutils literal notranslate"><span class="pre">incomplete</span></code> campaign picks up from its last saved run
+instead of starting over:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>suave_runner<span class="w"> </span>run_batch<span class="w"> </span>--ros-args<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>resume_state_file:<span class="o">=</span>~/suave/results/batches/&lt;batch_dir&gt;/state.json
+</pre></div>
+</div>
+<p>To run a custom subset or order of campaigns, write your own manifest (or
+edit <code class="docutils literal notranslate"><span class="pre">config/runner/batch_campaigns.yml</span></code>) and pass it via <code class="docutils literal notranslate"><span class="pre">--params-file</span></code> before
+starting a new batch. <code class="docutils literal notranslate"><span class="pre">-p</span> <span class="pre">fail_fast:=true</span></code> stops the batch as soon as a
+campaign fails instead of continuing to the next one, and <code class="docutils literal notranslate"><span class="pre">-p</span> <span class="pre">dry_run:=true</span></code>
+prints the <code class="docutils literal notranslate"><span class="pre">ros2</span> <span class="pre">run</span></code> command for each campaign without executing anything.</p>
+</section>
+<section id="resuming-a-crashed-campaign">
+<h3>Resuming a crashed campaign<a class="headerlink" href="#resuming-a-crashed-campaign" title="Link to this heading"></a></h3>
+<p>If the runner is interrupted mid-campaign (crash, Ctrl+C, power loss), it can
+resume from where it left off without re-running completed runs.</p>
+<p>After each <strong>successful</strong> run the runner writes a marker file
+<code class="docutils literal notranslate"><span class="pre">run_&lt;exp_idx&gt;_&lt;run_idx&gt;.done</span></code> inside the result folder. Runs that timed out
+(no result received within <code class="docutils literal notranslate"><span class="pre">run_duration</span></code>) are <strong>not</strong> marked and will be
+retried on resume.</p>
+<p>If any launched process exits with a nonzero status before mission completion,
+or a subsystem publishes <code class="docutils literal notranslate"><span class="pre">mission/control_failure</span></code>, the runner terminates that
+run immediately and continues with the remaining runs. The failed run receives
+no <code class="docutils literal notranslate"><span class="pre">.done</span></code> marker. Its launch events, process output, and ROS logs remain under
+<code class="docutils literal notranslate"><span class="pre">logs/run_&lt;exp_idx&gt;_&lt;run_idx&gt;/</span></code>. The <code class="docutils literal notranslate"><span class="pre">experiment_logging</span></code> flag controls console
+verbosity only; it does not disable these files.</p>
+<p>To resume, pass the path of the interrupted result folder via
+<code class="docutils literal notranslate"><span class="pre">resume_result_path</span></code>:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>suave_runner<span class="w"> </span>suave_runner<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--ros-args<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>resume_result_path:<span class="o">=</span>~/suave/results/2026_06_19_10-30-00<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>experiments:<span class="o">=</span><span class="s1">'[</span>
+<span class="s1">    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt\", \</span>
+<span class="s1">      \"num_runs\": 10, \</span>
+<span class="s1">      \"adaptation_manager\": \"bt\", \</span>
+<span class="s1">      \"mission_name\": \"suave\"}"</span>
+<span class="s1">  ]'</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">experiments</span></code> parameter must match the original campaign exactly so that
+run indices line up with the marker files. Per-run mission config files
+(<code class="docutils literal notranslate"><span class="pre">mission_config_run*.yaml</span></code>) are reused from the existing folder if present;
+otherwise they are regenerated using the same random seed.</p>
+</section>
+<section id="wilcoxon-analysis-paired">
+<h3>Wilcoxon analysis (paired)<a class="headerlink" href="#wilcoxon-analysis-paired" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">wilcoxon_analysis</span></code> executable implements
+a paired Wilcoxon signed-rank test on matched runs across managing systems,
+instead of treating them as independent samples. There is a skill for agents for
+performing the <code class="docutils literal notranslate"><span class="pre">wilcoxon-analysis</span></code>, check the skill for the full workflow. Summary:</p>
+<p><strong>Prerequisite: sort first.</strong> Every input CSV must carry a <code class="docutils literal notranslate"><span class="pre">run_idx</span></code> column
+identifying which run of that managing system each row is. A <code class="docutils literal notranslate"><span class="pre">--resume</span></code>d
+campaign appends retried runs out of order, so this cannot be assumed from
+row position. Recover it first with <code class="docutils literal notranslate"><span class="pre">sort_results.py</span></code> (see the
+<code class="docutils literal notranslate"><span class="pre">sort-suave-results</span></code> skill):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>suave_runner/analysis/sort_results.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csv<span class="w"> </span>~/suave/results/bt_suave.csv<span class="w"> </span>--exp-idx<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output<span class="w"> </span>~/suave/results/sorted/bt_suave_sorted.csv
+</pre></div>
+</div>
+<p>Then run the paired analysis on the sorted CSVs:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>suave_runner<span class="w"> </span>wilcoxon_analysis<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--ros-args<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>result_path:<span class="o">=</span>~/suave/results/wilcoxon_analysis<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>filename:<span class="o">=</span>none_vs_bt<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>correction:<span class="o">=</span>none<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>data_files:<span class="o">=</span><span class="s1">'[</span>
+<span class="s1">    "{\"managing_system\": \"none\", \</span>
+<span class="s1">      \"data_file\": \"~/suave/results/sorted/none_suave_sorted.csv\"}",</span>
+<span class="s1">    "{\"managing_system\": \"bt\", \</span>
+<span class="s1">      \"data_file\": \"~/suave/results/sorted/bt_suave_sorted.csv\"}"</span>
+<span class="s1">  ]'</span>
+</pre></div>
+</div>
+<p>For <code class="docutils literal notranslate"><span class="pre">exp1</span></code>-<code class="docutils literal notranslate"><span class="pre">exp3</span></code> and <code class="docutils literal notranslate"><span class="pre">extended_exp1</span></code>-<code class="docutils literal notranslate"><span class="pre">extended_exp3</span></code> (the campaigns bundled
+with this repo’s own runner configs), a preconfigured launch file under
+<code class="docutils literal notranslate"><span class="pre">suave_runner/launch/analysis/</span></code> avoids typing out <code class="docutils literal notranslate"><span class="pre">data_files</span></code> by hand:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>suave_runner<span class="w"> </span>exp1_analysis_launch.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>results_root:<span class="o">=</span>~/suave/results/sorted
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">results_root</span></code> must point at that campaign’s sorted-CSV directory;
+<code class="docutils literal notranslate"><span class="pre">output_root</span></code> (defaults to <code class="docutils literal notranslate"><span class="pre">results_root</span></code>) and <code class="docutils literal notranslate"><span class="pre">correction</span></code> (defaults to
+<code class="docutils literal notranslate"><span class="pre">none</span></code>) can also be overridden. See
+<a class="reference external" href="https://github.com/kas-lab/suave/blob/main/suave_runner/config/analysis/exp1_analysis_config.yml">config/analysis/exp1_analysis_config.yml</a>
+for the exact <code class="docutils literal notranslate"><span class="pre">data_files</span></code> mapping used – edit a copy of it for a campaign
+whose managing systems differ from what’s bundled.</p>
+<p>Parameters beyond those shared with <code class="docutils literal notranslate"><span class="pre">mann_whitney_analysis</span></code>:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">correction</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">none</span></code></p></td>
+<td><p>Multiple-comparison correction across every pair and metric in the run; set to <code class="docutils literal notranslate"><span class="pre">holm</span></code> to enable Holm-Bonferroni adjustment (raw p-values are copied into <code class="docutils literal notranslate"><span class="pre">p_adjusted</span></code> otherwise)</p></td>
+</tr>
+</tbody>
+</table>
+<p>Unlike <code class="docutils literal notranslate"><span class="pre">mann_whitney_analysis</span></code>, <code class="docutils literal notranslate"><span class="pre">data_files</span></code> here must point at
+<code class="docutils literal notranslate"><span class="pre">run_idx</span></code>-tagged, sorted CSVs. A missing <code class="docutils literal notranslate"><span class="pre">run_idx</span></code> column, a duplicate
+<code class="docutils literal notranslate"><span class="pre">run_idx</span></code>, or an unmatched run raises rather than falling back to row order.</p>
+<p>The command writes:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;filename&gt;_results.csv</span></code> – the primary output, one row per ordered system
+pair and metric (<code class="docutils literal notranslate"><span class="pre">search_time</span></code> and <code class="docutils literal notranslate"><span class="pre">distance_inspected</span></code>), with the
+alternative hypothesis, pair counts
+(declared / used / positive / negative / zero), median paired difference,
+test statistic, raw and Holm-adjusted p-values, a matched rank-biserial
+effect size, and the run indices excluded at each filtering step (missing
+counterpart, pipeline not found for either metric);</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;filename&gt;_time_search_pipeline.csv</span></code> and
+<code class="docutils literal notranslate"><span class="pre">&lt;filename&gt;_distance_inspected.csv</span></code> – secondary compatibility matrices in
+the same shape <code class="docutils literal notranslate"><span class="pre">mann_whitney_analysis</span></code> writes (raw p-values, not
+Holm-adjusted), so existing table-generation tooling can point at either.</p></li>
+</ul>
+<p>Both <code class="docutils literal notranslate"><span class="pre">search_time</span></code> and <code class="docutils literal notranslate"><span class="pre">distance_inspected</span></code> exclude any pair where either
+system did not find the pipeline. Search time is right-censored at the
+mission duration in that case, and inspection requires finding the pipeline.
+Both comparisons are therefore conditional on detection by both systems.
+Holm correction applies across the ordered system pairs for these two metrics.</p>
+</section>
+<section id="mann-whitney-analysis">
+<h3>Mann-Whitney analysis<a class="headerlink" href="#mann-whitney-analysis" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">mann_whitney_analysis</span></code> executable
+compares mission-level metrics produced by two or more managing systems,
+treating each system’s runs as independent samples. For each ordered pair of
+systems, it reports Shapiro-Wilk normality diagnostics and performs one-sided
+Mann-Whitney U tests for the following alternatives:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Metric</p></th>
+<th class="head"><p>Alternative for row system A against column system B</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Time searching for the pipeline</p></td>
+<td><p>A is lower than B</p></td>
+</tr>
+<tr class="row-odd"><td><p>Distance inspected</p></td>
+<td><p>A is greater than B</p></td>
+</tr>
+<tr class="row-even"><td><p>Mean reaction time</p></td>
+<td><p>A is lower than B</p></td>
+</tr>
+</tbody>
+</table>
+<p>Each input CSV file must contain these columns exactly:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">time</span> <span class="pre">searching</span> <span class="pre">pipeline</span> <span class="pre">(s)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">distance</span> <span class="pre">inspected</span> <span class="pre">(m)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mean</span> <span class="pre">reaction</span> <span class="pre">time</span> <span class="pre">(s)</span></code></p></li>
+</ul>
+<p>These columns are written by <code class="docutils literal notranslate"><span class="pre">suave_metrics</span></code>. If a run does not find the
+pipeline, its search time equals its full mission duration. If a run has no
+adaptation events, its mean reaction time is <code class="docutils literal notranslate"><span class="pre">0.0</span></code>.</p>
+<p>Run the analysis from a sourced SUAVE workspace:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>suave_runner<span class="w"> </span>mann_whitney_analysis<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--ros-args<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>result_path:<span class="o">=</span>~/suave/results/mann_whitney_analysis<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>filename:<span class="o">=</span>none_vs_bt<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>data_files:<span class="o">=</span><span class="s1">'[</span>
+<span class="s1">    "{\"managing_system\": \"none\", \</span>
+<span class="s1">      \"data_file\": \"~/suave/results/none_suave.csv\"}",</span>
+<span class="s1">    "{\"managing_system\": \"suave_bt\", \</span>
+<span class="s1">      \"data_file\": \"~/suave/results/bt_suave.csv\"}"</span>
+<span class="s1">  ]'</span>
+</pre></div>
+</div>
+<p>The ROS parameters are:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">data_files</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">['']</span></code> (placeholder)</p></td>
+<td><p>Required array of JSON strings containing <code class="docutils literal notranslate"><span class="pre">managing_system</span></code> and <code class="docutils literal notranslate"><span class="pre">data_file</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">result_path</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">~/suave/results</span></code></p></td>
+<td><p>Directory in which result matrices are written</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">filename</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">suave_statistical_analysis</span></code></p></td>
+<td><p>Prefix used for result matrix filenames</p></td>
+</tr>
+</tbody>
+</table>
+<p>The command prints normality p-values and directional test conclusions using a
+significance threshold of <code class="docutils literal notranslate"><span class="pre">0.05</span></code>. The normality results are diagnostic only and
+do not alter the Mann-Whitney tests. The command also writes three CSV matrices:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;filename&gt;_time_search_pipeline.csv</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;filename&gt;_distance_inspected.csv</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;filename&gt;_mean_reaction_time.csv</span></code></p></li>
+</ul>
+<p>Matrix rows and columns are managing-system names. Cell <code class="docutils literal notranslate"><span class="pre">(A,</span> <span class="pre">B)</span></code> contains the
+raw p-value for the directional alternative shown above, and diagonal cells are
+empty. The script does not apply a multiple-comparison correction. A p-value at
+or above <code class="docutils literal notranslate"><span class="pre">0.05</span></code> means that the analysis did not find sufficient evidence for
+the specified direction; it does not establish equality or the opposite
+direction. Mann-Whitney U compares sample ranks and distributions rather than
+arithmetic means directly.</p>
+<p>Mann-Whitney treats each system’s runs as unrelated samples. If the campaign
+reused the same perturbation configuration across managing systems (SUAVE
+campaigns do, see <code class="docutils literal notranslate"><span class="pre">sort-suave-results</span></code>), use the paired Wilcoxon analysis
+below instead – it controls for per-scenario difficulty and is more
+statistically powerful, but requires a run-identity column that a resumed
+campaign’s raw CSVs do not carry by default.</p>
+</section>
+<section id="result-summary">
+<h3>Result summary<a class="headerlink" href="#result-summary" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">summarize_results</span></code> executable produces descriptive statistics for all
+managing systems in one campaign folder. It discovers aggregate result files
+named <code class="docutils literal notranslate"><span class="pre">&lt;managing_system&gt;_suave.csv</span></code>, such as <code class="docutils literal notranslate"><span class="pre">bt_suave.csv</span></code> and
+<code class="docutils literal notranslate"><span class="pre">metacontrol_suave.csv</span></code>. Other CSV files, including per-event reaction-time and
+reasoning-time files, are ignored.</p>
+<p>Each aggregate result file must contain at least these columns:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pipeline</span> <span class="pre">found</span></code>;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">time</span> <span class="pre">searching</span> <span class="pre">pipeline</span> <span class="pre">(s)</span></code>;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">distance</span> <span class="pre">inspected</span> <span class="pre">(m)</span></code>; and</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mean</span> <span class="pre">reaction</span> <span class="pre">time</span> <span class="pre">(s)</span></code>.</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">pipeline</span> <span class="pre">found</span></code> column accepts <code class="docutils literal notranslate"><span class="pre">true</span></code>/<code class="docutils literal notranslate"><span class="pre">false</span></code>, <code class="docutils literal notranslate"><span class="pre">1</span></code>/<code class="docutils literal notranslate"><span class="pre">0</span></code>, or <code class="docutils literal notranslate"><span class="pre">yes</span></code>/<code class="docutils literal notranslate"><span class="pre">no</span></code>
+(case-insensitive). Metric columns must contain numeric, non-missing values,
+and each file must contain at least one result row.</p>
+<p>Run the command from a sourced SUAVE workspace, passing the campaign folder as
+the positional argument:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>suave_runner<span class="w"> </span>summarize_results<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>~/suave/results/2026_08_01_19-42-44
+</pre></div>
+</div>
+<p>The terminal table reports the following information for each managing system:</p>
+<ul class="simple">
+<li><p>pipeline detection success as both <code class="docutils literal notranslate"><span class="pre">successful/total</span></code> and a percentage;</p></li>
+<li><p>mean and sample standard deviation of the pipeline search time;</p></li>
+<li><p>mean and sample standard deviation of the distance inspected; and</p></li>
+<li><p>mean and sample standard deviation of the reaction time.</p></li>
+</ul>
+<p>Search time and distance use every run. Reaction-time calculations exclude
+zero-valued runs because zero indicates that no reaction-time sample was
+recorded. Reaction time is reported as <code class="docutils literal notranslate"><span class="pre">N/A</span></code> if no nonzero samples remain. The
+sample standard deviation is also <code class="docutils literal notranslate"><span class="pre">N/A</span></code> when fewer than two applicable samples
+are available.</p>
+<p>Managing-system identifiers are derived from filenames and formatted for
+presentation. The known identifiers are <code class="docutils literal notranslate"><span class="pre">bt</span></code>, <code class="docutils literal notranslate"><span class="pre">metacontrol</span></code>, <code class="docutils literal notranslate"><span class="pre">none</span></code>, <code class="docutils literal notranslate"><span class="pre">random</span></code>,
+displayed as <code class="docutils literal notranslate"><span class="pre">BT</span></code>, <code class="docutils literal notranslate"><span class="pre">Metacontrol</span></code>, <code class="docutils literal notranslate"><span class="pre">None</span></code>, and <code class="docutils literal notranslate"><span class="pre">Random</span></code>, respectively.
+Other identifiers – including third-party managing systems from other
+repos – are converted from snake case to
+title case.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">--latex</span></code> to also write a complete LaTeX table to
+<code class="docutils literal notranslate"><span class="pre">&lt;results_path&gt;/suave_results.tex</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>suave_runner<span class="w"> </span>summarize_results<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>~/suave/results/2026_08_01_19-42-44<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--latex
+</pre></div>
+</div>
+<p>Use <code class="docutils literal notranslate"><span class="pre">--latex-output</span></code> to select another output file. Parent directories are
+created automatically. Supplying this option also enables LaTeX generation,
+so <code class="docutils literal notranslate"><span class="pre">--latex</span></code> is not required:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>suave_runner<span class="w"> </span>summarize_results<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>~/suave/results/2026_08_01_19-42-44<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--latex-output<span class="w"> </span>~/paper/tables/suave_results.tex
+</pre></div>
+</div>
+<p>The available arguments are:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Argument</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">results_path</span></code></p></td>
+<td><p>Required</p></td>
+<td><p>Campaign folder containing the aggregate <code class="docutils literal notranslate"><span class="pre">*_suave.csv</span></code> files</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--latex</span></code></p></td>
+<td><p>Disabled</p></td>
+<td><p>Write <code class="docutils literal notranslate"><span class="pre">&lt;results_path&gt;/suave_results.tex</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--latex-output</span> <span class="pre">PATH</span></code></p></td>
+<td><p>Not set</p></td>
+<td><p>Write the table to <code class="docutils literal notranslate"><span class="pre">PATH</span></code>; also enables LaTeX output</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--precision</span> <span class="pre">N</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2</span></code></p></td>
+<td><p>Use <code class="docutils literal notranslate"><span class="pre">N</span></code> decimal places in terminal and LaTeX output</p></td>
+</tr>
+</tbody>
+</table>
+<p>The LaTeX output is a complete <code class="docutils literal notranslate"><span class="pre">table</span></code> environment with the caption
+<code class="docutils literal notranslate"><span class="pre">SUAVE</span> <span class="pre">results</span> <span class="pre">mean</span> <span class="pre">and</span> <span class="pre">standard</span> <span class="pre">deviation.</span></code> and label <code class="docutils literal notranslate"><span class="pre">tab:suave_results</span></code>.
+It uses <code class="docutils literal notranslate"><span class="pre">\toprule</span></code>, <code class="docutils literal notranslate"><span class="pre">\midrule</span></code>, and <code class="docutils literal notranslate"><span class="pre">\bottomrule</span></code> from <code class="docutils literal notranslate"><span class="pre">booktabs</span></code> and
+<code class="docutils literal notranslate"><span class="pre">\resizebox</span></code> from <code class="docutils literal notranslate"><span class="pre">graphicx</span></code>, so include both packages in the parent document:</p>
+<div class="highlight-latex notranslate"><div class="highlight"><pre><span></span><span class="k">\usepackage</span><span class="nb">{</span>booktabs<span class="nb">}</span>
+<span class="k">\usepackage</span><span class="nb">{</span>graphicx<span class="nb">}</span>
+</pre></div>
+</div>
+<p>The generated file can then be included with <code class="docutils literal notranslate"><span class="pre">\input</span></code>, for example:</p>
+<div class="highlight-latex notranslate"><div class="highlight"><pre><span></span><span class="k">\input</span><span class="nb">{</span>tables/suave<span class="nb">_</span>results<span class="nb">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="without-the-runner">
+<h2>Without the runner<a class="headerlink" href="#without-the-runner" title="Link to this heading"></a></h2>
+<p><strong>Configuring SUAVE:</strong>
+SUAVE has a number of parameters that may be of interest when running experiments with its missions, such as the time limit of a time constrained mission or the frequency of thruster failure. These can be found in the <a class="reference external" href="https://github.com/kas-lab/suave/blob/main/suave_missions/config/mission_config.yaml">mission_config.yaml</a> file. <strong>Note:</strong> When you change the mission_config file, you need to rebuild the suave_ws with <code class="docutils literal notranslate"><span class="pre">colcon</span> <span class="pre">build</span> <span class="pre">--symlink-install</span></code></p>
+<p><strong>Note:</strong> Before starting the simulation or the ros nodes, remember that you have to source SUAVE’s workspace. If you are using the dockerized version this is already done for you, therefore sourcing the workspace is not necessary.</p>
+<p>Navigate to the workspace and source it:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/suave_ws/
+<span class="nb">source</span><span class="w"> </span>install/setup.bash
+</pre></div>
+</div>
+<p>With SUAVE configured and sourced, start ArduSub, the simulation, and the SUAVE’s nodes with the following instructions.</p>
+<section id="start-ardusub">
+<h3>Start ArduSub<a class="headerlink" href="#start-ardusub" title="Link to this heading"></a></h3>
+<p>Run:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>sim_vehicle.py<span class="w"> </span>-L<span class="w"> </span>RATBeach<span class="w"> </span>-v<span class="w"> </span>ArduSub<span class="w">  </span>--model<span class="o">=</span>JSON<span class="w"> </span>--console
+</pre></div>
+</div>
+</section>
+<section id="start-the-simulation">
+<h3>Start the simulation<a class="headerlink" href="#start-the-simulation" title="Link to this heading"></a></h3>
+<p>Run:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>suave<span class="w"> </span>simulation.launch.py<span class="w"> </span>x:<span class="o">=</span>-17.0<span class="w"> </span>y:<span class="o">=</span><span class="m">2</span>.0
+</pre></div>
+</div>
+<p><strong>Note:</strong> It is possible to pass arguments to specify the x and y coordinates of where the UUV spawns, by changing the values. In the above launch command the initial coordinates are set to (-17.0, 2.0).</p>
+</section>
+<section id="start-suave-s-nodes">
+<h3>Start SUAVE’s nodes<a class="headerlink" href="#start-suave-s-nodes" title="Link to this heading"></a></h3>
+<p>Run:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>suave_bringup<span class="w"> </span>mission.launch.py
+</pre></div>
+</div>
+<p><strong>Mission results:</strong> The mission results will be saved in the path specified in the <a class="reference external" href="https://github.com/kas-lab/suave/blob/main/suave_missions/config/mission_config.yaml">mission_config.yaml</a> file.</p>
+<p><strong>Selecting the managing system and mission type:</strong>
+Launching the mission file without launch arguments will start a time-constrained mission without a managing subsystem. To select a different managing subsystem or a different type of mission, the following launch arguments can be used:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">'adaptation_manager'</span><span class="p">:</span>
+    <span class="n">Managing</span> <span class="n">subsystem</span> <span class="n">to</span> <span class="n">be</span> <span class="n">used</span>
+    <span class="n">available</span> <span class="n">values</span><span class="p">:</span> <span class="n">none</span><span class="o">/</span><span class="n">metacontrol</span><span class="o">/</span><span class="n">random</span><span class="o">/</span><span class="n">bt</span>
+    <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="s1">'none'</span><span class="p">)</span>
+
+<span class="s1">'result_filename'</span><span class="p">:</span>
+    <span class="n">Filename</span> <span class="k">for</span> <span class="n">the</span> <span class="n">mission</span> <span class="n">measured</span> <span class="n">metrics</span>
+    <span class="n">available</span> <span class="n">values</span><span class="p">:</span> <span class="nb">any</span> <span class="n">name</span>
+    <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">empty</span><span class="p">;</span> <span class="n">the</span> <span class="n">metrics</span> <span class="n">node</span> <span class="n">uses</span> <span class="n">its</span> <span class="n">default</span> <span class="n">filename</span><span class="p">)</span>
+
+<span class="s1">'mission_type'</span><span class="p">:</span>
+    <span class="n">Mission</span> <span class="n">label</span> <span class="n">written</span> <span class="n">to</span> <span class="n">metrics</span>
+    <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="s1">'time_constrained_mission'</span><span class="p">)</span>
+
+<span class="s1">'use_action_server'</span><span class="p">:</span>
+    <span class="n">For</span> <span class="n">the</span> <span class="n">BT</span> <span class="n">manager</span><span class="p">,</span> <span class="n">start</span> <span class="n">managed</span> <span class="n">behaviors</span> <span class="n">through</span> <span class="n">ROS</span> <span class="mi">2</span> <span class="n">actions</span>
+    <span class="n">available</span> <span class="n">values</span><span class="p">:</span> <span class="n">true</span><span class="o">/</span><span class="n">false</span>
+    <span class="p">(</span><span class="n">default</span><span class="p">:</span> <span class="n">false</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The arguments can be defined by adding the above arguments with the notation <code class="docutils literal notranslate"><span class="pre">&lt;name&gt;:=&lt;value&gt;</span></code> to the end of the command line.</p>
+<p>An example of running a mission with metacontrol saving to a file called ‘measurement_1’:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>suave_bringup<span class="w"> </span>mission.launch.py<span class="w"> </span>adaptation_manager:<span class="o">=</span>metacontrol<span class="w"> </span>result_filename:<span class="o">=</span>measurement_1
+</pre></div>
+</div>
+<p>An example of running the BT manager in action-server mode:</p>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>suave_bringup<span class="w"> </span>mission.launch.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>adaptation_manager:<span class="o">=</span>bt<span class="w"> </span>use_action_server:<span class="o">=</span><span class="nb">true</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="q-q-plots-of-paired-differences">
+<h2>Q-Q plots of paired differences<a class="headerlink" href="#q-q-plots-of-paired-differences" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">suave_runner/suave_runner/analysis/qq_plot.py</span></code> is a standalone Python script using
+pandas, NumPy, SciPy, and Matplotlib. It plots A minus B for visual assessment
+of the paired t-test normality assumption. It does not run formal normality
+tests or classify the data. The reference line is fitted to the differences.</p>
+<p>Run these examples from the sourced SUAVE workspace root inside the development
+container. Paths must be visible inside that container.</p>
+<p>Compare two method columns in one CSV (paired by row):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>src/suave/suave_runner/suave_runner/analysis/qq_plot.py<span class="w"> </span>results.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--column-a<span class="w"> </span>suave<span class="w"> </span>--column-b<span class="w"> </span>baseline<span class="w"> </span>--output<span class="w"> </span>qq_suave_baseline.png
+</pre></div>
+</div>
+<p>Compare the same metric in two sorted method CSVs:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>src/suave/suave_runner/suave_runner/analysis/qq_plot.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>/path/to/campaign/sorted/metacontrol_suave_sorted.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>/path/to/campaign/sorted/bt_suave_sorted.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--column-a<span class="w"> </span><span class="s1">'time searching pipeline (s)'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--column-b<span class="w"> </span><span class="s1">'time searching pipeline (s)'</span><span class="w"> </span>--output<span class="w"> </span>qq_search.png
+</pre></div>
+</div>
+<p>Separate files must belong to the same campaign and have matching, unique,
+nonmissing <code class="docutils literal notranslate"><span class="pre">run_idx</span></code> values; row order does not matter. <code class="docutils literal notranslate"><span class="pre">--run-column</span></code> selects
+another pairing key. Unmatched or duplicate IDs cause an error. The caller
+must ensure those IDs refer to the same experimental configurations.
+<code class="docutils literal notranslate"><span class="pre">--label-a</span></code> and <code class="docutils literal notranslate"><span class="pre">--label-b</span></code> override method labels derived from filenames.</p>
+<p>Use the companion <code class="docutils literal notranslate"><span class="pre">qq_plot_batch.py</span></code> to generate every unordered method
+comparison within every campaign. Pass the batch root directly:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>src/suave/suave_runner/suave_runner/analysis/qq_plot_batch.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>/home/ubuntu-user/suave/results/batches/all_experiments_20260904_093305
+</pre></div>
+</div>
+<p>The batch script reuses the CSV script’s validation and plotting functions;
+keep both scripts together. It accepts a batch root, its <code class="docutils literal notranslate"><span class="pre">campaigns</span></code> directory,
+or one campaign. It reads only <code class="docutils literal notranslate"><span class="pre">*_sorted.csv</span></code> files from each campaign’s
+<code class="docutils literal notranslate"><span class="pre">sorted</span></code> folder and never pairs different campaigns. Search time and distance
+inspected are the default metrics; <code class="docutils literal notranslate"><span class="pre">--metrics</span></code> accepts an explicit list of
+metric column names.</p>
+<p>By default, results mirror the experiment folders under
+<code class="docutils literal notranslate"><span class="pre">&lt;batch&gt;/campaings_results/</span></code> (using this exact directory spelling):</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>all_experiments_20260904_093305/
+  campaigns/
+    exp1/sorted/*.csv
+    exp2/sorted/*.csv
+    ...
+  campaings_results/
+    exp1/q-q-plots/*.png
+    exp2/q-q-plots/*.png
+    ...
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">--output</span> <span class="pre">/path/to/qq_plots</span></code> overrides the batch output root; figures still
+go under <code class="docutils literal notranslate"><span class="pre">&lt;output&gt;/&lt;experiment&gt;/q-q-plots/</span></code>. The option
+<code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">pdf|png|svg</span></code> selects the format (default PNG). The batch script
+always saves figures and requires no display. For explicit CSV comparisons,
+<code class="docutils literal notranslate"><span class="pre">qq_plot.py</span> <span class="pre">--output</span></code> selects a figure filename; omitting it displays the plot
+interactively. Run either script with <code class="docutils literal notranslate"><span class="pre">--help</span></code> for its full interface.</p>
+<p>Both selected columns must be numeric. A missing value removes the entire
+pair. Infinite values are rejected, and at least three complete pairs are
+required. All other complete pairs are included, including zero metrics and
+runs where <code class="docutils literal notranslate"><span class="pre">pipeline</span> <span class="pre">found</span></code> is false. This script does not apply the success
+filter used by the Wilcoxon analysis. It prints the number of valid pairs,
+removed pairs, mean, median, sample standard deviation (<code class="docutils literal notranslate"><span class="pre">ddof=1</span></code>), minimum,
+and maximum. Batch errors identify the campaign, files, and metric; remaining
+comparisons continue, with a nonzero exit status if any comparison fails.</p>
+</section>
+<section id="batch-paired-wilcoxon-analysis">
+<h2>Batch paired Wilcoxon analysis<a class="headerlink" href="#batch-paired-wilcoxon-analysis" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">wilcoxon_analysis_batch.py</span></code> orchestrates the existing <code class="docutils literal notranslate"><span class="pre">wilcoxon_analysis.py</span></code>
+node. Run it from the sourced SUAVE workspace root inside the container:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>src/suave/suave_runner/suave_runner/analysis/wilcoxon_analysis_batch.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>/home/ubuntu-user/suave/results/batches/all_experiments_20260904_093305
+</pre></div>
+</div>
+<p>It first sorts the raw aggregate CSVs in each <code class="docutils literal notranslate"><span class="pre">campaigns/&lt;experiment&gt;/</span></code>
+using the original <code class="docutils literal notranslate"><span class="pre">run_&lt;exp_idx&gt;_&lt;run_idx&gt;.done</span></code> markers, then analyzes
+the verified copies in <code class="docutils literal notranslate"><span class="pre">sorted/</span></code> and writes:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>campaings_results/
+  exp1/
+    q-q-plots/
+    wilcoxon_analysis/
+      exp1_wilcoxon_results.csv
+      exp1_wilcoxon_time_search_pipeline.csv
+      exp1_wilcoxon_distance_inspected.csv
+  exp2/
+    wilcoxon_analysis/
+      ...
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">--output</span> <span class="pre">PATH</span></code> overrides <code class="docutils literal notranslate"><span class="pre">campaings_results</span></code>, preserving the
+<code class="docutils literal notranslate"><span class="pre">&lt;experiment&gt;/wilcoxon_analysis/</span></code> structure. Keep this script alongside
+<code class="docutils literal notranslate"><span class="pre">wilcoxon_analysis.py</span></code> and <code class="docutils literal notranslate"><span class="pre">sort_results.py</span></code>. No package rebuild is needed
+for this direct invocation.</p>
+<p>Each campaign’s runner configuration is resolved from <code class="docutils literal notranslate"><span class="pre">state.json</span></code>, supporting
+both the original batch launch-name keys and the newer campaign-name keys.
+The configuration’s <code class="docutils literal notranslate"><span class="pre">experiments</span></code> list determines the method-to-<code class="docutils literal notranslate"><span class="pre">exp_idx</span></code>
+mapping, filenames, and expected run counts. If recorded config paths have
+moved, pass <code class="docutils literal notranslate"><span class="pre">--config-dir</span> <span class="pre">/path/to/original/configs</span></code>; this directory must
+contain the recorded config basenames (or <code class="docutils literal notranslate"><span class="pre">&lt;experiment&gt;_runner_config.yml</span></code>
+when no config is recorded). Use configs that match the original campaign.
+The script does not infer marker indices from alphabetical method order.</p>
+<p>The pre-step calls the existing <code class="docutils literal notranslate"><span class="pre">sort_results.reconstruct_run_index</span></code> without
+relaxing its count, timestamp-gap, or run-ID checks. Original CSVs and marker
+modification times are preserved. Run in the timezone used when the CSV
+<code class="docutils literal notranslate"><span class="pre">datetime</span></code> values were recorded. All configured methods are reconstructed and
+validated before any sorted CSV is updated; unchanged verified sorted files
+retain their modification times, and stale ones are refreshed. Only methods
+listed in that campaign configuration are analyzed, so unrelated old files
+in <code class="docutils literal notranslate"><span class="pre">sorted/</span></code> are ignored. Missing markers, configs, or raw CSVs, timestamp
+mismatches, and incomplete configured run counts fail that campaign before
+analysis instead of falling back to possibly stale sorted data.</p>
+<p>Runs must share experimental configurations within each campaign; never
+match unrelated campaigns just because their numeric IDs agree. The
+batch wrapper rejects missing or duplicate IDs, noninteger or negative IDs,
+unmatched run-key sets, missing/nonfinite/nonnumeric metric values, and
+invalid or missing <code class="docutils literal notranslate"><span class="pre">pipeline</span> <span class="pre">found</span></code> status before testing that campaign.
+It reports failed campaigns, continues the others, and returns a nonzero
+exit status if any campaign fails.</p>
+<p>The existing statistical design is preserved: all ordered method pairs are
+tested with A minus B, using <code class="docutils literal notranslate"><span class="pre">less</span></code> for search time and <code class="docutils literal notranslate"><span class="pre">greater</span></code> for distance
+inspected. Both metrics exclude a pair if either method failed to find the
+pipeline. Zero distance is retained when both methods found it. This differs
+from the Q-Q script, which includes every complete numeric pair.</p>
+<p>Holm correction pools all computed ordered-pair tests across both metrics
+<strong>within each campaign</strong>, separately from the other campaigns. The default is
+<code class="docutils literal notranslate"><span class="pre">--correction</span> <span class="pre">none</span></code>; <code class="docutils literal notranslate"><span class="pre">--correction</span> <span class="pre">holm</span></code> enables the adjustment.</p>
+<p>The primary <code class="docutils literal notranslate"><span class="pre">*_results.csv</span></code> reports raw and adjusted p-values, paired counts,
+positive/negative/zero differences, median difference, rank-biserial effect
+size, exclusions, and notes. Fewer than two nonzero differences produces an
+uncomputed test with a note and missing p-values. <code class="docutils literal notranslate"><span class="pre">n_used</span></code> includes zeros;
+<code class="docutils literal notranslate"><span class="pre">n_pos</span> <span class="pre">+</span> <span class="pre">n_neg</span></code> is the effective nonzero count. Negative effects favor A for
+search time; positive effects favor A for distance. The secondary matrices
+and the existing engine’s console significance labels use <strong>raw</strong> p-values;
+use <code class="docutils literal notranslate"><span class="pre">p_adjusted</span></code> in the primary CSV when interpreting corrected results.
+A nonsignificant result does not establish equality. Independent pairs and
+reasonably symmetric paired differences are needed for the usual
+location-shift interpretation.</p>
+</section>
+<section id="batch-wilcoxon-latex-tables">
+<h2>Batch Wilcoxon LaTeX tables<a class="headerlink" href="#batch-wilcoxon-latex-tables" title="Link to this heading"></a></h2>
+<p>Generate one table per experiment from an existing batch analysis, using the
+existing <code class="docutils literal notranslate"><span class="pre">latex_tables.py</span></code> renderer. From the sourced container workspace:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>src/suave/suave_runner/suave_runner/latex/wilcoxon_latex_tables_batch.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>/home/ubuntu-user/suave/results/batches/all_experiments_20260904_093305
+</pre></div>
+</div>
+<p>The wrapper discovers experiments under <code class="docutils literal notranslate"><span class="pre">&lt;batch&gt;/campaigns/</span></code> and reads each
+<code class="docutils literal notranslate"><span class="pre">&lt;batch&gt;/campaings_results/&lt;experiment&gt;/wilcoxon_analysis/*_results.csv</span></code>.
+It saves tables directly under the requested common directory:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>campaigns_latex_tables/wilcoxon_analysis/
+  exp1_wilcoxon.tex
+  exp2_wilcoxon.tex
+  exp3_wilcoxon.tex
+  extended_exp1_wilcoxon.tex
+  extended_exp2_wilcoxon.tex
+  extended_exp3_wilcoxon.tex
+</pre></div>
+</div>
+<p>Each table contains search-time and distance-inspected blocks. It defaults
+to <code class="docutils literal notranslate"><span class="pre">p_adjusted</span></code> from the primary results CSV; it does not use the secondary
+raw-p-value matrices or recompute correction. Temporary matrices adapt those
+values to the existing renderer and are removed after generation. Run
+<code class="docutils literal notranslate"><span class="pre">wilcoxon_analysis_batch.py</span></code> first if analysis is missing; table generation
+does not rerun sorting or statistical tests.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--results-root</span> <span class="pre">PATH</span></code></p></td>
+<td><p>Override <code class="docutils literal notranslate"><span class="pre">&lt;batch&gt;/campaings_results</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--output</span> <span class="pre">PATH</span></code></p></td>
+<td><p>Override the directory containing all generated tables</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--p-values</span> <span class="pre">adjusted|raw</span></code></p></td>
+<td><p>Display adjusted values by default; raw requires explicit selection</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--alpha</span> <span class="pre">VALUE</span></code></p></td>
+<td><p>Color threshold, default 0.05</p></td>
+</tr>
+</tbody>
+</table>
+<p>Captions identify the p-value policy, one-sided alternatives, and the condition
+that both methods found the pipeline. Green cells indicate values below
+alpha; blue cells indicate other computed values. Colors use unrounded
+p-values, while printed values retain the renderer’s three-decimal format.
+Values that would round to <code class="docutils literal notranslate"><span class="pre">0.000</span></code> are displayed as <code class="docutils literal notranslate"><span class="pre">&lt;0.001</span></code>.
+A dash denotes a diagonal entry or a test not computed; details remain in
+the primary analysis CSV. The wrapper checks both metric blocks for complete,
+unique ordered pairs, consistent alternatives and correction policy, valid
+p-values, and notes explaining missing results.</p>
+<p>Known method labels use None, Random, BT, MC, ROSA, and PLANTA; captions
+explain that MC means Metacontrol. ROSA and PLANTA are labels for two
+third-party managing systems, each from its own separate repo (not bundled
+with this one) – they only appear when their result CSVs are added
+alongside this repo’s own for a combined comparison. Tables follow the
+paper’s pairwise-table
+layout: a 1.65 cm row-label column and 1.2 row spacing. Value columns are
+slightly wider at 1.3 cm so the names fit in the manuscript’s font.
+Tables with up to three methods use <code class="docutils literal notranslate"><span class="pre">0.7\textwidth</span></code>; larger tables use
+<code class="docutils literal notranslate"><span class="pre">\textwidth</span></code>. Rerun the batch command to refresh existing <code class="docutils literal notranslate"><span class="pre">.tex</span></code> files.
+Other labels are escaped as literal LaTeX text. Table labels include the
+experiment name. Keep <code class="docutils literal notranslate"><span class="pre">latex_tables.py</span></code> alongside the batch script.</p>
+<p>The containing LaTeX document needs the following preamble support (reuse
+existing definitions when present):</p>
+<div class="highlight-latex notranslate"><div class="highlight"><pre><span></span><span class="k">\usepackage</span><span class="nb">{</span>array,graphicx,multirow<span class="nb">}</span>
+<span class="k">\usepackage</span><span class="na">[table]</span><span class="nb">{</span>xcolor<span class="nb">}</span>
+<span class="k">\definecolor</span><span class="nb">{</span>pvalue<span class="nb">_</span>green<span class="nb">}{</span>RGB<span class="nb">}{</span>210,245,210<span class="nb">}</span>
+<span class="k">\definecolor</span><span class="nb">{</span>pvalue<span class="nb">_</span>blue<span class="nb">}{</span>RGB<span class="nb">}{</span>210,225,245<span class="nb">}</span>
+</pre></div>
+</div>
+<p>Include a generated table with <code class="docutils literal notranslate"><span class="pre">\input{path/to/exp1_wilcoxon.tex}</span></code>.
+Campaign failures are reported individually; other tables are still generated,
+and the script exits nonzero if any campaign fails.</p>
+</section>
+<section id="analysis-and-latex-script-locations">
+<h2>Analysis and LaTeX script locations<a class="headerlink" href="#analysis-and-latex-script-locations" title="Link to this heading"></a></h2>
+<p>The Python tools are grouped under <code class="docutils literal notranslate"><span class="pre">suave_runner/suave_runner/</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">analysis/</span></code>: Mann-Whitney and Wilcoxon analysis, batch Wilcoxon analysis,
+result sorting, Q-Q plotting, and descriptive result summaries.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">latex/</span></code>: the table renderer and batch Wilcoxon LaTeX table generation.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">suave_runner.py</span></code> and <code class="docutils literal notranslate"><span class="pre">run_batch.py</span></code> remain at the package root for experiment
+execution. The installed <code class="docutils literal notranslate"><span class="pre">mann_whitney_analysis</span></code>, <code class="docutils literal notranslate"><span class="pre">wilcoxon_analysis</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">summarize_results</span></code> command names are unchanged; their entry points now load
+<code class="docutils literal notranslate"><span class="pre">suave_runner.analysis</span></code> modules. Existing launch <code class="docutils literal notranslate"><span class="pre">executable</span></code> names and YAML
+node names therefore remain valid. Python callers should import from
+<code class="docutils literal notranslate"><span class="pre">suave_runner.analysis</span></code> or <code class="docutils literal notranslate"><span class="pre">suave_runner.latex</span></code>.</p>
+<p>After updating the checkout, rebuild inside the sourced SUAVE container:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>colcon<span class="w"> </span>build<span class="w"> </span>--symlink-install<span class="w"> </span>--packages-select<span class="w"> </span>suave_runner
+<span class="nb">source</span><span class="w"> </span>install/setup.bash
+</pre></div>
+</div>
+<p>Direct batch commands, from the workspace root:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>src/suave/suave_runner/suave_runner/analysis/wilcoxon_analysis_batch.py<span class="w"> </span>/path/to/batch
+python3<span class="w"> </span>src/suave/suave_runner/suave_runner/analysis/qq_plot_batch.py<span class="w"> </span>/path/to/batch
+python3<span class="w"> </span>src/suave/suave_runner/suave_runner/latex/wilcoxon_latex_tables_batch.py<span class="w"> </span>/path/to/batch
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="docker.html" class="btn btn-neutral float-left" title="Use SUAVE with Docker" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="architecture.html" class="btn btn-neutral float-right" title="System Architecture" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gustavo Rezende, Juliane Päßler, Jeroen Zwanepol, Elvin Alberts, Lizeth Tarifa, Ilias Gerostathopoulos, Einar Johnsen, Carlos Hernández.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
