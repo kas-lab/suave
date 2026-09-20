@@ -19,11 +19,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 5. `suave_runner`: crashed campaigns can be resumed from an existing result folder via the `resume_result_path` parameter.
 
-6. `suave_runner`: statistical analysis module.
+6. `suave_runner`: statistical analysis module, including matched-run Wilcoxon signed-rank comparisons (with optional Holm-Bonferroni correction), Q-Q plots for paired results, LaTeX table generation, and a results-summarization script.
 
-7. Repository contributor guide.
+7. `suave_runner`: batch runner (`run_batch`) that sequences multiple experiment campaigns (`exp1`-`exp3`, `extended_exp1`-`extended_exp3`) in one run, checkpointing progress to `state.json` so a batch can be resumed with `resume_state_file`.
 
-8. Public Python API documentation.
+8. Randomized experiment configuration: initial vehicle position, thruster failure events, and water-visibility shift timing can now be randomized, reproducibly, via a `random_seed` runner parameter.
+
+9. Repository contributor guide.
+
+10. Public Python API documentation.
 
 ### Changed
 
@@ -33,11 +37,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 3. `suave_runner` no longer uses a `.done` file for run-completion signaling.
 
+4. BehaviorTree.CPP is now built from source, pinned to version 4.10.0, instead of relying on the system package.
+
+### Removed
+
+1. Unused `const_dist_mission` mission type and its launch file.
+
 ### Fixed
 
 1. `result_filename` argument not propagated correctly in launch files.
 
 2. Runner crash when no thruster events were recorded in a run.
+
+3. `suave_bt`'s `ChangeMode` node now verifies the target node's actual lifecycle state (and, for spiral search, its altitude parameter) before reporting a mode change as successful, instead of trusting a cached mode string. This fixes silent desyncs where a `system_modes` transition was lost but the behavior tree continued as if it had happened.
+
+4. `suave_runner` detects known-broken runs after the fact (e.g. a lifecycle node that configured but never activated) and re-queues them instead of checkpointing bad data.
+
+5. `follow_pipeline`'s inspected-distance tracking and resume/recharge handling, so distance accumulates correctly across pauses, recharge interruptions, and reactivation.
+
+6. Water-visibility monitor now publishes an initial reading before the vehicle enters `GUIDED`, without letting startup time shift the configured visibility schedule.
 
 ## 1.4.0
 
