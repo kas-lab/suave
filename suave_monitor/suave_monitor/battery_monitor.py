@@ -80,8 +80,7 @@ class BatteryMonitor(Node):
             self.last_time = current_time
 
         v = self.battery_level - (1/discharge_time)*dt
-        if v < 0.0:
-            v = 0.0
+        v = max(v, 0.0)
         self.battery_level = v
 
         key_value = KeyValue()
