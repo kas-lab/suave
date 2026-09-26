@@ -18,8 +18,14 @@
 
 import math
 
+from diagnostic_msgs.msg import DiagnosticArray
+from diagnostic_msgs.msg import DiagnosticStatus
+from diagnostic_msgs.msg import KeyValue
+
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseArray
+
+from rcl_interfaces.msg import ParameterDescriptor
 
 import rclpy
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
@@ -56,6 +62,8 @@ class PipelineDetection(Node):
 
         self.detect_pipeline_pub = self.create_publisher(
             Bool, 'pipeline/detected', 10)
+        self.diagnostics_publisher = self.create_publisher(
+            DiagnosticArray, '/diagnostics', 10)
 
         self.pipes_pose_array = PoseArray()
         self.interpolation_number = 20
@@ -68,8 +76,13 @@ class PipelineDetection(Node):
 
         self.sorted_path = PoseArray()
 
-        # TODO: ROS param?
-        self.camera_fov = math.pi/3
+        camera_fov_descriptor = ParameterDescriptor(
+            description='Horizontal camera field of view in degrees used to '
+                        'estimate pipeline visibility and coverage area.')
+        camera_fov_degrees = self.declare_parameter(
+            'camera_fov', 60.0, camera_fov_descriptor
+        ).get_parameter_value().double_value
+        self.camera_fov = math.radians(camera_fov_degrees)
 
     def pipeline_pose_cb(self, msg):
         """Store pipeline poses and calculate the interpolated path once."""
@@ -113,6 +126,30 @@ class PipelineDetection(Node):
         response.path = self.sorted_path
         return response
 
+    def get_coverage_area(self, bluerov_pose, pipe_pose):
+        """Return the camera footprint area at the current altitude."""
+        altitude = abs(bluerov_pose.position.z - pipe_pose.position.z)
+        delta = altitude * math.tan(self.camera_fov/2)
+        return (2 * delta) * (2 * delta)
+
+    def publish_coverage_area(self, coverage_area):
+        """Publish camera coverage area as a diagnostic measurement."""
+        key_value = KeyValue()
+        key_value.key = 'coverage_area'
+        key_value.value = str(coverage_area)
+
+        status_msg = DiagnosticStatus()
+        status_msg.level = DiagnosticStatus.OK
+        status_msg.name = 'pipeline_detection: Camera coverage area'
+        status_msg.message = 'QA status'
+        status_msg.values.append(key_value)
+
+        diag_msg = DiagnosticArray()
+        diag_msg.header.stamp = self.get_clock().now().to_msg()
+        diag_msg.status.append(status_msg)
+
+        self.diagnostics_publisher.publish(diag_msg)
+
     def compare_poses(self, bluerov_pose, pipe_pose):
         """Return whether a pipeline pose is within the camera FOV."""
         altitude = abs(bluerov_pose.position.z - pipe_pose.position.z)
@@ -122,6 +159,11 @@ class PipelineDetection(Node):
 
     def detect_pipeline_cb(self, bluerov_pose):
         """Publish visibility and order the path on first detection."""
+        if self.interpolated_path.poses:
+            coverage_area = self.get_coverage_area(
+                bluerov_pose, self.interpolated_path.poses[0])
+            self.publish_coverage_area(coverage_area)
+
         for i in range(len(self.interpolated_path.poses)):
             if self.compare_poses(bluerov_pose,
                self.interpolated_path.poses[i]):
