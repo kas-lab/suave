@@ -19,13 +19,15 @@ import sys
 from diagnostic_msgs.msg import DiagnosticArray
 from diagnostic_msgs.msg import DiagnosticStatus
 from diagnostic_msgs.msg import KeyValue
+
 from mavros_msgs.msg import State
+
 from rcl_interfaces.msg import Parameter
+from rcl_interfaces.msg import ParameterDescriptor
 from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.srv import SetParameters
 
 import rclpy
-
 from rclpy.node import Node
 
 
@@ -50,8 +52,34 @@ class ThrusterMonitor(Node):
         # '(thrusterN, failure/recovery, delta time in seconds )'
         # e.g. '(1, failure, 50)'
         self.declare_parameter('thruster_events', [''])
+        thruster_count_descriptor = ParameterDescriptor(
+            description='Total number of thrusters monitored by this node.')
+        initial_failed_thrusters_descriptor = ParameterDescriptor(
+            type=ParameterType.PARAMETER_INTEGER_ARRAY,
+            description='Integer array of thruster numbers that start in a '
+                        'failed state. Values are converted to strings '
+                        'internally to match thruster event identifiers.')
+        publishing_period_descriptor = ParameterDescriptor(
+            description='Period in seconds for publishing the number of '
+                        'operational thrusters.')
+        self.declare_parameter(
+            'thruster_count', 6, thruster_count_descriptor)
+        self.declare_parameter(
+            'initial_failed_thrusters', [],
+            initial_failed_thrusters_descriptor)
+        self.declare_parameter(
+            'operational_thrusters_publishing_period', 1.0,
+            publishing_period_descriptor)
         self.thruster_events = read_thruster_events(
             self.get_parameter('thruster_events').value)
+        self.thruster_count: int = self.get_parameter('thruster_count').value
+        initial_failed_thrusters: set[str] = {
+            str(thruster) for thruster in
+            self.get_parameter('initial_failed_thrusters').value}
+        self.thrusters_operational: dict[str, bool] = {
+            str(thruster): str(thruster) not in initial_failed_thrusters
+            for thruster in range(1, self.thruster_count + 1)
+        }
 
         self.diagnostics_publisher = self.create_publisher(
             DiagnosticArray, '/diagnostics', 10)
@@ -67,6 +95,10 @@ class ThrusterMonitor(Node):
             self.last_event_time = self.get_clock().now().to_msg().sec
             self.thruster_event_timer = self.create_timer(
                 1, self.thruster_event_cb)
+            publishing_period: float = self.get_parameter(
+                'operational_thrusters_publishing_period').value
+            self.operational_thrusters_timer = self.create_timer(
+                publishing_period, self.publish_operational_thrusters)
             self.destroy_subscription(self.mavros_state_sub)
 
     def thruster_event_cb(self):
@@ -79,6 +111,28 @@ class ThrusterMonitor(Node):
             self.change_thruster_status(
                 self.thruster_events[0][0], self.thruster_events[0][1])
             self.thruster_events.pop(0)
+
+    def publish_operational_thrusters(self) -> None:
+        """Publish the number of currently operational thrusters."""
+        operational_thrusters: list[str] = [
+            thruster for thruster, operational in
+            self.thrusters_operational.items() if operational]
+
+        key_value = KeyValue()
+        key_value.key = 'operational_thrusters'
+        key_value.value = str(len(operational_thrusters))
+
+        status_msg = DiagnosticStatus()
+        status_msg.level = DiagnosticStatus.OK
+        status_msg.name = 'thruster_monitor: Operational thrusters'
+        status_msg.message = 'QA status'
+        status_msg.values.append(key_value)
+
+        diag_msg = DiagnosticArray()
+        diag_msg.header.stamp = self.get_clock().now().to_msg()
+        diag_msg.status.append(status_msg)
+
+        self.diagnostics_publisher.publish(diag_msg)
 
     def change_thruster_status(self, thruster, value):
         """Apply a thruster failure or recovery and publish diagnostics."""
@@ -98,30 +152,31 @@ class ThrusterMonitor(Node):
             diagnostic_value = 'FALSE'
             diagnostic_value_2 = 'ERROR'  # alias
             status_msg.level = DiagnosticStatus.ERROR
+            self.thrusters_operational[thruster] = False
         elif value == 'recovery':
             parameter.value.integer_value = int(thruster) + 32
             print_status = 'recovered'
             diagnostic_value = 'RECOVERED'
             diagnostic_value_2 = 'OK'  # alias
             status_msg.level = DiagnosticStatus.OK
+            self.thrusters_operational[thruster] = True
         else:
             self.get_logger().info(
-                'Wrong event value: {}. '.format(value) +
+                f'Wrong event value: {value}. ' +
                 'Values supported are failure and recovery')
             return
 
         req = SetParameters.Request()
         req.parameters.append(parameter)
-        self.get_logger().info('Thruster {0} {1}'.format(
-            thruster, print_status))
+        self.get_logger().info(f'Thruster {thruster} {print_status}')
         self.call_service(SetParameters, 'mavros/param/set_parameters', req)
 
         key_value = KeyValue()
-        key_value.key = 'c_thruster_{}'.format(thruster)
+        key_value.key = f'c_thruster_{thruster}'
         key_value.value = diagnostic_value
 
         key_value_2 = KeyValue()
-        key_value_2.key = 'c_thruster_{}'.format(thruster)
+        key_value_2.key = f'c_thruster_{thruster}'
         key_value_2.value = diagnostic_value_2
 
         status_msg.name = 'thruster_monitor: Thruster status'
