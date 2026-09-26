@@ -67,17 +67,16 @@ nodes and the BT blackboard so the execution policy stays consistent.
 
 ## Monitor subsystem
 
-The `suave_monitor` package contains three monitor nodes that continuously observe the environment or the system and report their findings on the `/diagnostics` topic using `diagnostic_msgs/DiagnosticArray`.
+The `suave_monitor` package contains monitor nodes that continuously observe the environment or the system and report their findings on the `/diagnostics` topic using `diagnostic_msgs/DiagnosticArray`. The pipeline-detection node also publishes a perception-derived quality attribute on the same topic.
 
 | Node | Observes | Published key |
 |---|---|---|
-| `thruster_monitor` | Simulated thruster status | `c_thruster_<N>` = `FALSE`/`RECOVERED` |
+| `thruster_monitor` | Simulated thruster status and available actuation | `c_thruster_<N>` = `FALSE`/`RECOVERED`; `operational_thrusters` = integer count |
 | `water_visibility_observer` | Simulated water visibility | `water_visibility` = float (m) |
 | `battery_monitor` | Simulated battery state | `battery_level` = float (0–1) |
+| `pipeline_detection` / `pipeline_detection_wv` | Camera footprint from vehicle altitude and field of view | `coverage_area` = float (m²) |
 
-All three publish at regular intervals. The managing subsystem is expected to maintain its own internal model by subscribing to `/diagnostics`.
-
-The water-visibility monitor also publishes immediately at startup. It holds the
+The water-visibility monitor publishes immediately at startup. It holds the
 visibility function at experiment time zero until the first GUIDED state, then
 advances the function from that point. `water_visibility_sec_shift` applies to
 both the initial value and subsequent values. This makes the initial observation

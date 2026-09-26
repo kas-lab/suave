@@ -91,3 +91,19 @@ To build the docker images locally, run:
 ```
 
 This builds `kasm-jammy:dev`, `suave:dev`, and `suave-headless:dev` from the repository root.
+
+## Development:
+
+Run the image built locally and mount the suave folder:
+
+From the workspace root:
+```Bash
+docker run it --rm --name suave --runtime=nvidia --gpus all -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro -v "$PWD/src/suave:/home/ubuntu-user/suave_ws/src/suave" suave-headless:dev 
+```
+
+If you want to mount other repositories from the same ROS workspace, just add `-v source_repo_path:/home/ubuntu-user/suave_ws/src/your_repo`.
+
+From the source root:
+```Bash
+docker run -it --rm --name suave --runtime=nvidia --gpus all -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro -v "$PWD:/home/ubuntu-user/suave_ws/src/suave" suave-headless:dev 
+```
