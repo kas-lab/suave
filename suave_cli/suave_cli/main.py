@@ -18,12 +18,12 @@ import argparse
 import os
 import sys
 
-from suave_cli import config, docker_cmd, term
+from suave_cli import config, docker_cmd, ros_build, term
 from suave_cli.context import AppContext, in_container, resolve_suave_root
 from suave_cli.errors import CliError
 from suave_cli.executor import Executor
 
-COMMAND_MODULES = [docker_cmd, config]
+COMMAND_MODULES = [docker_cmd, ros_build, config]
 
 DESCRIPTION = """\
 SUAVE command-line helper.
