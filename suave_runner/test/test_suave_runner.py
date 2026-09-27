@@ -294,6 +294,82 @@ def test_mission_failed_cb_records_reason_and_sets_event():
         rclpy.shutdown()
 
 
+def test_launch_experiment_injects_water_current_when_enabled():
+    rclpy.init()
+    try:
+        params = _minimal_runner_params() + [
+            Parameter('enable_water_current', Parameter.Type.BOOL, True)
+        ]
+        runner = ExperimentRunnerNode(parameter_overrides=params)
+        runner.start_launch_process = lambda *_args: (
+            SimpleNamespace(), SimpleNamespace())
+
+        with patch(
+            'suave_runner.suave_runner.get_package_share_directory',
+            return_value='/tmp'
+        ), patch(
+            'suave_runner.suave_runner.PythonLaunchDescriptionSource',
+            side_effect=lambda path: path
+        ), patch(
+            'suave_runner.suave_runner.IncludeLaunchDescription'
+        ) as include_launch:
+            include_launch.side_effect = lambda source, launch_arguments: (
+                SimpleNamespace(
+                    source=source,
+                    launch_arguments=dict(launch_arguments)))
+            runner.launch_experiment(
+                'ros2 launch suave_bringup mission.launch.py '
+                'adaptation_manager:=bt',
+                '/tmp/results',
+                'bt_suave',
+                '/tmp/mission_config.yaml',
+                Path('/tmp/logs'))
+
+        launch_args = dict(
+            include_launch.call_args.kwargs['launch_arguments'])
+        assert launch_args['enable_water_current'] == 'true'
+    finally:
+        rclpy.shutdown()
+
+
+def test_launch_experiment_preserves_explicit_water_current_arg():
+    rclpy.init()
+    try:
+        params = _minimal_runner_params() + [
+            Parameter('enable_water_current', Parameter.Type.BOOL, True)
+        ]
+        runner = ExperimentRunnerNode(parameter_overrides=params)
+        runner.start_launch_process = lambda *_args: (
+            SimpleNamespace(), SimpleNamespace())
+
+        with patch(
+            'suave_runner.suave_runner.get_package_share_directory',
+            return_value='/tmp'
+        ), patch(
+            'suave_runner.suave_runner.PythonLaunchDescriptionSource',
+            side_effect=lambda path: path
+        ), patch(
+            'suave_runner.suave_runner.IncludeLaunchDescription'
+        ) as include_launch:
+            include_launch.side_effect = lambda source, launch_arguments: (
+                SimpleNamespace(
+                    source=source,
+                    launch_arguments=dict(launch_arguments)))
+            runner.launch_experiment(
+                'ros2 launch suave_bringup mission.launch.py '
+                'adaptation_manager:=bt enable_water_current:=false',
+                '/tmp/results',
+                'bt_suave',
+                '/tmp/mission_config.yaml',
+                Path('/tmp/logs'))
+
+        launch_args = dict(
+            include_launch.call_args.kwargs['launch_arguments'])
+        assert launch_args['enable_water_current'] == 'false'
+    finally:
+        rclpy.shutdown()
+
+
 def test_record_process_exit_queues_nonzero_exit():
     stop_event = SimpleNamespace(is_set=lambda: False)
     failure_queue = Queue()

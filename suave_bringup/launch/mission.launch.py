@@ -48,6 +48,7 @@ def generate_launch_description():
     reasoning_time_filename = LaunchConfiguration(
         'mc_reasoning_time_filename')
     use_action_server = LaunchConfiguration('use_action_server')
+    enable_water_current = LaunchConfiguration('enable_water_current')
     bt_executable = LaunchConfiguration('bt_executable')
     silent = LaunchConfiguration('silent')
 
@@ -95,6 +96,10 @@ def generate_launch_description():
             default_value='false',
             description='Start BT-managed behaviors through action servers'),
         DeclareLaunchArgument(
+            'enable_water_current',
+            default_value='false',
+            description='Enable the sinusoidal ocean-current publisher'),
+        DeclareLaunchArgument(
             'bt_executable',
             default_value='suave_bt',
             choices=['suave_bt', 'suave_bt_extended'],
@@ -114,6 +119,7 @@ def generate_launch_description():
             'task_bridge': task_bridge,
             'mission_config': mission_config,
             'use_action_server': use_action_server,
+            'enable_water_current': enable_water_current,
             'silent': silent,
         }.items())
 

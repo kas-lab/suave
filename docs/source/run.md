@@ -104,6 +104,7 @@ To run SUAVE with different managing subsystems, replace the `experiment_launch`
 | `run_duration` | `600` | Maximum seconds to wait for `mission_metrics/done` before timing out a run |
 | `mission_config_pkg` | `suave_missions` | ROS package containing the mission config |
 | `mission_config_file` | `config/runner_mission_config.yaml` | Path to mission config within that package |
+| `enable_water_current` | `false` | Enable the optional `water_current` node for each run |
 | `ardupilot_executable` | `sim_vehicle.py -L RATBeach -v ArduSub --model=JSON` | Command used to start ArduPilot SITL |
 | `suave_simulation` | `ros2 launch suave simulation.launch.py` | Simulation launch command |
 | `initial_pos_x` / `y` / `z` | `-17.0` / `2.5` / `-18.5` | AUV spawn position in the Gazebo world; Y comes from the shipped runner config |
@@ -118,6 +119,8 @@ To run SUAVE with different managing subsystems, replace the `experiment_launch`
 | `random_seed` | `100` | Seed for the perturbation RNG — fix this value for reproducible benchmark campaigns |
 | `resume_result_path` | `""` | Path to an existing result folder to resume a crashed campaign (empty = start a new timestamped folder) |
 | `experiments` | *(see file)* | List of experiment definitions (see below) |
+
+Water current remains disabled unless `enable_water_current` is set to `true` or an experiment launch command explicitly passes `enable_water_current:=true`. Current-model parameters such as `mean_current`, `amplitude`, `period`, `heading`, and `publish_period` are read by the `water_current` node from the mission config file. The shipped `water_current_runner_config.yml` provides an example runner configuration with water current enabled. It can be selected with `ros2 launch suave_runner suave_runner_launch.py config_file:=<path-to-water_current_runner_config.yml>`.
 
 Each entry in `experiments` is a JSON string with four fields:
 

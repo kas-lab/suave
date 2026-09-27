@@ -22,6 +22,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.actions import IncludeLaunchDescription
 from launch.actions import OpaqueFunction
+from launch.conditions import IfCondition
 from launch.conditions import LaunchConfigurationEquals
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
@@ -75,6 +76,13 @@ def generate_launch_description():
             'Indicates whether system_modes should be launched [True/False]')
     )
 
+    enable_water_current = LaunchConfiguration('enable_water_current')
+    enable_water_current_arg = DeclareLaunchArgument(
+        'enable_water_current',
+        default_value='false',
+        description='Enable the sinusoidal ocean-current publisher'
+    )
+
     use_action_server = LaunchConfiguration('use_action_server')
     use_action_server_arg = DeclareLaunchArgument(
         'use_action_server',
@@ -110,6 +118,15 @@ def generate_launch_description():
         name='water_visibility_observer_node',
         parameters=[mission_config],
         output=print_output,
+    )
+
+    water_current_node = Node(
+        package='suave',
+        executable='water_current',
+        parameters=[mission_config],
+        output=print_output,
+        name='water_current',
+        condition=IfCondition(enable_water_current),
     )
 
     battery_monitor_node = Node(
@@ -188,6 +205,7 @@ def generate_launch_description():
     return LaunchDescription([
         task_bridge_arg,
         system_modes_arg,
+        enable_water_current_arg,
         use_action_server_arg,
         recover_thrusters_use_action_server_arg,
         silent_arg,
@@ -195,6 +213,7 @@ def generate_launch_description():
         print_output_arg,
         mission_config_arg,
         water_visibility_node,
+        water_current_node,
         battery_monitor_node,
         pipeline_detection_wv_node,
         thruster_monitor_node,

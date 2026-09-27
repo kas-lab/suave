@@ -33,6 +33,7 @@ def generate_launch_description():
     """Return the base SUAVE launch description."""
     mission_config = LaunchConfiguration('mission_config')
     use_action_server = LaunchConfiguration('use_action_server')
+    enable_water_current = LaunchConfiguration('enable_water_current')
     silent = LaunchConfiguration('silent')
     adaptation_manager = LaunchConfiguration('adaptation_manager')
     mission_type = LaunchConfiguration('mission_type')
@@ -53,6 +54,10 @@ def generate_launch_description():
             'use_action_server',
             default_value='false',
             description='Start managed behaviors through ROS action servers'),
+        DeclareLaunchArgument(
+            'enable_water_current',
+            default_value='false',
+            description='Enable the sinusoidal ocean-current publisher'),
         DeclareLaunchArgument(
             'silent',
             default_value='false',
@@ -84,6 +89,7 @@ def generate_launch_description():
             'task_bridge': 'False',
             'mission_config': mission_config,
             'use_action_server': use_action_server,
+            'enable_water_current': enable_water_current,
             'silent': silent,
         }.items())
 

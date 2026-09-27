@@ -344,6 +344,14 @@ ros2 launch suave_bringup mission.launch.py \
   adaptation_manager:=bt use_action_server:=true
 ```
 
+To enable the optional water-current disturbance in runner campaigns, set the
+runner parameter `enable_water_current` to `true` or pass
+`enable_water_current:=true` in an experiment launch command. Current-model
+parameters such as `mean_current`, `amplitude`, `period`, `heading`, and
+`publish_period` are read from the mission config file. See
+`suave_runner/config/runner/water_current_runner_config.yml` for an example.
+It can be selected with `ros2 launch suave_runner suave_runner_launch.py config_file:=<path-to-water_current_runner_config.yml>`.
+
 ### Without the runner
 
 **Configuring SUAVE:**
@@ -427,17 +435,19 @@ ros2 launch suave_bringup mission.launch.py \
 
 ### Connecting managing subsystems
 
-SUAVE is designed to allow for different managing subsystems to be used, as long as they adhere to the correct ROS 2 interfaces.
-SUAVE's ROS2 interfaces are:
+SUAVE exposes several ROS 2 interfaces that managing subsystems can use at different abstraction levels. A managing subsystem does not need to use all of them. It should use the subset that matches its control strategy.
 
-1. The `/diagnostics` topic, which is where monitoring information is published. This topic uses the [diagnostic_msgs/DiagnosticArray](https://docs.ros2.org/foxy/api/diagnostic_msgs/msg/DiagnosticArray.html) message type
-2. The `/task/request` and `/task/cancel` services, which are used to request and cancel tasks, respectively. Both services use the [suave_msgs/Task](https://github.com/kas-lab/suave/blob/main/suave_msgs/srv/Task.srv) service type
-3. Three [system_modes](https://github.com/micro-ROS/system_modes) services to change SUAVE's LifeCycle nodes mode. These services use the [system_modes_msgs/ChangeMode](https://github.com/micro-ROS/system_modes/blob/master/system_modes_msgs/srv/ChangeMode.srv) service type:
+1. The `/diagnostics` topic publishes monitoring information using the [diagnostic_msgs/DiagnosticArray](https://docs.ros2.org/foxy/api/diagnostic_msgs/msg/DiagnosticArray.html) message type. Common QA keys include `water_visibility`, `water_current`, `battery_level`, `coverage_area`, `operational_thrusters`, and `c_thruster_<N>`.
+2. The optional `/task/request` and `/task/cancel` services provide a high-level task interface through `task_bridge`. Both services use the [suave_msgs/Task](https://github.com/kas-lab/suave/blob/main/suave_msgs/srv/Task.srv) service type. They are useful for clients or managers that want to request abstract mission tasks instead of controlling individual functions directly.
+3. Three [system_modes](https://github.com/micro-ROS/system_modes) services provide a function-level reconfiguration interface. These services use the [system_modes_msgs/ChangeMode](https://github.com/micro-ROS/system_modes/blob/master/system_modes_msgs/srv/ChangeMode.srv) service type:
     1. Service `/f_maintain_motion/change_mode` to change the Maintain Motion node modes
     2. Service `/f_generate_search_path/change_mode` to change the Generate Search Path node modes
     3. Service `/f_follow_pipeline/change_mode` to change the Follow Pipeline node modes
 
-Thus, to connect a different managing subsystem to SUAVE, it must subscribe to `/diagnostics` to get monitoring information, send adaptation goals (task) requests via `/task/request` and `/task/cancel`, and send reconfiguration requests via `/f_maintain_motion/change_mode`, `/f_generate_search_path/change_mode`, or `/f_follow_pipeline/change_mode`.
+    Managers such as the Behavior Tree manager subscribe to `/diagnostics` and call these services directly.
+4. A managing subsystem may also bypass `task_bridge` and `system_modes` entirely and control the managed ROS 2 nodes directly through standard ROS 2 lifecycle transition services and parameter services. This lower-level integration is more tightly coupled to the managed nodes, but it can be appropriate for managers that need direct lifecycle or parameter control.
+
+Thus, to connect a managing subsystem to SUAVE, choose the integration level that matches the manager. A task-level manager uses `/task/request` and `/task/cancel`. A function-level manager typically uses `/diagnostics` plus the `system_modes` services. A low-level manager may use `/diagnostics` plus ROS 2 lifecycle and parameter APIs directly.
 
 
 There are two ways to connect a new managing subsystem:

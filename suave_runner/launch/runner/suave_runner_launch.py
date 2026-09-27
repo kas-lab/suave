@@ -17,12 +17,18 @@
 import os
 
 from ament_index_python.packages import get_package_share_directory
+
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
     """Return the configured experiment-runner launch description."""
+    config_file = LaunchConfiguration('config_file')
+
     # Get the path to the config file
     config_path = os.path.join(
         get_package_share_directory('suave_runner'),
@@ -31,13 +37,19 @@ def generate_launch_description():
         'runner_config.yml'
     )
 
+    config_file_arg = DeclareLaunchArgument(
+        'config_file',
+        default_value=config_path,
+        description='Full path to the suave_runner YAML configuration file')
+
     # Launch the suave_runner node with the parameters loaded from YAML
     return LaunchDescription([
+        config_file_arg,
         Node(
             package='suave_runner',
             executable='suave_runner',
             name='suave_runner_node',
             output='screen',
-            parameters=[config_path],
+            parameters=[config_file],
         )
     ])
