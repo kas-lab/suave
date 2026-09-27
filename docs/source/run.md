@@ -1,5 +1,7 @@
 # Run SUAVE
 
+> Tip: the `suave` CLI ({doc}`cli`) wraps the runner, batch and resume commands below.
+
 ## With Runner
 ### Trying it out!
 If you simply want to try out the exemplar, simply enter the following commands in a terminal:

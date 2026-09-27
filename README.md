@@ -125,6 +125,13 @@ To build the docker images locally, run:
 
 The script builds the browser image as `suave:dev` and the headless runner image as `suave-headless:dev` from the local checkout.
 
+### Use the suave CLI
+
+`source env.sh` (or build and source the workspace) to get the `suave` command:
+`suave docker build`, `suave docker run`, `suave test`, `suave run`,
+`suave batch resume --latest`. See [suave_cli/README.md](suave_cli/README.md) and
+`suave --help`.
+
 ## Install SUAVE locally
 To install the exemplar locally, you have to [install Gazebo Harmonic](#install-gazebo-harmonic), [install ROS2 Humble](#install-ros2-humble), [install ArduSub](#install-ardusub), [install the ArduSub plugin](#install-ardusub_plugin), and finally [install the SUAVE workspace](#install-suave-workspace).
 
