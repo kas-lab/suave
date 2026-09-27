@@ -14,6 +14,7 @@
 
 """Load, resolve and store suave CLI settings."""
 
+import argparse
 import configparser
 from dataclasses import dataclass
 import os
@@ -221,3 +222,82 @@ def maybe_first_run(path, container, interactive, input_fn=input):
     else:
         save_file(path, {})
         term.info("Run 'suave config init' any time to change defaults.")
+
+
+CONFIG_EPILOG = """\
+examples:
+  suave config show                    effective values and where they come from
+  suave config set exec host           run ROS commands on this machine
+  suave config set container_name my_suave
+  suave config unset exec              back to the default
+  suave config init                    answer the setup questions again
+"""
+
+
+def cmd_show(ctx):
+    """Print every setting, its value and its source."""
+    if ctx.settings is None:
+        raise CliError('the configuration is invalid; fix it with suave config set/unset')
+    state = 'exists' if ctx.config_path.exists() else 'not created yet'
+    print(f'config file: {ctx.config_path} ({state})')
+    width = max(len(key) for key in KEYS)
+    for key, value, source in ctx.settings.items():
+        print(f'{key:<{width}} = {value:<36} ({source})')
+    return 0
+
+
+def cmd_init(ctx):
+    """Run the setup wizard again."""
+    if not ctx.interactive:
+        raise CliError('suave config init needs an interactive terminal')
+    run_wizard(ctx.config_path, ctx.in_container, input_fn=ctx.input_fn)
+    return 0
+
+
+def cmd_set(ctx):
+    """Store one setting in the config file."""
+    value = normalize(ctx.args.key, ctx.args.value, 'command line')
+    values = load_file(ctx.config_path)
+    values[ctx.args.key] = value
+    if not save_file(ctx.config_path, values):
+        return 1
+    print(f'{ctx.args.key} = {value}  ({ctx.config_path})')
+    return 0
+
+
+def cmd_unset(ctx):
+    """Remove one setting from the config file."""
+    values = load_file(ctx.config_path)
+    values.pop(ctx.args.key, None)
+    return 0 if save_file(ctx.config_path, values) else 1
+
+
+def cmd_path(ctx):
+    """Print the path of the active config file."""
+    print(ctx.config_path)
+    return 0
+
+
+def register(subparsers, common):
+    """Add the config command group."""
+    parser = subparsers.add_parser(
+        'config', parents=[common], help='show or change CLI defaults',
+        description='Show or change the defaults stored in <SUAVE_ROOT>/.config/ '
+                    '(host.ini on the host, container.ini inside the container).',
+        epilog=CONFIG_EPILOG, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.set_defaults(skip_first_run=True)
+    sub = parser.add_subparsers(dest='config_command', metavar='ACTION', required=True)
+    show = sub.add_parser('show', parents=[common],
+                          help='print effective settings and where they come from')
+    show.set_defaults(func=cmd_show)
+    init = sub.add_parser('init', parents=[common], help='answer the setup questions again')
+    init.set_defaults(func=cmd_init, tolerate_bad_config=True)
+    store = sub.add_parser('set', parents=[common], help='store one setting')
+    store.add_argument('key', choices=list(KEYS))
+    store.add_argument('value')
+    store.set_defaults(func=cmd_set, tolerate_bad_config=True)
+    remove = sub.add_parser('unset', parents=[common], help='remove one stored setting')
+    remove.add_argument('key', choices=list(KEYS))
+    remove.set_defaults(func=cmd_unset, tolerate_bad_config=True)
+    path = sub.add_parser('path', parents=[common], help='print the active config file path')
+    path.set_defaults(func=cmd_path, tolerate_bad_config=True)

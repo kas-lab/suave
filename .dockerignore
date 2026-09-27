@@ -7,3 +7,4 @@ log
 **/*.pyc
 suave_runner/docker/log
 doc-agents/
+.config
