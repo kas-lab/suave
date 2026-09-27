@@ -131,6 +131,9 @@ COPY --chown=kasm-user:kasm-user suave_monitor/ $HOME/suave_ws/src/suave/suave_m
 COPY --chown=kasm-user:kasm-user suave_msgs/ $HOME/suave_ws/src/suave/suave_msgs/
 COPY --chown=kasm-user:kasm-user suave_runner/ $HOME/suave_ws/src/suave/suave_runner/
 COPY --chown=kasm-user:kasm-user suave_tools/ $HOME/suave_ws/src/suave/suave_tools/
+COPY --chown=kasm-user:kasm-user suave_base/ $HOME/suave_ws/src/suave/suave_base/
+COPY --chown=kasm-user:kasm-user suave_cli/ $HOME/suave_ws/src/suave/suave_cli/
+COPY --chown=kasm-user:kasm-user env.sh $HOME/suave_ws/src/suave/env.sh
 
 # Install suave deps
 WORKDIR $HOME/suave_ws
@@ -150,6 +153,10 @@ RUN sudo apt autoremove -y && sudo rm -rf /var/lib/apt/lists/
 
 COPY --chown=kasm-user:kasm-user runner/ $HOME/suave_ws/src/suave/runner/
 
+# suave CLI: on PATH in every shell, including docker exec
+ENV SUAVE_ROOT=/home/kasm-user/suave_ws/src/suave
+ENV SUAVE_CLI_CONTEXT=container
+ENV PATH=${SUAVE_ROOT}/suave_cli/bin:${PATH}
 WORKDIR $HOME/suave_ws/src/suave/runner/
 
 CMD ["--tail-log"]

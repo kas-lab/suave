@@ -117,6 +117,9 @@ COPY --chown=ubuntu-user:ubuntu-user suave_msgs/ $HOME/suave_ws/src/suave/suave_
 COPY --chown=ubuntu-user:ubuntu-user suave_runner/ $HOME/suave_ws/src/suave/suave_runner/
 COPY --chown=ubuntu-user:ubuntu-user suave_tools/ $HOME/suave_ws/src/suave/suave_tools/
 COPY --chown=ubuntu-user:ubuntu-user runner/ $HOME/suave_ws/src/suave/runner/
+COPY --chown=ubuntu-user:ubuntu-user suave_base/ $HOME/suave_ws/src/suave/suave_base/
+COPY --chown=ubuntu-user:ubuntu-user suave_cli/ $HOME/suave_ws/src/suave/suave_cli/
+COPY --chown=ubuntu-user:ubuntu-user env.sh $HOME/suave_ws/src/suave/env.sh
 
 RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
     && sudo apt update \
@@ -138,4 +141,8 @@ RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
 
 RUN sudo apt autoremove -y && sudo rm -rf /var/lib/apt/lists/
 
+# suave CLI: on PATH in every shell, including docker exec
+ENV SUAVE_ROOT=/home/ubuntu-user/suave_ws/src/suave
+ENV SUAVE_CLI_CONTEXT=container
+ENV PATH=${SUAVE_ROOT}/suave_cli/bin:${PATH}
 WORKDIR $HOME/suave_ws/
