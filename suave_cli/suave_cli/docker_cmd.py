@@ -16,7 +16,7 @@
 
 import argparse
 
-from suave_cli import images
+from suave_cli import container, images
 
 DOCKER_EPILOG = """\
 examples:
@@ -35,3 +35,4 @@ def register(subparsers, common):
         epilog=DOCKER_EPILOG, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest='docker_command', metavar='ACTION', required=True)
     images.add_parsers(sub, common)
+    container.add_parsers(sub, common)
