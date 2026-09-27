@@ -212,6 +212,27 @@ The VCS dependencies file is `suave.repos`. The old name `suave.rosinstall` is o
 
 Recent commits use short imperative subjects, for example `add statistical_analysis` or `pass mission_config to task_bridge_none`; an emoji prefix appears occasionally for fixes. Keep commits focused and mention the affected package when useful. Pull requests should describe behavior changes, list test commands and results, link related issues, and include screenshots or logs for simulator, UI, Docker, or mission-run changes.
 
+## Agent Skills And Pi Extensions
+
+Project-specific Pi skills live under `.claude/skills/` and are exposed
+through `.agents/skills/`. Workspace-root symlinks may expose selected SUAVE
+skills when working from an integration workspace root.
+
+Useful SUAVE skills:
+
+- `suave-python-node-diagnostics`
+- `suave-launch-config`
+- `suave-lifecycle-action`
+- `ros-gz-bridge-cheatsheet`
+
+Project Pi extensions live under `.pi/extensions/`. Current commands include:
+
+- `/ros-check`
+- `/ros-launch-check`
+- `/changed-check`
+
+Run `/reload` after modifying skills or extensions.
+
 ## Agent-Specific Instructions
 
 Before editing, check `git status --short` and preserve unrelated user changes.
