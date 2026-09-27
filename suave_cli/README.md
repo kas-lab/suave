@@ -19,6 +19,7 @@ Inside the SUAVE images `suave` is already on `PATH`.
     suave test suave_runner     # build + test in the container
     suave run                   # experiment runner with the installed runner_config.yml
     suave batch resume --latest
+    suave analyze wilcoxon -- ...   # analysis scripts
 
 `suave --help` and `suave COMMAND --help` list every option with examples.
 `--dry-run` prints the commands instead of running them.
