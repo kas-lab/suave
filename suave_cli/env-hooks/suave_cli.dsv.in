@@ -1,0 +1,2 @@
+set;SUAVE_ROOT;@SUAVE_SOURCE_ROOT@
+prepend-non-duplicate;PATH;@SUAVE_SOURCE_ROOT@/suave_cli/bin
