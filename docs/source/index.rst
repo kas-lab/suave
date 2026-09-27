@@ -23,6 +23,7 @@ commands. For a local source installation, follow :doc:`installation`.
  installation
  docker
  run
+ cli
  architecture
  extend
  implementations

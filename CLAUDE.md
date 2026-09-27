@@ -137,6 +137,15 @@ Dockerfiles are intentionally lowercase (`docker/dockerfile-*`). When checking `
 
 **Version pinning:** git SHAs live in `docker/versions.env`; Python package versions live in `requirements.txt` (repo root). `build_docker_images.sh` sources `versions.env` and forwards SHAs as `--build-arg`.
 
+## suave CLI
+
+`suave_cli/` holds the `suave` command (stdlib-only Python, runs from the checkout via
+`suave_cli/bin/suave`; `env.sh` or a sourced workspace puts it on `PATH`). It wraps
+Docker build/run, colcon build/test and the runners; ROS commands run in the container
+or a local workspace according to `exec`. Config lives in `.config/{host,container}.ini`
+(gitignored). Tests: `suave self-test`, or
+`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q suave_cli/test`.
+
 ## Navigation / MAVROS Frame Convention
 
 `suave/config/suave_mavros_apm_config.yaml` sets `local_position.frame_id: map`, so `mavros/local_position/pose` is published in the **Gazebo/world frame** — no conversion between Gazebo-sourced coordinates and MAVROS local positions is needed.
