@@ -25,6 +25,7 @@ from launch.actions import OpaqueFunction
 from launch.launch_description_sources import AnyLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import PythonExpression
+
 from launch_ros.actions import Node
 
 
@@ -149,6 +150,14 @@ def generate_launch_description():
         name='gz_pipe_pose_bridge',
     )
 
+    gz_ocean_current_bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=['/ocean_current@geometry_msgs/msg/Point]gz.msgs.Vector3d'],
+        output=print_output,
+        name='gz_ocean_current_bridge',
+    )
+
     x = LaunchConfiguration('x')
     y = LaunchConfiguration('y')
     z = LaunchConfiguration('z')
@@ -210,6 +219,7 @@ def generate_launch_description():
         min_pipes_sim,
         bluerov_spawn,
         gz_pipe_pose_bridge,
+        gz_ocean_current_bridge,
         gz_bluerov_pose_bridge,
         mavros_node,
     ])

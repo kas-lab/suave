@@ -16,6 +16,7 @@ API
    suave.spiral_search_lc
    suave.task_bridge
    suave.task_bridge_none
+   suave.water_current
    suave_monitor.thruster_monitor
    suave_monitor.battery_monitor
    suave_monitor.water_visibility_observer

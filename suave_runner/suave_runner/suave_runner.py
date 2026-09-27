@@ -108,6 +108,7 @@ class ExperimentRunnerNode(Node):
 
         self.declare_parameter('thruster_events', [''])
         self.declare_parameter('thruster_events_random_interval', [0.0, 0.0])
+        self.declare_parameter('enable_water_current', False)
 
         # Retrieve parameters
         self.ardupilot_executable = self.get_parameter(
@@ -174,6 +175,8 @@ class ExperimentRunnerNode(Node):
             'thruster_events_random_interval'
         ).get_parameter_value().double_array_value
         self.thruster_events_array = []
+        self.enable_water_current = self.get_parameter(
+            'enable_water_current').get_parameter_value().bool_value
 
         self.terminate_flag = False
         self.processes_stop_events = []
@@ -495,6 +498,9 @@ class ExperimentRunnerNode(Node):
         exp_args['result_path'] = result_path
         exp_args['result_filename'] = result_filename
         exp_args['gui'] = 'true' if self.gui else 'false'
+        if (self.enable_water_current and
+                'enable_water_current' not in exp_args):
+            exp_args['enable_water_current'] = 'true'
         if not self.experiment_logging:
             exp_args['silent'] = 'true'
 

@@ -55,6 +55,7 @@ setup(
             'follow_pipeline = suave.follow_pipeline_lc:main',
             'recover_thrusters = suave.recover_thrusters_lc:main',
             'task_bridge_none = suave.task_bridge_none:main',
+            'water_current = suave.water_current:main',
         ],
     },
 )
