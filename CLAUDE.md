@@ -139,12 +139,28 @@ Dockerfiles are intentionally lowercase (`docker/dockerfile-*`). When checking `
 
 ## suave CLI
 
-`suave_cli/` holds the `suave` command (stdlib-only Python, runs from the checkout via
-`suave_cli/bin/suave`; `env.sh` or a sourced workspace puts it on `PATH`). It wraps
-Docker build/run, colcon build/test and the runners; ROS commands run in the container
-or a local workspace according to `exec`. Config lives in `.config/{host,container}.ini`
-(gitignored). Tests: `suave self-test`, or
-`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q suave_cli/test`.
+`suave_cli/` holds the `suave` command: stdlib-only Python (>= 3.10) that runs in place from the checkout through `suave_cli/bin/suave`, needs no build, and never imports ROS. Each subcommand builds an existing command (`docker`, `colcon`, `ros2`, the runner launch files) and runs it; the scripts and launch files stay the source of truth.
+
+Put it on `PATH` with one of: `source env.sh` (bash only), `source install/setup.bash` after building the optional `suave_cli` colcon package (it only installs a hook setting `SUAVE_ROOT` and `PATH`), or a symlink to `suave_cli/bin/suave`. Without `PATH` changes, call `suave_cli/bin/suave` directly. The SUAVE images put it on `PATH` and set `SUAVE_CLI_CONTEXT=container`.
+
+```bash
+suave --help                       # every command, with examples; suave COMMAND --help for details
+suave --dry-run <command> ...      # print the commands instead of running them
+suave docker build [--all] [--tag T]            # suave-headless:latest (+ Kasm images with --all)
+suave docker run|shell|stop [--rm]|status       # host only; container name from container_name
+suave build [PKG ...] [--clean]                 # colcon build (default: all SUAVE packages)
+suave test [PKG ...] [--no-build] [--lint] [-k EXPR]   # non-zero exit if any package failed
+suave run [--config FILE] [--seed N] [-p KEY:=VALUE]   # suave_runner campaign
+suave batch start|resume [STATE_JSON | --latest]|list
+suave campaign resume [RESULT_PATH | --latest] --config FILE | list
+suave analyze wilcoxon|mann-whitney|summarize -- <script args>
+suave config show|set|unset|init|path
+suave self-test                    # the CLI's own tests and linters
+```
+
+ROS commands (`build`, `test`, `run`, `batch`, `campaign`, `analyze`) run where `--exec auto|container|host` says (setting `exec`, default `auto`): `auto` uses the running container named by `container_name` (default `suave`), otherwise the local colcon workspace whose `src/` contains the checkout (or `host_workspace`). Inside a SUAVE container they always run directly. Arguments after `--` go to the wrapped tool. Settings resolve flag > environment variable (`SUAVE_EXEC`, `SUAVE_CONTAINER_NAME`, `SUAVE_IMAGE`, `SUAVE_WORKSPACE`) > `.config/host.ini` or `.config/container.ini` (gitignored) > default; `suave config show` prints each value and its source. Non-interactive runs never prompt and never write a config.
+
+For agents: prefer `--dry-run` to preview commands, pass `--yes` when a command may need to pull an image, and pass `--container <name>` (or set `SUAVE_CONTAINER_NAME`) when the container is not called `suave`. In a git worktree nested under a workspace's `src/`, host mode auto-detects that enclosing workspace; only use `--exec host` there with `--dry-run` or an explicit `--workspace`. CLI tests: `suave self-test`, or `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q suave_cli/test` from the repository root; they need no ROS or container. `colcon test --packages-select suave_cli` adds the ament linters. See `suave_cli/README.md` for all configuration keys.
 
 ## Navigation / MAVROS Frame Convention
 
