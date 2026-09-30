@@ -58,6 +58,27 @@ def test_invalid_values_name_their_source():
         config.resolve({}, {}, {'mount_src': 'maybe'})
 
 
+def test_mount_lists_are_normalized():
+    assert config.normalize('extra_mounts', '', 'test') == ''
+    value = config.normalize('extra_mounts', '\n/a:/b, /c d:/e\n', 'test')
+    assert value == '/a:/b\n/c d:/e'
+    assert config.resolve({}, {}, {'extra_mounts': value}).get_list('extra_mounts') == [
+        '/a:/b', '/c d:/e']
+
+
+@pytest.mark.parametrize('entry', ['/a', '/a:/b:ro', 'rel:/b', '/a:rel', ':/b'])
+def test_invalid_mount_entries(entry):
+    with pytest.raises(CliError, match='extra_mounts'):
+        config.normalize('extra_mounts', entry, 'test')
+
+
+def test_mount_list_round_trips_through_file(tmp_path):
+    path = tmp_path / 'host.ini'
+    assert config.save_file(path, {'extra_mounts': '/a:/b\n/c:/d'})
+    loaded = config.load_file(path)
+    assert config.resolve({}, {}, loaded).get_list('extra_mounts') == ['/a:/b', '/c:/d']
+
+
 def test_unknown_file_key_warns(capsys):
     config.resolve({}, {}, {'colour': 'blue'})
     assert "unknown config key 'colour'" in capsys.readouterr().err

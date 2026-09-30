@@ -23,6 +23,7 @@ examples:
   suave docker build                   build suave-headless:latest
   suave docker run                     start or reuse the 'suave' container
   suave docker shell                   open a sourced shell in it
+  suave docker mount add ../my_pkg     mount another package at the workspace src/
   suave docker stop --rm               stop and remove it
 """
 

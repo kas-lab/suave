@@ -37,6 +37,7 @@ EPILOG = """\
 examples:
   suave docker build              build suave-headless:latest
   suave docker run                start the 'suave' container in the background
+  suave docker mount add PATH     also mount PATH into the container's workspace src/
   suave test suave_runner         build and test one package
   suave batch resume --latest     resume the most recent batch
   suave config show               show settings and where they come from

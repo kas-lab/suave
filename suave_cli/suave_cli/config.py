@@ -18,7 +18,8 @@ import argparse
 import configparser
 from dataclasses import dataclass
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+import re
 import tempfile
 
 from suave_cli import term
@@ -53,6 +54,8 @@ KEYS = {
     'mount_results': KeySpec('true', 'mount the results folder into the container',
                              kind='bool'),
     'host_results_dir': KeySpec('~/suave/results', 'results folder on this machine'),
+    'extra_mounts': KeySpec('', 'additional HOST:CONTAINER bind mounts for suave docker run',
+                            kind='list'),
     'host_workspace': KeySpec('', 'colcon workspace for local runs (empty = auto-detect)',
                               env='SUAVE_WORKSPACE'),
     'ros_setup': KeySpec('/opt/ros/humble/setup.bash', 'ROS setup script for local runs'),
@@ -99,10 +102,26 @@ def normalize(key, value, source):
         if lowered in FALSE_WORDS:
             return 'false'
         raise CliError(f'{key}: expected true or false, got {value!r} (from {source})')
+    if spec.kind == 'list':
+        return '\n'.join(_normalize_mount(key, item, source) for item in split_list(value))
     if spec.choices and value not in spec.choices:
         raise CliError(
             f'{key}: expected one of {", ".join(spec.choices)}, got {value!r} (from {source})')
     return value
+
+
+def split_list(value):
+    """Return the non-empty entries of a newline- or comma-separated list value."""
+    return [item.strip() for item in re.split(r'[\n,]', value) if item.strip()]
+
+
+def _normalize_mount(key, item, source):
+    host, sep, dest = item.partition(':')
+    if not sep or ':' in dest or not host or not dest:
+        raise CliError(f'{key}: expected HOST:CONTAINER, got {item!r} (from {source})')
+    if not Path(host).is_absolute() or not PurePosixPath(dest).is_absolute():
+        raise CliError(f'{key}: both paths must be absolute, got {item!r} (from {source})')
+    return f'{host}:{dest}'
 
 
 def load_file(path):
@@ -158,6 +177,10 @@ class Settings:
     def get_bool(self, key):
         """Return the value of a boolean key."""
         return self._values[key] == 'true'
+
+    def get_list(self, key):
+        """Return the entries of a list key."""
+        return split_list(self._values[key])
 
     def source(self, key):
         """Return where the value of key came from."""
@@ -242,6 +265,8 @@ def cmd_show(ctx):
     print(f'config file: {ctx.config_path} ({state})')
     width = max(len(key) for key in KEYS)
     for key, value, source in ctx.settings.items():
+        if KEYS[key].kind == 'list':
+            value = ', '.join(split_list(value))
         print(f'{key:<{width}} = {value:<36} ({source})')
     return 0
 
