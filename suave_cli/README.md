@@ -16,6 +16,7 @@ Inside the SUAVE images `suave` is already on `PATH`.
 
     suave docker build          # suave-headless:latest
     suave docker run            # background container 'suave', checkout + ~/suave/results mounted
+    suave docker mount add ../my_package   # also mount it at the container's workspace src/
     suave test suave_runner     # build + test in the container
     suave run                   # experiment runner with the installed runner_config.yml
     suave batch resume --latest
@@ -45,11 +46,20 @@ repeats it. Precedence: flag > environment variable > config file > default.
 | run_mode | detached | `--detach`, `--interactive` |
 | mount_src, mount_results | true | `--[no-]mount-src`, `--[no-]mount-results` |
 | host_results_dir | ~/suave/results | `--results-dir` |
+| extra_mounts | none | `suave docker mount add\|remove\|list`; `--mount`, `--no-extra-mounts` on `docker run` |
 | host_workspace | auto-detect | `--workspace` / `SUAVE_WORKSPACE` |
 | ros_setup | /opt/ros/humble/setup.bash | |
 | container_results_dir, container_src_dir, container_workspace | headless image paths | |
 
 `suave config show` prints every value and where it came from.
+
+`extra_mounts` is a list of `HOST:CONTAINER` bind mounts added after the checkout and results
+mounts. `suave docker mount add PATH` stores PATH as an absolute path and mounts it at
+`<container_workspace>/src/<name>` unless `--to CONTAINER` is given; it refuses a missing
+PATH and a destination that overlaps another mount. `suave docker run --mount HOST[:CONTAINER]`
+adds a mount for one run only. Mounts apply when the container is created, so run
+`suave docker run --recreate` after changing them, then `suave build <package>` for new
+ROS packages.
 
 ## Development
 

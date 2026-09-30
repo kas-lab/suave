@@ -16,6 +16,7 @@ package adds `suave` to `PATH`), or symlink `suave_cli/bin/suave` into a folder 
     suave docker build                  # build suave-headless:latest (--all adds the GUI images)
     suave docker run                    # start the 'suave' container in the background
     suave docker shell                  # shell inside it, ROS sourced
+    suave docker mount add ../my_package   # mount another package into the container's src/
     suave test suave_runner             # build and test one package
     suave run --config my_runner.yml    # run a campaign
     suave batch start                   # run the campaigns in batch_campaigns.yml

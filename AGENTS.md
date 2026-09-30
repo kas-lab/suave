@@ -107,6 +107,7 @@ suave --help                       # every command, with examples; suave COMMAND
 suave --dry-run <command> ...      # print the commands instead of running them
 suave docker build [--all] [--tag T]            # suave-headless:latest (+ Kasm images with --all)
 suave docker run|shell|stop [--rm]|status       # host only; container name from container_name
+suave docker mount add PATH [--to DEST]|remove PATH|list   # extra_mounts for docker run (--recreate to apply)
 suave build [PKG ...] [--clean]                 # colcon build (default: all SUAVE packages)
 suave test [PKG ...] [--no-build] [--lint] [-k EXPR]   # non-zero exit if any package failed
 suave run [--config FILE] [--seed N] [-p KEY:=VALUE]   # suave_runner campaign
