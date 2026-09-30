@@ -133,10 +133,10 @@ def test_first_run_declined_writes_empty_config(tmp_path):
 
 def test_first_run_accepted_runs_wizard(tmp_path, capsys):
     path = tmp_path / '.config' / 'host.ini'
-    answers = ['y', 'host', '', '', 'bogus', 'interactive', 'no', '', '', '']
+    answers = ['y', 'host', '', '', 'bogus', 'interactive', 'none', 'no', '', '', '']
     config.maybe_first_run(path, False, interactive=True, input_fn=lambda _p: answers.pop(0))
     assert config.load_file(path) == {
-        'exec': 'host', 'run_mode': 'interactive', 'mount_src': 'false'}
+        'exec': 'host', 'run_mode': 'interactive', 'gpu': 'none', 'mount_src': 'false'}
     assert answers == []
     assert 'run_mode' in capsys.readouterr().err
 

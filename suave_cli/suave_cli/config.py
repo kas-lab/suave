@@ -50,6 +50,8 @@ KEYS = {
                      env='SUAVE_IMAGE'),
     'run_mode': KeySpec('detached', 'suave docker run mode: detached or interactive',
                         choices=('detached', 'interactive')),
+    'gpu': KeySpec('nvidia', 'GPU access for suave docker run: nvidia or none',
+                   env='SUAVE_GPU', choices=('nvidia', 'none')),
     'mount_src': KeySpec('true', 'mount this checkout into the container', kind='bool'),
     'mount_results': KeySpec('true', 'mount the results folder into the container',
                              kind='bool'),
@@ -72,13 +74,14 @@ FLAG_TO_KEY = {
     'container': 'container_name',
     'image': 'image',
     'run_mode': 'run_mode',
+    'gpu': 'gpu',
     'mount_src': 'mount_src',
     'mount_results': 'mount_results',
     'results_dir': 'host_results_dir',
     'workspace': 'host_workspace',
 }
 
-HOST_WIZARD_KEYS = ('exec', 'container_name', 'image', 'run_mode', 'mount_src',
+HOST_WIZARD_KEYS = ('exec', 'container_name', 'image', 'run_mode', 'gpu', 'mount_src',
                     'mount_results', 'host_results_dir', 'host_workspace')
 CONTAINER_WIZARD_KEYS = ('exec', 'host_workspace')
 

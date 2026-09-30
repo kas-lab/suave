@@ -17,14 +17,14 @@
 import argparse
 from pathlib import Path, PurePosixPath
 
-from suave_cli import config, term
+from suave_cli import config, display, term
 from suave_cli.docker_util import container_state, docker_available, require_docker, require_host
 from suave_cli.errors import CliError
 from suave_cli.images import ensure_image
 from suave_cli.targets import CONTAINER_ROS_SETUP, Target
 
-SHM_SIZE = '512m'
 MOUNT_FORMAT = '{{.Config.Image}}|{{range .Mounts}}{{.Source}}:{{.Destination}},{{end}}'
+ENV_FORMAT = '{{range .Config.Env}}{{println .}}{{end}}'
 
 RUN_DESCRIPTION = """\
 Start the SUAVE container, or reuse it when it already exists.
@@ -37,6 +37,11 @@ Image selection (unless --image or the 'image' setting is given):
 By default this checkout is mounted at the container's src/suave and
 ~/suave/results at the container's results folder, plus every mount
 saved with 'suave docker mount add'.
+
+Host display and GPU: when DISPLAY is set, the X11 socket is mounted and
+the display's X cookie is copied to a folder only this container mounts
+(no 'xhost +'). The NVIDIA runtime is used unless --gpu none or the 'gpu'
+setting says otherwise. /etc/localtime is always mounted read-only.
 """
 
 RUN_EPILOG = """\
@@ -44,6 +49,7 @@ examples:
   suave docker run                              detached, default mounts
   suave docker run --interactive --no-mount-src throwaway shell on the baked-in code
   suave docker run --image suave-headless:exp1 --recreate
+  suave docker run --gpu none --recreate        no NVIDIA runtime (Intel/AMD or no GPU)
   suave docker run --mount ../my_package         one-off extra mount into the workspace src/
   suave docker run -- --network host            extra docker run arguments
 """
@@ -116,7 +122,7 @@ def check_mount(host, dest, taken):
 
 
 def check_extra_mounts(defaults, extras):
-    """Validate every extra mount against the default mounts and the ones before it."""
+    """Validate every extra mount against the default and system mounts and earlier extras."""
     taken = [dest for _, dest in defaults]
     for host, dest in extras:
         check_mount(host, dest, taken)
@@ -127,7 +133,7 @@ def run_argv(name, image, mode, mounts, extra):
     """Return the docker run command line."""
     argv = ['docker', 'run']
     argv += ['-d'] if mode == 'detached' else ['-it', '--rm']
-    argv += ['--name', name, f'--shm-size={SHM_SIZE}', '--security-opt', 'seccomp=unconfined']
+    argv += ['--name', name]
     for host_path, container_path in mounts:
         argv += ['-v', f'{host_path}:{container_path}']
     argv += list(extra)
@@ -135,7 +141,14 @@ def run_argv(name, image, mode, mounts, extra):
     return argv
 
 
-def _warn_if_different(ctx, name, mounts):
+def _warn_if_different(ctx, name, mounts, host_display):
+    code, out = ctx.executor.capture(['docker', 'inspect', '-f', ENV_FORMAT, name])
+    if code == 0 and host_display:
+        env = dict(line.partition('=')[::2] for line in out.splitlines() if line)
+        if env.get('DISPLAY') != host_display:
+            term.warn(f"container '{name}' uses DISPLAY={env.get('DISPLAY', '(unset)')}, "
+                      f'but this session has DISPLAY={host_display}; '
+                      'use --recreate to switch displays')
     code, out = ctx.executor.capture(['docker', 'inspect', '-f', MOUNT_FORMAT, name])
     if code:
         return
@@ -156,7 +169,8 @@ def cmd_run(ctx):
     settings, executor = ctx.settings, ctx.executor
     name, mode = settings.get('container_name'), settings.get('run_mode')
     defaults, extras = default_mounts(ctx), extra_mounts(ctx)
-    check_extra_mounts(defaults, extras)
+    options = display.run_options(ctx, name)
+    check_extra_mounts(defaults + options.mounts, extras)
     mounts = defaults + extras
     state = container_state(executor, name)
     if state and getattr(ctx.args, 'recreate', False):
@@ -165,12 +179,14 @@ def cmd_run(ctx):
             return code
         state = None
     if state is not None:
-        _warn_if_different(ctx, name, mounts)
+        _warn_if_different(ctx, name, mounts + options.mounts, options.display)
         if state == 'running':
             term.info(f"container '{name}' is already running; reusing it")
             return 0
         term.info(f"starting existing container '{name}'")
         return executor.run(['docker', 'start', name])
+    if settings.get('gpu') == 'nvidia':
+        display.check_nvidia_runtime(ctx)
     image = ensure_image(ctx)
     if settings.get_bool('mount_results') and not executor.dry_run:
         Path(settings.get('host_results_dir')).expanduser().mkdir(parents=True, exist_ok=True)
@@ -182,7 +198,7 @@ def cmd_run(ctx):
     for _, dest in extras:
         if PurePosixPath(dest).parent == workspace_src:
             term.info(f"{dest} is in the workspace: build it with 'suave build <package>'.")
-    code = executor.run(run_argv(name, image, mode, mounts, ctx.passthrough))
+    code = executor.run(run_argv(name, image, mode, mounts, options.args + ctx.passthrough))
     if code == 0 and mode == 'detached':
         term.info(f"container '{name}' started; open a shell with: suave docker shell")
     return code
@@ -338,6 +354,8 @@ def add_parsers(sub, common):
                           '(default CONTAINER: <container_workspace>/src/<name>)')
     run.add_argument('--no-extra-mounts', action='store_true',
                      help="skip the mounts saved with 'suave docker mount add'")
+    run.add_argument('--gpu', choices=config.KEYS['gpu'].choices, default=argparse.SUPPRESS,
+                     help='GPU access: nvidia (NVIDIA runtime, default) or none')
     run.add_argument('--recreate', action='store_true',
                      help='remove an existing container with the same name first')
     run.set_defaults(func=cmd_run, accepts_passthrough=True)
