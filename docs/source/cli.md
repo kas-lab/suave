@@ -23,5 +23,9 @@ package adds `suave` to `PATH`), or symlink `suave_cli/bin/suave` into a folder 
     suave batch resume --latest         # resume the newest batch
     suave campaign resume --latest --config my_runner.yml
 
+`suave docker run` shares the host display through a per-container X cookie (no
+`xhost +`) and uses the NVIDIA runtime; use `--gpu none` or `suave config set gpu none`
+on machines without it.
+
 Run `suave --help` for everything, and `suave config show` for the active settings.
 See `suave_cli/README.md` in the repository for the configuration keys.

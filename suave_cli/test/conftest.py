@@ -53,6 +53,13 @@ class FakeRunner:
         return [call for call in self.calls if tuple(call[:len(prefix)]) == prefix]
 
 
+@pytest.fixture(autouse=True)
+def isolated_display(tmp_path, monkeypatch):
+    """Hide the developer's display and keep X cookies out of their cache folder."""
+    monkeypatch.delenv('DISPLAY', raising=False)
+    monkeypatch.setenv('XDG_CACHE_HOME', str(tmp_path / 'cache'))
+
+
 @pytest.fixture
 def fake_runner():
     return FakeRunner()

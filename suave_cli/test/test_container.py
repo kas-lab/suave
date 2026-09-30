@@ -18,13 +18,17 @@ import argparse
 
 import pytest
 
-from suave_cli import config, container, main
+from suave_cli import config, container, display, main
 from suave_cli.docker_util import RUNNING_FORMAT
 from suave_cli.errors import CliError
 
 STATE = ('docker', 'inspect', '-f', RUNNING_FORMAT)
 MOUNTS = ('docker', 'inspect', '-f', container.MOUNT_FORMAT)
 IMAGES = ('docker', 'images')
+RUNTIMES = ('docker', 'info', '-f', display.RUNTIMES_FORMAT)
+XAUTH = ('xauth', 'nlist')
+# Mounts added by the default gpu=nvidia setting with DISPLAY unset.
+SYSTEM_MOUNTS = '/dev/dri:/dev/dri,/etc/localtime:/etc/localtime,'
 SRC_DIR = '/home/ubuntu-user/suave_ws/src/suave'
 RESULTS_DIR = '/home/ubuntu-user/suave/results'
 
@@ -46,8 +50,7 @@ def results_file(tmp_path):
 def test_run_argv_detached():
     argv = container.run_argv('suave', 'img:1', 'detached', [('/h s', '/c')],
                               ['--network', 'host'])
-    assert argv == ['docker', 'run', '-d', '--name', 'suave', '--shm-size=512m',
-                    '--security-opt', 'seccomp=unconfined', '-v', '/h s:/c',
+    assert argv == ['docker', 'run', '-d', '--name', 'suave', '-v', '/h s:/c',
                     '--network', 'host', 'img:1', 'sleep', 'infinity']
 
 
@@ -80,10 +83,15 @@ def test_no_mounts(make_ctx, suave_root):
 def test_run_creates_container(make_ctx, suave_root, fake_runner, tmp_path, capsys):
     fake_runner.responses[STATE] = (1, '')
     fake_runner.responses[IMAGES] = (0, 'latest\n')
+    fake_runner.responses[RUNTIMES] = (0, 'nvidia runc ')
     ctx = make_ctx(suave_root, file_values=results_file(tmp_path), args=run_args())
     assert container.cmd_run(ctx) == 0
     [argv] = fake_runner.find('docker', 'run')
     assert argv[2] == '-d'
+    assert '--shm-size=512m' not in argv
+    gpus = argv.index('--gpus')
+    assert argv[gpus:gpus + 3] == ['--gpus', 'all', '--runtime=nvidia']
+    assert '/etc/localtime:/etc/localtime:ro' in argv
     assert argv[-3:] == ['suave-headless:latest', 'sleep', 'infinity']
     assert (tmp_path / 'res').is_dir()
     err = capsys.readouterr().err
@@ -95,7 +103,7 @@ def test_running_container_is_reused(make_ctx, suave_root, fake_runner, tmp_path
     fake_runner.responses[STATE] = (0, 'true\n')
     fake_runner.responses[MOUNTS] = (
         0, f'suave-headless:latest|{suave_root.resolve()}:{SRC_DIR},'
-           f'{tmp_path / "res"}:{RESULTS_DIR},')
+           f'{tmp_path / "res"}:{RESULTS_DIR},{SYSTEM_MOUNTS}')
     ctx = make_ctx(suave_root, file_values=results_file(tmp_path), args=run_args())
     assert container.cmd_run(ctx) == 0
     assert fake_runner.find('docker', 'run') == []
@@ -122,6 +130,7 @@ def test_stopped_container_is_started(make_ctx, suave_root, fake_runner, tmp_pat
 def test_recreate_removes_first(make_ctx, suave_root, fake_runner, tmp_path):
     fake_runner.responses[STATE] = (0, 'true\n')
     fake_runner.responses[IMAGES] = (0, 'latest\n')
+    fake_runner.responses[RUNTIMES] = (0, 'nvidia runc ')
     ctx = make_ctx(suave_root, file_values=results_file(tmp_path),
                    args=run_args(recreate=True))
     assert container.cmd_run(ctx) == 0
@@ -213,7 +222,7 @@ def test_missing_mount_source_is_rejected(make_ctx, suave_root, tmp_path):
 
 def test_matching_extra_mounts_do_not_warn(make_ctx, suave_root, fake_runner, tmp_path, capsys):
     fake_runner.responses[STATE] = (0, 'true\n')
-    fake_runner.responses[MOUNTS] = (0, f'img|{tmp_path}:/data,')
+    fake_runner.responses[MOUNTS] = (0, f'img|{tmp_path}:/data,{SYSTEM_MOUNTS}')
     ctx = make_ctx(suave_root, flags=no_defaults(),
                    file_values={'extra_mounts': f'{tmp_path}:/data'}, args=run_args())
     assert container.cmd_run(ctx) == 0
@@ -273,3 +282,78 @@ def test_mount_remove_fixes_a_bad_entry(suave_root, fake_runner):
     config.save_file(config.config_path(suave_root, False), {'extra_mounts': 'broken'})
     assert cli(suave_root, fake_runner, 'docker', 'mount', 'remove', 'broken') == 0
     assert saved(suave_root) == []
+
+
+def create_ctx(make_ctx, suave_root, fake_runner, **kwargs):
+    fake_runner.responses[STATE] = (1, '')
+    fake_runner.responses[IMAGES] = (0, 'latest\n')
+    fake_runner.responses[RUNTIMES] = (0, 'nvidia runc ')
+    return make_ctx(suave_root, flags=no_defaults(), args=run_args(), **kwargs)
+
+
+def test_display_uses_private_cookie(make_ctx, suave_root, fake_runner, tmp_path, monkeypatch):
+    monkeypatch.setenv('DISPLAY', ':1')
+    monkeypatch.setattr(display.os, 'getuid', lambda: display.CONTAINER_UID)
+    fake_runner.responses[XAUTH] = (0, '0100 0004 686f7374 0001 31 0002 4d41 0002 abcd\n')
+    ctx = create_ctx(make_ctx, suave_root, fake_runner)
+    assert container.cmd_run(ctx) == 0
+    [argv] = fake_runner.find('docker', 'run')
+    folder = tmp_path / 'cache' / 'suave' / 'xauth' / 'suave'
+    expected = ('DISPLAY=:1', 'QT_X11_NO_MITSHM=1', '/tmp/.X11-unix:/tmp/.X11-unix',
+                f'XAUTHORITY={display.CONTAINER_XAUTH_DIR}/{display.XAUTH_FILE}',
+                f'{folder}:{display.CONTAINER_XAUTH_DIR}:ro')
+    assert all(arg in argv for arg in expected)
+    cookie = folder / display.XAUTH_FILE
+    assert cookie.read_bytes() == bytes.fromhex('ffff0004686f737400013100024d410002abcd')
+    assert cookie.stat().st_mode & 0o777 == 0o600
+    assert folder.stat().st_mode & 0o777 == 0o700
+    assert not any('xhost' in call for call in fake_runner.calls)
+
+
+def test_gpu_none_skips_nvidia(make_ctx, suave_root, fake_runner):
+    ctx = create_ctx(make_ctx, suave_root, fake_runner, env={'SUAVE_GPU': 'none'})
+    assert container.cmd_run(ctx) == 0
+    [argv] = fake_runner.find('docker', 'run')
+    assert '--gpus' not in argv
+    assert '/dev/dri:/dev/dri' not in argv
+    assert '/etc/localtime:/etc/localtime:ro' in argv
+    assert fake_runner.find(*RUNTIMES) == []
+
+
+def test_missing_nvidia_runtime_is_explained(make_ctx, suave_root, fake_runner):
+    ctx = create_ctx(make_ctx, suave_root, fake_runner)
+    fake_runner.responses[RUNTIMES] = (0, 'runc ')
+    with pytest.raises(CliError, match='--gpu none'):
+        container.cmd_run(ctx)
+
+
+def test_dry_run_writes_no_cookie(make_ctx, suave_root, fake_runner, tmp_path, monkeypatch):
+    monkeypatch.setenv('DISPLAY', ':1')
+    ctx = create_ctx(make_ctx, suave_root, fake_runner, dry_run=True)
+    assert container.cmd_run(ctx) == 0
+    assert not (tmp_path / 'cache' / 'suave').exists()
+
+
+def test_reuse_warns_about_another_display(make_ctx, suave_root, fake_runner, monkeypatch,
+                                           capsys):
+    monkeypatch.setenv('DISPLAY', ':1')
+    fake_runner.responses[STATE] = (0, 'true\n')
+    fake_runner.responses[('docker', 'inspect', '-f', container.ENV_FORMAT)] = (
+        0, 'PATH=/usr/bin\nDISPLAY=:0\n')
+    ctx = make_ctx(suave_root, flags=no_defaults(), args=run_args())
+    assert container.cmd_run(ctx) == 0
+    assert 'DISPLAY=:0' in capsys.readouterr().err
+
+
+@pytest.mark.parametrize('dest', ['/tmp', '/dev'])
+def test_extra_mounts_cannot_cover_system_mounts(make_ctx, suave_root, tmp_path, monkeypatch,
+                                                 dest):
+    monkeypatch.setenv('DISPLAY', ':1')
+    ctx = make_ctx(suave_root, flags=no_defaults(),
+                   file_values={'extra_mounts': f'{tmp_path}:{dest}'}, args=run_args())
+    with pytest.raises(CliError, match='overlaps'):
+        container.cmd_run(ctx)
+
+
+def test_wild_cookies_skip_malformed_lines():
+    assert display.wild_cookies('\n0100 zz\n0100 0001 41\n') == bytes.fromhex('ffff000141')
