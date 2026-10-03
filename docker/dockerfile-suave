@@ -24,7 +24,7 @@ RUN apt update && apt install -y \
     libglx-mesa0 \
     bash-completion \
     python3-pip \
-    && rm -rf /var/lib/apt/list/
+    && rm -rf /var/lib/apt/lists/*
 
 # Set the locale
 RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
@@ -77,24 +77,29 @@ WORKDIR $HOME
 ARG ARDUSUB_COMMIT=571e8c7bd3793fce1bc5184a2f6586feb8a616e5
 ARG ARDUPILOT_GAZEBO_COMMIT=082a0fe231f6e63bc8d1598f1cba461d9e2ea7f5
 
-# Install ArduSub
-RUN git clone https://github.com/ArduPilot/ardupilot.git
+# Install ArduSub. Only the pinned commit is fetched: waf needs .git for
+# `git rev-parse HEAD` and submodule checks, but not the project history.
+RUN mkdir $HOME/ardupilot && cd $HOME/ardupilot \
+    && git init -q \
+    && git remote add origin https://github.com/ArduPilot/ardupilot.git \
+    && git fetch -q --depth 1 origin $ARDUSUB_COMMIT \
+    && git checkout -q FETCH_HEAD \
+    && git submodule update --init --recursive
 WORKDIR $HOME/ardupilot
-RUN git checkout $ARDUSUB_COMMIT
-RUN git submodule update --init --recursive
 
-RUN USER=kasm-user Tools/environment_install/install-prereqs-ubuntu.sh -y
+# DO_AP_STM_ENV=0 skips the STM32 firmware toolchain; SITL builds with the host g++.
+RUN USER=kasm-user DO_AP_STM_ENV=0 Tools/environment_install/install-prereqs-ubuntu.sh -y \
+    && sudo rm -rf /var/lib/apt/lists/* $HOME/.cache/pip
 
 # Copied here rather than earlier so a pin change keeps the clone and prereqs
 # layers; it must still precede the waf build, which needs the pinned empy.
 COPY --chown=kasm-user:kasm-user requirements.txt $HOME/requirements.txt
-RUN pip3 install -r $HOME/requirements.txt
+RUN pip3 install --no-cache-dir -r $HOME/requirements.txt
 
-ENV PATH=/opt/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH
 ENV PATH=$PATH:$HOME/ardupilot/Tools/autotest
 ENV PATH=/usr/lib/ccache:$PATH
 
-RUN ["/bin/bash","-c","cd $HOME/ardupilot && ./waf configure && make sub"]
+RUN ["/bin/bash","-c","cd $HOME/ardupilot && ./waf configure && make sub && ccache -C"]
 
 # install ardupilot gazebo plugin
 RUN sudo apt update && sudo apt install -y \
@@ -106,7 +111,7 @@ RUN sudo apt update && sudo apt install -y \
     gstreamer1.0-plugins-bad \
     gstreamer1.0-libav \
     gstreamer1.0-gl \
-    && sudo rm -rf /var/lib/apt/list/
+    && sudo rm -rf /var/lib/apt/lists/*
 
 WORKDIR $HOME
 RUN git clone https://github.com/ArduPilot/ardupilot_gazebo && \
@@ -132,8 +137,10 @@ COPY --parents --chown=kasm-user:kasm-user suave*/package.xml suave_managing/*/p
 
 WORKDIR $HOME/suave_ws
 RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
+    && sudo apt update \
     && rosdep update \
-    && rosdep install --from-paths src --ignore-src -r -y"]
+    && rosdep install --from-paths src --ignore-src -r -y \
+    && sudo rm -rf /var/lib/apt/lists/* /root/.cache"]
 
 RUN ["/bin/bash", "-c", "sudo ./src/mavros/mavros/scripts/install_geographiclib_datasets.sh"]
 
@@ -153,12 +160,17 @@ COPY --chown=kasm-user:kasm-user env.sh $HOME/suave_ws/src/suave/env.sh
 # Build suave
 RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
     && colcon build --symlink-install \
+    && ccache -C \
     && echo 'source ~/suave_ws/install/setup.bash' >> ~/.bashrc"]
 
 
 RUN sudo apt autoremove -y && sudo rm -rf /var/lib/apt/lists/
 
 COPY --chown=kasm-user:kasm-user runner/ $HOME/suave_ws/src/suave/runner/
+
+# User-level pip scripts (mavproxy.py for sim_vehicle.py) must resolve in
+# non-login shells too; appended so it never shadows system tools.
+ENV PATH=${PATH}:${HOME}/.local/bin
 
 # suave CLI: on PATH in every shell, including docker exec
 ENV SUAVE_ROOT=/home/kasm-user/suave_ws/src/suave
