@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 ARG BASE_IMAGE="ghcr.io/kas-lab/kasm-jammy:latest"
 FROM $BASE_IMAGE
 
@@ -75,7 +76,6 @@ WORKDIR $HOME
 # Git commit SHAs — passed in by build_docker_images.sh from docker/versions.env
 ARG ARDUSUB_COMMIT=571e8c7bd3793fce1bc5184a2f6586feb8a616e5
 ARG ARDUPILOT_GAZEBO_COMMIT=082a0fe231f6e63bc8d1598f1cba461d9e2ea7f5
-COPY --chown=ubuntu-user:kasm-user requirements.txt $HOME/requirements.txt
 
 # Install ArduSub
 RUN git clone https://github.com/ArduPilot/ardupilot.git
@@ -84,6 +84,10 @@ RUN git checkout $ARDUSUB_COMMIT
 RUN git submodule update --init --recursive
 
 RUN USER=kasm-user Tools/environment_install/install-prereqs-ubuntu.sh -y
+
+# Copied here rather than earlier so a pin change keeps the clone and prereqs
+# layers; it must still precede the waf build, which needs the pinned empy.
+COPY --chown=kasm-user:kasm-user requirements.txt $HOME/requirements.txt
 RUN pip3 install -r $HOME/requirements.txt
 
 ENV PATH=/opt/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH
@@ -121,7 +125,18 @@ COPY --chown=kasm-user:kasm-user suave.repos $HOME/suave_ws/suave.repos
 WORKDIR $HOME/suave_ws/
 RUN vcs import src < suave.repos --recursive
 
+# Install suave deps from the package manifests alone, so editing sources
+# does not rerun rosdep or geographiclib.
 RUN rm -rf $HOME/suave_ws/src/suave/
+COPY --parents --chown=kasm-user:kasm-user suave*/package.xml suave_managing/*/package.xml $HOME/suave_ws/src/suave/
+
+WORKDIR $HOME/suave_ws
+RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
+    && rosdep update \
+    && rosdep install --from-paths src --ignore-src -r -y"]
+
+RUN ["/bin/bash", "-c", "sudo ./src/mavros/mavros/scripts/install_geographiclib_datasets.sh"]
+
 COPY --chown=kasm-user:kasm-user suave/ $HOME/suave_ws/src/suave/suave/
 COPY --chown=kasm-user:kasm-user suave_bringup/ $HOME/suave_ws/src/suave/suave_bringup/
 COPY --chown=kasm-user:kasm-user suave_managing/ $HOME/suave_ws/src/suave/suave_managing/
@@ -134,14 +149,6 @@ COPY --chown=kasm-user:kasm-user suave_tools/ $HOME/suave_ws/src/suave/suave_too
 COPY --chown=kasm-user:kasm-user suave_base/ $HOME/suave_ws/src/suave/suave_base/
 COPY --chown=kasm-user:kasm-user suave_cli/ $HOME/suave_ws/src/suave/suave_cli/
 COPY --chown=kasm-user:kasm-user env.sh $HOME/suave_ws/src/suave/env.sh
-
-# Install suave deps
-WORKDIR $HOME/suave_ws
-RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
-    && rosdep update \
-    && rosdep install --from-paths src --ignore-src -r -y"]
-
-RUN ["/bin/bash", "-c", "sudo ./src/mavros/mavros/scripts/install_geographiclib_datasets.sh"]
 
 # Build suave
 RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
