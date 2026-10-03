@@ -16,12 +16,101 @@ on:
     tags:
       - 'v*'
 
+# A newer push to the same ref supersedes a build still in progress.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  KASM_IMAGE: ghcr.io/kas-lab/kasm-jammy
+  HEADLESS_IMAGE: ghcr.io/kas-lab/suave-headless
 
 jobs:
-  build-and-push-image:
+  # kasm-jammy is rebuilt only when its inputs change. Rebuilding it on every
+  # push would give it a new digest and invalidate every cached suave layer.
+  kasm-jammy:
+    runs-on: ubuntu-latest
+    # Shared across refs: a tag run that overlaps a main run waits, then finds
+    # the image the main run pushed instead of building a second copy.
+    concurrency:
+      group: kasm-jammy-build
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.existing.outputs.digest || steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Compute input tag
+        id: inputs
+        run: echo "tag=inputs-${{ hashFiles('docker/dockerfile-kasm-core-jammy', 'docker/src/**') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Look for an image built from the same inputs
+        id: existing
+        run: |
+          ref="$KASM_IMAGE:${{ steps.inputs.outputs.tag }}"
+          if manifest=$(docker buildx imagetools inspect "$ref" --format '{{json .Manifest}}' 2>/dev/null); then
+            echo "Found $ref, skipping the build"
+            echo "digest=$(jq -r .digest <<<"$manifest")" >> "$GITHUB_OUTPUT"
+          else
+            echo "No image for $ref, building it"
+          fi
+
+      - name: Free disk space
+        if: steps.existing.outputs.digest == ''
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          docker image prune --all --force
+          df -h /
+
+      - name: Extract metadata (tags, labels) for Docker kasm-jammy
+        id: meta
+        if: steps.existing.outputs.digest == ''
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ env.KASM_IMAGE }}
+          flavor: |
+            latest=false
+          tags: |
+            type=raw,value=${{ steps.inputs.outputs.tag }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') }}
+
+      - name: Build and push kasm-jammy image
+        id: build
+        if: steps.existing.outputs.digest == ''
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: docker/dockerfile-kasm-core-jammy
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.KASM_IMAGE }}:latest
+          cache-to: type=inline
+
+      - name: Disk usage
+        if: always()
+        run: df -h /
+
+  suave:
+    needs: kasm-jammy
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -29,7 +118,14 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Free disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          docker image prune --all --force
+          df -h /
 
       - name: Load version pins from versions.env
         run: |
@@ -40,15 +136,18 @@ jobs:
           echo "ARDUPILOT_GAZEBO_COMMIT=$ARDUPILOT_GAZEBO_COMMIT" >> $GITHUB_ENV
 
       - name: Log in to the Container registry
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@318604b99e75e41977312d83839a89be02ca4893 # v5.9.0
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
@@ -57,48 +156,85 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
 
-      - name: Extract metadata (tags, labels) for Docker headless
-        id: meta_headless
-        uses: docker/metadata-action@318604b99e75e41977312d83839a89be02ca4893 # v5.9.0
-        with:
-          images: ${{ env.REGISTRY }}/kas-lab/suave-headless
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-
-      - name: Build and push kasm-jammy image
-        id: build_kasm_jammy
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
-        with:
-          context: .
-          file: docker/dockerfile-kasm-core-jammy
-          push: true
-          tags: ${{ env.REGISTRY }}/kas-lab/kasm-jammy
-          labels: latest
-
       - name: Build and push suave image
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: docker/dockerfile-suave
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main
+          cache-to: type=inline
           build-args: |
-            BASE_IMAGE=${{ env.REGISTRY }}/kas-lab/kasm-jammy@${{ steps.build_kasm_jammy.outputs.digest }}
+            BASE_IMAGE=${{ env.KASM_IMAGE }}@${{ needs.kasm-jammy.outputs.digest }}
             ARDUSUB_COMMIT=${{ env.ARDUSUB_COMMIT }}
             ARDUPILOT_GAZEBO_COMMIT=${{ env.ARDUPILOT_GAZEBO_COMMIT }}
 
+      - name: Disk usage
+        if: always()
+        run: df -h /
+
+  suave-headless:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Free disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          docker image prune --all --force
+          df -h /
+
+      - name: Load version pins from versions.env
+        run: |
+          set -a
+          source docker/versions.env
+          set +a
+          echo "ARDUSUB_COMMIT=$ARDUSUB_COMMIT" >> $GITHUB_ENV
+          echo "ARDUPILOT_GAZEBO_COMMIT=$ARDUPILOT_GAZEBO_COMMIT" >> $GITHUB_ENV
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Extract metadata (tags, labels) for Docker headless
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ env.HEADLESS_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
       - name: Build and push suave headless image
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: docker/dockerfile-suave-headless
           push: true
-          tags: ${{ steps.meta_headless.outputs.tags }}
-          labels: ${{ steps.meta_headless.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.HEADLESS_IMAGE }}:main
+          cache-to: type=inline
           build-args: |
             ARDUSUB_COMMIT=${{ env.ARDUSUB_COMMIT }}
             ARDUPILOT_GAZEBO_COMMIT=${{ env.ARDUPILOT_GAZEBO_COMMIT }}
+
+      - name: Disk usage
+        if: always()
+        run: df -h /
