@@ -1,0 +1,153 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>suave CLI &mdash; SUAVE 1.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e0a75244"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="System Architecture" href="architecture.html" />
+    <link rel="prev" title="Run SUAVE" href="run.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SUAVE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Install SUAVE locally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker.html">Use SUAVE with Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run.html">Run SUAVE</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">suave CLI</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#setup">Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#common-commands">Common commands</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">System Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extend.html">Extending SUAVE and connecting managing subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementations.html">Managing Subsystem Implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="related.html">Related works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citing.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SUAVE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">suave CLI</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/cli.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="suave-cli">
+<h1>suave CLI<a class="headerlink" href="#suave-cli" title="Link to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">suave</span></code> command wraps the common SUAVE workflows: building and running the Docker
+images, building and testing the packages, and running, resuming and listing experiment
+campaigns. It does not replace the scripts and launch files described in <a class="reference internal" href="run.html"><span class="doc">Run SUAVE</span></a> and
+<a class="reference internal" href="docker.html"><span class="doc">Use SUAVE with Docker</span></a>, it calls them.</p>
+<section id="setup">
+<h2>Setup<a class="headerlink" href="#setup" title="Link to this heading"></a></h2>
+<p>Use any of: <code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">&lt;repo&gt;/env.sh</span></code>, build the workspace and source it (the <code class="docutils literal notranslate"><span class="pre">suave_cli</span></code>
+package adds <code class="docutils literal notranslate"><span class="pre">suave</span></code> to <code class="docutils literal notranslate"><span class="pre">PATH</span></code>), or symlink <code class="docutils literal notranslate"><span class="pre">suave_cli/bin/suave</span></code> into a folder on your
+<code class="docutils literal notranslate"><span class="pre">PATH</span></code>. The SUAVE images already have it on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>.</p>
+</section>
+<section id="common-commands">
+<h2>Common commands<a class="headerlink" href="#common-commands" title="Link to this heading"></a></h2>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>suave docker build                  # build suave-headless:latest (--all adds the GUI images)
+suave docker run                    # start the 'suave' container in the background
+suave docker shell                  # shell inside it, ROS sourced
+suave docker mount add ../my_package   # mount another package into the container's src/
+suave test suave_runner             # build and test one package
+suave run --config my_runner.yml    # run a campaign
+suave batch start                   # run the campaigns in batch_campaigns.yml
+suave batch resume --latest         # resume the newest batch
+suave campaign resume --latest --config my_runner.yml
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">docker</span> <span class="pre">run</span></code> shares the host display through a per-container X cookie (no
+<code class="docutils literal notranslate"><span class="pre">xhost</span> <span class="pre">+</span></code>) and uses the NVIDIA runtime; use <code class="docutils literal notranslate"><span class="pre">--gpu</span> <span class="pre">none</span></code> or <code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">config</span> <span class="pre">set</span> <span class="pre">gpu</span> <span class="pre">none</span></code>
+on machines without it.</p>
+<p>Run <code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">--help</span></code> for everything, and <code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">config</span> <span class="pre">show</span></code> for the active settings.
+See <code class="docutils literal notranslate"><span class="pre">suave_cli/README.md</span></code> in the repository for the configuration keys.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="run.html" class="btn btn-neutral float-left" title="Run SUAVE" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="architecture.html" class="btn btn-neutral float-right" title="System Architecture" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gustavo Rezende, Juliane Päßler, Jeroen Zwanepol, Elvin Alberts, Lizeth Tarifa, Ilias Gerostathopoulos, Einar Johnsen, Carlos Hernández.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

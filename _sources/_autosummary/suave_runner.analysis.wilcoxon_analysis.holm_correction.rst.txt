@@ -1,0 +1,6 @@
+suave\_runner.analysis.wilcoxon\_analysis.holm\_correction
+==========================================================
+
+.. currentmodule:: suave_runner.analysis.wilcoxon_analysis
+
+.. autofunction:: holm_correction

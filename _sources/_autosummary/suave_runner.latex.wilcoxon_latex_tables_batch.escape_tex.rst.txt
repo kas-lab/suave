@@ -1,0 +1,6 @@
+suave\_runner.latex.wilcoxon\_latex\_tables\_batch.escape\_tex
+==============================================================
+
+.. currentmodule:: suave_runner.latex.wilcoxon_latex_tables_batch
+
+.. autofunction:: escape_tex

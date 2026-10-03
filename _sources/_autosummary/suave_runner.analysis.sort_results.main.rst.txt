@@ -1,0 +1,6 @@
+suave\_runner.analysis.sort\_results.main
+=========================================
+
+.. currentmodule:: suave_runner.analysis.sort_results
+
+.. autofunction:: main

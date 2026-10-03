@@ -1,0 +1,6 @@
+suave\_runner.analysis.summarize\_results.write\_latex\_table
+=============================================================
+
+.. currentmodule:: suave_runner.analysis.summarize_results
+
+.. autofunction:: write_latex_table

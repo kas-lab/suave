@@ -1,0 +1,38 @@
+﻿suave\_runner.analysis.mann\_whitney\_analysis
+==============================================
+
+.. automodule:: suave_runner.analysis.mann_whitney_analysis
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      main
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+   
+      MannWhitneyAnalysis
+      SuaveData
+   
+   
+
+   
+   
+   
+
+
+

@@ -1,0 +1,6 @@
+suave\_runner.analysis.qq\_plot\_batch.build\_parser
+====================================================
+
+.. currentmodule:: suave_runner.analysis.qq_plot_batch
+
+.. autofunction:: build_parser

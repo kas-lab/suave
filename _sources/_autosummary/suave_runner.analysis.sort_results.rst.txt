@@ -1,0 +1,32 @@
+﻿suave\_runner.analysis.sort\_results
+====================================
+
+.. automodule:: suave_runner.analysis.sort_results
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      main
+      process_manifest
+      reconstruct_run_index
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

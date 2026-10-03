@@ -1,0 +1,6 @@
+suave\_runner.analysis.summarize\_results.calculate\_statistics
+===============================================================
+
+.. currentmodule:: suave_runner.analysis.summarize_results
+
+.. autofunction:: calculate_statistics

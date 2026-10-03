@@ -1,0 +1,37 @@
+﻿suave\_monitor.battery\_monitor
+===============================
+
+.. automodule:: suave_monitor.battery_monitor
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      main
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+   
+      BatteryMonitor
+   
+   
+
+   
+   
+   
+
+
+

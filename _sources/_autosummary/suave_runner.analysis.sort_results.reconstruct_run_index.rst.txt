@@ -1,0 +1,6 @@
+suave\_runner.analysis.sort\_results.reconstruct\_run\_index
+============================================================
+
+.. currentmodule:: suave_runner.analysis.sort_results
+
+.. autofunction:: reconstruct_run_index

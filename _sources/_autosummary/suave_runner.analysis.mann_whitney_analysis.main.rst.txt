@@ -1,0 +1,6 @@
+suave\_runner.analysis.mann\_whitney\_analysis.main
+===================================================
+
+.. currentmodule:: suave_runner.analysis.mann_whitney_analysis
+
+.. autofunction:: main

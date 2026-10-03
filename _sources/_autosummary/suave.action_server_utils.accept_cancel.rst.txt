@@ -1,0 +1,6 @@
+suave.action\_server\_utils.accept\_cancel
+==========================================
+
+.. currentmodule:: suave.action_server_utils
+
+.. autofunction:: accept_cancel
