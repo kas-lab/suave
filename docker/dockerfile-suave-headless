@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Use the official ROS 2 Humble base image.
 FROM ros:humble-ros-core-jammy
 
@@ -59,22 +60,28 @@ WORKDIR $HOME
 ARG ARDUSUB_COMMIT=571e8c7bd3793fce1bc5184a2f6586feb8a616e5
 ARG ARDUPILOT_GAZEBO_COMMIT=082a0fe231f6e63bc8d1598f1cba461d9e2ea7f5
 
-COPY --chown=ubuntu-user:ubuntu-user requirements.txt $HOME/requirements.txt
-
-# Install ArduSub
-RUN git clone https://github.com/ArduPilot/ardupilot.git
+# Install ArduSub. Only the pinned commit is fetched: waf needs .git for
+# `git rev-parse HEAD` and submodule checks, but not the project history.
+RUN mkdir $HOME/ardupilot && cd $HOME/ardupilot \
+    && git init -q \
+    && git remote add origin https://github.com/ArduPilot/ardupilot.git \
+    && git fetch -q --depth 1 origin $ARDUSUB_COMMIT \
+    && git checkout -q FETCH_HEAD \
+    && git submodule update --init --recursive
 WORKDIR $HOME/ardupilot
-RUN git checkout $ARDUSUB_COMMIT
-RUN git submodule update --init --recursive
-RUN USER=ubuntu-user Tools/environment_install/install-prereqs-ubuntu.sh -y
+# DO_AP_STM_ENV=0 skips the STM32 firmware toolchain. SITL builds with the host g++.
+RUN USER=ubuntu-user DO_AP_STM_ENV=0 Tools/environment_install/install-prereqs-ubuntu.sh -y \
+    && sudo rm -rf /var/lib/apt/lists/* $HOME/.cache/pip
 
-RUN sudo pip3 install -r $HOME/requirements.txt
+# Copied here rather than earlier so a pin change keeps the clone and prereqs
+# layers. It must still precede the waf build, which needs the pinned empy.
+COPY --chown=ubuntu-user:ubuntu-user requirements.txt $HOME/requirements.txt
+RUN pip3 install --no-cache-dir -r $HOME/requirements.txt
 
-ENV PATH=/opt/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH
 ENV PATH=$PATH:$HOME/ardupilot/Tools/autotest
 ENV PATH=/usr/lib/ccache:$PATH
 
-RUN ["/bin/bash", "-c", "cd $HOME/ardupilot && ./waf configure && make sub"]
+RUN ["/bin/bash", "-c", "cd $HOME/ardupilot && ./waf configure && make sub && ccache -C"]
 
 # ArduPilot Gazebo plugin dependencies
 RUN sudo apt-get update && sudo apt-get install -y \
@@ -100,13 +107,30 @@ RUN git clone https://github.com/ArduPilot/ardupilot_gazebo && \
 ENV GZ_SIM_SYSTEM_PLUGIN_PATH=$HOME/ardupilot_gazebo/build
 ENV GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo/worlds
 
-# Import external dependencies from suave.repos, then copy this checkout.
+# Import external dependencies from suave.repos.
 RUN mkdir -p $HOME/suave_ws/src
 COPY --chown=ubuntu-user:ubuntu-user suave.repos $HOME/suave_ws/suave.repos
 WORKDIR $HOME/suave_ws
 RUN vcs import src < suave.repos --recursive
 
+# Resolve dependencies from the package manifests alone, so editing sources
+# does not rerun rosdep, geographiclib or pip.
 RUN rm -rf $HOME/suave_ws/src/suave && mkdir -p $HOME/suave_ws/src/suave
+COPY --parents --chown=ubuntu-user:ubuntu-user suave*/package.xml suave_managing/*/package.xml $HOME/suave_ws/src/suave/
+
+RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
+    && sudo apt update \
+    && rosdep update \
+    && rosdep install --from-paths src --ignore-src -r -y \
+    && sudo rm -rf /var/lib/apt/lists/ /root/.cache"]
+
+RUN ["/bin/bash", "-c", "sudo ./src/mavros/mavros/scripts/install_geographiclib_datasets.sh"]
+
+# ArduPilot installs a newer user-local flake8 which is incompatible with the
+# Ubuntu Jammy flake8 plugins used by the ROS 2 Humble lint environment.
+RUN pip3 install --no-cache-dir flake8==4.0.1
+
+# Copy this checkout.
 COPY --chown=ubuntu-user:ubuntu-user suave/ $HOME/suave_ws/src/suave/suave/
 COPY --chown=ubuntu-user:ubuntu-user suave_bringup/ $HOME/suave_ws/src/suave/suave_bringup/
 COPY --chown=ubuntu-user:ubuntu-user suave_managing/ $HOME/suave_ws/src/suave/suave_managing/
@@ -122,24 +146,15 @@ COPY --chown=ubuntu-user:ubuntu-user suave_cli/ $HOME/suave_ws/src/suave/suave_c
 COPY --chown=ubuntu-user:ubuntu-user env.sh $HOME/suave_ws/src/suave/env.sh
 
 RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
-    && sudo apt update \
-    && rosdep update \
-    && rosdep install --from-paths src --ignore-src -r -y \
-    && sudo rm -rf /var/lib/apt/lists/"]
-
-RUN ["/bin/bash", "-c", "sudo ./src/mavros/mavros/scripts/install_geographiclib_datasets.sh"]
-
-RUN pip3 install -r $HOME/requirements.txt
-
-# ArduPilot installs a newer user-local flake8 which is incompatible with the
-# Ubuntu Jammy flake8 plugins used by the ROS 2 Humble lint environment.
-RUN pip3 install flake8==4.0.1
-
-RUN ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash \
     && colcon build --symlink-install \
+    && ccache -C \
     && echo 'source ~/suave_ws/install/setup.bash' >> ~/.bashrc"]
 
 RUN sudo apt autoremove -y && sudo rm -rf /var/lib/apt/lists/
+
+# User-level pip scripts (mavproxy.py for sim_vehicle.py) must resolve in
+# non-login shells too; appended so it never shadows system tools.
+ENV PATH=${PATH}:${HOME}/.local/bin
 
 # suave CLI: on PATH in every shell, including docker exec
 ENV SUAVE_ROOT=/home/ubuntu-user/suave_ws/src/suave
