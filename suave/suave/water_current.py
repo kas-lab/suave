@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Publish a simple sinusoidal horizontal ocean current."""
+"""Publish a sinusoidal horizontal ocean current with a varying heading."""
 
 import math
+import random
 
 from diagnostic_msgs.msg import DiagnosticArray
 from diagnostic_msgs.msg import DiagnosticStatus
@@ -28,6 +29,13 @@ from rcl_interfaces.msg import ParameterDescriptor
 
 import rclpy
 from rclpy.node import Node
+
+
+def gauss_markov_step(state, dt, time_constant, rng):
+    """Advance a unit-variance Gauss-Markov process exactly by dt seconds."""
+    decay = math.exp(-dt / time_constant)
+    noise = math.sqrt(1.0 - decay * decay) * rng.gauss(0.0, 1.0)
+    return decay * state + noise
 
 
 class WaterCurrent(Node):
@@ -66,13 +74,52 @@ class WaterCurrent(Node):
             'heading',
             0.0,
             ParameterDescriptor(
-                description='Fixed current heading in degrees or radians.'),
+                description='Mean current heading in degrees or radians.'),
         )
         self.declare_parameter(
             'heading_unit',
             'degrees',
             ParameterDescriptor(
-                description='Unit for heading: degrees or radians.'),
+                description=(
+                    'Unit for heading, heading_amplitude, and '
+                    'heading_noise_std: degrees or radians.')),
+        )
+        self.declare_parameter(
+            'heading_amplitude',
+            10.0,
+            ParameterDescriptor(
+                description='Sinusoidal heading amplitude in heading_unit.'),
+        )
+        self.declare_parameter(
+            'heading_period',
+            120.0,
+            ParameterDescriptor(
+                description=(
+                    'Sinusoidal heading oscillation period in seconds.')),
+        )
+        self.declare_parameter(
+            'heading_noise_std',
+            0.0,
+            ParameterDescriptor(
+                description=(
+                    'Stationary standard deviation of the Gauss-Markov '
+                    'heading noise in heading_unit; 0 disables it.')),
+        )
+        self.declare_parameter(
+            'heading_noise_time_constant',
+            30.0,
+            ParameterDescriptor(
+                description=(
+                    'Correlation time constant of the Gauss-Markov heading '
+                    'noise in seconds.')),
+        )
+        self.declare_parameter(
+            'heading_noise_seed',
+            0,
+            ParameterDescriptor(
+                description=(
+                    'Random seed for the heading noise; read once at '
+                    'startup.')),
         )
         self.declare_parameter(
             'publish_period',
@@ -80,6 +127,12 @@ class WaterCurrent(Node):
             ParameterDescriptor(
                 description='Current vector publishing period in seconds.'),
         )
+
+        self.rng = random.Random(self.get_parameter(
+            'heading_noise_seed').get_parameter_value().integer_value)
+        # Unit-variance Gauss-Markov state, scaled by heading_noise_std.
+        self.heading_noise_state = 0.0
+        self.last_elapsed = 0.0
 
         publish_period = self.get_parameter(
             'publish_period').get_parameter_value().double_value
@@ -100,10 +153,6 @@ class WaterCurrent(Node):
             'amplitude').get_parameter_value().double_value
         period = self.get_parameter(
             'period').get_parameter_value().double_value
-        heading = self.get_parameter(
-            'heading').get_parameter_value().double_value
-        heading_unit = self.get_parameter(
-            'heading_unit').get_parameter_value().string_value.lower()
 
         if self.initial_time is None:
             elapsed = 0.0
@@ -121,13 +170,7 @@ class WaterCurrent(Node):
                 throttle_duration_sec=10.0,
             )
 
-        if heading_unit in ('degree', 'degrees', 'deg'):
-            heading = math.radians(heading)
-        elif heading_unit not in ('radian', 'radians', 'rad'):
-            self.get_logger().warn(
-                'Unknown heading_unit; interpreting heading as radians.',
-                throttle_duration_sec=10.0,
-            )
+        heading = self.compute_heading(elapsed)
 
         current = Point()
         current.x = current_speed * math.cos(heading)
@@ -135,6 +178,59 @@ class WaterCurrent(Node):
         current.z = 0.0
         self.publisher.publish(current)
         self.publish_diagnostics(current)
+
+    def compute_heading(self, elapsed):
+        """Return the mean heading plus sinusoid and noise in radians."""
+        heading = self.get_parameter(
+            'heading').get_parameter_value().double_value
+        heading_unit = self.get_parameter(
+            'heading_unit').get_parameter_value().string_value.lower()
+        heading_amplitude = self.get_parameter(
+            'heading_amplitude').get_parameter_value().double_value
+        heading_period = self.get_parameter(
+            'heading_period').get_parameter_value().double_value
+        heading_noise_std = self.get_parameter(
+            'heading_noise_std').get_parameter_value().double_value
+        heading_noise_time_constant = self.get_parameter(
+            'heading_noise_time_constant').get_parameter_value().double_value
+
+        dt = elapsed - self.last_elapsed
+        self.last_elapsed = elapsed
+        if heading_noise_time_constant > 0.0:
+            if dt > 0.0:
+                self.heading_noise_state = gauss_markov_step(
+                    self.heading_noise_state,
+                    dt,
+                    heading_noise_time_constant,
+                    self.rng,
+                )
+        elif heading_noise_std > 0.0:
+            self.get_logger().warn(
+                'Ignoring heading noise because heading_noise_time_constant '
+                'is not positive.',
+                throttle_duration_sec=10.0,
+            )
+
+        if heading_period > 0.0:
+            heading += heading_amplitude * math.sin(
+                2.0 * math.pi * elapsed / heading_period)
+        elif heading_amplitude != 0.0:
+            self.get_logger().warn(
+                'Ignoring sinusoidal heading component because '
+                'heading_period is not positive.',
+                throttle_duration_sec=10.0,
+            )
+        if heading_noise_time_constant > 0.0:
+            heading += heading_noise_std * self.heading_noise_state
+
+        if heading_unit in ('degree', 'degrees', 'deg'):
+            return math.radians(heading)
+        if heading_unit not in ('radian', 'radians', 'rad'):
+            self.get_logger().warn(
+                'Unknown heading_unit; interpreting heading as radians.',
+                throttle_duration_sec=10.0,
+            )
+        return heading
 
     def publish_diagnostics(self, current):
         """Publish the current vector as a diagnostic QA status."""

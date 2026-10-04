@@ -23,8 +23,13 @@
     mean_current: 0.05 # Mean current speed in m/s
     amplitude: 0.03 # Sinusoidal current speed amplitude in m/s
     period: 90.0 # Sinusoidal current oscillation period in seconds
-    heading: 0.0 # Fixed current heading
-    heading_unit: "degrees" # Unit for heading: degrees or radians
+    heading: 0.0 # Mean current heading
+    heading_unit: "degrees" # Unit for heading angles: degrees or radians
+    heading_amplitude: 10.0 # Sinusoidal heading amplitude in heading_unit
+    heading_period: 120.0 # Sinusoidal heading oscillation period in seconds
+    heading_noise_std: 0.0 # Gauss-Markov heading noise std in heading_unit (0 disables)
+    heading_noise_time_constant: 30.0 # Gauss-Markov noise correlation time in seconds
+    heading_noise_seed: 0 # Random seed for the heading noise
     publish_period: 1.0 # Current vector publishing period in seconds
 
 /thruster_monitor:

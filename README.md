@@ -344,14 +344,6 @@ ros2 launch suave_bringup mission.launch.py \
   adaptation_manager:=bt use_action_server:=true
 ```
 
-To enable the optional water-current disturbance in runner campaigns, set the
-runner parameter `enable_water_current` to `true` or pass
-`enable_water_current:=true` in an experiment launch command. Current-model
-parameters such as `mean_current`, `amplitude`, `period`, `heading`, and
-`publish_period` are read from the mission config file. See
-`suave_runner/config/runner/water_current_runner_config.yml` for an example.
-It can be selected with `ros2 launch suave_runner suave_runner_launch.py config_file:=<path-to-water_current_runner_config.yml>`.
-
 ### Without the runner
 
 **Configuring SUAVE:**
