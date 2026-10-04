@@ -15,7 +15,6 @@
   <depend>system_modes_msgs</depend>
   <depend>diagnostic_msgs</depend>
   <depend>behaviortree_cpp</depend>
-  <depend>behaviortree_cpp_dbgsym</depend>
   <depend>ament_index_cpp</depend>
   <depend>rclcpp</depend>
   <depend>rcl_interfaces</depend>

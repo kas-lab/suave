@@ -11,8 +11,8 @@ VERSION_ARGS=(
     --build-arg ARDUPILOT_GAZEBO_COMMIT
 )
 
-docker build -t kasm-jammy:dev -f docker/dockerfile-kasm-core-jammy .
-docker build -t suave:dev --build-arg BASE_IMAGE=kasm-jammy:dev "${VERSION_ARGS[@]}" -f docker/dockerfile-suave .
-docker build -t suave-headless:dev "${VERSION_ARGS[@]}" -f docker/dockerfile-suave-headless .
+docker build -t kasm-jammy:latest -f docker/dockerfile-kasm-core-jammy .
+docker build -t suave:latest --build-arg BASE_IMAGE=kasm-jammy:latest "${VERSION_ARGS[@]}" -f docker/dockerfile-suave .
+docker build -t suave-headless:latest "${VERSION_ARGS[@]}" -f docker/dockerfile-suave-headless .
 
 cd "$CURDIR"

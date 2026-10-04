@@ -84,10 +84,31 @@ class ThrusterMonitor(Node):
         self.diagnostics_publisher = self.create_publisher(
             DiagnosticArray, '/diagnostics', 10)
 
+        self.recovery_diagnostics_sub = self.create_subscription(
+            DiagnosticArray, '/diagnostics', self.recovery_diagnostics_cb, 10)
+
         self.mavros_state_sub = self.create_subscription(
             State, 'mavros/state', self.status_cb, 10)
 
         self.last_event_time = self.get_clock().now().to_msg().sec
+
+    def recovery_diagnostics_cb(self, msg: DiagnosticArray) -> None:
+        """Update tracked failures after confirmed per-thruster recovery."""
+        changed = False
+        for status in msg.status:
+            if (status.message != 'Component status' or
+                    status.level != DiagnosticStatus.OK):
+                continue
+            for value in status.values:
+                if (not value.key.startswith('c_thruster_') or
+                        value.value != 'RECOVERED'):
+                    continue
+                thruster = value.key.removeprefix('c_thruster_')
+                if self.thrusters_operational.get(thruster) is False:
+                    self.thrusters_operational[thruster] = True
+                    changed = True
+        if changed:
+            self.publish_operational_thrusters()
 
     def status_cb(self, msg):
         """Start processing thruster events in guided mode."""
@@ -122,11 +143,17 @@ class ThrusterMonitor(Node):
         key_value.key = 'operational_thrusters'
         key_value.value = str(len(operational_thrusters))
 
+        key_value_2 = KeyValue()
+        key_value_2.key = 'operational_thrusters_delta'
+        key_value_2.value = str(
+            self.thruster_count - len(operational_thrusters))
+
         status_msg = DiagnosticStatus()
         status_msg.level = DiagnosticStatus.OK
         status_msg.name = 'thruster_monitor: Operational thrusters'
         status_msg.message = 'QA status'
         status_msg.values.append(key_value)
+        status_msg.values.append(key_value_2)
 
         diag_msg = DiagnosticArray()
         diag_msg.header.stamp = self.get_clock().now().to_msg()
