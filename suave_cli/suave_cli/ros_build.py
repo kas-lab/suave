@@ -22,7 +22,7 @@ from suave_cli.targets import run_in_target
 DEFAULT_PACKAGES = (
     'suave', 'suave_base', 'suave_bringup', 'suave_bt', 'suave_metacontrol', 'suave_metrics',
     'suave_missions', 'suave_monitor', 'suave_msgs', 'suave_none', 'suave_random',
-    'suave_runner', 'suave_tools')
+    'suave_requirements', 'suave_runner', 'suave_tools')
 
 BUILD_EPILOG = """\
 examples:

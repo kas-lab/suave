@@ -17,6 +17,7 @@ This repository is organized as following:
 - The package [suave_base](https://github.com/kas-lab/suave/tree/main/suave_base) provides a reusable base launch (managed system + metrics) for external managing systems
 - The package [suave_bringup](https://github.com/kas-lab/suave/tree/main/suave_bringup) composes missions with the built-in managing subsystems
 - The package [suave_metrics](https://github.com/kas-lab/suave/tree/main/suave_metrics) contains a node used for collecting mission metrics
+- The package [suave_requirements](https://github.com/kas-lab/suave/tree/main/suave_requirements) contains a node that monitors the runtime fulfillment of the SUAVE RELAX requirements
 - The package [suave_metacontrol](https://github.com/kas-lab/suave/tree/main/suave_managing/suave_metacontrol) contains the metacontrol implementation of the managing subsystem
 - The package [suave_random](https://github.com/kas-lab/suave/tree/main/suave_managing/suave_random) contains the implementation of a random managing subsystems
 - The package [suave_bt](https://github.com/kas-lab/suave/tree/main/suave_managing/suave_bt) contains the behavior tree implementation of the managing subsystem

@@ -18,6 +18,7 @@ Runtime stack: ROS 2 Humble · Gazebo Harmonic · ArduSub/ArduPilot SITL · MAVR
 | `suave_bringup/` | Top-level mission and manager launch composition for built-in managers |
 | `suave_missions/` | Mission planners, configuration, and mission-only launches |
 | `suave_metrics/` | Metrics collection |
+| `suave_requirements/` | Runtime fulfillment of the SUAVE RELAX requirements (`requirement_monitor`) |
 | `suave_runner/` | Experiment runner and statistical analysis |
 | `suave_tools/` | Auxiliary tools (PlotJuggler config, etc.) |
 | `suave_msgs/` | Custom ROS service definitions (`Task.srv`, `GetPath.srv`) — `ament_cmake` |
@@ -62,7 +63,7 @@ colcon test --packages-select <package_name> --event-handlers console_direct+
 colcon test-result --verbose
 
 # Test all suave packages at once
-colcon test --event-handlers console_cohesion+ --packages-select suave suave_bt suave_metacontrol suave_metrics suave_missions suave_monitor suave_msgs suave_none suave_random suave_runner suave_tools
+colcon test --event-handlers console_cohesion+ --packages-select suave suave_bt suave_metacontrol suave_metrics suave_missions suave_monitor suave_msgs suave_none suave_random suave_requirements suave_runner suave_tools
 
 # Auto-fix C++ style (run from inside the package directory)
 ament_uncrustify --reformat
