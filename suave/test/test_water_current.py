@@ -27,12 +27,16 @@ from suave.water_current import gauss_markov_step
 from suave.water_current import WaterCurrent
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope='session', autouse=True)
 def rclpy_runtime():
     """Initialize rclpy for the test module."""
-    rclpy.init()
-    yield
-    rclpy.shutdown()
+    if not rclpy.ok():
+        rclpy.init()
+    try:
+        yield
+    finally:
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 def make_node(**overrides):

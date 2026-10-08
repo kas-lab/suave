@@ -29,6 +29,7 @@ jobs:
             suave_msgs
             suave_none
             suave_random
+            suave_requirements
             suave_runner
             suave_tools
           target-ros2-distro: humble

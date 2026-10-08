@@ -137,6 +137,7 @@ COPY --chown=ubuntu-user:ubuntu-user suave_managing/ $HOME/suave_ws/src/suave/su
 COPY --chown=ubuntu-user:ubuntu-user suave_metrics/ $HOME/suave_ws/src/suave/suave_metrics/
 COPY --chown=ubuntu-user:ubuntu-user suave_missions/ $HOME/suave_ws/src/suave/suave_missions/
 COPY --chown=ubuntu-user:ubuntu-user suave_monitor/ $HOME/suave_ws/src/suave/suave_monitor/
+COPY --chown=ubuntu-user:ubuntu-user suave_requirements/ $HOME/suave_ws/src/suave/suave_requirements/
 COPY --chown=ubuntu-user:ubuntu-user suave_msgs/ $HOME/suave_ws/src/suave/suave_msgs/
 COPY --chown=ubuntu-user:ubuntu-user suave_runner/ $HOME/suave_ws/src/suave/suave_runner/
 COPY --chown=ubuntu-user:ubuntu-user suave_tools/ $HOME/suave_ws/src/suave/suave_tools/

@@ -32,6 +32,7 @@ jobs:
             mavros
             mros2_reasoner
             mros2_msgs
+            suave_requirements
             suave_runner
           target-ros2-distro: humble
           skip-tests: true

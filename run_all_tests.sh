@@ -17,6 +17,7 @@ colcon build --symlink-install --packages-select \
     suave_msgs \
     suave_none \
     suave_random \
+    suave_requirements \
     suave_runner \
     suave_tools
 
@@ -34,6 +35,7 @@ colcon test --event-handlers console_direct+ --packages-select \
     suave_msgs \
     suave_none \
     suave_random \
+    suave_requirements \
     suave_runner \
     suave_tools
 
