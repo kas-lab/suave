@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## Unreleased
+
+### Added
+
+1. `suave_requirements` package with a `requirement_monitor` node that publishes the runtime fulfillment of the thruster availability, search footprint, and adaptation reaction time RELAX requirements on `/requirements/<requirement>/fulfillment`.
+
+2. `suave_msgs/msg/ReactionTime` and the `mission_metrics/reaction_time` topic, carrying the latest and mean reaction time, reaction count, and validity status of each adaptation type.
+
 ## 1.5.0
 
 ### Added

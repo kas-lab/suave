@@ -45,6 +45,8 @@ from std_msgs.msg import Float32
 
 from std_srvs.srv import Empty
 
+from suave_msgs.msg import ReactionTime
+
 DEFAULT_WATER_VISIBILITY_THRESHOLDS = [3.25, 2.25, 1.25]
 
 MISSION_DONE_QOS = QoSProfile(
@@ -53,6 +55,28 @@ MISSION_DONE_QOS = QoSProfile(
     history=QoSHistoryPolicy.KEEP_LAST,
     depth=1,
 )
+
+# Depth > 1 so back-to-back reactions are not collapsed for late readers.
+REACTION_TIME_QOS = QoSProfile(
+    reliability=QoSReliabilityPolicy.RELIABLE,
+    durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+    history=QoSHistoryPolicy.KEEP_LAST,
+    depth=10,
+)
+
+
+def build_reaction_time_msg(adaptation_type, samples):
+    """Build a ReactionTime message from one adaptation's reaction times."""
+    msg = ReactionTime()
+    msg.adaptation_type = adaptation_type
+    msg.count = len(samples)
+    if samples:
+        msg.status = ReactionTime.STATUS_VALID
+        msg.latest = float(samples[-1])
+        msg.mean = statistics.fmean(samples)
+    else:
+        msg.status = ReactionTime.STATUS_INVALID
+    return msg
 
 
 class MissionMetrics(Node):
@@ -214,6 +238,19 @@ class MissionMetrics(Node):
             MISSION_DONE_QOS,
         )
 
+        self.reaction_time_pub = self.create_publisher(
+            ReactionTime,
+            'mission_metrics/reaction_time',
+            REACTION_TIME_QOS,
+        )
+        # Announce every adaptation type as invalid until it first reacts.
+        self.publish_reaction_time(
+            ReactionTime.ADAPTATION_THRUSTER, self.component_recovery_time)
+        self.publish_reaction_time(
+            ReactionTime.ADAPTATION_WATER_VISIBILITY, self.wv_reaction_time)
+        self.publish_reaction_time(
+            ReactionTime.ADAPTATION_BATTERY, self.battery_reaction_time)
+
     def status_cb(self, msg):
         """Record mission start when the vehicle enters guided mode."""
         if msg.mode == 'GUIDED':
@@ -344,6 +381,9 @@ class MissionMetrics(Node):
             reaction_time = self.get_clock().now() - self.thrusters_failed_time
             reaction_time = reaction_time.nanoseconds * 1e-9
             self.component_recovery_time.append(reaction_time)
+            self.publish_reaction_time(
+                ReactionTime.ADAPTATION_THRUSTER,
+                self.component_recovery_time)
             self.thrusters_failed = False
             self.get_logger().info(
                 'Thruster failure reaction time: {} seconds'.format(
@@ -355,6 +395,8 @@ class MissionMetrics(Node):
             reaction_time = self.get_clock().now() - self.battery_low_time
             reaction_time = reaction_time.nanoseconds * 1e-9
             self.battery_reaction_time.append(reaction_time)
+            self.publish_reaction_time(
+                ReactionTime.ADAPTATION_BATTERY, self.battery_reaction_time)
             # self.battery_low = False
             self.get_logger().info(
                 'Battery drop reaction time: {} seconds'.format(reaction_time))
@@ -377,11 +419,20 @@ class MissionMetrics(Node):
                     reaction_time = reaction_time.nanoseconds * 1e-9
                     self.wv_reaction_time.append(
                         reaction_time)
+                    self.publish_reaction_time(
+                        ReactionTime.ADAPTATION_WATER_VISIBILITY,
+                        self.wv_reaction_time)
                     self.wrong_altitude = False
                     self.get_logger().info(
                         'Water visibility change reaction time: '
                         '{0} seconds'.format(reaction_time))
                     return
+
+    def publish_reaction_time(self, adaptation_type, samples):
+        """Publish the latest and mean reaction time of one adaptation."""
+        msg = build_reaction_time_msg(adaptation_type, samples)
+        msg.stamp = self.get_clock().now().to_msg()
+        self.reaction_time_pub.publish(msg)
 
     def save_mission_results_cb(
          self, req: Empty.Request, res: Empty.Response) -> None:

@@ -21,6 +21,8 @@ API
    suave_monitor.battery_monitor
    suave_monitor.water_visibility_observer
    suave_metrics.mission_metrics
+   suave_requirements.fulfillment
+   suave_requirements.requirement_monitor
    suave_runner.suave_runner
    suave_runner.analysis.mann_whitney_analysis
    suave_runner.analysis.wilcoxon_analysis
