@@ -385,7 +385,7 @@ TEST_F(ActionClientTest, time_limit_stops_waiting_for_action_server)
     "</BehaviorTree></root>", blackboard);
 
   EXPECT_EQ(tree.rootNode()->executeTick(), BT::NodeStatus::RUNNING);
-  mission->set_search_started();
+  mission->set_mission_started();
   EXPECT_EQ(tree.rootNode()->executeTick(), BT::NodeStatus::FAILURE);
 }
 
@@ -624,7 +624,7 @@ TEST_F(ActionClientTest, change_mode_fails_when_spiral_altitude_stale)
     BT::NodeStatus::FAILURE);
 }
 
-TEST_F(ActionClientTest, search_pipeline_calls_set_search_started_on_action_start)
+TEST_F(ActionClientTest, search_pipeline_timeout_starts_after_mission_start)
 {
   rclcpp::NodeOptions options;
   options.parameter_overrides(
@@ -642,9 +642,11 @@ TEST_F(ActionClientTest, search_pipeline_calls_set_search_started_on_action_star
     "<search_pipeline/>"
     "</BehaviorTree></root>", blackboard);
 
-  // onStart fires onStartRequested which calls set_search_started
+  // onStart fires onStartRequested, but timeout is measured from mission start.
   EXPECT_EQ(tree.rootNode()->executeTick(), BT::NodeStatus::RUNNING);
-  // time_limit_reached() is now true, so onRunning returns FAILURE
+  EXPECT_EQ(tree.rootNode()->executeTick(), BT::NodeStatus::RUNNING);
+
+  mission->set_mission_started();
   EXPECT_EQ(tree.rootNode()->executeTick(), BT::NodeStatus::FAILURE);
 }
 

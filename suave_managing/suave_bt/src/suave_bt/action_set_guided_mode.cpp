@@ -46,6 +46,7 @@ BT::NodeStatus SetGuidedMode::onRunning()
       }
 
       if (result_->mode_sent && mode_ == "GUIDED") {
+        _node->set_mission_started();
         RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Mode set to GUIDED!");
         return BT::NodeStatus::SUCCESS;
       }

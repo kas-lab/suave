@@ -16,6 +16,7 @@
 #define SUAVE_BT__ACTION_SET_GUIDED_MODE_HPP_
 
 #include <future>
+#include <memory>
 #include <string>
 
 #include "behaviortree_cpp/behavior_tree.h"
@@ -43,7 +44,7 @@ public:
 
 protected:
   std::string mode_;
-  suave_bt::SuaveMission::SharedPtr _node;
+  std::shared_ptr<suave_bt::SuaveMission> _node;
   rclcpp::Client<mavros_msgs::srv::SetMode>::SharedPtr set_guided_cli_;
   rclcpp::Subscription<mavros_msgs::msg::State>::SharedPtr mavros_state_sub_;
   void state_cb(const mavros_msgs::msg::State & msg);
