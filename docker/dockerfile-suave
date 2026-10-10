@@ -49,6 +49,8 @@ RUN apt update && apt install -y \
   python3-rosdep \
   python3-vcstool \
   python3-colcon-common-extensions  \
+  ros-humble-ros2bag \
+  ros-humble-rosbag2-storage-mcap \
   && rm -rf /var/lib/apt/lists/
 
 RUN rosdep init

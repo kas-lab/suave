@@ -81,14 +81,17 @@ def record_bags(context, *args, **kwargs):
     run_name = '{}_{}'.format(
         prefix or 'suave', datetime.now().strftime('%Y%m%d_%H%M%S'))
     rosbags_path = os.path.join(result_path, 'rosbags')
+    explicit = LaunchConfiguration('bag_output_path', default='').perform(context)
+    output_path = (os.path.expanduser(explicit) if explicit else
+                   os.path.join(rosbags_path, run_name))
     # ros2 bag creates the run folder and fails if it already exists.
-    os.makedirs(rosbags_path, exist_ok=True)
+    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     return [ExecuteProcess(
         cmd=[
             'ros2', 'bag', 'record',
             '-s', 'mcap',
             '--storage-preset-profile', 'fastwrite',
-            '-o', os.path.join(rosbags_path, run_name),
+            '-o', output_path,
             *RECORDED_TOPICS,
         ],
         name='rosbag_record',
@@ -103,6 +106,10 @@ def generate_launch_description():
     use_action_server = LaunchConfiguration('use_action_server')
     enable_water_current = LaunchConfiguration('enable_water_current')
     silent = LaunchConfiguration('silent')
+    task_bridge = LaunchConfiguration('task_bridge')
+    system_modes = LaunchConfiguration('system_modes')
+    recover_thrusters_use_action_server = LaunchConfiguration(
+        'recover_thrusters_use_action_server')
     adaptation_manager = LaunchConfiguration('adaptation_manager')
     mission_type = LaunchConfiguration('mission_type')
     result_path = LaunchConfiguration('result_path')
@@ -131,6 +138,19 @@ def generate_launch_description():
             default_value='false',
             description='Suppress all output'),
         DeclareLaunchArgument(
+            'task_bridge',
+            default_value='false',
+            description='Enable the managed-system task bridge'),
+        DeclareLaunchArgument(
+            'system_modes',
+            default_value='true',
+            description='Enable the managed-system mode manager'),
+        DeclareLaunchArgument(
+            'recover_thrusters_use_action_server',
+            default_value=use_action_server,
+            description='Override use_action_server for the recover '
+                        'thrusters node only'),
+        DeclareLaunchArgument(
             'adaptation_manager',
             default_value='',
             description='Adaptation manager label written to metrics'),
@@ -147,6 +167,9 @@ def generate_launch_description():
             default_value='',
             description='Name of the results file'),
         DeclareLaunchArgument(
+            'bag_output_path', default_value='',
+            description='Explicit bag directory; empty uses timestamp naming'),
+        DeclareLaunchArgument(
             'record_bags',
             default_value='true',
             description='Record SUAVE topics to an MCAP bag under '
@@ -159,10 +182,13 @@ def generate_launch_description():
                 get_package_share_directory('suave'),
                 'launch', 'suave.launch.py')),
         launch_arguments={
-            'task_bridge': 'False',
+            'task_bridge': task_bridge,
             'mission_config': mission_config,
             'use_action_server': use_action_server,
+            'recover_thrusters_use_action_server': (
+                recover_thrusters_use_action_server),
             'enable_water_current': enable_water_current,
+            'system_modes': system_modes,
             'silent': silent,
         }.items())
 

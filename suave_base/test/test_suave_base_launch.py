@@ -138,6 +138,21 @@ def test_recorder_command(tmp_path, monkeypatch):
     assert '/requirements/search_footprint/fulfillment' in topics
 
 
+def test_explicit_bag_output_path_is_used_verbatim(tmp_path):
+    """Verify runner-owned bag paths bypass timestamp naming."""
+    output = tmp_path / 'pending' / 'attempt_bag'
+    recorder, context = _bag_recorder({
+        'record_bags': 'true',
+        'result_path': str(tmp_path / 'ignored'),
+        'result_filename': 'ignored',
+        'bag_output_path': str(output),
+    })
+    cmd = [''.join(s.perform(context) for s in part)
+           for part in recorder.execute(context)[0].cmd]
+    assert Path(cmd[cmd.index('-o') + 1]) == output
+    assert output.parent.is_dir() and not output.exists()
+
+
 def test_recorder_name_without_result_filename(tmp_path):
     """Verify the bag name falls back to a suave prefix."""
     recorder, context = _bag_recorder({
