@@ -21,6 +21,8 @@ RUN apt-get update && apt-get install -y \
     libglx-mesa0 \
     ros-dev-tools \
     ros-humble-ament-cmake-flake8 \
+    ros-humble-ros2bag \
+    ros-humble-rosbag2-storage-mcap \
     python3-flake8-* \
     && rm -rf /var/lib/apt/lists/*
 
