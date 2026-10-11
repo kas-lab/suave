@@ -168,20 +168,6 @@ def test_checkpoint_with_missing_bag_is_integrity_error(tmp_path):
     assert (tmp_path / 'run_0_0.done').exists()
 
 
-def test_legacy_v1_status_is_left_untouched(tmp_path):
-    path = tmp_path / 'run_0_0.status.json'
-    write_status(path, {'schema_version': 1, 'run_id': 'run_0_0',
-                        'status': 'completed', 'success': True})
-    (tmp_path / 'run_0_0.done').touch()
-    before = path.read_text()
-
-    def untouched(path):
-        raise AssertionError('legacy trials need no recovery')
-
-    recover_attempts(tmp_path, untouched, untouched)
-    assert path.read_text() == before
-
-
 def test_disabled_recording_checkpoint(tmp_path):
     path, record = attempt(tmp_path, False)
     finalize_attempt(tmp_path, path, record, valid)
@@ -189,76 +175,44 @@ def test_disabled_recording_checkpoint(tmp_path):
     assert not entries and exclusions[0]['reason'] == 'recording_disabled'
 
 
-def test_legacy_requires_mapping_and_checkpoint(tmp_path):
-    (tmp_path / 'run_0_0.done').touch()
-    with pytest.raises(ValueError, match='Unmapped'):
-        select_accepted_bags(tmp_path)
-    bag = tmp_path / 'rosbags' / 'legacy'
-    bag.mkdir(parents=True)
-    (bag / 'metadata.yaml').write_text('fixture')
-    manifest = {
-        'schema_version': 1,
-        'source': 'legacy_reconciliation',
-        'entries': [{
-            'run_id': 'run_0_0',
-            'attempt_id': 'legacy_test',
-            'adaptation_manager': 'bt',
-            'bag_path': 'rosbags/legacy',
-        }],
-    }
-    (tmp_path / 'accepted_bags.json').write_text(json.dumps(manifest))
-    assert len(select_accepted_bags(tmp_path)[0]) == 1
-    (tmp_path / 'run_0_0.done').unlink()
-    with pytest.raises(ValueError, match='uncheckpointed'):
-        select_accepted_bags(tmp_path)
-
-
-def test_legacy_exclusion_survives_uncheckpoint_and_native_rerun(tmp_path):
-    for run_id in ('run_0_0', 'run_0_1'):
-        (tmp_path / f'{run_id}.done').touch()
-    bag = tmp_path / 'rosbags' / 'good'
-    bag.mkdir(parents=True)
-    (bag / 'metadata.yaml').write_text('fixture')
-    broken = {'run_id': 'run_0_0', 'bag_path': 'rosbags/failed/broken',
-              'reason': 'broken_run'}
-    manifest = {
-        'schema_version': 1,
-        'source': 'legacy_reconciliation',
-        'entries': [{
-            'run_id': 'run_0_1',
-            'attempt_id': 'legacy_good',
-            'adaptation_manager': 'bt',
-            'bag_path': 'rosbags/good',
-        }],
-        'excluded': [broken],
-    }
-    (tmp_path / 'accepted_bags.json').write_text(json.dumps(manifest))
-    entries, exclusions = select_accepted_bags(tmp_path)
-    assert [entry['run_id'] for entry in entries] == ['run_0_1']
-    assert broken in exclusions
-    # Removing the checkpoint queues a rerun; the rejection stays reported.
-    (tmp_path / 'run_0_0.done').unlink()
-    entries, exclusions = select_accepted_bags(tmp_path)
-    assert [entry['run_id'] for entry in entries] == ['run_0_1']
-    assert broken in exclusions
-    # A native rerun of the same trial is selected without conflict.
-    path, record = attempt(tmp_path)
-    finalize_attempt(tmp_path, path, record, valid)
-    entries, exclusions = select_accepted_bags(tmp_path)
-    assert [(entry['run_id'], entry.get('source')) for entry in entries] == [
-        ('run_0_0', 'status_v2'), ('run_0_1', None)]
-    assert broken in exclusions
-    del manifest['excluded'][0]['reason']
-    (tmp_path / 'accepted_bags.json').write_text(json.dumps(manifest))
-    with pytest.raises(ValueError, match='without reason'):
-        select_accepted_bags(tmp_path)
-
-
-def test_native_conflict_never_falls_back(tmp_path):
+def test_checkpoint_conflicting_with_status_is_rejected(tmp_path):
     path, record = attempt(tmp_path)
     (tmp_path / 'run_0_0.done').touch()
     with pytest.raises(ValueError, match='Conflicting'):
         select_accepted_bags(tmp_path)
+
+
+def test_unsupported_status_schema_is_rejected(tmp_path):
+    path, record = attempt(tmp_path)
+    finalize_attempt(tmp_path, path, record, valid)
+    record['schema_version'] = 2
+    write_status(path, record)
+    with pytest.raises(ValueError, match='Unsupported status schema'):
+        recover_attempts(tmp_path, valid, stopped)
+    with pytest.raises(ValueError, match='Unsupported status schema'):
+        select_accepted_bags(tmp_path)
+
+
+def test_incomplete_status_is_rejected(tmp_path):
+    write_status(tmp_path / 'run_0_0.status.json', {
+        'schema_version': 1, 'run_id': 'run_0_0',
+        'status': 'completed', 'success': True})
+    (tmp_path / 'run_0_0.done').touch()
+    with pytest.raises(ValueError, match='Incomplete status'):
+        recover_attempts(tmp_path, valid, stopped)
+    with pytest.raises(ValueError, match='Incomplete status'):
+        select_accepted_bags(tmp_path)
+
+
+def test_checkpoint_without_status_is_rejected(tmp_path):
+    (tmp_path / 'run_0_0.done').touch()
+    with pytest.raises(ValueError, match='without status'):
+        select_accepted_bags(tmp_path)
+
+
+def test_status_requires_attempt_ownership(tmp_path):
+    with pytest.raises(ValueError, match='attempt_details'):
+        start_status(tmp_path, 0, 0, 'bt', 'suave')
 
 
 def test_lock_and_path_safety(tmp_path):

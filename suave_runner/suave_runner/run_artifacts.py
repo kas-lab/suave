@@ -16,7 +16,6 @@
 
 from contextlib import contextmanager
 import fcntl
-import json
 from pathlib import Path
 import re
 import shlex
@@ -24,8 +23,9 @@ import uuid
 
 from suave_runner.run_status import finish_status
 from suave_runner.run_status import write_status
+from suave_tools.bag_selection import accepted_entry
 from suave_tools.bag_selection import artifact_path
-from suave_tools.bag_selection import native_entry
+from suave_tools.bag_selection import load_status
 
 RUN_ID = re.compile(r'run_\d+_\d+')
 COMPONENT = re.compile(r'[A-Za-z0-9_-]+')
@@ -69,7 +69,6 @@ def attempt_details(run_id, manager, mission, enabled):
     name = f'{manager}_{mission}_{run_id}_{attempt_id}'
     pending = f'rosbags/pending/{name}' if enabled else None
     return {
-        'schema_version': 2,
         'attempt_id': attempt_id,
         'recording_enabled': enabled,
         'execution_status': 'running',
@@ -181,20 +180,14 @@ def _finalize_recording_attempt(campaign, path, record, validate, accepted):
 def recover_attempts(campaign, validate, confirm_stopped):
     """Finish interrupted transactions before retries."""
     for path in sorted(Path(campaign).glob('run_*_*.status.json')):
-        record = json.loads(path.read_text())
-        if record.get('schema_version') == 1:
-            continue
-        if record.get('schema_version') != 2:
-            raise ValueError(f'Unsupported status schema: {path}')
-        if record['run_id'] != path.name.removesuffix('.status.json'):
-            raise ValueError(f'Mismatched trial identity: {path}')
+        record = load_status(path)
         _recover_record(campaign, path, record, validate, confirm_stopped)
 
 
 def _recover_record(campaign, path, record, validate, confirm_stopped):
     marker = Path(campaign) / f'{record["run_id"]}.done'
     if marker.exists():
-        native_entry(campaign, record)
+        accepted_entry(record)
         if record['recording_enabled']:
             _check_ownership(record)
             bag = artifact_path(campaign, record['bag']['path'])

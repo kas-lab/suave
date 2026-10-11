@@ -126,7 +126,7 @@ def load_state(state_file):
         raise ValueError(
             f'cannot read state file {state_file}: {error}') from error
 
-    if state.get('schema_version') != 2:
+    if state.get('schema_version') != 1:
         raise ValueError(f'unsupported state-file schema in {state_file}')
     if not isinstance(state.get('campaigns'), dict):
         raise ValueError(f'invalid campaign data in {state_file}')
@@ -139,7 +139,7 @@ def new_state(campaigns):
     """Create state for a fresh batch defined by a campaign list."""
     names = [entry['name'] for entry in campaigns]
     return {
-        'schema_version': 2,
+        'schema_version': 1,
         'created_at': timestamp(),
         'updated_at': timestamp(),
         'campaigns_manifest': campaigns,

@@ -725,22 +725,15 @@ class ExperimentRunnerNode(Node):
         # Match the node's own logger tag: other logs (e.g. the bag
         # recorder's topic list) mention the node name too.
         tag = '[f_generate_search_path_node]: '
-        candidates = []
-        for log_path in experiment_dir.glob('python3_*.log'):
+        for log_path in sorted(experiment_dir.glob('python3_*.log')):
             try:
                 text = log_path.read_text(errors='replace')
             except OSError:
                 continue
-            if tag in text:
-                candidates.append((log_path.stat().st_mtime, text))
-        if not candidates:
-            return ''
-        # Legacy run log dirs are reused across attempts; use the newest.
-        _, text = max(candidates, key=lambda item: item[0])
-        if (tag + 'on_configure() is called.' in text
-                and tag + 'on_activate() is called.' not in text):
-            return ('f_generate_search_path_node configured but never activated'
-                    ' (system_modes mode transition lost)')
+            if (tag + 'on_configure() is called.' in text
+                    and tag + 'on_activate() is called.' not in text):
+                return ('f_generate_search_path_node configured but never '
+                        'activated (system_modes mode transition lost)')
         return ''
 
     def record_broken_run(

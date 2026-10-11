@@ -100,7 +100,7 @@ To run SUAVE with different managing subsystems, replace the `experiment_launch`
 |---|---|---|
 | `result_path` | `~/suave/results` | Directory where CSV result files and per-run logs are written |
 | `gui` | `false` | Launch Gazebo with a visible window |
-| `experiment_logging` | `false` | Enable extra console output from the runner (ArduPilot and ROS node logs are always captured to `<result_path>/logs/run_<exp>_<run>/` regardless of this flag) |
+| `experiment_logging` | `false` | Enable extra console output from the runner (ArduPilot and ROS node logs are always captured to `<result_path>/logs/run_<exp>_<run>/<attempt_id>/` regardless of this flag) |
 | `run_duration` | `600` | Maximum seconds to wait for `mission_metrics/done` before timing out a run |
 | `mission_config_pkg` | `suave_missions` | ROS package containing the mission config |
 | `mission_config_file` | `config/runner_mission_config.yaml` | Path to mission config within that package |
@@ -232,8 +232,10 @@ per adaptation manager (for example
 `bt: 18/20 completed; failures={'mission_done_timeout': 2}`), and, for each
 run that did not complete, its status, failure type, reason, log folder, and
 the first log lines that point at a cause (`suspected <type>: <log>:<line>`).
-It uses the `run_*.status.json` sidecars when present and falls back to the
-`.done` markers and `<campaign_name>.log` for older results. Mission CSV row
+It reads the `run_*.status.json` sidecars and checks each against its `.done`
+marker; an invalid sidecar, a marker without a sidecar, or a sidecar that
+disagrees with its marker is reported as a warning. Results written before
+the current sidecar schema are not supported. Mission CSV row
 counts are listed for reference but are not treated as proof of completion.
 The exit code is `0` whenever the diagnosis itself succeeded, even if runs
 failed, and `2` for an invalid path.
@@ -249,7 +251,7 @@ failed, and `2` for an invalid path.
 | `interrupted` | The run was stopped by Ctrl+C or termination |
 | `unknown` | No recognizable cause was recorded |
 
-Suspected causes found in `logs/run_*/{experiment,simulation}/launch.log` are
+Suspected causes found in the attempt's `{experiment,simulation}/launch.log` are
 `mission_metrics_invalid_handle` and `missing_change_mode_service`; lines after
 the run's teardown (`sending signal 'SIGINT'`) are ignored.
 
@@ -301,8 +303,11 @@ To plot requirement fulfillment from accepted bags only, see
 Each run attempt also writes `run_<exp_idx>_<run_idx>.status.json` next to the
 markers. It records `status` (`running`, `completed`, `failed`, or
 `interrupted`), `failure_type`, `failure_reason`, start and finish times,
-elapsed seconds, the log folder, the mission config, and the launch commands.
-A retried run keeps its earlier attempts under `attempts`. Resume still checks
+elapsed seconds, the log folder, the mission config, and the launch commands,
+plus the attempt's ownership: `attempt_id`, `execution_status`,
+`finalization_state`, and the `bag` paths and state. Sidecars carry
+`schema_version: 1`; readers reject any other version or a record with missing
+fields. A retried run keeps its earlier attempts under `attempts`. Resume still checks
 only the `.done` markers. After each run the runner logs a per-manager summary,
 and `run_batch` logs one after each campaign; both include the systemic
 warnings described under [Diagnosing batch failures](#diagnosing-batch-failures).

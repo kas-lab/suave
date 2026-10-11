@@ -95,7 +95,7 @@ def _campaign(root, name='exp1', count=2):
     state_file = root / 'state.json'
     state = json.loads(state_file.read_text()) if state_file.exists() else {
         'campaigns': {}}
-    state['campaigns'][f'{name}_suave_runner.launch.py'] = {
+    state['campaigns'][name] = {
         'config_file': str(config), 'result_path': str(campaign)}
     state_file.write_text(json.dumps(state))
     return campaign
@@ -251,7 +251,7 @@ def test_config_dir_handles_moved_config_paths(tmp_path):
     campaign = _campaign(tmp_path)
     state_file = tmp_path / 'state.json'
     state = json.loads(state_file.read_text())
-    state['campaigns']['exp1_suave_runner.launch.py']['config_file'] = (
+    state['campaigns']['exp1']['config_file'] = (
         '/missing/install/config/exp1_runner_config.yml')
     state_file.write_text(json.dumps(state))
     assert batch.main([str(tmp_path)]) == 1
@@ -285,11 +285,11 @@ def test_stale_sorted_methods_are_not_analyzed(tmp_path):
 
 
 def test_new_state_schema_and_relative_config(tmp_path):
-    """Resolve newer campaign-name keys and relative config paths."""
+    """Resolve campaign-name keys and relative config paths."""
     campaign = _campaign(tmp_path)
     config = campaign / 'exp1_runner_config.yml'
     (tmp_path / 'state.json').write_text(json.dumps({
-        'schema_version': 2,
+        'schema_version': 1,
         'campaigns': {'exp1': {
             'config_file': str(config.relative_to(tmp_path)),
         }},

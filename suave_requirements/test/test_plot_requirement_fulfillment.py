@@ -71,19 +71,21 @@ def test_failed_and_pending_bags_are_never_selected(tmp_path):
         bag.mkdir(parents=True)
         (bag / 'metadata.yaml').write_text('fixture')
     (tmp_path / 'run_0_0.done').touch()
-    manifest = tmp_path / 'accepted_bags.json'
+    status = tmp_path / 'run_0_0.status.json'
 
-    def write_manifest(bag_path):
-        manifest.write_text(json.dumps({
-            'schema_version': 1,
-            'source': 'legacy_reconciliation',
-            'entries': [{
-                'run_id': 'run_0_0', 'attempt_id': 'legacy_x',
-                'adaptation_manager': 'bt', 'bag_path': bag_path,
-            }],
+    def write_status(bag_path):
+        status.write_text(json.dumps({
+            'schema_version': 1, 'run_id': 'run_0_0', 'attempt_id': 'a1',
+            'adaptation_manager': 'bt', 'status': 'completed',
+            'success': True, 'execution_status': 'completed',
+            'finalization_state': 'finished', 'recording_enabled': True,
+            'log_dir': 'logs/run_0_0/a1', 'attempts': [],
+            'started_epoch': 0.0, 'finished_epoch': 1.0,
+            'bag': {'state': 'accepted', 'path': bag_path,
+                    'accepted_path': bag_path},
         }))
 
-    write_manifest('rosbags/accepted')
+    write_status('rosbags/accepted')
     _, selected, excluded = plotter.accepted_entries(
         tmp_path / 'rosbags', ['bt'])
     assert [entry['bag_path'] for entry in selected] == ['rosbags/accepted']
@@ -91,7 +93,7 @@ def test_failed_and_pending_bags_are_never_selected(tmp_path):
         'rosbags/failed/quarantined', 'rosbags/pending/unfinished'}
     for quarantined in ('rosbags/failed/quarantined',
                         'rosbags/pending/unfinished'):
-        write_manifest(quarantined)
+        write_status(quarantined)
         with pytest.raises(ValueError, match='accepted root'):
             plotter.accepted_entries(tmp_path / 'rosbags', ['bt'])
 

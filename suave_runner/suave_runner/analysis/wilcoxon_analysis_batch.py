@@ -167,9 +167,7 @@ def resolve_config(campaign, config_dir=None):
                 raise ValueError(
                     f'{state_file}: invalid campaign entry {name}')
             result_path = Path(entry.get('result_path') or '')
-            names = (campaign.name,
-                     f'{campaign.name}_suave_runner.launch.py')
-            if result_path.name == campaign.name or name in names:
+            if campaign.name in (result_path.name, name):
                 matches.append(entry)
         if len(matches) > 1:
             raise ValueError(

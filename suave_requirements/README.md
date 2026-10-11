@@ -26,14 +26,10 @@ Bags are selected from the campaign folder (the parent of `--bags-dir`) with
 `suave_tools.bag_selection`, never by scanning directory names:
 
 - A trial counts only if it has a `.done` marker.
-- Runner-produced trials use their `run_*.status.json` (schema v2): the
-  attempt must be completed and finalized with an accepted bag.
-- Older trials without v2 status need an explicit entry in the campaign's
-  `accepted_bags.json` (a one-off reconciliation manifest). An unmapped
-  checkpointed trial is an error, not a silent omission.
-- The manifest's optional `excluded` list rejects checkpointed trials after
-  review (each needs a `reason`, e.g. `broken_run`). They are reported in
-  `coverage.json` and never plotted.
+- Its `run_*.status.json` (`schema_version: 1`) must show a completed,
+  finalized attempt with an accepted bag. A checkpointed trial without a
+  valid status is an error, not a silent omission.
+- Trials run with recording disabled are reported as `recording_disabled`.
 - Bags under `rosbags/pending/` or `rosbags/failed/` are never loaded.
 
 An unreadable selected bag is an error. A bag that is readable but lacks a

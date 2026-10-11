@@ -19,77 +19,25 @@ from collections import Counter
 import csv
 import json
 from pathlib import Path
-import re
 import sys
 
-RUN = re.compile(r'run_\d+_\d+')
-TERMINAL = {'completed', 'failed', 'timeout', 'interrupted'}
+from suave_tools.bag_selection import artifact_path
+from suave_tools.bag_selection import load_status
+
+TERMINAL = {'completed', 'failed', 'interrupted'}
 
 
-def classify(reason):
-    """Classify observed failures without asserting an unobserved cause."""
-    if 'InvalidHandle' in reason and 'mission_metrics' in reason:
+def classify(line):
+    """Classify an observed failure cause without asserting an unseen one."""
+    if 'InvalidHandle' in line and 'mission_metrics' in line:
         return 'mission_metrics_invalid_handle'
-    if 'change_mode service not available' in reason:
+    if 'change_mode service not available' in line:
         return 'missing_change_mode_service'
-    if 'Timeout waiting for mission_metrics/done' in reason:
-        return 'mission_done_timeout'
-    if 'did not exit cleanly' in reason:
-        return 'launch_process_unclean_exit'
-    if 'exited with code' in reason or 'process has died' in reason:
-        return 'process_died_before_completion'
-    return 'unknown'
+    return ''
 
 
-def parse_campaign_log(path):
-    """Recover attempt history from legacy runner logs, including resumes."""
-    attempts = []
-    current = None
-    exp_idx, manager = None, 'unknown'
-    if not path.is_file():
-        return attempts
-    with path.open(errors='replace') as stream:
-        for number, line in enumerate(stream, 1):
-            match = re.search(
-                r'Running experiment (\d+)/\d+ for \d+ runs with (\S+)', line)
-            if match:
-                exp_idx, manager = int(match[1]) - 1, match[2]
-            match = re.search(r'\]:\s+Run (\S+) (\d+)/\d+\s*$', line)
-            if match and exp_idx is not None:
-                stamp = re.search(r'\[(\d+\.\d+)\]', line)
-                current = {
-                    'run_id': f'run_{exp_idx}_{int(match[2]) - 1}',
-                    'adaptation_manager': manager, 'status': 'unfinished',
-                    'failure_type': '', 'failure_reason': '',
-                    'started_epoch': float(stamp[1]) if stamp else None,
-                    'evidence': f'{path}:{number}',
-                }
-                attempts.append(current)
-            if current is None:
-                continue
-            if any(text in line for text in (
-                    'Timeout waiting for mission_metrics/done',
-                    'Run failed before mission completion:',
-                    'Failed to launch processes:', 'flagged as broken')):
-                current.update(failure_reason=line.strip(),
-                               failure_type=classify(line),
-                               evidence=f'{path}:{number}')
-            if 'did not exit cleanly' in line:
-                current.setdefault('warnings', []).append({
-                    'type': 'launch_process_unclean_exit',
-                    'evidence': f'{path}:{number}', 'text': line.strip()})
-            match = re.search(r'completed \(success: (True|False)\)', line)
-            if match:
-                current['status'] = (
-                    'completed' if match[1] == 'True' else 'failed')
-                if match[1] == 'False' and not current['failure_type']:
-                    current['failure_type'] = 'unknown'
-                current = None
-    return attempts
-
-
-def failure_evidence(log_dir, attempt):
-    """Find pre-teardown evidence in the matching attempt's launch logs."""
+def failure_evidence(log_dir):
+    """Find pre-teardown evidence in an attempt's launch logs."""
     evidence = []
     for name in ('experiment', 'simulation'):
         path = log_dir / name / 'launch.log'
@@ -97,24 +45,12 @@ def failure_evidence(log_dir, attempt):
             continue
         with path.open(errors='replace') as stream:
             for number, line in enumerate(stream, 1):
-                try:
-                    stamp = float(line.split()[0])
-                except (ValueError, IndexError):
-                    continue
-                start = attempt.get('started_epoch')
-                end = attempt.get('finished_epoch')
-                if start is not None and stamp < start:
-                    continue
-                if end is not None and stamp > end:
-                    break
                 if "sending signal 'SIGINT'" in line:
                     break
                 kind = classify(line)
-                if kind in ('mission_metrics_invalid_handle',
-                            'missing_change_mode_service'):
-                    if not any(item['type'] == kind for item in evidence):
-                        evidence.append({'type': kind, 'log': str(path),
-                                         'line': number, 'text': line.strip()})
+                if kind and not any(item['type'] == kind for item in evidence):
+                    evidence.append({'type': kind, 'log': str(path),
+                                     'line': number, 'text': line.strip()})
     return evidence
 
 
@@ -152,48 +88,37 @@ def summary_lines(records):
             yield f'SYSTEMIC: {manager}: repeated {kind}'
 
 
-def diagnose_campaign(path, expected=None, log_path=None):
-    """Combine sidecars, markers and legacy evidence for one campaign."""
+def diagnose_campaign(path, expected=None):
+    """Combine status sidecars and checkpoint markers for one campaign."""
     path = Path(path)
-    if log_path is None:
-        log_path = path.parent.parent / f'{path.name}.log'
-    history = parse_campaign_log(Path(log_path))
-    latest = {}
-    for attempt in history:
-        previous = latest.get(attempt['run_id'])
-        if previous:
-            previous['finished_epoch'] = attempt.get('started_epoch')
-        latest[attempt['run_id']] = attempt
-    warnings = []
+    latest, warnings = {}, []
     for sidecar in sorted(path.glob('run_*_*.status.json')):
         try:
-            record = json.loads(sidecar.read_text())
-            if not isinstance(record, dict) or not RUN.fullmatch(
-                    record.get('run_id', '')) or 'status' not in record:
-                raise ValueError('invalid status record')
-            latest[record['run_id']] = record
+            record = load_status(sidecar)
         except (ValueError, OSError) as error:
-            warnings.append(f'{sidecar}: {error}')
-    for folder in sorted((path / 'logs').glob('run_*_*')):
-        if RUN.fullmatch(folder.name):
-            latest.setdefault(folder.name, {
-                'run_id': folder.name, 'adaptation_manager': 'unknown',
-                'status': 'unfinished', 'failure_type': 'unknown',
-                'failure_reason': 'No terminal status recorded',
-            })
-    for marker in path.glob('run_*_*.done'):
-        record = latest.setdefault(marker.stem, {
-            'run_id': marker.stem, 'adaptation_manager': 'unknown'})
-        record.update(status='completed', failure_type='', failure_reason='')
+            # Schema errors name the file; JSON and OS errors do not.
+            message = str(error)
+            if str(sidecar) not in message:
+                message = f'{sidecar}: {message}'
+            warnings.append(message)
+            continue
+        latest[record['run_id']] = record
+    markers = {marker.stem for marker in path.glob('run_*_*.done')}
+    for run_id in sorted(markers - latest.keys()):
+        warnings.append(f'{run_id}: checkpoint without a valid status record')
     for run_id, record in latest.items():
-        log_dir = Path(record.get('log_dir', ''))
-        if not log_dir.is_absolute():
-            log_dir = path / log_dir if log_dir.parts else path / 'logs' / run_id
-        if record.get('schema_version') != 2:
-            log_dir = path / 'logs' / run_id
+        if (record['status'] == 'completed') != (run_id in markers):
+            warnings.append(
+                f'{run_id}: status {record["status"]} disagrees with '
+                'checkpoint')
+        try:
+            log_dir = artifact_path(path, record['log_dir'])
+        except ValueError as error:
+            warnings.append(f'{run_id}: {error}')
+            continue
         record['log_dir'] = str(log_dir)
-        if record['status'] in ('failed', 'timeout'):
-            record['suspected_causes'] = failure_evidence(log_dir, record)
+        if record['status'] == 'failed':
+            record['suspected_causes'] = failure_evidence(log_dir)
     rows = {}
     for table in path.glob('*.csv'):
         with table.open(errors='replace', newline='') as stream:
@@ -202,17 +127,14 @@ def diagnose_campaign(path, expected=None, log_path=None):
                 rows[table.name] = sum(1 for _ in reader)
     records = sorted(latest.values(), key=lambda r: tuple(
         int(i) for i in r['run_id'].split('_')[1:]))
-    legacy_failures = Counter(a['run_id'] for a in history
-                              if a['status'] == 'failed')
-    for record in records:
-        count = sum(a.get('status') in ('failed', 'timeout') for a in
-                    record.get('attempts', []) + [record])
-        legacy_failures[record['run_id']] = max(
-            count, legacy_failures[record['run_id']])
     return {
         'path': str(path), 'expected_runs': expected,
-        'completed_runs': sum(r['status'] == 'completed' for r in records),
-        'historical_failed_attempts': sum(legacy_failures.values()),
+        'completed_runs': sum(r['status'] == 'completed' and
+                              r['run_id'] in markers for r in records),
+        'historical_failed_attempts': sum(
+            attempt.get('status') == 'failed'
+            for record in records
+            for attempt in record['attempts'] + [record]),
         'runs': records, 'managers': summarize(records),
         'csv_rows': rows, 'warnings': warnings,
     }
@@ -226,6 +148,8 @@ def diagnose(path):
     state_file = path if path.is_file() else path / 'state.json'
     if state_file.is_file():
         state = json.loads(state_file.read_text())
+        if state.get('schema_version') != 1:
+            raise ValueError(f'unsupported state-file schema: {state_file}')
         campaigns = []
         for name, entry in state['campaigns'].items():
             # Prefer artifacts alongside the checkpoint: container absolute
@@ -234,10 +158,9 @@ def diagnose(path):
             if not folder.exists() and entry.get('result_path'):
                 folder = Path(entry['result_path']).expanduser()
             campaigns.append(diagnose_campaign(
-                folder, entry.get('expected_runs'),
-                state_file.parent / f'{name}.log'))
+                folder, entry.get('expected_runs')))
         return {'schema_version': 1, 'campaigns': campaigns}
-    if not (path / 'logs').is_dir() and not list(path.glob('run_*.done')):
+    if not list(path.glob('run_*_*.status.json')):
         raise ValueError(f'not a campaign result directory: {path}')
     return {'schema_version': 1, 'campaigns': [diagnose_campaign(path)]}
 
@@ -251,8 +174,6 @@ def render(report):
                f'attempts: {campaign["historical_failed_attempts"]}')
         yield from summary_lines(campaign['runs'])
         for record in campaign['runs']:
-            for warning in record.get('warnings', []):
-                yield f'  {record["run_id"]}: teardown warning: {warning}'
             if record['status'] == 'completed':
                 continue
             yield (f'  {record["run_id"]}: {record["status"]} '

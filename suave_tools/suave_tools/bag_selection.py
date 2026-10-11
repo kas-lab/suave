@@ -19,6 +19,27 @@ from pathlib import Path
 import re
 
 RUN_ID = re.compile(r'run_\d+_\d+')
+SCHEMA_VERSION = 1
+STATUS_KEYS = (
+    'run_id', 'attempt_id', 'adaptation_manager', 'status', 'success',
+    'execution_status', 'finalization_state', 'recording_enabled',
+    'log_dir', 'bag', 'attempts', 'started_epoch', 'finished_epoch',
+)
+
+
+def load_status(path):
+    """Read a status sidecar, rejecting unsupported or incomplete records."""
+    path = Path(path)
+    record = json.loads(path.read_text())
+    if not isinstance(record, dict) or (
+            record.get('schema_version') != SCHEMA_VERSION):
+        raise ValueError(f'Unsupported status schema: {path}')
+    missing = [key for key in STATUS_KEYS if key not in record]
+    if missing:
+        raise ValueError(f'Incomplete status {path}: {", ".join(missing)}')
+    if record['run_id'] != path.name.removesuffix('.status.json'):
+        raise ValueError(f'Mismatched status: {path}')
+    return record
 
 
 def artifact_path(campaign, relative):
@@ -36,8 +57,8 @@ def artifact_path(campaign, relative):
     return resolved
 
 
-def native_entry(campaign, record):
-    """Validate a checkpointed v2 status and return its selected bag."""
+def accepted_entry(record):
+    """Validate a checkpointed status and return its accepted bag."""
     if not (record['status'] == 'completed' and record['success'] is True and
             record['execution_status'] == 'completed' and
             record['finalization_state'] == 'finished'):
@@ -53,81 +74,29 @@ def native_entry(campaign, record):
         'attempt_id': record['attempt_id'],
         'adaptation_manager': record['adaptation_manager'],
         'bag_path': record['bag']['path'],
-        'source': 'status_v2',
     }
 
 
 def select_accepted_bags(campaign):
-    """Return checkpointed native or legacy recordings."""
+    """Return checkpointed accepted recordings and every exclusion."""
     campaign = Path(campaign)
-    markers = {path.stem for path in campaign.glob('run_*_*.done')}
-    legacy, rejected = _load_legacy_manifest(campaign, markers)
-    # Rejected legacy attempts stay reported even after their trial is
-    # un-checkpointed for a rerun.
-    excluded = [{key: entry[key] for key in ('run_id', 'bag_path', 'reason')
-                 if key in entry} for entry in rejected.values()]
-    selected, seen, unmapped = [], set(), []
-    for run_id in sorted(markers):
-        entry = _entry_for_run(campaign, run_id, legacy, rejected, excluded)
+    selected, excluded, seen = [], [], set()
+    for marker in sorted(campaign.glob('run_*_*.done')):
+        run_id = marker.stem
+        if not RUN_ID.fullmatch(run_id):
+            raise ValueError(f'Invalid checkpoint: {run_id}')
+        path = campaign / f'{run_id}.status.json'
+        if not path.is_file():
+            raise ValueError(f'Checkpoint without status: {run_id}')
+        entry = accepted_entry(load_status(path))
         if entry is None:
-            if any(item.get('run_id') == run_id for item in excluded):
-                continue
-            unmapped.append(run_id)
+            excluded.append({'run_id': run_id, 'reason': 'recording_disabled'})
             continue
         bag = artifact_path(campaign, entry['bag_path'])
         _validate_selected_entry(campaign, bag, entry, seen)
         selected.append(entry)
-    if unmapped:
-        raise ValueError('Unmapped legacy trials: ' + ', '.join(unmapped))
     excluded.extend(_unselected_bags(campaign, seen))
     return selected, excluded
-
-
-def _load_legacy_manifest(campaign, markers):
-    manifest = campaign / 'accepted_bags.json'
-    if not manifest.exists():
-        return {}, {}
-    data = json.loads(manifest.read_text())
-    if (data.get('schema_version') != 1 or
-            data.get('source') != 'legacy_reconciliation'):
-        raise ValueError(f'Unsupported legacy manifest: {manifest}')
-    legacy, rejected = {}, {}
-    for entry in data['entries']:
-        run_id = entry['run_id']
-        if run_id in legacy or run_id not in markers:
-            raise ValueError(
-                f'Duplicate/uncheckpointed legacy trial: {run_id}')
-        legacy[run_id] = entry
-    for entry in data.get('excluded', []):
-        run_id = entry['run_id']
-        if not entry.get('reason'):
-            raise ValueError(f'Exclusion without reason: {run_id}')
-        if run_id in legacy or run_id in rejected:
-            raise ValueError(f'Duplicate legacy exclusion: {run_id}')
-        rejected[run_id] = entry
-    return legacy, rejected
-
-
-def _entry_for_run(campaign, run_id, legacy, rejected, excluded):
-    if not RUN_ID.fullmatch(run_id):
-        raise ValueError(f'Invalid checkpoint: {run_id}')
-    path = campaign / f'{run_id}.status.json'
-    record = json.loads(path.read_text()) if path.exists() else {}
-    version = record.get('schema_version', 1)
-    if version not in (1, 2):
-        raise ValueError(f'Unsupported status schema: {path}')
-    if version == 1:
-        # A rejected legacy trial is never selected, checkpointed or not.
-        return None if run_id in rejected else legacy.get(run_id)
-    if record['run_id'] != run_id:
-        raise ValueError(f'Mismatched status: {path}')
-    entry = native_entry(campaign, record)
-    if run_id in legacy and (
-            entry is None or legacy[run_id]['bag_path'] != entry['bag_path']):
-        raise ValueError(f'Conflicting legacy ownership: {run_id}')
-    if entry is None:
-        excluded.append({'run_id': run_id, 'reason': 'recording_disabled'})
-    return entry
 
 
 def _validate_selected_entry(campaign, bag, entry, seen):

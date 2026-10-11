@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Atomic status sidecars preserving attempt history and legacy markers."""
+"""Atomic status sidecars preserving attempt history."""
 
 from datetime import datetime
 import json
 from pathlib import Path
 import time
+
+from suave_tools.bag_selection import load_status
+from suave_tools.bag_selection import SCHEMA_VERSION
 
 
 def timestamp():
@@ -35,6 +38,8 @@ def write_status(path, record):
 
 def start_status(result_path, exp_idx, run_idx, manager, mission, **details):
     """Persist a new running attempt while retaining previous attempts."""
+    if 'attempt_id' not in details:
+        raise ValueError('A status needs attempt_details() ownership')
     run_id = f'run_{exp_idx}_{run_idx}'
     path = Path(result_path) / f'{run_id}.status.json'
     attempts = []
@@ -42,17 +47,14 @@ def start_status(result_path, exp_idx, run_idx, manager, mission, **details):
         previous = json.loads(path.read_text())
         attempts = previous.pop('attempts', [])
         attempts.append(previous)
-    record = dict(details, schema_version=1, run_id=run_id,
+    record = dict(details, schema_version=SCHEMA_VERSION, run_id=run_id,
                   experiment_index=exp_idx, run_index=run_idx,
                   adaptation_manager=manager, mission_name=mission,
                   result_path=str(result_path),
-                  log_dir=str(Path(result_path) / 'logs' / run_id),
                   started_at=timestamp(), started_epoch=time.time(),
                   finished_at=None, finished_epoch=None, elapsed_seconds=None,
                   status='running', success=False, failure_type='',
                   failure_reason='', attempts=attempts)
-    # Attempt ownership supplied by the runner overrides legacy defaults.
-    record.update(details)
     write_status(path, record)
     return path, record
 
@@ -68,13 +70,11 @@ def finish_status(path, record, status, reason='', failure_type=''):
 
 
 def load_statuses(result_path):
-    """Read current status records, ignoring incomplete foreign sidecars."""
+    """Read current status records, ignoring invalid sidecars."""
     records = []
     for path in Path(result_path).glob('run_*_*.status.json'):
         try:
-            record = json.loads(path.read_text())
-            if isinstance(record, dict) and 'status' in record:
-                records.append(record)
+            records.append(load_status(path))
         except (OSError, ValueError):
             continue
     return records

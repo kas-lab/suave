@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import json
-import os
 from pathlib import Path
 from queue import Empty
 from queue import Queue
@@ -625,12 +624,10 @@ def test_handle_termination_sets_done_event():
         rclpy.shutdown()
 
 
-def _write_node_log(experiment_dir, name, text, mtime=None):
+def _write_node_log(experiment_dir, name, text):
     experiment_dir.mkdir(parents=True, exist_ok=True)
     log_path = experiment_dir / name
     log_path.write_text(text)
-    if mtime is not None:
-        os.utime(log_path, (mtime, mtime))
     return log_path
 
 
@@ -665,28 +662,6 @@ def test_detect_broken_run_passes_when_node_activated():
         shutil.rmtree(workdir, ignore_errors=True)
 
 
-def test_detect_broken_run_uses_latest_attempt():
-    rclpy.init()
-    workdir = Path(tempfile.mkdtemp())
-    try:
-        runner = ExperimentRunnerNode(
-            parameter_overrides=_minimal_runner_params())
-        experiment_dir = workdir / 'experiment'
-        _write_node_log(
-            experiment_dir, 'python3_10_1000.log',
-            '[f_generate_search_path_node]: on_configure() is called.\n',
-            mtime=1000)
-        _write_node_log(
-            experiment_dir, 'python3_20_2000.log',
-            '[f_generate_search_path_node]: on_configure() is called.\n'
-            '[f_generate_search_path_node]: on_activate() is called.\n',
-            mtime=2000)
-        assert runner.detect_broken_run(workdir) == ''
-    finally:
-        rclpy.shutdown()
-        shutil.rmtree(workdir, ignore_errors=True)
-
-
 def test_detect_broken_run_ignores_logs_that_only_mention_node():
     rclpy.init()
     workdir = Path(tempfile.mkdtemp())
@@ -697,14 +672,12 @@ def test_detect_broken_run_ignores_logs_that_only_mention_node():
         _write_node_log(
             experiment_dir, 'python3_10_1000.log',
             '[INFO] [1.0] [f_generate_search_path_node]: '
-            'on_configure() is called.\n',
-            mtime=1000)
-        # The bag recorder logs its topic list and finishes last.
+            'on_configure() is called.\n')
+        # The bag recorder logs its topic list, naming the node too.
         _write_node_log(
             experiment_dir, 'python3_20_1000.log',
             '[INFO] [2.0] [rosbag2_recorder]: Subscribed to topic '
-            "'/f_generate_search_path_node/transition_event'\n",
-            mtime=2000)
+            "'/f_generate_search_path_node/transition_event'\n")
         assert runner.detect_broken_run(workdir)
     finally:
         rclpy.shutdown()

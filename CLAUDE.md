@@ -182,7 +182,7 @@ For **external managing systems**, include `suave_base/launch/suave_base.launch.
 
 ## Runner / Metrics IPC
 `mission_metrics/done` (`std_msgs/Bool`) signals run completion. Both the `MissionMetrics` publisher and `ExperimentRunnerNode` subscriber must declare `RELIABLE` reliability + `TRANSIENT_LOCAL` durability (depth 1). Mismatched QoS causes DDS to silently drop the connection.
-Per-run logs are written to `<result_path>/logs/run_{exp_idx}_{run_idx}/`: `ardupilot.log` (raw SITL stdout/stderr), `simulation/` and `experiment/` (ROS node logs via `ROS_LOG_DIR`).
+Per-attempt logs are written to `<result_path>/logs/run_{exp_idx}_{run_idx}/<attempt_id>/`: `ardupilot.log` (raw SITL stdout/stderr), `simulation/` and `experiment/` (ROS node logs via `ROS_LOG_DIR`).
 `resume_result_path` parameter resumes a crashed campaign from an existing result folder; `random_seed` (default `100`) controls perturbation reproducibility.
 `run_batch`'s `resume_state_file` is a separate, batch-level resume mechanism — it points at a batch's `state.json`, not at a single campaign's result folder.
 
