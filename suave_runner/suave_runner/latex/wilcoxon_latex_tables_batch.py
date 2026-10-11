@@ -19,7 +19,6 @@ import argparse
 from pathlib import Path
 import re
 import sys
-from tempfile import TemporaryDirectory
 
 import numpy as np
 
@@ -168,31 +167,26 @@ def render_campaign(campaign, results_root, output_root, p_values, alpha):
     if 'metacontrol' in keys:
         caption += " ``MC'' stands for Metacontrol."
     output = output_root / f'{campaign.name}_wilcoxon.tex'
-    with TemporaryDirectory(prefix='wilcoxon-latex-') as temporary:
-        matrices = {}
-        for metric in METRIC_ALTERNATIVES:
-            rows = frame.loc[frame.metric == metric]
-            matrix = rows.pivot(
-                index='row', columns='col', values=value_column)
-            matrix = matrix.reindex(index=keys, columns=keys)
-            path = Path(temporary) / f'{metric}.csv'
-            matrix.to_csv(path)
-            matrices[metric] = str(path)
-        config = {
-            'systems': [{'key': key, 'label': escape_tex(
-                METHOD_LABELS.get(key, key))} for key in keys],
-            'time_search_csv': matrices['search_time'],
-            'distance_csv': matrices['distance_inspected'],
-            'first_col_width': '1.65cm', 'col_width': '1.3cm',
-            'header_width': '1.65cm',
-            'resizebox_width': (r'0.7\textwidth' if len(keys) <= 3
-                                else r'\textwidth'),
-            'caption': caption,
-            'label': 'tab:wilcoxon-' + re.sub(
-                r'[^A-Za-z0-9-]', '-', campaign.name),
-            'alpha': alpha, 'output': str(output),
-        }
-        latex_tables.generate_table_file(config)
+    matrices = {
+        metric: frame.loc[frame.metric == metric].pivot(
+            index='row', columns='col', values=value_column,
+        ).reindex(index=keys, columns=keys)
+        for metric in METRIC_ALTERNATIVES
+    }
+    latex_tables.generate_table_file({
+        'systems': [{'key': key, 'label': escape_tex(
+            METHOD_LABELS.get(key, key))} for key in keys],
+        'time_search_csv': matrices['search_time'],
+        'distance_csv': matrices['distance_inspected'],
+        'first_col_width': '1.65cm', 'col_width': '1.3cm',
+        'header_width': '1.65cm',
+        'resizebox_width': (r'0.7\textwidth' if len(keys) <= 3
+                            else r'\textwidth'),
+        'caption': caption,
+        'label': 'tab:wilcoxon-' + re.sub(
+            r'[^A-Za-z0-9-]', '-', campaign.name),
+        'alpha': alpha, 'output': str(output),
+    })
     print(f'Wrote {output} ({value_column}; '
           f'{int(frame[value_column].isna().sum())} uncomputed tests)')
     return output

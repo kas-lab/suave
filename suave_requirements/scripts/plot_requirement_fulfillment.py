@@ -23,40 +23,41 @@ import yaml  # noqa: I100,I201
 from rclpy.serialization import deserialize_message  # noqa: I100,I201
 from rosbag2_py import ConverterOptions  # noqa: I100,I201
 from rosbag2_py import SequentialReader  # noqa: I100,I201
+from rosbag2_py import StorageFilter  # noqa: I100,I201
 from rosbag2_py import StorageOptions  # noqa: I100,I201
 from std_msgs.msg import Float32  # noqa: I100,I201
+from suave_requirements.requirement_monitor import (  # noqa: I100,I201
+    fulfillment_topic, REACTION_TIME, REACTION_TIME_TYPES, SEARCH_FOOTPRINT,
+    THRUSTER_AVAILABILITY)
 from suave_tools.bag_selection import select_accepted_bags  # noqa: I100,I201
 
 
 REQUIREMENTS = {
-    'thruster_availability': {
-        'topic': '/requirements/thruster_availability/fulfillment',
+    THRUSTER_AVAILABILITY: {
+        'topic': fulfillment_topic(THRUSTER_AVAILABILITY),
         'label': 'Thruster availability',
     },
-    'search_footprint': {
-        'topic': '/requirements/search_footprint/fulfillment',
+    SEARCH_FOOTPRINT: {
+        'topic': fulfillment_topic(SEARCH_FOOTPRINT),
         'label': 'Search footprint',
     },
-    'adaptation_reaction_time': {
-        'topic': '/requirements/adaptation_reaction_time/fulfillment',
+    REACTION_TIME: {
+        'topic': fulfillment_topic(REACTION_TIME),
         'label': 'Adaptation reaction time',
     },
-    'thruster_reaction_time': {
-        'topic': '/requirements/adaptation_reaction_time/thruster/fulfillment',
-        'label': 'Thruster reaction time',
-    },
-    'water_visibility_reaction_time': {
-        'topic': (
-            '/requirements/adaptation_reaction_time/water_visibility/'
-            'fulfillment'
-        ),
-        'label': 'Water-visibility reaction time',
-    },
-    'battery_reaction_time': {
-        'topic': '/requirements/adaptation_reaction_time/battery/fulfillment',
-        'label': 'Battery reaction time',
-    },
 }
+REACTION_TIME_LABELS = {
+    'thruster': 'Thruster reaction time',
+    'water_visibility': 'Water-visibility reaction time',
+    'battery': 'Battery reaction time',
+}
+REQUIREMENTS.update({
+    reaction_type + '_reaction_time': {
+        'topic': fulfillment_topic(REACTION_TIME + '/' + reaction_type),
+        'label': REACTION_TIME_LABELS[reaction_type],
+    }
+    for reaction_type in REACTION_TIME_TYPES
+})
 
 MANAGERS = ['rebetmc', 'rosa_bt', 'bt', 'metacontrol', 'random', 'none']
 MANAGER_LABELS = {
@@ -132,6 +133,8 @@ def read_bag(entry, campaign):
     reader = SequentialReader()
     reader.open(StorageOptions(uri=str(bag_dir), storage_id='mcap'),
                 ConverterOptions('', ''))
+    # Let the MCAP reader skip chunks of unrelated (e.g. camera) topics.
+    reader.set_filter(StorageFilter(topics=list(TOPICS)))
     invalid = {key: 0 for key in REQUIREMENTS}
     while reader.has_next():
         topic, data, timestamp = reader.read_next()
@@ -242,18 +245,15 @@ def save_figure(fig, output_dir, key, formats):
 
 
 def plot_requirement(key, spec, runs_by_manager, managers, grid, output_dir,
-                     formats, report, accepted_counts=None):
+                     formats, report, accepted_counts):
     """Write one manager-comparison figure for a single requirement."""
-    if not any(runs_by_manager.get(manager) for manager in managers):
-        plot_no_data_requirement(key, spec, output_dir, formats)
-        return
     fig, axis = plt.subplots(figsize=(8.0, 4.8), constrained_layout=True)
     missing, unaccepted = [], []
     for manager in managers:
         runs = runs_by_manager.get(manager, [])
         if not runs:
             label = MANAGER_LABELS.get(manager, manager)
-            if accepted_counts is not None and not accepted_counts.get(manager):
+            if not accepted_counts.get(manager):
                 unaccepted.append(label)
             else:
                 missing.append(label)

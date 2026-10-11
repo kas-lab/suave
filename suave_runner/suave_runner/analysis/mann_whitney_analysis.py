@@ -25,41 +25,39 @@ import pandas as pd
 import rclpy
 from rclpy.node import Node
 from scipy.stats import mannwhitneyu
-# from scipy.stats import levene
 from scipy.stats import shapiro
+
+
+# (CSV column, output-file suffix, description, alternative hypothesis)
+METRICS = [
+    ('time searching pipeline (s)', 'time_search_pipeline',
+     'time to find pipeline', 'less'),
+    ('distance inspected (m)', 'distance_inspected',
+     'distance inspected', 'greater'),
+    ('mean reaction time (s)', 'mean_reaction_time',
+     'mean reaction time', 'less'),
+]
+COMPARISON = {'less': 'lower', 'greater': 'greater'}
 
 
 class SuaveData:
     """Load metric samples for one managing system."""
 
     def __init__(self, managing_system, csv_file):
-        """Load search-time, distance, and reaction-time samples from CSV."""
+        """Load the compared metric columns from CSV."""
         self.managing_system = managing_system
-
-        self.time_search = pd.read_csv(csv_file)['time searching pipeline (s)']
-        self.distance_inspect = pd.read_csv(csv_file)['distance inspected (m)']
-        self.mean_reaction_time = pd.read_csv(
-            csv_file)['mean reaction time (s)']
-
-    def test_normality_(self, data_name, data):
-        """Run and print a Shapiro-Wilk normality test for one metric."""
-        # Shapiro-Wilk test for normality
-        _, p = shapiro(data)
-
-        print(
-            f'\n{self.managing_system} {data_name}: '
-            f'Shapiro-Wilk p-value = {p:.5f}')
-
-        if p < 0.05:
-            print(f'{self.managing_system} {data_name}: NOT normal')
-        else:
-            print(f'{self.managing_system} {data_name}: normal')
+        self.samples = pd.read_csv(
+            csv_file, usecols=[column for column, *_ in METRICS])
 
     def test_normality(self):
-        """Test normality for each loaded metric."""
-        self.test_normality_('time searching pipeline', self.time_search)
-        self.test_normality_('distance inspected', self.distance_inspect)
-        self.test_normality_('mean reaction time', self.mean_reaction_time)
+        """Run and print a Shapiro-Wilk normality test for each metric."""
+        for column, _, description, _ in METRICS:
+            _, p = shapiro(self.samples[column])
+            print(
+                f'\n{self.managing_system} {description}: '
+                f'Shapiro-Wilk p-value = {p:.5f}')
+            verdict = 'NOT normal' if p < 0.05 else 'normal'
+            print(f'{self.managing_system} {description}: {verdict}')
 
 
 class MannWhitneyAnalysis(Node):
@@ -73,130 +71,62 @@ class MannWhitneyAnalysis(Node):
         self.declare_parameter('filename', 'suave_statistical_analysis')
         self.declare_parameter('data_files', [''])
 
-        self.result_path = Path(self.get_parameter(
-            'result_path').get_parameter_value().string_value).expanduser()
-        self.filename = self.get_parameter(
-            'filename').get_parameter_value().string_value
-
-        data_files_param = self.get_parameter(
-            'data_files').get_parameter_value().string_array_value
-        try:
-            self.data_files = [json.loads(data_file_str)
-                               for data_file_str in data_files_param]
-        except json.JSONDecodeError as e:
-            self.get_logger().error(
-                f"Invalid JSON in 'data_files' parameter: {e}")
-            return
-
+        self.result_path = Path(
+            self.get_parameter('result_path').value).expanduser()
+        self.filename = self.get_parameter('filename').value
         self.data_array = [
-            SuaveData(
-                data_file.get('managing_system'), data_file.get('data_file'))
-            for data_file in self.data_files
+            SuaveData(data_file.get('managing_system'),
+                      data_file.get('data_file'))
+            for data_file in map(
+                json.loads, self.get_parameter('data_files').value)
         ]
         systems = [data.managing_system for data in self.data_array]
-        self.results_matrix_sp = pd.DataFrame(index=systems, columns=systems)
-        self.results_matrix_di = pd.DataFrame(index=systems, columns=systems)
-        self.results_matrix_mrt = pd.DataFrame(index=systems, columns=systems)
+        self.results = {
+            suffix: pd.DataFrame(index=systems, columns=systems)
+            for _, suffix, _, _ in METRICS
+        }
 
     def save_data_frames(self):
         """Write pairwise p-value matrices to CSV files."""
-        if self.result_path.is_dir() is False:
-            self.result_path.mkdir(parents=True)
-
-        self.results_matrix_sp.to_csv(
-            self.result_path /
-            Path(
-                self.filename +
-                '_time_search_pipeline.csv'))
-        self.results_matrix_di.to_csv(
-            self.result_path /
-            Path(
-                self.filename +
-                '_distance_inspected.csv'))
-        self.results_matrix_mrt.to_csv(
-            self.result_path /
-            Path(
-                self.filename +
-                '_mean_reaction_time.csv'))
+        self.result_path.mkdir(parents=True, exist_ok=True)
+        for suffix, matrix in self.results.items():
+            matrix.to_csv(self.result_path / f'{self.filename}_{suffix}.csv')
 
     def u_test(self, i, j, data_i, data_j):
         """Compare two managing systems and store their metric p-values."""
-        _, p_sp = mannwhitneyu(
-            data_i.time_search, data_j.time_search, alternative='less')
-        self.results_matrix_sp.iloc[i, j] = p_sp
-
-        _, p_di = mannwhitneyu(data_i.distance_inspect,
-                               data_j.distance_inspect, alternative='greater')
-        self.results_matrix_di.iloc[i, j] = p_di
-
-        _, p_mrt = mannwhitneyu(
-            data_i.mean_reaction_time,
-            data_j.mean_reaction_time,
-            alternative='less')
-        self.results_matrix_mrt.iloc[i, j] = p_mrt
-
-        if p_sp < 0.05:
+        for column, suffix, description, alternative in METRICS:
+            _, p = mannwhitneyu(
+                data_i.samples[column], data_j.samples[column],
+                alternative=alternative)
+            self.results[suffix].iloc[i, j] = p
+            negation = '' if p < 0.05 else 'NOT '
             print(
-                f'Result: {data_i.managing_system} time to find pipeline is '
-                f'lower than {data_j.managing_system}')
-        else:
-            print(
-                f'Result: {data_i.managing_system} time to find pipeline is '
-                f'NOT lower than and {data_j.managing_system} time to find '
-                'pipeline.')
-
-        if p_di < 0.05:
-            print(
-                f'Result: {data_i.managing_system} distance inspected is '
-                f'greater than {data_j.managing_system}')
-        else:
-            print(
-                f'Result: {data_i.managing_system} distance inspected is NOT '
-                f'greater than {data_j.managing_system} distance inspected.')
-
-        if p_mrt < 0.05:
-            print(
-                f'Result: {data_i.managing_system} mean reaction time is '
-                f'lower than {data_j.managing_system}')
-        else:
-            print(
-                f'Result: {data_i.managing_system} mean reaction time is NOT '
-                f'lower than {data_j.managing_system} mean reaction times.')
+                f'Result: {data_i.managing_system} {description} is '
+                f'{negation}{COMPARISON[alternative]} than '
+                f'{data_j.managing_system}')
 
     def perform_analysis(self):
         """Run all pairwise comparisons and save their result matrices."""
+        for data in self.data_array:
+            data.test_normality()
         for i, data_i in enumerate(self.data_array):
             for j, data_j in enumerate(self.data_array):
-                if i == j:
-                    self.results_matrix_sp.iloc[i, j] = None
-                    self.results_matrix_di.iloc[i, j] = None
-                    self.results_matrix_mrt.iloc[i, j] = None
-                    continue
-
-                data_i.test_normality()
-                data_j.test_normality()
-                self.u_test(i, j, data_i, data_j)
+                if i != j:
+                    self.u_test(i, j, data_i, data_j)
         self.save_data_frames()
 
 
 def main(args=None):
     """Run the statistical analysis node."""
     rclpy.init(args=args)
-    executor = rclpy.executors.SingleThreadedExecutor()
-    lc_node = MannWhitneyAnalysis()
-    executor.add_node(lc_node)
-
+    node = MannWhitneyAnalysis()
     try:
-        analysis_task = executor.create_task(lc_node.perform_analysis)
-        executor.spin_until_future_complete(analysis_task)
+        node.perform_analysis()
     except KeyboardInterrupt:
-        print(' Ctrl+C received. Triggering shutdown...')
-        lc_node.handle_termination()
-        lc_node.shutdown_all_processes()
+        pass
     finally:
+        node.destroy_node()
         if rclpy.ok():
-            executor.shutdown()
-            lc_node.destroy_node()
             rclpy.shutdown()
 
 

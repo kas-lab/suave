@@ -26,8 +26,8 @@ from suave_runner.run_status import write_status
 from suave_tools.bag_selection import accepted_entry
 from suave_tools.bag_selection import artifact_path
 from suave_tools.bag_selection import load_status
+from suave_tools.bag_selection import RUN_ID
 
-RUN_ID = re.compile(r'run_\d+_\d+')
 COMPONENT = re.compile(r'[A-Za-z0-9_-]+')
 
 

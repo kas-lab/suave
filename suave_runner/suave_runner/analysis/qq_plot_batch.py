@@ -16,6 +16,7 @@
 """Save paired-difference Q-Q plots for every campaign in a batch."""
 
 import argparse
+from functools import lru_cache
 from itertools import combinations
 from pathlib import Path
 import re
@@ -99,13 +100,16 @@ def run_batch(args):
                   '*_sorted.csv files.', file=sys.stderr)
             failures += 1
             continue
+        # Read each file once; failed reads are not cached, so every pair
+        # touching a broken file still reports its own failure.
+        read_csv = lru_cache(maxsize=None)(qq_plot.read_csv)
         for pair_number, (file_a, file_b) in enumerate(combinations(files, 2)):
             for metric_number, metric in enumerate(metrics):
                 context = f'{campaign.name} | {metric}'
                 try:
                     difference, dropped = qq_plot.paired_differences(
-                        qq_plot.read_csv(file_a), metric, file_a,
-                        qq_plot.read_csv(file_b), metric, file_b,
+                        read_csv(file_a), metric, file_a,
+                        read_csv(file_b), metric, file_b,
                         args.run_column)
                     label_a = qq_plot.method_name(file_a)
                     label_b = qq_plot.method_name(file_b)

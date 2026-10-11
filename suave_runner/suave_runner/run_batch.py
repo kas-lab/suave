@@ -30,7 +30,7 @@
 #           "config_file": "config/runner/exp1_runner_config.yml"
 #         }
 #
-# "package" is any installed ROS package (resolved via `ros2 pkg prefix`),
+# "package" is any installed ROS package (resolved via the ament index),
 # so a campaign can also point at a runner config from a third-party
 # managing system's own package, and "config_file" is the params file path
 # relative to that package's share directory.
@@ -39,6 +39,7 @@
 #   ros2 run suave_runner run_batch --ros-args --params-file batch.yml
 #   ros2 run suave_runner run_batch --ros-args -p resume_state_file:=<path>
 
+from collections import Counter
 from datetime import datetime
 import json
 import os
@@ -50,6 +51,8 @@ import subprocess
 import sys
 import time
 
+from ament_index_python.packages import get_package_share_directory
+from ament_index_python.packages import PackageNotFoundError
 import rclpy
 from rclpy.node import Node
 from suave_runner.diagnose_batch import summary_lines
@@ -171,28 +174,15 @@ def resolve_config_files(campaigns):
     if shutil.which('ros2') is None:
         return None, 'ros2 is unavailable; source the ROS workspace first'
 
-    check = subprocess.run(
-        ['ros2', 'pkg', 'prefix', 'suave_runner'],
-        capture_output=True, text=True, check=False,
-    )
-    if check.returncode != 0:
-        return None, "ROS package 'suave_runner' is not discoverable"
-
-    prefixes = {}
     config_files = {}
     for entry in campaigns:
         package = entry['package']
-        if package not in prefixes:
-            check = subprocess.run(
-                ['ros2', 'pkg', 'prefix', package],
-                capture_output=True, text=True, check=False,
-            )
-            if check.returncode != 0:
-                return None, f'ROS package {package!r} is not discoverable'
-            prefixes[package] = Path(check.stdout.strip())
+        try:
+            share = Path(get_package_share_directory(package))
+        except PackageNotFoundError:
+            return None, f'ROS package {package!r} is not discoverable'
 
-        config_file = prefixes[package] / 'share' / package / \
-            entry['config_file']
+        config_file = share / entry['config_file']
         if not config_file.is_file():
             return None, (
                 f'missing installed runner config: {config_file}; '
@@ -501,24 +491,15 @@ def run_batch(batch_dir_value, resume_state_file_value, campaign_strings,
             )
             return 128 + received_signal
 
-        incomplete_campaigns = [
-            name for name in state['campaign_order']
-            if state['campaigns'][name].get('status') == 'incomplete'
-        ]
-        failed_campaigns = [
-            name for name in state['campaign_order']
-            if state['campaigns'][name].get('status') == 'failed'
-        ]
-        pending_campaigns = [
-            name for name in state['campaign_order']
-            if state['campaigns'][name].get('status') == 'pending'
-        ]
-        if incomplete_campaigns or failed_campaigns or pending_campaigns:
+        counts = Counter(
+            state['campaigns'][name].get('status')
+            for name in state['campaign_order'])
+        if counts['incomplete'] or counts['failed'] or counts['pending']:
             emit(
                 'Batch finished with '
-                f'{len(incomplete_campaigns)} incomplete, '
-                f'{len(failed_campaigns)} failed, and '
-                f'{len(pending_campaigns)} pending campaign(s).',
+                f'{counts["incomplete"]} incomplete, '
+                f'{counts["failed"]} failed, and '
+                f'{counts["pending"]} pending campaign(s).',
                 overall_log,
             )
             emit(

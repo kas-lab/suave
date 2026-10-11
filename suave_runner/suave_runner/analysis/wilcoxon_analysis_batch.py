@@ -25,17 +25,15 @@ import numpy as np
 
 import pandas as pd
 
-import rclpy
-from rclpy.context import Context
-from rclpy.parameter import Parameter
-
 import yaml
 
 
 if __package__:
+    from . import qq_plot
     from . import sort_results
     from . import wilcoxon_analysis
 else:
+    import qq_plot
     import sort_results
     import wilcoxon_analysis
 
@@ -74,12 +72,7 @@ def find_campaigns(batch_root):
 
 def validate_csv(path):
     """Read a CSV and validate its run IDs, metrics, and detection status."""
-    try:
-        frame = pd.read_csv(path)
-    except (OSError, UnicodeError, pd.errors.ParserError,
-            pd.errors.EmptyDataError) as error:
-        raise ValueError(f'Cannot read {path}: {error}') from error
-    return validate_frame(frame, path)
+    return validate_frame(qq_plot.read_csv(path), path)
 
 
 def validate_frame(frame, path):
@@ -132,10 +125,7 @@ def campaign_manifest(campaign, entries=None):
     labels = set()
     expected_ids = None
     for path in paths:
-        label = path.stem
-        for suffix in ('_sorted', '_suave_extended', '_suave'):
-            if label.endswith(suffix):
-                label = label[:-len(suffix)]
+        label = qq_plot.method_name(path)
         if not label or label in labels:
             raise ValueError(
                 f'{path}: empty or duplicate method label {label!r}')
@@ -278,32 +268,19 @@ def sort_campaign(campaign, config_dir=None):
 
 
 def analyze_campaign(campaign, output_root, correction, config_dir=None):
-    """Invoke the existing node and preserve its statistical outputs."""
+    """Run the paired Wilcoxon analysis for one campaign and save it."""
     entries = campaign_manifest(campaign, sort_campaign(campaign, config_dir))
     destination = output_root / campaign.name / 'wilcoxon_analysis'
     filename = f'{campaign.name}_wilcoxon'
-    context = Context()
-    node = None
-    rclpy.init(args=[], context=context)
-    try:
-        node = wilcoxon_analysis.WilcoxonAnalysis(
-            context=context, use_global_arguments=False,
-            parameter_overrides=[
-                Parameter('result_path', value=str(destination)),
-                Parameter('filename', value=filename),
-                Parameter('correction', value=correction),
-                Parameter('data_files',
-                          value=[json.dumps(e) for e in entries]),
-            ])
-        # Run directly so analysis exceptions propagate to the batch driver.
-        node.perform_analysis()
-    finally:
-        if node is not None:
-            node.destroy_node()
-        rclpy.shutdown(context=context)
-    results_path = destination / f'{filename}_results.csv'
-    results = pd.read_csv(results_path)
-    computed = int(results['p_raw'].notna().sum())
+    systems = [
+        (entry['managing_system'], wilcoxon_analysis.load_system(
+            entry['managing_system'], entry['data_file']))
+        for entry in entries
+    ]
+    results = wilcoxon_analysis.analyze(systems, correction)
+    results_path = wilcoxon_analysis.save_results(
+        results, systems, destination, filename)
+    computed = sum(not np.isnan(result['p_raw']) for result in results)
     not_computed = len(results) - computed
     print(f'{campaign.name}: {computed} tests computed, '
           f'{not_computed} not computed; {results_path}', flush=True)
