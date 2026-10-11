@@ -15,7 +15,6 @@
 """Run repeatable SUAVE experiment campaigns and collect their results."""
 
 import asyncio
-import csv
 from datetime import datetime
 import json
 import multiprocessing
@@ -63,6 +62,7 @@ from suave_runner.run_status import open_runs
 from suave_runner.run_status import start_attempt
 from suave_tools.runs import bag_dir
 from suave_tools.runs import log_dir as attempt_log_dir
+from suave_tools.runs import parse_run_id
 from suave_tools.runs import write_runs
 import yaml
 
@@ -313,20 +313,20 @@ class ExperimentRunnerNode(Node):
 
     def start_launch_process(
             self, launch_description: LaunchDescription, log_dir: Path,
-            launch_name: str):
+            launch_name: str, env=None):
         """Start a ROS launch description in an isolated child process."""
         stop_event = multiprocessing.Event()
         process = multiprocessing.Process(
             target=self._run_launchfile,
             args=(stop_event, launch_description, log_dir, launch_name,
-                  self._process_failure_queue),
+                  self._process_failure_queue, env or {}),
         )
         process.start()
         return process, stop_event
 
     def _run_launchfile(
             self, stop_event, launch_description, log_dir, launch_name,
-            failure_queue):
+            failure_queue, env):
         # Establish durable ownership before any launch action spawns children.
         register_session(log_dir)
         # Ignore SIGINT in this process
@@ -334,6 +334,7 @@ class ExperimentRunnerNode(Node):
 
         log_dir.mkdir(parents=True, exist_ok=True)
         os.environ['ROS_LOG_DIR'] = str(log_dir)
+        os.environ.update(env)
         launch_logging.reset()
         launch_logging.launch_config.log_dir = str(log_dir)
 
@@ -550,9 +551,17 @@ class ExperimentRunnerNode(Node):
         experiment_ld = LaunchDescription()
         experiment_ld.add_action(exp_launch_desc)
         experiment_process, experiment_stop_event = self.start_launch_process(
-            experiment_ld, log_dir, 'experiment')
+            experiment_ld, log_dir, 'experiment', self._attempt_env())
         self.processes_stop_events.append(
             (experiment_process, experiment_stop_event, 'experiment'))
+
+    def _attempt_env(self):
+        """Return the run identity that mission_metrics writes to its CSVs."""
+        if self._active_attempt is None:
+            return {}
+        run_id, entry = self._active_attempt
+        return {'SUAVE_RUN_IDX': str(parse_run_id(run_id)[1]),
+                'SUAVE_ATTEMPT_ID': entry['attempt_id']}
 
     def _wait_for_readiness(self, manager, experiment):
         # BT XML uses change_mode even when behavior actions are enabled.
@@ -679,9 +688,6 @@ class ExperimentRunnerNode(Node):
                     if broken:
                         outcome, reason, failure_type = (
                             'failed', broken, 'broken_run')
-                        self.record_broken_run(
-                            result_path, exp_idx, run_idx, manager,
-                            filename, broken)
                 # The entry stays 'running' on disk until the bag has moved.
                 finalize_attempt(result_path, runs, run_id, outcome,
                                  validate_bag, reason, failure_type)
@@ -744,39 +750,6 @@ class ExperimentRunnerNode(Node):
                 return ('f_generate_search_path_node configured but never '
                         'activated (system_modes mode transition lost)')
         return ''
-
-    def record_broken_run(
-            self, result_path, exp_idx, run_idx, manager, result_filename,
-            reason):
-        """Log a broken run and move its metrics row into a rejected file."""
-        result_path = Path(result_path)
-        record = {
-            'run': f'run_{exp_idx}_{run_idx}',
-            'adaptation_manager': manager,
-            'reason': reason,
-            'timestamp': datetime.now().isoformat(),
-        }
-        with open(result_path / 'rejected_runs.jsonl', 'a') as handle:
-            handle.write(json.dumps(record) + '\n')
-
-        results_csv = result_path / f'{result_filename}.csv'
-        if not results_csv.is_file():
-            return
-        with open(results_csv, newline='') as handle:
-            rows = list(csv.reader(handle))
-        if len(rows) <= 1:
-            return
-        header = rows[0]
-        rejected_row = rows[-1]
-        with open(results_csv, 'w', newline='') as handle:
-            csv.writer(handle).writerows(rows[:-1])
-        rejected_csv = result_path / f'{result_filename}_rejected.csv'
-        write_header = not rejected_csv.is_file()
-        with open(rejected_csv, 'a', newline='') as handle:
-            writer = csv.writer(handle)
-            if write_header:
-                writer.writerow(header)
-            writer.writerow(rejected_row)
 
     def generate_mission_config_files(self, result_path):
         """Generate per-run mission configurations with randomized events."""

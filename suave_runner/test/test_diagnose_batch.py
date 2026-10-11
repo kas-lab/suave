@@ -103,8 +103,34 @@ def test_unsupported_and_inconsistent_records(tmp_path, attempt):
     with pytest.raises(ValueError, match='state-file schema'):
         diagnose(state)
     (tmp_path / 'empty').mkdir()
-    with pytest.raises(ValueError, match='not a campaign'):
+    with pytest.raises(ValueError, match='expected a batch'):
         diagnose(tmp_path / 'empty')
+
+
+@pytest.mark.parametrize('relative, names', [
+    ('', ['exp3', 'exp1']),
+    ('state.json', ['exp3', 'exp1']),
+    ('campaigns', ['exp3', 'exp1']),
+    ('campaigns/exp1', ['exp1']),
+])
+def test_accepts_every_batch_form(tmp_path, attempt, relative, names):
+    """A batch lists manifest campaigns; one campaign keeps its count."""
+    for name in ('exp3', 'exp1'):
+        campaign = tmp_path / 'campaigns' / name
+        campaign.mkdir(parents=True)
+        finished(attempt, campaign, 'run_0_0', 'completed')
+    (tmp_path / 'exp.yml').write_text(
+        '/suave_runner_node:\n  ros__parameters:\n    experiments:\n'
+        '      - \'{"num_runs": 2}\'\n')
+    (tmp_path / 'state.json').write_text(json.dumps({
+        'schema_version': 2, 'campaigns': [
+            {'name': name, 'package': 'pkg', 'config_file': 'exp.yml'}
+            for name in ('exp3', 'exp1')]}))
+    with patch('suave_runner.diagnose_batch.get_package_share_directory',
+               return_value=str(tmp_path)):
+        report = diagnose(tmp_path / relative)
+    assert [c['path'].rsplit('/', 1)[1] for c in report['campaigns']] == names
+    assert {c['expected_runs'] for c in report['campaigns']} == {2}
 
 
 def test_systemic_requires_repetition():

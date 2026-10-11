@@ -91,8 +91,7 @@ def test_failed_and_pending_bags_are_never_selected(tmp_path):
         'run_0_2': run('running', 'pending', 'a3'),
     }
     write_runs(runs)
-    _, selected, excluded = plotter.accepted_entries(
-        tmp_path / 'rosbags', ['bt'])
+    selected, excluded = plotter.accepted_entries(tmp_path, ['bt'])
     assert [entry['bag_path'] for entry in selected] == [
         'rosbags/bt_suave_run_0_0_a1']
     assert {item['bag_path'] for item in excluded} == {
@@ -101,7 +100,7 @@ def test_failed_and_pending_bags_are_never_selected(tmp_path):
     runs['run_0_2']['status'] = 'completed'
     write_runs(runs)
     with pytest.raises(ValueError, match='without accepted bag'):
-        plotter.accepted_entries(tmp_path / 'rosbags', ['bt'])
+        plotter.accepted_entries(tmp_path, ['bt'])
 
 
 def test_plot_no_data_and_requirement_outputs(tmp_path):
@@ -125,3 +124,35 @@ def test_plot_no_data_and_requirement_outputs(tmp_path):
     assert (tmp_path / 'battery_reaction_time.png').is_file()
     assert report['per_grid_counts']['rebetmc'] == [0, 1, 1]
     assert plotter.MANAGER_LABELS['rebetmc'] == 'TacticalRetreat'
+
+
+@pytest.mark.parametrize('relative', ['', 'state.json', 'campaigns',
+                                      'campaigns/exp1'])
+def test_main_writes_per_campaign_outputs(tmp_path, relative):
+    """Accept every batch form and write each campaign's own folder."""
+    plotter = load_plotter()
+    names = ['exp1'] if relative == 'campaigns/exp1' else ['exp1', 'exp2']
+    for name in ('exp1', 'exp2'):
+        campaign = tmp_path / 'campaigns' / name
+        campaign.mkdir(parents=True)
+        (campaign / 'runs.json').write_text(json.dumps({
+            'schema_version': 2, 'campaign': {}, 'runs': {'run_0_0': {
+                'adaptation_manager': 'bt', 'mission_name': 'suave',
+                'experiment_launch': 'ros2 launch pkg file',
+                'status': 'completed', 'attempt_id': 'a1', 'bag': None,
+                'failure_type': '', 'failure_reason': '',
+                'started_at': 't0', 'finished_at': 't1', 'attempts': []}}}))
+    (tmp_path / 'state.json').write_text(json.dumps({
+        'schema_version': 2, 'campaigns': [
+            {'name': name, 'package': 'suave_runner', 'config_file': 'c.yml'}
+            for name in ('exp1', 'exp2')]}))
+    plotter.main([str(tmp_path / relative), '--formats', 'png',
+                  '--samples', '3'])
+    results = tmp_path / 'campaign_results'
+    assert sorted(p.name for p in results.iterdir()) == names
+    for name in names:
+        coverage = json.loads((results / name / 'requirement_fulfillment' /
+                               'coverage.json').read_text())
+        assert coverage['campaign'] == str(tmp_path / 'campaigns' / name)
+        assert coverage['exclusions'] == [
+            {'run_id': 'run_0_0', 'reason': 'recording_disabled'}]

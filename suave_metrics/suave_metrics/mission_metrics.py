@@ -14,6 +14,7 @@
 """module used to save metrics."""
 import csv
 from datetime import datetime
+import os
 from pathlib import Path
 
 import statistics
@@ -121,6 +122,9 @@ class MissionMetrics(Node):
 
         self.mission_name = self.get_parameter('mission_name').value
         self.mission_name += ' ' + self.adaptation_manager
+        # Set by suave_runner so analysis keeps only accepted attempts' rows.
+        self.run_idx = os.environ.get('SUAVE_RUN_IDX', '')
+        self.attempt_id = os.environ.get('SUAVE_ATTEMPT_ID', '')
 
         self.mission_start_time = None
         self.pipeline_detected_time = None
@@ -485,6 +489,8 @@ class MissionMetrics(Node):
             'time searching pipeline (s)',
             'distance inspected (m)',
             'mean reaction time (s)',
+            'run_idx',
+            'attempt_id',
         ]
 
         date = datetime.now().strftime('%d-%b-%Y-%H-%M-%S')
@@ -505,7 +511,9 @@ class MissionMetrics(Node):
             pipeline_detected,
             detection_time_delta,
             self.distance_inspected,
-            mean_reaction_time
+            mean_reaction_time,
+            self.run_idx,
+            self.attempt_id,
         ]
 
         self.save_metrics(
@@ -519,8 +527,9 @@ class MissionMetrics(Node):
             self.save_metrics(
                 self.result_path,
                 component_file,
-                ['mission_name', 'datetime', 'reaction time (s)'],
-                [self.mission_name, date, t]
+                ['mission_name', 'datetime', 'reaction time (s)', 'run_idx',
+                 'attempt_id'],
+                [self.mission_name, date, t, self.run_idx, self.attempt_id]
             )
 
         wv_file = self.result_filename + '_wv_reaction_time'
@@ -528,8 +537,9 @@ class MissionMetrics(Node):
             self.save_metrics(
                 self.result_path,
                 wv_file,
-                ['mission_name', 'datetime', 'reaction time (s)'],
-                [self.mission_name, date, t]
+                ['mission_name', 'datetime', 'reaction time (s)', 'run_idx',
+                 'attempt_id'],
+                [self.mission_name, date, t, self.run_idx, self.attempt_id]
             )
 
         battery_file = self.result_filename + '_battery_reaction_time'
@@ -537,8 +547,9 @@ class MissionMetrics(Node):
             self.save_metrics(
                 self.result_path,
                 battery_file,
-                ['mission_name', 'datetime', 'reaction time (s)'],
-                [self.mission_name, date, t]
+                ['mission_name', 'datetime', 'reaction time (s)', 'run_idx',
+                 'attempt_id'],
+                [self.mission_name, date, t, self.run_idx, self.attempt_id]
             )
 
         self.mission_done_pub.publish(Bool(data=True))

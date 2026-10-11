@@ -14,11 +14,12 @@
 
 """Compare SUAVE experiment metrics using the paired Wilcoxon signed-rank test."""
 
-# Every input CSV must already carry a `run_idx` column identifying which run
-# of that managing system each row is, produced by `sort_results.py` (see the
-# sort-suave-results skill). Pairing by row order or position is not
-# supported: a CSV without `run_idx`, with duplicate `run_idx` values, or with
-# no matching counterpart in the other system raises rather than guessing.
+# Every input CSV is a raw campaign CSV whose rows carry the `run_idx` and
+# `attempt_id` written by mission_metrics. Only each run's accepted attempt,
+# read from the campaign's runs.json, is kept; rows of failed attempts are
+# dropped. Pairing by row order or position is not supported: a CSV without
+# those columns, outside a runs.json campaign, or with no matching
+# counterpart in the other system raises rather than guessing.
 
 import json
 from pathlib import Path
@@ -30,6 +31,11 @@ from rclpy.node import Node
 from scipy.stats import rankdata
 from scipy.stats import wilcoxon
 
+if __package__:
+    from . import common
+else:
+    import common
+
 # (CSV column, result key, alternative, exclude pairs with pipeline-not-found)
 METRICS = [
     ('time searching pipeline (s)', 'search_time', 'less', True),
@@ -38,23 +44,11 @@ METRICS = [
 
 
 def load_system(managing_system, csv_path):
-    """Load one managing system's sorted, run_idx-tagged result CSV."""
-    df = pd.read_csv(csv_path)
-    if 'run_idx' not in df.columns:
-        raise ValueError(
-            f"{csv_path} ({managing_system}) has no 'run_idx' column. Sort "
-            'it first with sort_results.py (see the sort-suave-results '
-            'skill) -- pairing by row position is not supported.')
-    if df['run_idx'].duplicated().any():
-        duplicates = sorted(df.loc[df['run_idx'].duplicated(), 'run_idx'])
-        raise ValueError(
-            f'{csv_path} ({managing_system}): duplicate run_idx values '
-            f'{duplicates}; refusing to pair on an ambiguous key.')
+    """Load one managing system's accepted rows from a raw campaign CSV."""
+    df = common.accepted_rows(csv_path, managing_system)
     if 'pipeline found' in df.columns:
-        df = df.copy()
-        df['pipeline found'] = (
-            df['pipeline found'].astype(str).str.strip().str.lower()
-            == 'true')
+        df['pipeline found'] = common.parse_pipeline_found(
+            df['pipeline found'], csv_path)
     return df
 
 
@@ -211,7 +205,7 @@ class WilcoxonAnalysis(Node):
     """ROS front end for the pairwise, run-matched Wilcoxon analysis."""
 
     def __init__(self, **kwargs):
-        """Load configured, run_idx-tagged datasets."""
+        """Load the configured campaign CSVs' accepted rows."""
         super().__init__('wilcoxon_analysis', **kwargs)
 
         self.declare_parameter('result_path', '~/suave/results')

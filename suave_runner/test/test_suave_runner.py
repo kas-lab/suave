@@ -629,6 +629,40 @@ def test_launch_experiment_passes_recording_disabled(tmp_path):
         rclpy.shutdown()
 
 
+def test_launch_experiment_passes_run_identity_env(tmp_path):
+    """Pass the run index and attempt id to the experiment launch."""
+    rclpy.init()
+    try:
+        runner = ExperimentRunnerNode(
+            parameter_overrides=_minimal_runner_params())
+        calls = []
+        runner.start_launch_process = lambda *args: (
+            calls.append(args) or (SimpleNamespace(), SimpleNamespace()))
+        entry = start_attempt(
+            open_runs(tmp_path), 'run_1_4', 'bt', 'suave', 'ros2 launch',
+            **attempt_details('run_1_4', 'bt', 'suave', False))
+        runner._active_attempt = ('run_1_4', entry)
+
+        with patch(
+            'suave_runner.suave_runner.get_package_share_directory',
+            return_value='/tmp'
+        ), patch(
+            'suave_runner.suave_runner.PythonLaunchDescriptionSource',
+            side_effect=lambda path: path
+        ), patch('suave_runner.suave_runner.IncludeLaunchDescription'):
+            runner.launch_experiment(
+                'ros2 launch suave_bringup mission.launch.py',
+                str(tmp_path), 'bt_suave', '/tmp/mission_config.yaml',
+                Path('/tmp/logs'))
+
+        (_description, _log_dir, name, env), = calls
+        assert name == 'experiment'
+        assert env == {'SUAVE_RUN_IDX': '4',
+                       'SUAVE_ATTEMPT_ID': entry['attempt_id']}
+    finally:
+        rclpy.shutdown()
+
+
 def test_record_process_exit_queues_nonzero_exit():
     stop_event = SimpleNamespace(is_set=lambda: False)
     failure_queue = Queue()
@@ -762,31 +796,6 @@ def test_detect_broken_run_ignores_logs_that_only_mention_node():
             '[INFO] [2.0] [rosbag2_recorder]: Subscribed to topic '
             "'/f_generate_search_path_node/transition_event'\n")
         assert runner.detect_broken_run(workdir)
-    finally:
-        rclpy.shutdown()
-        shutil.rmtree(workdir, ignore_errors=True)
-
-
-def test_record_broken_run_quarantines_last_results_row():
-    rclpy.init()
-    workdir = Path(tempfile.mkdtemp())
-    try:
-        runner = ExperimentRunnerNode(
-            parameter_overrides=_minimal_runner_params())
-        results_csv = workdir / 'bt_suave.csv'
-        results_csv.write_text(
-            'mission name,pipeline found\nrow-a,True\nrow-b,False\n')
-
-        runner.record_broken_run(
-            workdir, 2, 6, 'bt', 'bt_suave', 'reason text')
-
-        remaining = results_csv.read_text()
-        assert 'row-a' in remaining
-        assert 'row-b' not in remaining
-        assert 'row-b,False' in (
-            workdir / 'bt_suave_rejected.csv').read_text()
-        manifest = (workdir / 'rejected_runs.jsonl').read_text()
-        assert '"run": "run_2_6"' in manifest
     finally:
         rclpy.shutdown()
         shutil.rmtree(workdir, ignore_errors=True)

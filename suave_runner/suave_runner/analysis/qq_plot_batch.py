@@ -24,10 +24,15 @@ import sys
 
 import matplotlib
 
+from suave_tools.layout import batch_layout
+from suave_tools.layout import RESULTS_DIR
+
 
 if __package__:
+    from . import common
     from . import qq_plot
 else:
+    import common
     import qq_plot
 
 
@@ -41,8 +46,10 @@ Keep both scripts together. No ROS imports are required.
     python3 qq_plot_batch.py /path/to/batch --format png \
         --metrics 'time searching pipeline (s)' 'distance inspected (m)'
 
-Reads <batch>/campaigns/<experiment>/sorted/*_sorted.csv and saves PNGs
-under <batch>/campaings_results/<experiment>/q-q-plots/ by default.
+Reads each campaign's raw <manager>_<mission>.csv files (managers from its
+runs.json), keeps each run's accepted attempt, and saves PNGs under
+<batch>/campaign_results/<experiment>/q-q-plots/ by default. The input
+is a batch, its campaigns/ directory, its state.json, or one campaign.
 All unordered method pairs are compared within each campaign using matched
 run_idx IDs.
 The default metrics are search time and distance inspected. This script
@@ -61,58 +68,42 @@ def filename_component(value):
     return re.sub(r'[^A-Za-z0-9_.-]+', '_', value).strip('._') or 'metric'
 
 
-def resolve_layout(root):
-    """Return the batch root and campaigns for supported input layouts."""
-    root = Path(root).expanduser().resolve()
-    if not root.is_dir():
-        raise ValueError(f'Batch folder does not exist: {root}')
-    if (root / 'campaigns').is_dir():
-        batch_root, campaigns_root = root, root / 'campaigns'
-    elif root.name == 'campaigns':
-        batch_root, campaigns_root = root.parent, root
-    elif (root / 'sorted').is_dir():
-        batch_root = (root.parent.parent
-                      if root.parent.name == 'campaigns' else root)
-        return batch_root, [root]
-    else:
-        raise ValueError(
-            f'{root}: expected a batch containing campaigns/, a campaigns '
-            'directory, or a campaign containing sorted/.')
-    campaigns = sorted(p for p in campaigns_root.iterdir() if p.is_dir())
-    if not campaigns:
-        raise ValueError(f'No campaign folders found in {campaigns_root}')
-    return batch_root, campaigns
-
-
 def run_batch(args):
     """Plot each unordered method pair per metric within each campaign."""
     metrics = args.metrics or DEFAULT_METRICS
     failures = 0
     completed = 0
-    batch_root, campaigns = resolve_layout(args.input)
+    layout = batch_layout(args.input)
+    if not layout.campaigns:
+        raise ValueError(f'No campaigns found in {layout.root}')
+    campaigns = layout.campaigns
     output_root = (args.output.expanduser() if args.output else
-                   batch_root / 'campaings_results')
+                   layout.results_root)
     print(f'Output directory: {output_root}')
     for campaign in campaigns:
-        files = sorted((campaign / 'sorted').glob('*_sorted.csv'))
-        if len(files) < 2:
-            print(f'Error: {campaign}/sorted needs at least two '
-                  '*_sorted.csv files.', file=sys.stderr)
+        try:
+            methods = common.campaign_methods(campaign)
+        except (ValueError, OSError) as error:
+            print(f'Error: {error}', file=sys.stderr)
+            failures += 1
+            continue
+        if len(methods) < 2:
+            print(f'Error: {campaign} needs at least two managers in '
+                  'runs.json.', file=sys.stderr)
             failures += 1
             continue
         # Read each file once; failed reads are not cached, so every pair
         # touching a broken file still reports its own failure.
-        read_csv = lru_cache(maxsize=None)(qq_plot.read_csv)
-        for pair_number, (file_a, file_b) in enumerate(combinations(files, 2)):
+        read_csv = lru_cache(maxsize=None)(common.accepted_rows)
+        for pair_number, ((label_a, file_a), (label_b, file_b)) in enumerate(
+                combinations(methods, 2)):
             for metric_number, metric in enumerate(metrics):
                 context = f'{campaign.name} | {metric}'
                 try:
                     difference, dropped = qq_plot.paired_differences(
-                        read_csv(file_a), metric, file_a,
-                        read_csv(file_b), metric, file_b,
+                        read_csv(file_a, label_a), metric, file_a,
+                        read_csv(file_b, label_b), metric, file_b,
                         args.run_column)
-                    label_a = qq_plot.method_name(file_a)
-                    label_b = qq_plot.method_name(file_b)
                     # Indices prevent collisions after sanitizing names.
                     name = (
                         f'{pair_number:03d}_{metric_number:02d}_'
@@ -139,14 +130,14 @@ def build_parser():
         description=HELP_TEXT,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('input', type=Path,
-                        help='Batch root, campaigns directory, or campaign')
+                        help='Batch, campaigns directory, state.json, or '
+                        'campaign')
     parser.add_argument('--metrics', nargs='+', help='Metric columns; '
                         'defaults to search time and distance inspected')
     parser.add_argument('--run-column', default='run_idx',
                         help='Pairing key for files (default: run_idx)')
     parser.add_argument('--output', type=Path,
-                        help='Output root; defaults to '
-                        '<batch>/campaings_results')
+                        help=f'Output root; defaults to <batch>/{RESULTS_DIR}')
     parser.add_argument('--format', choices=('pdf', 'png', 'svg'),
                         default='png', help='Figure format (default: png)')
     return parser

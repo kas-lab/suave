@@ -100,6 +100,18 @@ ros2 run suave_runner diagnose_batch ~/suave/results/<campaign_folder>
 ros2 run suave_runner diagnose_batch <path> --json
 ```
 
+**Accepted result paths.** `diagnose_batch`, `qq_plot_batch.py`,
+`wilcoxon_analysis_batch.py`, `wilcoxon_latex_tables_batch.py`, and
+`suave_requirements`' `plot_requirement_fulfillment.py` resolve their input
+the same way (`suave_tools.layout.batch_layout`): a batch folder, its
+`campaigns/` folder, its `state.json`, or one campaign folder (any folder
+holding `runs.json`). A campaign inside `<batch>/campaigns/` uses the batch's
+output folders; a campaign outside a batch uses its parent folder. New outputs
+go under `<root>/campaign_results/`. Existing `campaings_results/` folders
+are not renamed; for a `runs.json` batch whose analysis was written there,
+pass `--results-root` to the LaTeX script. Batches without `runs.json`
+(created before schema 2) are not supported.
+
 With the `suave` CLI: `suave batch diagnose --latest` or
 `suave batch diagnose <path> [--json]`.
 
@@ -160,6 +172,17 @@ logs are under `logs/<run_id>/<attempt_id>/`, the mission config is
 `mission_config_run<run_idx>.yaml`, and the bag is
 `<manager>_<mission>_<run_id>_<attempt_id>` under `rosbags/pending/`,
 `rosbags/`, or `rosbags/failed/` according to `bag`.
+
+The runner passes each attempt's identity to the experiment launch as the
+environment variables `SUAVE_RUN_IDX` and `SUAVE_ATTEMPT_ID`. `mission_metrics`
+writes them as the last two columns, `run_idx` and `attempt_id`, of
+`<manager>_<mission>.csv` and of its three reaction-time CSVs
+(`*_component_recovery_time.csv`, `*_wv_reaction_time.csv`,
+`*_battery_reaction_time.csv`); both are empty outside the runner. Rows of
+failed attempts (for example a `broken_run`) stay in the CSVs. The paired
+analysis scripts keep only each run's accepted attempt, the `attempt_id` of a
+`completed` run in `runs.json`, so there is no sorting step: no `sorted/`
+folder, no `*_sorted.csv`, no `rejected_runs.jsonl`, and no `*_rejected.csv`.
 
 The runner also ends a run immediately when a launched process exits with a
 nonzero status or a subsystem publishes `mission/control_failure`; the run is
@@ -374,10 +397,11 @@ arithmetic means directly.
 
 Mann-Whitney treats each system's runs as unrelated samples. If the campaign
 reused the same perturbation configuration across managing systems (SUAVE
-campaigns do, see `sort-suave-results`), use the paired Wilcoxon analysis
-below instead -- it controls for per-scenario difficulty and is more
-statistically powerful, but requires a run-identity column that a resumed
-campaign's raw CSVs do not carry by default.
+campaigns do), use the paired Wilcoxon analysis below instead -- it controls
+for per-scenario difficulty and is more statistically powerful, and it pairs
+runs on the `run_idx` column of the raw campaign CSVs. `mann_whitney_analysis`
+and `summarize_results` read every CSV row, including rows that failed
+attempts left behind.
 
 ## Wilcoxon analysis (paired)
 
@@ -386,19 +410,11 @@ signed-rank test on matched runs across managing systems, instead of treating
 them as independent samples. See the `wilcoxon-analysis` skill for the full
 workflow; summary:
 
-**Prerequisite: sort first.** Every input CSV must carry a `run_idx` column
-identifying which run of that managing system each row is. A `--resume`d
-campaign appends retried runs out of order, so this cannot be assumed from
-row position. Recover it first with `sort_results.py` (see the
-`sort-suave-results` skill):
-
-```bash
-python3 suave_runner/analysis/sort_results.py \
-  --csv ~/suave/results/bt_suave.csv --exp-idx 2 \
-  --output ~/suave/results/sorted/bt_suave_sorted.csv
-```
-
-Then run the paired analysis on the sorted CSVs:
+**Input: raw campaign CSVs.** Point `data_files` at the raw
+`<manager>_<mission>.csv` files of one campaign folder (the folder holding
+`runs.json`). Every row carries `run_idx` and `attempt_id`; only the rows of
+each run's accepted attempt, read from `runs.json`, are analyzed, so retried
+or failed attempts never enter a comparison:
 
 ```bash
 ros2 run suave_runner wilcoxon_analysis \
@@ -408,9 +424,9 @@ ros2 run suave_runner wilcoxon_analysis \
   -p correction:=none \
   -p data_files:='[
     "{\"managing_system\": \"none\", \
-      \"data_file\": \"~/suave/results/sorted/none_suave_sorted.csv\"}",
+      \"data_file\": \"~/suave/results/<campaign>/none_suave.csv\"}",
     "{\"managing_system\": \"bt\", \
-      \"data_file\": \"~/suave/results/sorted/bt_suave_sorted.csv\"}"
+      \"data_file\": \"~/suave/results/<campaign>/bt_suave.csv\"}"
   ]'
 ```
 
@@ -420,10 +436,10 @@ with this repo's own runner configs), a preconfigured launch file under
 
 ```bash
 ros2 launch suave_runner exp1_analysis_launch.py \
-  results_root:=~/suave/results/sorted
+  results_root:=~/suave/results/<campaign>
 ```
 
-`results_root` must point at that campaign's sorted-CSV directory;
+`results_root` must point at the campaign folder;
 `output_root` (defaults to `results_root`) and `correction` (defaults to
 `none`) can also be overridden. See
 [config/analysis/exp1_analysis_config.yml](config/analysis/exp1_analysis_config.yml)
@@ -436,9 +452,11 @@ Parameters beyond those shared with `mann_whitney_analysis`:
 |---|---|---|
 | `correction` | `none` | Multiple-comparison correction across every pair and metric in the run; set to `holm` to enable Holm-Bonferroni adjustment (raw p-values are copied into `p_adjusted` otherwise) |
 
-Unlike `mann_whitney_analysis`, `data_files` here must point at
-`run_idx`-tagged, sorted CSVs. A missing `run_idx` column, a duplicate
-`run_idx`, or an unmatched run raises rather than falling back to row order.
+Unlike `mann_whitney_analysis`, `data_files` here must point at raw CSVs
+inside a `runs.json` campaign. A CSV without `run_idx` or `attempt_id`, a
+folder without `runs.json`, a manager without completed runs, duplicate
+accepted rows, a completed run without a row, or an unmatched run raises
+rather than falling back to row order.
 
 The command writes:
 
@@ -568,18 +586,19 @@ python3 src/suave/suave_runner/suave_runner/analysis/qq_plot.py results.csv \
   --column-a suave --column-b baseline --output qq_suave_baseline.png
 ```
 
-Compare the same metric in two sorted method CSVs:
+Compare the same metric in two raw method CSVs of one campaign:
 
 ```bash
 python3 src/suave/suave_runner/suave_runner/analysis/qq_plot.py \
-  /path/to/campaign/sorted/metacontrol_suave_sorted.csv \
-  /path/to/campaign/sorted/bt_suave_sorted.csv \
+  /path/to/campaign/metacontrol_suave.csv \
+  /path/to/campaign/bt_suave.csv \
   --column-a 'time searching pipeline (s)' \
   --column-b 'time searching pipeline (s)' --output qq_search.png
 ```
 
-Separate files must belong to the same campaign and have matching, unique,
-nonmissing `run_idx` values; row order does not matter. `--run-column` selects
+Separate files must be raw CSVs of the same campaign folder (the one with
+`runs.json`). Each keeps only the accepted attempt of every run, and the
+files pair on matching, unique `run_idx` values; row order does not matter. `--run-column` selects
 another pairing key. Unmatched or duplicate IDs cause an error. The caller
 must ensure those IDs refer to the same experimental configurations.
 `--label-a` and `--label-b` override method labels derived from filenames.
@@ -594,21 +613,22 @@ python3 src/suave/suave_runner/suave_runner/analysis/qq_plot_batch.py \
 
 The batch script reuses the CSV script's validation and plotting functions;
 keep both scripts together. It accepts a batch root, its `campaigns` directory,
-or one campaign. It reads only `*_sorted.csv` files from each campaign's
-`sorted` folder and never pairs different campaigns. Search time and distance
+its `state.json`, or one campaign. It reads each campaign's raw `<manager>_<mission>.csv`
+files, with the managers taken from its `runs.json`, keeps each run's
+accepted attempt, and never pairs different campaigns. Search time and distance
 inspected are the default metrics; `--metrics` accepts an explicit list of
 metric column names.
 
 By default, results mirror the experiment folders under
-`<batch>/campaings_results/` (using this exact directory spelling):
+`<batch>/campaign_results/`:
 
 ```text
 all_experiments_20260904_093305/
   campaigns/
-    exp1/sorted/*.csv
-    exp2/sorted/*.csv
+    exp1/runs.json, *.csv
+    exp2/runs.json, *.csv
     ...
-  campaings_results/
+  campaign_results/
     exp1/q-q-plots/*.png
     exp2/q-q-plots/*.png
     ...
@@ -641,12 +661,12 @@ python3 src/suave/suave_runner/suave_runner/analysis/wilcoxon_analysis_batch.py 
   /home/ubuntu-user/suave/results/batches/all_experiments_20260904_093305
 ```
 
-It first sorts the raw aggregate CSVs in each `campaigns/<experiment>/`
-using the original `run_<exp_idx>_<run_idx>.done` markers, then analyzes
-the verified copies in `sorted/` and writes:
+For each `campaigns/<experiment>/` it reads the managers from `runs.json`,
+loads their raw `<manager>_<mission>.csv` files through the same
+accepted-attempt filter as `wilcoxon_analysis`, and writes:
 
 ```text
-campaings_results/
+campaign_results/
   exp1/
     q-q-plots/
     wilcoxon_analysis/
@@ -658,30 +678,13 @@ campaings_results/
       ...
 ```
 
-`--output PATH` overrides `campaings_results`, preserving the
+`--output PATH` overrides `campaign_results`, preserving the
 `<experiment>/wilcoxon_analysis/` structure. Keep this script alongside
-`wilcoxon_analysis.py` and `sort_results.py`. No package rebuild is needed
-for this direct invocation.
+`common.py` and `wilcoxon_analysis.py`. No package rebuild is needed for this
+direct invocation.
 
-Each campaign's runner configuration is resolved from `state.json`, supporting
-both the original batch launch-name keys and the newer campaign-name keys.
-The configuration's `experiments` list determines the method-to-`exp_idx`
-mapping, filenames, and expected run counts. If recorded config paths have
-moved, pass `--config-dir /path/to/original/configs`; this directory must
-contain the recorded config basenames (or `<experiment>_runner_config.yml`
-when no config is recorded). Use configs that match the original campaign.
-The script does not infer marker indices from alphabetical method order.
-
-The pre-step calls the existing `sort_results.reconstruct_run_index` without
-relaxing its count, timestamp-gap, or run-ID checks. Original CSVs and marker
-modification times are preserved. Run in the timezone used when the CSV
-`datetime` values were recorded. All configured methods are reconstructed and
-validated before any sorted CSV is updated; unchanged verified sorted files
-retain their modification times, and stale ones are refreshed. Only methods
-listed in that campaign configuration are analyzed, so unrelated old files
-in `sorted/` are ignored. Missing markers, configs, or raw CSVs, timestamp
-mismatches, and incomplete configured run counts fail that campaign before
-analysis instead of falling back to possibly stale sorted data.
+Every manager in a campaign's `runs.json` is analyzed, in experiment order;
+a campaign needs at least two.
 
 Runs must share experimental configurations within each campaign; never
 match unrelated campaigns just because their numeric IDs agree. The
@@ -724,8 +727,8 @@ python3 src/suave/suave_runner/suave_runner/latex/wilcoxon_latex_tables_batch.py
   /home/ubuntu-user/suave/results/batches/all_experiments_20260904_093305
 ```
 
-The wrapper discovers experiments under `<batch>/campaigns/` and reads each
-`<batch>/campaings_results/<experiment>/wilcoxon_analysis/*_results.csv`.
+The wrapper accepts the same path forms as the analysis scripts and reads
+each `<batch>/campaign_results/<experiment>/wilcoxon_analysis/*_results.csv`.
 It saves tables directly under the requested common directory:
 
 ```text
@@ -743,11 +746,11 @@ to `p_adjusted` from the primary results CSV; it does not use the secondary
 raw-p-value matrices or recompute correction. Temporary matrices adapt those
 values to the existing renderer and are removed after generation. Run
 `wilcoxon_analysis_batch.py` first if analysis is missing; table generation
-does not rerun sorting or statistical tests.
+does not rerun statistical tests.
 
 | Option | Meaning |
 |---|---|
-| `--results-root PATH` | Override `<batch>/campaings_results` |
+| `--results-root PATH` | Override `<batch>/campaign_results` (e.g. an older batch's `campaings_results`) |
 | `--output PATH` | Override the directory containing all generated tables |
 | `--p-values adjusted\|raw` | Display adjusted values by default; raw requires explicit selection |
 | `--alpha VALUE` | Color threshold, default 0.05 |
@@ -795,7 +798,8 @@ and the script exits nonzero if any campaign fails.
 The Python tools are grouped under `suave_runner/suave_runner/`:
 
 - `analysis/`: Mann-Whitney and Wilcoxon analysis, batch Wilcoxon analysis,
-  result sorting, Q-Q plotting, and descriptive result summaries.
+  Q-Q plotting, descriptive result summaries, and the shared CSV helpers in
+  `common.py`.
 - `latex/`: the table renderer and batch Wilcoxon LaTeX table generation.
 
 `suave_runner.py` and `run_batch.py` remain at the package root for experiment

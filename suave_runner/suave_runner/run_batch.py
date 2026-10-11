@@ -57,6 +57,7 @@ from rclpy.node import Node
 from suave_runner.diagnose_batch import campaign_progress
 from suave_runner.diagnose_batch import expected_runs
 from suave_runner.diagnose_batch import summary_lines
+from suave_tools.layout import load_manifest
 from suave_tools.runs import atomic_write_json
 from suave_tools.runs import load_runs
 from suave_tools.runs import RUNS_FILE
@@ -112,21 +113,6 @@ def parse_campaigns(campaign_strings):
         names_seen.add(entry['name'])
         campaigns.append(entry)
     return campaigns
-
-
-def load_manifest(state_file):
-    """Load and minimally validate a batch manifest (state.json)."""
-    try:
-        manifest = json.loads(state_file.read_text(encoding='utf-8'))
-    except (OSError, json.JSONDecodeError) as error:
-        raise ValueError(
-            f'cannot read state file {state_file}: {error}') from error
-
-    if manifest.get('schema_version') != 2:
-        raise ValueError(f'unsupported state-file schema in {state_file}')
-    if not isinstance(manifest.get('campaigns'), list):
-        raise ValueError(f'invalid campaign list in {state_file}')
-    return manifest
 
 
 def new_manifest(campaigns):

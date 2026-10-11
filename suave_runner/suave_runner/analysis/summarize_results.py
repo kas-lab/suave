@@ -19,6 +19,11 @@ from pathlib import Path
 
 import pandas as pd
 
+if __package__:
+    from . import common
+else:
+    import common
+
 
 RESULT_FILE_SUFFIX = '_suave.csv'
 DEFAULT_LATEX_FILENAME = 'suave_results.tex'
@@ -88,7 +93,7 @@ def calculate_statistics(results_path):
                     f'{csv_file} contains missing values in {column}')
             metric_data[metric_name] = values
 
-        pipeline_found = _parse_pipeline_found(
+        pipeline_found = common.parse_pipeline_found(
             data['pipeline found'], csv_file)
         reaction_values = metric_data['reaction_time']
         reaction_values = reaction_values[reaction_values != 0]
@@ -232,17 +237,6 @@ def main(args=None):
             print(f'LaTeX table written to {output_path}')
     except ValueError as error:
         parser.error(str(error))
-
-
-def _parse_pipeline_found(values, csv_file):
-    normalized = values.map(
-        lambda value: str(value).strip().lower() if not pd.isna(value) else '')
-    true_values = {'true', '1', 'yes'}
-    false_values = {'false', '0', 'no'}
-    invalid = ~normalized.isin(true_values | false_values)
-    if invalid.any():
-        raise ValueError(f'{csv_file} contains invalid pipeline found values')
-    return normalized.isin(true_values)
 
 
 def _format_statistic(mean, standard_deviation, precision, latex=False):

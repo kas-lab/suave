@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Shared fixtures for runs.json attempts."""
+"""Shared fixtures for runs.json attempts and their metrics CSVs."""
 
+import pandas as pd
 import pytest
 
 from suave_runner.run_artifacts import attempt_details
@@ -33,10 +34,11 @@ def valid_bag(path):
 def attempt():
     """Start (and optionally finish) an attempt in a campaign's runs.json."""
     def start(campaign, run_id='run_0_0', enabled=True, bag=True,
-              outcome=None, failure_type='', validate=valid_bag):
+              outcome=None, failure_type='', validate=valid_bag,
+              manager='bt', mission='suave'):
         runs = open_runs(campaign)
-        details = attempt_details(run_id, 'bt', 'suave', enabled)
-        entry = start_attempt(runs, run_id, 'bt', 'suave',
+        details = attempt_details(run_id, manager, mission, enabled)
+        entry = start_attempt(runs, run_id, manager, mission,
                               'ros2 launch pkg file', **details)
         write_runs(campaign, runs)
         if enabled and bag:
@@ -49,3 +51,36 @@ def attempt():
         return runs, entry
 
     return start
+
+
+@pytest.fixture
+def metrics_campaign(attempt):
+    """Write a campaign's runs.json and one raw metrics CSV per manager."""
+    def build(campaign, frames, retried=(), mission='suave'):
+        # frames maps manager -> rows with run_idx, in experiment order. A
+        # retried (manager, run_idx) first gets a failed attempt whose row
+        # holds sentinel 999 metrics, as a broken run would leave behind.
+        campaign.mkdir(parents=True, exist_ok=True)
+        for exp_idx, (manager, frame) in enumerate(frames.items()):
+            rows = []
+            for row in frame.to_dict('records'):
+                run_id = f'run_{exp_idx}_{row["run_idx"]}'
+                if (manager, row['run_idx']) in retried:
+                    _, failed = attempt(
+                        campaign, run_id, enabled=False, outcome='failed',
+                        failure_type='broken_run', manager=manager,
+                        mission=mission)
+                    rows.append({
+                        **{key: 999 for key in row},
+                        'run_idx': row['run_idx'],
+                        'pipeline found': True,
+                        'attempt_id': failed['attempt_id']})
+                _, entry = attempt(
+                    campaign, run_id, enabled=False, outcome='completed',
+                    manager=manager, mission=mission)
+                rows.append({**row, 'attempt_id': entry['attempt_id']})
+            pd.DataFrame(rows).to_csv(
+                campaign / f'{manager}_{mission}.csv', index=False)
+        return campaign
+
+    return build

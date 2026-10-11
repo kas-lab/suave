@@ -29,6 +29,8 @@ from std_msgs.msg import Float32  # noqa: I100,I201
 from suave_requirements.requirement_monitor import (  # noqa: I100,I201
     fulfillment_topic, REACTION_TIME, REACTION_TIME_TYPES, SEARCH_FOOTPRINT,
     THRUSTER_AVAILABILITY)
+from suave_tools.layout import batch_layout  # noqa: I100,I201
+from suave_tools.layout import RESULTS_DIR  # noqa: I100,I201
 from suave_tools.runs import accepted_runs  # noqa: I100,I201
 
 
@@ -79,20 +81,18 @@ COLORS = {
 TOPICS = {spec['topic']: key for key, spec in REQUIREMENTS.items()}
 
 
-def parse_args():
+def parse_args(argv=None):
     """Parse command-line arguments."""
-    default_bags = (
-        '~/suave/results/batches/batch_20261009_075625/campaigns/exp3/'
-        'rosbags'
-    )
     parser = argparse.ArgumentParser(
         description='Generate one plot per SUAVE requirement fulfillment.')
     parser.add_argument(
-        '--bags-dir', default=default_bags,
-        help='Directory containing accepted rosbag directories.')
+        'path',
+        help='Batch, campaigns directory, state.json, or campaign folder.')
     parser.add_argument(
-        '--output-dir', default='requirement_fulfillment_plots',
-        help='Directory where figures and coverage.json are written.')
+        '--output-dir',
+        help=('Output root; each campaign writes figures and coverage.json '
+              f'to <output-dir>/<campaign>/ (default: <batch>/{RESULTS_DIR}/'
+              '<campaign>/requirement_fulfillment).'))
     parser.add_argument(
         '--managers', nargs='+', default=MANAGERS,
         help='Manager identifiers to include.')
@@ -102,7 +102,7 @@ def parse_args():
     parser.add_argument(
         '--formats', nargs='+', default=['png', 'pdf'],
         help='Figure formats to write, e.g. png pdf svg.')
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def metadata_info(bag_dir):
@@ -112,13 +112,12 @@ def metadata_info(bag_dir):
     return data['rosbag2_bagfile_information']
 
 
-def accepted_entries(bags_dir, managers):
+def accepted_entries(campaign, managers):
     """Load the accepted bags of a campaign's completed runs."""
-    campaign = bags_dir.parent
     selected, excluded = accepted_runs(campaign)
     selected = [entry for entry in selected
                 if entry['adaptation_manager'] in managers]
-    return campaign, selected, excluded
+    return selected, excluded
 
 
 def read_bag(entry, campaign):
@@ -289,23 +288,15 @@ def write_coverage(output_dir, coverage):
         json.dumps(coverage, indent=2) + '\n', encoding='utf-8')
 
 
-def main():
-    """Generate requirement-fulfillment figures."""
-    args = parse_args()
-    if args.samples < 2:
-        raise ValueError('--samples must be at least 2')
-    bags_dir = Path(args.bags_dir).expanduser()
-    output_dir = Path(args.output_dir).expanduser()
-    grid = np.linspace(0.0, 100.0, args.samples)
-    campaign, selected, excluded = accepted_entries(bags_dir, args.managers)
-    print(f'Reading accepted bags from: {bags_dir}')
+def plot_campaign(campaign, output_dir, args, grid):
+    """Write one campaign's requirement figures and coverage report."""
+    selected, excluded = accepted_entries(campaign, args.managers)
     print(f'Campaign: {campaign}')
     print(f'Selected accepted bag(s): {len(selected)}')
     records = [read_bag(entry, campaign) for entry in selected]
     grouped, invalid = build_runs(records, grid)
     coverage = {
         'campaign': str(campaign),
-        'bags_dir': str(bags_dir),
         'options': vars(args),
         'selected': selected,
         'exclusions': excluded,
@@ -337,6 +328,24 @@ def main():
         print(f'Wrote {key} figure to {output_dir}')
     write_coverage(output_dir, coverage)
     print(f'Wrote coverage report to {output_dir / "coverage.json"}')
+
+
+def main(argv=None):
+    """Generate requirement-fulfillment figures for every campaign."""
+    args = parse_args(argv)
+    if args.samples < 2:
+        raise ValueError('--samples must be at least 2')
+    layout = batch_layout(args.path)
+    if not layout.campaigns:
+        raise ValueError(f'No campaigns found in {layout.root}')
+    grid = np.linspace(0.0, 100.0, args.samples)
+    for campaign in layout.campaigns:
+        if args.output_dir:
+            output_dir = Path(args.output_dir).expanduser() / campaign.name
+        else:
+            output_dir = (layout.results_root / campaign.name /
+                          'requirement_fulfillment')
+        plot_campaign(campaign, output_dir, args, grid)
 
 
 if __name__ == '__main__':

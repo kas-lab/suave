@@ -22,6 +22,10 @@ from pathlib import Path
 import sys
 
 from ament_index_python.packages import get_package_share_directory
+from suave_tools.layout import batch_layout
+from suave_tools.layout import CAMPAIGNS_DIR
+from suave_tools.layout import is_campaign
+from suave_tools.layout import load_manifest
 from suave_tools.runs import load_runs
 from suave_tools.runs import log_dir as attempt_log_dir
 from suave_tools.runs import parse_run_id
@@ -181,24 +185,23 @@ def _manifest_expected(entry):
 
 
 def diagnose(path):
-    """Inspect a batch manifest, batch directory, or campaign directory."""
-    path = Path(path).expanduser().resolve()
-    if not path.exists():
-        raise ValueError(f'not found: {path}')
-    state_file = path if path.is_file() else path / 'state.json'
-    if state_file.is_file():
-        manifest = json.loads(state_file.read_text())
-        if manifest.get('schema_version') != 2 or not isinstance(
-                manifest.get('campaigns'), list):
-            raise ValueError(f'unsupported state-file schema: {state_file}')
-        campaigns = [
-            diagnose_campaign(state_file.parent / 'campaigns' / entry['name'],
-                              _manifest_expected(entry))
-            for entry in manifest['campaigns']]
-        return {'schema_version': 1, 'campaigns': campaigns}
-    if not (path / RUNS_FILE).is_file():
-        raise ValueError(f'not a campaign result directory: {path}')
-    return {'schema_version': 1, 'campaigns': [diagnose_campaign(path)]}
+    """Inspect a state.json, batch, campaigns directory, or campaign."""
+    layout = batch_layout(path)
+    entries = {}
+    if layout.manifest is not None:
+        entries = {entry['name']: entry
+                   for entry in load_manifest(layout.manifest)['campaigns']}
+    if entries and not is_campaign(Path(path).expanduser().resolve()):
+        # Manifest order, including campaigns that have not started yet.
+        folders = [layout.root / CAMPAIGNS_DIR / name for name in entries]
+    else:
+        folders = layout.campaigns
+    if not folders:
+        raise ValueError(f'no campaigns found: {layout.root}')
+    return {'schema_version': 1, 'campaigns': [
+        diagnose_campaign(folder, _manifest_expected(entries[folder.name])
+                          if folder.name in entries else None)
+        for folder in folders]}
 
 
 def render(report):
@@ -227,7 +230,8 @@ def render(report):
 def main(argv=None):
     """Print diagnosis; return 2 for invalid input, not mission failures."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('path', help='state.json, batch or campaign folder')
+    parser.add_argument(
+        'path', help='state.json, batch, campaigns directory, or campaign')
     parser.add_argument('--json', action='store_true', help='print JSON report')
     args = parser.parse_args(argv)
     try:

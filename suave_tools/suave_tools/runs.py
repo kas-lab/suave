@@ -144,6 +144,23 @@ def accepted_runs(campaign):
     return selected, excluded
 
 
+def accepted_attempts(campaign):
+    """Return {manager: {run_idx: attempt_id}} for every completed run."""
+    runs = load_runs(campaign)['runs']
+    accepted, experiments = {}, {}
+    for run_id in sorted(runs, key=parse_run_id):
+        entry = runs[run_id]
+        exp_idx, run_idx = parse_run_id(run_id)
+        manager = entry['adaptation_manager']
+        if experiments.setdefault(manager, exp_idx) != exp_idx:
+            raise ValueError(
+                f'{campaign}: manager {manager!r} appears in experiments '
+                f'{experiments[manager]} and {exp_idx}')
+        if entry['status'] == 'completed':
+            accepted.setdefault(manager, {})[run_idx] = entry['attempt_id']
+    return accepted
+
+
 def _unselected_bags(campaign, seen):
     exclusions = []
     for metadata in sorted((campaign / 'rosbags').glob('**/metadata.yaml')):

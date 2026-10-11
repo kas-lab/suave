@@ -185,6 +185,7 @@ For **external managing systems**, include `suave_base/launch/suave_base.launch.
 Per-attempt logs are written to `<result_path>/logs/run_{exp_idx}_{run_idx}/<attempt_id>/`: `ardupilot.log` (raw SITL stdout/stderr), `simulation/` and `experiment/` (ROS node logs via `ROS_LOG_DIR`).
 `resume_result_path` parameter resumes a crashed campaign from an existing result folder; `random_seed` (default `100`) controls perturbation reproducibility.
 Each campaign's `runs.json` (`schema_version: 2`, atomic tmp+fsync+rename, written only by the runner) is the single source of run progress: a run is complete iff `status == "completed"`, and resume skips only those. Bag and log paths are derived from `run_id` + `attempt_id`, not stored. The bag is moved before the final `runs.json` write, so recovery decides from where the bag is on disk.
+The runner passes `SUAVE_RUN_IDX`/`SUAVE_ATTEMPT_ID` to the experiment launch; `mission_metrics` writes them as the `run_idx`/`attempt_id` columns of all four CSVs. Failed attempts' rows stay in the CSVs: analysis keeps only each completed run's `attempt_id` from `runs.json` (`suave_runner/analysis/common.py`); there is no sorting step.
 `run_batch`'s `resume_state_file` is a separate, batch-level resume mechanism — it points at a batch's `state.json`, not at a single campaign's result folder. `state.json` is a write-once manifest (`schema_version: 2`, campaign `name`/`package`/`config_file`); campaign progress is derived from `campaigns/<name>/runs.json` against the runner config.
 
 ## Code Conventions

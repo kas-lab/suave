@@ -11,10 +11,17 @@ thruster, water-visibility and battery reaction times) plus a
 `coverage.json` provenance report. Run it with the workspace sourced:
 
 ```Bash
-C=~/suave/results/batches/<batch>/campaigns/<campaign>
+B=~/suave/results/batches/<batch>
+python3 src/suave/suave_requirements/scripts/plot_requirement_fulfillment.py $B
 python3 src/suave/suave_requirements/scripts/plot_requirement_fulfillment.py \
-  --bags-dir $C/rosbags --output-dir $C/requirement_fulfillment_plots
+  $B/campaigns/<campaign>
 ```
+
+The path may be a batch, its `campaigns/` folder, its `state.json`, or one
+campaign folder (with `runs.json`). Each campaign gets its own folder, by
+default `<batch>/campaign_results/<campaign>/requirement_fulfillment/` (a
+campaign outside a batch uses its parent folder instead of `<batch>`);
+`--output-dir DIR` writes to `DIR/<campaign>/` instead.
 
 Options: `--managers` (default: all six exp3 managers), `--samples` (grid
 points per run, default `1001`, minimum `2`), `--formats` (default `png pdf`).
@@ -22,7 +29,7 @@ The `rebetmc` manager is labelled **TacticalRetreat** in figures.
 
 ### Which bags are used
 
-Bags are selected from the campaign folder (the parent of `--bags-dir`) with
+Bags are selected from each campaign folder with
 `suave_tools.runs.accepted_runs`, never by scanning directory names:
 
 - A trial counts only if its entry in the campaign's `runs.json`

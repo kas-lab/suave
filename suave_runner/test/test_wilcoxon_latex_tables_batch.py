@@ -51,18 +51,29 @@ def _results():
     return pd.DataFrame(rows)
 
 
-def _campaign(root, name='exp1'):
-    (root / 'campaigns' / name).mkdir(parents=True)
-    folder = root / 'campaings_results' / name / 'wilcoxon_analysis'
+@pytest.fixture
+def campaign(tmp_path, attempt):
+    """Create a runs.json campaign and its saved Wilcoxon results."""
+    def build(name='exp1', results=True):
+        path = tmp_path / 'campaigns' / name
+        path.mkdir(parents=True)
+        attempt(path, enabled=False, outcome='completed')
+        return _results_file(tmp_path, name) if results else path
+
+    return build
+
+
+def _results_file(root, name):
+    folder = root / 'campaign_results' / name / 'wilcoxon_analysis'
     folder.mkdir(parents=True)
     path = folder / f'{name}_wilcoxon_results.csv'
     _results().to_csv(path, index=False)
     return path
 
 
-def test_default_batch_tables_use_adjusted_values(tmp_path):
+def test_default_batch_tables_use_adjusted_values(tmp_path, campaign):
     """Render every campaign using corrected values in the requested folder."""
-    paths = [_campaign(tmp_path, name) for name in ('exp1', 'extended_exp1')]
+    paths = [campaign(name) for name in ('exp1', 'extended_exp1')]
     originals = {p: p.read_bytes() for p in paths}
     assert batch.main([str(tmp_path)]) == 0
     folder = tmp_path / 'campaigns_latex_tables' / 'wilcoxon_analysis'
@@ -77,9 +88,9 @@ def test_default_batch_tables_use_adjusted_values(tmp_path):
     assert originals == {p: p.read_bytes() for p in paths}
 
 
-def test_raw_values_require_explicit_option(tmp_path):
+def test_raw_values_require_explicit_option(tmp_path, campaign):
     """Render raw values and identify them as unadjusted in the caption."""
-    _campaign(tmp_path)
+    campaign()
     output = tmp_path / 'custom'
     assert batch.main([str(tmp_path), '--p-values', 'raw',
                        '--output', str(output)]) == 0
@@ -89,9 +100,9 @@ def test_raw_values_require_explicit_option(tmp_path):
     assert 'Holm-adjusted' not in text
 
 
-def test_uncomputed_tests_and_escaped_labels(tmp_path):
+def test_uncomputed_tests_and_escaped_labels(tmp_path, campaign):
     """Preserve absent tests and escape unknown method labels."""
-    path = _campaign(tmp_path)
+    path = campaign()
     frame = _results().replace({'planta': 'method_A&B'})
     frame.loc[0, ['p_raw', 'p_adjusted']] = np.nan
     frame.loc[0, 'note'] = 'fewer than 2 nonzero differences; not computed'
@@ -142,25 +153,35 @@ def test_invalid_results_are_rejected(tmp_path, problem, message):
         batch.load_results(path)
 
 
-def test_missing_analysis_does_not_skip_silently(tmp_path, capsys):
+def test_missing_analysis_does_not_skip_silently(tmp_path, capsys, campaign):
     """Report missing analysis while still rendering available campaigns."""
-    _campaign(tmp_path, 'good')
-    (tmp_path / 'campaigns' / 'bad').mkdir()
+    campaign('good')
+    campaign('bad', results=False)
     assert batch.main([str(tmp_path)]) == 1
     assert 'run wilcoxon_analysis_batch.py first' in capsys.readouterr().err
     assert (tmp_path / 'campaigns_latex_tables' / 'wilcoxon_analysis' /
             'good_wilcoxon.tex').is_file()
 
 
-def test_custom_results_root(tmp_path):
+def test_custom_results_root(tmp_path, campaign):
     """Locate analysis produced with an overridden batch output root."""
-    _campaign(tmp_path)
+    campaign()
     custom = tmp_path / 'custom_results'
-    (tmp_path / 'campaings_results').rename(custom)
+    (tmp_path / 'campaign_results').rename(custom)
     assert batch.main([str(tmp_path), '--results-root', str(custom)]) == 0
 
 
 def test_missing_batch(tmp_path, capsys):
     """Report an absent batch without a traceback."""
     assert batch.main([str(tmp_path / 'missing')]) == 1
-    assert 'does not exist' in capsys.readouterr().err
+    assert 'not found' in capsys.readouterr().err
+
+
+@pytest.mark.parametrize('relative', ['', 'campaigns', 'campaigns/exp1'])
+def test_accepts_batch_campaigns_dir_and_campaign(tmp_path, campaign,
+                                                  relative):
+    """Every input form renders into the batch's LaTeX folder."""
+    campaign()
+    assert batch.main([str(tmp_path / relative)]) == 0
+    assert (tmp_path / 'campaigns_latex_tables' / 'wilcoxon_analysis' /
+            'exp1_wilcoxon.tex').is_file()

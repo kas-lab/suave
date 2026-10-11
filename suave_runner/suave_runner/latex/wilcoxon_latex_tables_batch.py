@@ -24,6 +24,10 @@ import numpy as np
 
 import pandas as pd
 
+from suave_tools.layout import batch_layout
+from suave_tools.layout import LATEX_DIR
+from suave_tools.layout import RESULTS_DIR
+
 
 if __package__:
     from . import latex_tables
@@ -38,10 +42,12 @@ Keep latex_tables.py alongside this script. No ROS imports are required.
     python3 wilcoxon_latex_tables_batch.py /path/to/batch
     python3 wilcoxon_latex_tables_batch.py /path/to/batch --p-values raw
 
-Reads campaings_results/<experiment>/wilcoxon_analysis/*_results.csv.
+The input is a batch, its campaigns/ directory, its state.json, or one
+campaign. Reads campaign_results/<experiment>/wilcoxon_analysis/
+*_results.csv (use --results-root for older campaings_results folders).
 Writes campaigns_latex_tables/wilcoxon_analysis/<experiment>_wilcoxon.tex.
 Adjusted p-values are used by default. Analysis must already exist: this
-script renders results without recomputing tests or sorting raw data.
+script renders results without recomputing tests.
 """
 
 
@@ -197,13 +203,14 @@ def build_parser():
     parser = argparse.ArgumentParser(
         description=HELP_TEXT,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('input', type=Path, help='Batch root with campaigns/')
+    parser.add_argument('input', type=Path,
+                        help='Batch, campaigns directory, state.json, or '
+                        'campaign')
     parser.add_argument('--results-root', type=Path,
-                        help='Analysis root; defaults to '
-                        '<batch>/campaings_results')
+                        help=f'Analysis root; defaults to <batch>/{RESULTS_DIR}')
     parser.add_argument('--output', type=Path,
                         help='Table directory; defaults to '
-                        '<batch>/campaigns_latex_tables/wilcoxon_analysis')
+                        f'<batch>/{LATEX_DIR}/wilcoxon_analysis')
     parser.add_argument('--p-values', choices=('adjusted', 'raw'),
                         default='adjusted', help='Values to display '
                         '(default: adjusted; no correction is recomputed)')
@@ -218,21 +225,18 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if not 0 < args.alpha < 1:
         parser.error('--alpha must be between 0 and 1')
-    root = args.input.expanduser().resolve()
-    results_root = (args.results_root.expanduser() if args.results_root else
-                    root / 'campaings_results')
-    output_root = (args.output.expanduser() if args.output else
-                   root / 'campaigns_latex_tables' / 'wilcoxon_analysis')
     try:
-        if not (root / 'campaigns').is_dir():
-            raise ValueError(f'Campaigns directory does not exist: {root}')
-        campaigns = sorted(p for p in (root / 'campaigns').iterdir()
-                           if p.is_dir())
-        if not campaigns:
-            raise ValueError(f'No campaigns found in {root / "campaigns"}')
+        layout = batch_layout(args.input)
+        if not layout.campaigns:
+            raise ValueError(f'No campaigns found in {layout.root}')
     except (ValueError, OSError) as error:
         print(f'Error: {error}', file=sys.stderr)
         return 1
+    campaigns = layout.campaigns
+    results_root = (args.results_root.expanduser() if args.results_root else
+                    layout.results_root)
+    output_root = (args.output.expanduser() if args.output else
+                   layout.latex_root / 'wilcoxon_analysis')
     failures = 0
     for campaign in campaigns:
         try:
