@@ -112,6 +112,7 @@ suave build [PKG ...] [--clean]                 # colcon build (default: all SUA
 suave test [PKG ...] [--no-build] [--lint] [-k EXPR]   # non-zero exit if any package failed
 suave run [--config FILE] [--seed N] [-p KEY:=VALUE]   # suave_runner campaign
 suave batch start|resume [STATE_JSON | --latest]|list
+suave batch diagnose [STATE_OR_RESULT_PATH | --latest] [--json]   # read-only failure report
 suave campaign resume [RESULT_PATH | --latest] --config FILE | list
 suave analyze wilcoxon|mann-whitney|summarize -- <script args>
 suave config show|set|unset|init|path
@@ -139,6 +140,8 @@ There are two ways to connect a managing subsystem. For **external packages**, i
 `mission_metrics/done` (`std_msgs/Bool`) signals completion of an experiment run. Both the `MissionMetrics` publisher and `ExperimentRunnerNode` subscriber must use `RELIABLE` reliability, `TRANSIENT_LOCAL` durability, and depth 1; incompatible QoS can silently prevent DDS matching.
 
 Per-run output belongs under `<result_path>/logs/run_{exp_idx}_{run_idx}/`: `ardupilot.log` contains SITL output, while `simulation/` and `experiment/` contain ROS logs redirected through `ROS_LOG_DIR`. `resume_result_path` resumes an interrupted campaign from an existing results folder. `random_seed`, defaulting to `100`, controls reproducible perturbation sequences.
+
+To diagnose a failed batch or campaign, start with `suave batch diagnose --latest` (or `ros2 run suave_runner diagnose_batch <state.json|batch dir|campaign dir> [--json]`); it only reads files. Then open the reported `logs/run_*/experiment/launch.log` lines, and check `run_*.status.json` for `failure_type`, `failure_reason`, and earlier `attempts`. `.done` markers stay the only resume checkpoint; do not infer completion from CSV rows. A `SYSTEMIC: <manager>: repeated <failure_type>` line means the same failure repeated (at least 3 times, or at least twice and in more than half of that manager's runs): treat it as a configuration or environment problem and fix it before rerunning. `readiness_missing_service` means the manager's required services (built in for `bt`, otherwise an experiment's `required_services`) were absent after `readiness_timeout`. Boolean launch arguments use `IfCondition`/`UnlessCondition`, never `LaunchConfigurationEquals(..., 'True')`.
 
 ## Lifecycle Action Server Patterns
 

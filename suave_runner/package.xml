@@ -16,6 +16,7 @@
   <depend>suave</depend>
   <depend>suave_monitor</depend>
   <depend>suave_missions</depend>
+  <depend>suave_tools</depend>
   <depend>suave_bringup</depend>
   <depend>ament_index_python</depend>
   <depend>launch</depend>
@@ -23,6 +24,8 @@
   <depend>python3-yaml</depend>
   <depend>python3-pandas</depend>
   <depend>python3-scipy</depend>
+  <exec_depend>rosbag2_py</exec_depend>
+  <exec_depend>rosbag2_storage_mcap</exec_depend>
 
   <test_depend>python3-pytest</test_depend>
   <test_depend>launch_pytest</test_depend>

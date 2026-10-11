@@ -52,6 +52,8 @@ import time
 
 import rclpy
 from rclpy.node import Node
+from suave_runner.diagnose_batch import summary_lines
+from suave_runner.run_status import load_statuses
 import yaml
 
 active_process = None
@@ -67,7 +69,10 @@ def timestamp():
 def emit(message, log=None):
     """Print a timestamped orchestration message and optionally log it."""
     line = f'[{timestamp()}] {message}'
-    print(line, flush=True)
+    display = line
+    if message.startswith('SYSTEMIC:') and sys.stdout.isatty():
+        display = f'\033[31m{line}\033[0m'
+    print(display, flush=True)
     if log is not None:
         log.write(line + '\n')
         log.flush()
@@ -451,6 +456,11 @@ def run_batch(batch_dir_value, resume_state_file_value, campaign_strings,
                 write_state(state_file, state)
                 emit(f'Interrupted during campaign: {name}', overall_log)
                 break
+
+            emit(f'Run summary for {name}:', overall_log)
+            for line in summary_lines(load_statuses(result_path)):
+                emit(line, overall_log)
+            print_summary(state, overall_log)
 
             all_runs_completed = (
                 campaign_state['completed_runs'] ==

@@ -154,6 +154,7 @@ suave build [PKG ...] [--clean]                 # colcon build (default: all SUA
 suave test [PKG ...] [--no-build] [--lint] [-k EXPR]   # non-zero exit if any package failed
 suave run [--config FILE] [--seed N] [-p KEY:=VALUE]   # suave_runner campaign
 suave batch start|resume [STATE_JSON | --latest]|list
+suave batch diagnose [STATE_OR_RESULT_PATH | --latest] [--json]   # read-only failure report
 suave campaign resume [RESULT_PATH | --latest] --config FILE | list
 suave analyze wilcoxon|mann-whitney|summarize -- <script args>
 suave config show|set|unset|init|path

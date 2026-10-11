@@ -116,6 +116,7 @@ To run SUAVE with different managing subsystems, replace the `experiment_launch`
 | `thruster_events` | `[(1,failure,100), (3,failure,100)]` | List of thruster events: `(id, type, time_s)` |
 | `thruster_events_random_interval` | `[-100.0, 100.0]` | Random offset (s) applied to each thruster event time |
 | `random_interval` | `5` | Number of runs before re-randomising offsets |
+| `readiness_timeout` | `10.0` | Seconds to wait for the adaptation manager's required services before failing a run |
 | `random_seed` | `100` | Seed for the perturbation RNG — fix this value for reproducible benchmark campaigns |
 | `resume_result_path` | `""` | Path to an existing result folder to resume a crashed campaign (empty = start a new timestamped folder) |
 | `experiments` | *(see file)* | List of experiment definitions (see below) |
@@ -210,6 +211,55 @@ starting a new batch. `-p fail_fast:=true` stops the batch as soon as a
 campaign fails instead of continuing to the next one, and `-p dry_run:=true`
 prints the `ros2 run` command for each campaign without executing anything.
 
+### Diagnosing batch failures
+
+`diagnose_batch` reads a batch's or campaign's result files and reports which
+runs failed, why, and where the evidence is. It only reads files, so it works
+on a finished batch, a running one, or a copy on another machine:
+
+```bash
+ros2 run suave_runner diagnose_batch ~/suave/results/batches/<batch_dir>/state.json
+ros2 run suave_runner diagnose_batch ~/suave/results/batches/<batch_dir>
+ros2 run suave_runner diagnose_batch ~/suave/results/<campaign_folder>
+ros2 run suave_runner diagnose_batch <path> --json
+```
+
+With the `suave` CLI: `suave batch diagnose --latest` or
+`suave batch diagnose <path> [--json]`.
+
+For each campaign it prints the completed and expected run counts, one line
+per adaptation manager (for example
+`bt: 18/20 completed; failures={'mission_done_timeout': 2}`), and, for each
+run that did not complete, its status, failure type, reason, log folder, and
+the first log lines that point at a cause (`suspected <type>: <log>:<line>`).
+It uses the `run_*.status.json` sidecars when present and falls back to the
+`.done` markers and `<campaign_name>.log` for older results. Mission CSV row
+counts are listed for reference but are not treated as proof of completion.
+The exit code is `0` whenever the diagnosis itself succeeded, even if runs
+failed, and `2` for an invalid path.
+
+| Failure type | Meaning |
+|---|---|
+| `mission_done_timeout` | No `mission_metrics/done` within `run_duration` |
+| `process_died_before_completion` | A launched process exited with a nonzero status |
+| `mission_control_failure` | A subsystem published `mission/control_failure` |
+| `readiness_missing_service` | Services the manager needs were missing after `readiness_timeout` |
+| `startup_failure` | Launching the run's processes raised an error |
+| `broken_run` | The mission finished but hit a known bug, so the run is not checkpointed |
+| `interrupted` | The run was stopped by Ctrl+C or termination |
+| `unknown` | No recognizable cause was recorded |
+
+Suspected causes found in `logs/run_*/{experiment,simulation}/launch.log` are
+`mission_metrics_invalid_handle` and `missing_change_mode_service`; lines after
+the run's teardown (`sending signal 'SIGINT'`) are ignored.
+
+**Systemic warnings:** a line `SYSTEMIC: <manager>: repeated <failure_type>`
+means that manager failed with the same type at least 3 times, or at least
+twice and in more than half of its attempted runs. That usually points at the
+configuration or environment rather than at chance, so inspect one failed run's
+logs before rerunning. The runner, `run_batch`, and `diagnose_batch` print it
+in red on a terminal and as plain text in log files.
+
 ### Resuming a crashed campaign
 
 If the runner is interrupted mid-campaign (crash, Ctrl+C, power loss), it can
@@ -224,8 +274,47 @@ If any launched process exits with a nonzero status before mission completion,
 or a subsystem publishes `mission/control_failure`, the runner terminates that
 run immediately and continues with the remaining runs. The failed run receives
 no `.done` marker. Its launch events, process output, and ROS logs remain under
-`logs/run_<exp_idx>_<run_idx>/`. The `experiment_logging` flag controls console
-verbosity only; it does not disable these files.
+`logs/run_<exp_idx>_<run_idx>/<attempt_id>/`. The `experiment_logging` flag
+controls console verbosity only; it does not disable these files.
+
+When bag recording is enabled, each attempt records to `rosbags/pending/` first.
+A run is checkpointed only after the MCAP metadata, storage files, and reader
+stream validate and the bag is promoted to the `rosbags/` root. Failed,
+interrupted, or invalid-recording attempts are moved to `rosbags/failed/` and
+receive no `.done` marker, so resume retries them. If `record_bags` is false,
+the runner keeps execution-only checkpointing and does not require a bag.
+
+A campaign folder is locked (`.runner.lock`) while a runner uses it, so a second
+runner on the same folder fails immediately. Before starting new runs, a
+resumed runner first finishes any attempt that was interrupted mid-finalization:
+it confirms the attempt's launch session has no live processes, then completes
+the pending promotion or quarantine. If the runner cannot confirm that launch
+processes stopped after 30 seconds, it records the attempt as `interrupted`
+with `failure_type: shutdown_unconfirmed`, leaves the bag in `rosbags/pending/`,
+and stops the campaign rather than starting another attempt. A `.done` marker
+whose accepted bag is missing stops recovery with an error instead of rerunning
+the trial. Bag acceptance does not change how CSV metric rows are written.
+
+To plot requirement fulfillment from accepted bags only, see
+`suave_requirements/README.md`.
+
+Each run attempt also writes `run_<exp_idx>_<run_idx>.status.json` next to the
+markers. It records `status` (`running`, `completed`, `failed`, or
+`interrupted`), `failure_type`, `failure_reason`, start and finish times,
+elapsed seconds, the log folder, the mission config, and the launch commands.
+A retried run keeps its earlier attempts under `attempts`. Resume still checks
+only the `.done` markers. After each run the runner logs a per-manager summary,
+and `run_batch` logs one after each campaign; both include the systemic
+warnings described under [Diagnosing batch failures](#diagnosing-batch-failures).
+
+After launching a run, the runner waits up to `readiness_timeout` seconds
+(default `10.0`) for the services the adaptation manager needs. For `bt` these
+are `/f_maintain_motion/change_mode`, `/f_generate_search_path/change_mode`,
+and `/f_follow_pipeline/change_mode`, plus `/generate_recharge_path/change_mode`
+when the experiment launch uses `suave_bt_extended`. Other managers have no
+built-in list; give an experiment a `required_services` list of absolute
+service names to check them. A missing service fails the run as
+`readiness_missing_service`, and the runner continues with the next run.
 
 To resume, pass the path of the interrupted result folder via
 `resume_result_path`:
