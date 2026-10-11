@@ -21,8 +21,12 @@ import json
 from pathlib import Path
 import sys
 
-from suave_tools.bag_selection import artifact_path
-from suave_tools.bag_selection import load_status
+from ament_index_python.packages import get_package_share_directory
+from suave_tools.runs import load_runs
+from suave_tools.runs import log_dir as attempt_log_dir
+from suave_tools.runs import parse_run_id
+from suave_tools.runs import RUNS_FILE
+import yaml
 
 TERMINAL = {'completed', 'failed', 'interrupted'}
 
@@ -88,49 +92,72 @@ def summary_lines(records):
             yield f'SYSTEMIC: {manager}: repeated {kind}'
 
 
+def expected_runs(config_file):
+    """Return the total number of runs declared in a runner config."""
+    try:
+        config = yaml.safe_load(Path(config_file).read_text(encoding='utf-8'))
+        experiments = config[
+            '/suave_runner_node']['ros__parameters']['experiments']
+        return sum(
+            int(json.loads(experiment).get('num_runs', 1))
+            for experiment in experiments
+        )
+    except (OSError, KeyError, TypeError, ValueError,
+            json.JSONDecodeError, yaml.YAMLError) as error:
+        raise ValueError(
+            f'cannot read experiments from {config_file}: {error}') from error
+
+
+def completed_runs(campaign):
+    """Count completed runs in runs.json; a campaign not yet started has 0."""
+    if not (Path(campaign) / RUNS_FILE).exists():
+        return 0
+    return sum(entry['status'] == 'completed'
+               for entry in load_runs(campaign)['runs'].values())
+
+
+def campaign_progress(campaign, config_file):
+    """Return (completed, expected) runs; done iff the two are equal."""
+    return completed_runs(campaign), expected_runs(config_file)
+
+
 def diagnose_campaign(path, expected=None):
-    """Combine status sidecars and checkpoint markers for one campaign."""
+    """Report a campaign's runs.json with failure evidence from its logs."""
     path = Path(path)
-    latest, warnings = {}, []
-    for sidecar in sorted(path.glob('run_*_*.status.json')):
-        try:
-            record = load_status(sidecar)
-        except (ValueError, OSError) as error:
-            # Schema errors name the file; JSON and OS errors do not.
-            message = str(error)
-            if str(sidecar) not in message:
-                message = f'{sidecar}: {message}'
-            warnings.append(message)
-            continue
-        latest[record['run_id']] = record
-    markers = {marker.stem for marker in path.glob('run_*_*.done')}
-    for run_id in sorted(markers - latest.keys()):
-        warnings.append(f'{run_id}: checkpoint without a valid status record')
-    for run_id, record in latest.items():
-        if (record['status'] == 'completed') != (run_id in markers):
+    warnings, records = [], []
+    try:
+        runs = load_runs(path)['runs']
+    except (ValueError, OSError) as error:
+        # Schema errors name the file; JSON and OS errors do not.
+        message = str(error)
+        if str(path) not in message:
+            message = f'{path / RUNS_FILE}: {message}'
+        warnings.append(message)
+        runs = {}
+    for run_id in sorted(runs, key=parse_run_id):
+        record = dict(runs[run_id], run_id=run_id)
+        if record['status'] == 'completed' and record['bag'] not in (
+                None, 'accepted'):
             warnings.append(
-                f'{run_id}: status {record["status"]} disagrees with '
-                'checkpoint')
+                f'{run_id}: completed with bag {record["bag"]}')
         try:
-            log_dir = artifact_path(path, record['log_dir'])
+            log_dir = attempt_log_dir(path, run_id, record)
         except ValueError as error:
             warnings.append(f'{run_id}: {error}')
             continue
         record['log_dir'] = str(log_dir)
         if record['status'] == 'failed':
             record['suspected_causes'] = failure_evidence(log_dir)
+        records.append(record)
     rows = {}
     for table in path.glob('*.csv'):
         with table.open(errors='replace', newline='') as stream:
             reader = csv.DictReader(stream)
             if 'mission duration (s)' in (reader.fieldnames or []):
                 rows[table.name] = sum(1 for _ in reader)
-    records = sorted(latest.values(), key=lambda r: tuple(
-        int(i) for i in r['run_id'].split('_')[1:]))
     return {
         'path': str(path), 'expected_runs': expected,
-        'completed_runs': sum(r['status'] == 'completed' and
-                              r['run_id'] in markers for r in records),
+        'completed_runs': sum(r['status'] == 'completed' for r in records),
         'historical_failed_attempts': sum(
             attempt.get('status') == 'failed'
             for record in records
@@ -140,27 +167,36 @@ def diagnose_campaign(path, expected=None):
     }
 
 
+def _manifest_expected(entry):
+    # The manifest names an installed config; without a sourced workspace
+    # the expected count is unknown rather than an error.
+    try:
+        share = Path(get_package_share_directory(entry['package']))
+    except (LookupError, OSError):
+        return None
+    try:
+        return expected_runs(share / entry['config_file'])
+    except ValueError:
+        return None
+
+
 def diagnose(path):
-    """Inspect a batch state file, batch directory, or campaign directory."""
+    """Inspect a batch manifest, batch directory, or campaign directory."""
     path = Path(path).expanduser().resolve()
     if not path.exists():
         raise ValueError(f'not found: {path}')
     state_file = path if path.is_file() else path / 'state.json'
     if state_file.is_file():
-        state = json.loads(state_file.read_text())
-        if state.get('schema_version') != 1:
+        manifest = json.loads(state_file.read_text())
+        if manifest.get('schema_version') != 2 or not isinstance(
+                manifest.get('campaigns'), list):
             raise ValueError(f'unsupported state-file schema: {state_file}')
-        campaigns = []
-        for name, entry in state['campaigns'].items():
-            # Prefer artifacts alongside the checkpoint: container absolute
-            # paths often do not exist when diagnosing a mounted host folder.
-            folder = state_file.parent / 'campaigns' / name
-            if not folder.exists() and entry.get('result_path'):
-                folder = Path(entry['result_path']).expanduser()
-            campaigns.append(diagnose_campaign(
-                folder, entry.get('expected_runs')))
+        campaigns = [
+            diagnose_campaign(state_file.parent / 'campaigns' / entry['name'],
+                              _manifest_expected(entry))
+            for entry in manifest['campaigns']]
         return {'schema_version': 1, 'campaigns': campaigns}
-    if not list(path.glob('run_*_*.status.json')):
+    if not (path / RUNS_FILE).is_file():
         raise ValueError(f'not a campaign result directory: {path}')
     return {'schema_version': 1, 'campaigns': [diagnose_campaign(path)]}
 

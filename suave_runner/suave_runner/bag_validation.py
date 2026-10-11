@@ -16,7 +16,7 @@
 
 from pathlib import Path
 
-from suave_tools.bag_selection import artifact_path
+from suave_tools.runs import artifact_path
 
 import yaml  # noqa: I201
 

@@ -15,7 +15,6 @@
 """Finalize a real MCAP recorder through the runner's launch lifecycle."""
 
 import functools
-import json
 import multiprocessing
 import shutil
 import time
@@ -26,13 +25,16 @@ from launch.actions import ExecuteProcess
 import pytest
 from suave_runner.attempt_processes import stop_sessions
 from suave_runner.bag_validation import validate_bag
-from suave_runner.run_artifacts import artifact_path
 from suave_runner.run_artifacts import attempt_details
 from suave_runner.run_artifacts import finalize_attempt
-from suave_runner.run_status import start_status
-from suave_runner.run_status import write_status
+from suave_runner.run_status import open_runs
+from suave_runner.run_status import start_attempt
 from suave_runner.suave_runner import ExperimentRunnerNode
-from suave_tools.bag_selection import select_accepted_bags
+from suave_tools.runs import accepted_runs
+from suave_tools.runs import bag_dir
+from suave_tools.runs import load_runs
+from suave_tools.runs import log_dir as attempt_log_dir
+from suave_tools.runs import write_runs
 
 TOPIC = '/suave_recording_integration'
 
@@ -65,11 +67,13 @@ def _recording(bag):
 def test_real_recorder_is_stopped_validated_and_checkpointed(
         tmp_path, monkeypatch):
     monkeypatch.setenv('ROS_DOMAIN_ID', '87')
+    runs = open_runs(tmp_path)
     details = attempt_details('run_0_0', 'bt', 'suave', True)
-    status_path, record = start_status(
-        tmp_path, 0, 0, 'bt', 'suave', **details)
-    log_dir = artifact_path(tmp_path, record['log_dir'])
-    bag = artifact_path(tmp_path, record['bag']['pending_path'])
+    entry = start_attempt(
+        runs, 'run_0_0', 'bt', 'suave', 'ros2 launch pkg file', **details)
+    write_runs(tmp_path, runs)
+    log_dir = attempt_log_dir(tmp_path, 'run_0_0', entry)
+    bag = bag_dir(tmp_path, 'run_0_0', entry, 'pending')
     bag.parent.mkdir(parents=True)
 
     runner = _launch_runner()
@@ -86,18 +90,14 @@ def test_real_recorder_is_stopped_validated_and_checkpointed(
     stop_sessions(log_dir)
     assert runner._process_failure_queue.empty()
 
-    record['execution_status'] = 'completed'
-    write_status(status_path, record)
-    finalize_attempt(tmp_path, status_path, record, validate_bag)
+    finalize_attempt(tmp_path, runs, 'run_0_0', 'completed', validate_bag)
 
-    status = json.loads(status_path.read_text())
-    marker = tmp_path / 'run_0_0.done'
-    assert status['status'] == 'completed'
-    assert status['bag']['state'] == 'accepted'
-    assert marker.stat().st_mtime_ns >= status_path.stat().st_mtime_ns
+    stored = load_runs(tmp_path)['runs']['run_0_0']
+    assert stored['status'] == 'completed'
+    assert stored['bag'] == 'accepted'
     assert not bag.exists()
-    accepted = artifact_path(tmp_path, record['bag']['accepted_path'])
+    accepted = bag_dir(tmp_path, 'run_0_0', stored)
     assert validate_bag(accepted)['message_count'] > 0
-    entries, _ = select_accepted_bags(tmp_path)
-    assert [entry['bag_path'] for entry in entries] == [
-        record['bag']['accepted_path']]
+    entries, _ = accepted_runs(tmp_path)
+    assert [item['bag_path'] for item in entries] == [
+        str(accepted.relative_to(tmp_path.resolve()))]

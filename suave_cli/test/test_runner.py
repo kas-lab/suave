@@ -99,18 +99,28 @@ def test_latest_body_finds_newest(tmp_path):
 
 
 def test_list_bodies(tmp_path):
-    state = {'campaign_order': ['a', 'b'],
-             'campaigns': {'a': {'status': 'completed'}, 'b': {'status': 'pending'}}}
+    def write_runs(folder, statuses):
+        folder.mkdir(parents=True)
+        runs = {f'run_0_{i}': {'status': status} for i, status in enumerate(statuses)}
+        (folder / 'runs.json').write_text(json.dumps(
+            {'schema_version': 2, 'campaign': {}, 'runs': runs}))
+
+    manifest = {'schema_version': 2, 'campaigns': [
+        {'name': name, 'package': 'suave_runner', 'config_file': f'{name}.yml'}
+        for name in ('a', 'b', 'c')]}
     batch = tmp_path / 'batches' / 'batch_20260101_100000'
     batch.mkdir(parents=True)
-    (batch / 'state.json').write_text(json.dumps(state))
+    (batch / 'state.json').write_text(json.dumps(manifest))
+    write_runs(batch / 'campaigns' / 'a', ['completed', 'failed', 'completed'])
+    write_runs(batch / 'campaigns' / 'b', ['running'])
     campaign = tmp_path / '2026_01_01_10-00-00'
-    campaign.mkdir()
-    (campaign / 'run_0_0.done').write_text('')
-    (campaign / 'run_0_1.done').write_text('')
+    write_runs(campaign, ['completed', 'completed', 'interrupted'])
+    (tmp_path / '2026_01_02_10-00-00').mkdir()
     assert sh(runner.batch_list_body(str(tmp_path))) == (
-        f'{batch / "state.json"}  1/2 campaigns completed')
-    assert sh(runner.campaign_list_body(str(tmp_path))) == f'{campaign}  2 runs done'
+        f'{batch / "state.json"}  runs completed: a 2, b 0, c 0')
+    assert sh(runner.campaign_list_body(str(tmp_path))).splitlines() == [
+        f'{tmp_path / "2026_01_02_10-00-00"}  0 runs completed',
+        f'{campaign}  2 runs completed']
 
 
 def resume_args(**overrides):

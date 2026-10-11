@@ -12,69 +12,59 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Atomic status sidecars preserving attempt history."""
+"""Run entries of a campaign's runs.json, preserving attempt history."""
 
 from datetime import datetime
-import json
 from pathlib import Path
-import time
 
-from suave_tools.bag_selection import load_status
-from suave_tools.bag_selection import SCHEMA_VERSION
+from suave_tools.runs import load_runs
+from suave_tools.runs import RUNS_FILE
+from suave_tools.runs import SCHEMA_VERSION
+
+ATTEMPT_KEYS = ('attempt_id', 'status', 'bag', 'failure_type',
+                'failure_reason', 'started_at', 'finished_at')
 
 
 def timestamp():
     """Return an unambiguous wall-clock timestamp."""
-    return datetime.now().astimezone().isoformat()
+    return datetime.now().astimezone().isoformat(timespec='seconds')
 
 
-def write_status(path, record):
-    """Atomically replace a status sidecar, never a completion marker."""
-    path = Path(path)
-    temporary = path.with_suffix('.tmp')
-    temporary.write_text(json.dumps(record, indent=2) + '\n')
-    temporary.replace(path)
+def open_runs(campaign):
+    """Load a campaign's runs.json, or start an empty one."""
+    if (Path(campaign) / RUNS_FILE).exists():
+        return load_runs(campaign)
+    return {'schema_version': SCHEMA_VERSION, 'campaign': {}, 'runs': {}}
 
 
-def start_status(result_path, exp_idx, run_idx, manager, mission, **details):
-    """Persist a new running attempt while retaining previous attempts."""
+def start_attempt(runs, run_id, manager, mission, experiment_launch,
+                  **details):
+    """Make a new running attempt current, moving the previous to history."""
     if 'attempt_id' not in details:
-        raise ValueError('A status needs attempt_details() ownership')
-    run_id = f'run_{exp_idx}_{run_idx}'
-    path = Path(result_path) / f'{run_id}.status.json'
+        raise ValueError('An attempt needs attempt_details() ownership')
     attempts = []
-    if path.exists():
-        previous = json.loads(path.read_text())
-        attempts = previous.pop('attempts', [])
-        attempts.append(previous)
-    record = dict(details, schema_version=SCHEMA_VERSION, run_id=run_id,
-                  experiment_index=exp_idx, run_index=run_idx,
-                  adaptation_manager=manager, mission_name=mission,
-                  result_path=str(result_path),
-                  started_at=timestamp(), started_epoch=time.time(),
-                  finished_at=None, finished_epoch=None, elapsed_seconds=None,
-                  status='running', success=False, failure_type='',
-                  failure_reason='', attempts=attempts)
-    write_status(path, record)
-    return path, record
+    previous = runs['runs'].get(run_id)
+    if previous is not None:
+        attempts = previous['attempts']
+        attempts.append({key: previous[key] for key in ATTEMPT_KEYS})
+    entry = {
+        'adaptation_manager': manager,
+        'mission_name': mission,
+        'experiment_launch': experiment_launch,
+        'status': 'running',
+        'attempt_id': details['attempt_id'],
+        'bag': details['bag'],
+        'failure_type': '',
+        'failure_reason': '',
+        'started_at': timestamp(),
+        'finished_at': None,
+        'attempts': attempts,
+    }
+    runs['runs'][run_id] = entry
+    return entry
 
 
-def finish_status(path, record, status, reason='', failure_type=''):
-    """Persist the terminal outcome of the current attempt."""
-    record.update(status=status, success=status == 'completed',
-                  failure_reason=reason, failure_type=failure_type,
-                  finished_at=timestamp(), finished_epoch=time.time())
-    record['elapsed_seconds'] = round(
-        record['finished_epoch'] - record['started_epoch'], 3)
-    write_status(path, record)
-
-
-def load_statuses(result_path):
-    """Read current status records, ignoring invalid sidecars."""
-    records = []
-    for path in Path(result_path).glob('run_*_*.status.json'):
-        try:
-            records.append(load_status(path))
-        except (OSError, ValueError):
-            continue
-    return records
+def finish_attempt(entry, status, bag, reason='', failure_type=''):
+    """Record the terminal outcome of the current attempt."""
+    entry.update(status=status, bag=bag, failure_reason=reason,
+                 failure_type=failure_type, finished_at=timestamp())

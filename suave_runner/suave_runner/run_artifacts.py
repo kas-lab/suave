@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Persist attempt ownership and select only checkpointed recordings."""
+"""Own attempt bags and finish or recover attempts recorded in runs.json."""
 
 from contextlib import contextmanager
 import fcntl
@@ -21,12 +21,11 @@ import re
 import shlex
 import uuid
 
-from suave_runner.run_status import finish_status
-from suave_runner.run_status import write_status
-from suave_tools.bag_selection import accepted_entry
-from suave_tools.bag_selection import artifact_path
-from suave_tools.bag_selection import load_status
-from suave_tools.bag_selection import RUN_ID
+from suave_runner.run_status import finish_attempt
+from suave_tools.runs import bag_dir
+from suave_tools.runs import log_dir
+from suave_tools.runs import RUN_ID
+from suave_tools.runs import write_runs
 
 COMPONENT = re.compile(r'[A-Za-z0-9_-]+')
 
@@ -61,148 +60,109 @@ def recording_enabled(command, default=True):
 
 
 def attempt_details(run_id, manager, mission, enabled):
-    """Allocate immutable attempt paths before starting any processes."""
+    """Allocate a new attempt identity before starting any processes."""
     if not RUN_ID.fullmatch(run_id) or any(
             not COMPONENT.fullmatch(value) for value in (manager, mission)):
         raise ValueError('Unsafe trial, manager, or mission name')
-    attempt_id = uuid.uuid4().hex
-    name = f'{manager}_{mission}_{run_id}_{attempt_id}'
-    pending = f'rosbags/pending/{name}' if enabled else None
-    return {
-        'attempt_id': attempt_id,
-        'recording_enabled': enabled,
-        'execution_status': 'running',
-        'finalization_state': 'pending',
-        'log_dir': f'logs/{run_id}/{attempt_id}',
-        'bag': {
-            'pending_path': pending,
-            'accepted_path': f'rosbags/{name}' if enabled else None,
-            'failed_path': f'rosbags/failed/{name}' if enabled else None,
-            'path': pending,
-            'state': 'pending' if enabled else 'disabled',
-            'validation_error': '',
-        },
-    }
+    return {'attempt_id': uuid.uuid4().hex,
+            'bag': 'pending' if enabled else None}
 
 
-def _checkpoint(campaign, record):
-    marker = Path(campaign) / f'{record["run_id"]}.done'
-    temporary = marker.with_suffix('.done.tmp')
-    temporary.write_text('')
-    temporary.replace(marker)
-
-
-def _move(campaign, bag, destination):
-    source = artifact_path(campaign, bag['pending_path'])
-    target = artifact_path(campaign, bag[destination])
+def _move(source, target):
     if source.exists() and target.exists():
         raise RuntimeError(
             f'Both artifact locations exist: {source}, {target}')
     if source.exists():
         target.parent.mkdir(parents=True, exist_ok=True)
         source.rename(target)
-    bag['path'] = bag[destination] if target.exists() else bag['pending_path']
-    return target.exists()
 
 
-def finalize_attempt(campaign, path, record, validate):
-    """Finalize a stopped attempt idempotently, committing its marker last."""
-    if record['execution_status'] == 'running':
-        raise ValueError('Persist an execution outcome before finalization')
-    accepted = record['execution_status'] == 'completed'
-    if record['recording_enabled']:
-        accepted = _finalize_recording_attempt(
-            campaign, path, record, validate, accepted)
-    record['finalization_state'] = 'finished'
-    status = 'completed' if accepted else _failure_status(record)
-    finish_status(path, record, status, record.get('failure_reason', ''),
-                  record.get('failure_type', ''))
-    if accepted:
-        _checkpoint(campaign, record)
+def finalize_attempt(campaign, runs, run_id, outcome, validate,
+                     reason='', failure_type=''):
+    """Move a stopped attempt's bag, then persist its outcome in one write."""
+    if outcome not in ('completed', 'failed', 'interrupted'):
+        raise ValueError(f'Invalid attempt outcome: {outcome}')
+    entry = runs['runs'][run_id]
+    bag = None
+    if entry['bag'] is not None:
+        outcome, bag, reason, failure_type = _finalize_recording_attempt(
+            campaign, run_id, entry, validate, outcome, reason, failure_type)
+    finish_attempt(entry, outcome, bag, reason, failure_type)
+    write_runs(campaign, runs)
 
 
-def _failure_status(record):
-    if record['execution_status'] == 'interrupted':
-        return 'interrupted'
-    return 'failed'
-
-
-def _check_ownership(record):
-    """Require every persisted bag path to name this exact attempt."""
-    bag = record['bag']
-    name = Path(bag['pending_path']).name
-    expected = {
-        'pending_path': f'rosbags/pending/{name}',
-        'accepted_path': f'rosbags/{name}',
-        'failed_path': f'rosbags/failed/{name}',
-    }
-    owned = name.endswith(f'_{record["run_id"]}_{record["attempt_id"]}')
-    if not owned or any(bag[key] != value for key, value in expected.items()):
-        raise RuntimeError(
-            f'Bag paths do not belong to attempt {record["attempt_id"]}')
-
-
-def _finalize_recording_attempt(campaign, path, record, validate, accepted):
-    _check_ownership(record)
-    bag = record['bag']
-    if accepted and record['finalization_state'] != 'quarantining':
-        source = artifact_path(campaign, bag['pending_path'])
-        target = artifact_path(campaign, bag['accepted_path'])
-        if source.exists() and target.exists():
+def _finalize_recording_attempt(campaign, run_id, entry, validate, outcome,
+                                reason, failure_type):
+    pending = bag_dir(campaign, run_id, entry, 'pending')
+    if outcome == 'completed':
+        accepted = bag_dir(campaign, run_id, entry, 'accepted')
+        if pending.exists() and accepted.exists():
             raise RuntimeError('Both pending and accepted bag exist')
         try:
-            validate(source if source.exists() else target)
+            validate(pending)
         except Exception as error:  # noqa: B902
-            accepted = False
-            bag['validation_error'] = str(error)
-            record.update(failure_type='recording_invalid',
-                          failure_reason=str(error))
-            if target.exists():
-                raise RuntimeError(
-                    f'Promoted bag failed validation: {target}') from error
+            outcome, reason, failure_type = (
+                'failed', str(error), 'recording_invalid')
         else:
-            bag['state'] = 'validated'
-            record['finalization_state'] = 'promoting'
-            write_status(path, record)
-            if not _move(campaign, bag, 'accepted_path'):
-                raise RuntimeError('Validated bag disappeared')
-            bag['state'] = 'accepted'
+            _move(pending, accepted)
+            return outcome, 'accepted', reason, failure_type
+    # 'failed' also covers a recorder that never wrote anything.
+    _move(pending, bag_dir(campaign, run_id, entry, 'failed'))
+    return outcome, 'failed', reason, failure_type
+
+
+def recover_attempts(campaign, runs, validate, confirm_stopped):
+    """Settle attempts a previous runner left unfinished before retrying."""
+    for run_id, entry in sorted(runs['runs'].items()):
+        if entry['status'] == 'completed':
+            _check_completed(campaign, run_id, entry, validate)
+        elif entry['status'] == 'running' or entry['bag'] == 'pending':
+            _recover_record(campaign, run_id, entry, validate,
+                            confirm_stopped)
+            write_runs(campaign, runs)
+
+
+def _check_completed(campaign, run_id, entry, validate):
+    # Resume skips completed runs, so their bags must really be accepted.
+    if entry['bag'] is None:
+        return
+    if entry['bag'] != 'accepted':
+        raise RuntimeError(
+            f'Completed run without accepted bag; not rerunning: {run_id}')
+    bag = bag_dir(campaign, run_id, entry)
+    if not bag.is_dir():
+        raise RuntimeError(
+            f'Checkpointed bag is missing; not rerunning: {bag}')
+    validate(bag)
+
+
+def _recover_record(campaign, run_id, entry, validate, confirm_stopped):
+    """Decide an unfinished attempt's outcome from where its bag is."""
+    confirm_stopped(log_dir(campaign, run_id, entry))
+    if entry['status'] == 'running':
+        reason, failure_type = (
+            'Runner stopped before a durable outcome', 'interrupted')
     else:
-        accepted = False
-    if not accepted:
-        record['finalization_state'] = 'quarantining'
-        write_status(path, record)
-        exists = _move(campaign, bag, 'failed_path')
-        bag['state'] = 'failed' if exists else 'missing'
-    return accepted
-
-
-def recover_attempts(campaign, validate, confirm_stopped):
-    """Finish interrupted transactions before retries."""
-    for path in sorted(Path(campaign).glob('run_*_*.status.json')):
-        record = load_status(path)
-        _recover_record(campaign, path, record, validate, confirm_stopped)
-
-
-def _recover_record(campaign, path, record, validate, confirm_stopped):
-    marker = Path(campaign) / f'{record["run_id"]}.done'
-    if marker.exists():
-        accepted_entry(record)
-        if record['recording_enabled']:
-            _check_ownership(record)
-            bag = artifact_path(campaign, record['bag']['path'])
-            if not bag.is_dir():
-                raise RuntimeError(
-                    f'Checkpointed bag is missing; not rerunning: {bag}')
-            validate(bag)
+        reason, failure_type = entry['failure_reason'], entry['failure_type']
+    if entry['bag'] is None:
+        finish_attempt(entry, 'interrupted', None, reason, failure_type)
         return
-    if record['finalization_state'] == 'finished' and not record['success']:
+    pending = bag_dir(campaign, run_id, entry, 'pending')
+    accepted = bag_dir(campaign, run_id, entry, 'accepted')
+    failed = bag_dir(campaign, run_id, entry, 'failed')
+    if pending.exists() and accepted.exists():
+        raise RuntimeError(
+            f'Both artifact locations exist: {pending}, {accepted}')
+    if accepted.exists():
+        # Only a completed, validated attempt is ever moved here.
+        try:
+            validate(accepted)
+        except Exception as error:  # noqa: B902
+            _move(accepted, failed)
+            finish_attempt(entry, 'failed', 'failed', str(error),
+                           'recording_invalid')
+        else:
+            finish_attempt(entry, 'completed', 'accepted')
         return
-    confirm_stopped(artifact_path(campaign, record['log_dir']))
-    if record['execution_status'] == 'running':
-        record.update(
-            execution_status='interrupted',
-            failure_type='interrupted',
-            failure_reason='Runner stopped before a durable outcome')
-        write_status(path, record)
-    finalize_attempt(campaign, path, record, validate)
+    _move(pending, failed)
+    finish_attempt(entry, 'interrupted', 'failed', reason, failure_type)

@@ -164,7 +164,7 @@ These wrap the `suave_runner` and `run_batch` nodes. Their parameters are docume
 | `run --config F --seed N --run-duration S --result-path P --gui -p K:=V` | `ros2 run suave_runner suave_runner --ros-args --params-file F -p ...` |
 | `batch start [--config F] [--batch-dir D] [--fail-fast] [--dry-run-batch]` | `run_batch_launch.py`, or `ros2 run ... run_batch` when an option is given |
 | `batch resume STATE_JSON \| --latest` | `run_batch` with `resume_state_file` |
-| `batch list` | every `<results>/batches/batch_*/state.json` with its progress |
+| `batch list` | every `<results>/batches/batch_*/state.json` with completed runs per campaign (from each `runs.json`) |
 | `batch diagnose STATE_OR_RESULT_PATH \| --latest [--json]` | `ros2 run suave_runner diagnose_batch` (read-only failure report) |
 | `campaign resume RESULT_PATH \| --latest [--config F]` | `suave_runner` with `resume_result_path` |
 | `campaign list` | campaign folders under the results folder with their finished runs |

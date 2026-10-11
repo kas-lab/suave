@@ -64,38 +64,44 @@ def test_mean_and_ci_ignore_missing_values():
 
 
 def test_failed_and_pending_bags_are_never_selected(tmp_path):
-    """Verify quarantined bags with data are excluded or rejected."""
+    """Verify only completed runs' accepted bags are selected."""
     plotter = load_plotter()
-    for name in ('accepted', 'failed/quarantined', 'pending/unfinished'):
+
+    def run(status, bag, attempt_id):
+        return {
+            'adaptation_manager': 'bt', 'mission_name': 'suave',
+            'experiment_launch': 'ros2 launch pkg file', 'status': status,
+            'attempt_id': attempt_id, 'bag': bag, 'failure_type': '',
+            'failure_reason': '', 'started_at': 't0', 'finished_at': 't1',
+            'attempts': [],
+        }
+
+    def write_runs(runs):
+        (tmp_path / 'runs.json').write_text(json.dumps(
+            {'schema_version': 2, 'campaign': {}, 'runs': runs}))
+
+    for name in ('bt_suave_run_0_0_a1', 'failed/bt_suave_run_0_1_a2',
+                 'pending/bt_suave_run_0_2_a3'):
         bag = tmp_path / 'rosbags' / name
         bag.mkdir(parents=True)
         (bag / 'metadata.yaml').write_text('fixture')
-    (tmp_path / 'run_0_0.done').touch()
-    status = tmp_path / 'run_0_0.status.json'
-
-    def write_status(bag_path):
-        status.write_text(json.dumps({
-            'schema_version': 1, 'run_id': 'run_0_0', 'attempt_id': 'a1',
-            'adaptation_manager': 'bt', 'status': 'completed',
-            'success': True, 'execution_status': 'completed',
-            'finalization_state': 'finished', 'recording_enabled': True,
-            'log_dir': 'logs/run_0_0/a1', 'attempts': [],
-            'started_epoch': 0.0, 'finished_epoch': 1.0,
-            'bag': {'state': 'accepted', 'path': bag_path,
-                    'accepted_path': bag_path},
-        }))
-
-    write_status('rosbags/accepted')
+    runs = {
+        'run_0_0': run('completed', 'accepted', 'a1'),
+        'run_0_1': run('failed', 'failed', 'a2'),
+        'run_0_2': run('running', 'pending', 'a3'),
+    }
+    write_runs(runs)
     _, selected, excluded = plotter.accepted_entries(
         tmp_path / 'rosbags', ['bt'])
-    assert [entry['bag_path'] for entry in selected] == ['rosbags/accepted']
+    assert [entry['bag_path'] for entry in selected] == [
+        'rosbags/bt_suave_run_0_0_a1']
     assert {item['bag_path'] for item in excluded} == {
-        'rosbags/failed/quarantined', 'rosbags/pending/unfinished'}
-    for quarantined in ('rosbags/failed/quarantined',
-                        'rosbags/pending/unfinished'):
-        write_status(quarantined)
-        with pytest.raises(ValueError, match='accepted root'):
-            plotter.accepted_entries(tmp_path / 'rosbags', ['bt'])
+        'rosbags/failed/bt_suave_run_0_1_a2',
+        'rosbags/pending/bt_suave_run_0_2_a3'}
+    runs['run_0_2']['status'] = 'completed'
+    write_runs(runs)
+    with pytest.raises(ValueError, match='without accepted bag'):
+        plotter.accepted_entries(tmp_path / 'rosbags', ['bt'])
 
 
 def test_plot_no_data_and_requirement_outputs(tmp_path):

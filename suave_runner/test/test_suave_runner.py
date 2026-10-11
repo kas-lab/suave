@@ -28,7 +28,11 @@ from std_msgs.msg import Bool
 from std_msgs.msg import String
 
 from suave_runner.run_artifacts import attempt_details
+from suave_runner.run_status import open_runs
+from suave_runner.run_status import start_attempt
 from suave_runner.suave_runner import ExperimentRunnerNode
+from suave_tools.runs import load_runs
+from suave_tools.runs import write_runs
 import yaml
 
 
@@ -105,12 +109,11 @@ def test_failed_readiness_continues_to_following_manager(tmp_path):
         assert [call.args[0].parent.name for call in shutdown.call_args_list] == [
             'run_0_0', 'run_0_1', 'run_1_0']
         assert runner._active_log_dir is None
-        assert not (tmp_path / 'run_0_0.done').exists()
-        assert (tmp_path / 'run_1_0.done').exists()
-        failed = json.loads((tmp_path / 'run_0_1.status.json').read_text())
-        assert failed['failure_type'] == 'readiness_missing_service'
-        completed = json.loads((tmp_path / 'run_1_0.status.json').read_text())
-        assert completed['success']
+        runs = load_runs(tmp_path)['runs']
+        assert runs['run_0_0']['status'] == 'failed'
+        assert runs['run_0_1']['failure_type'] == 'readiness_missing_service'
+        assert runs['run_1_0']['status'] == 'completed'
+        assert runs['run_1_0']['bag'] is None
     finally:
         runner.destroy_node()
         rclpy.shutdown()
@@ -160,13 +163,66 @@ def test_unconfirmed_shutdown_persists_reason_and_aborts(tmp_path):
                 patch('suave_runner.suave_runner.time.sleep'):
             with pytest.raises(RuntimeError, match='still alive'):
                 runner.run_experiments()
-        record = json.loads((tmp_path / 'run_0_0.status.json').read_text())
-        assert record['execution_status'] == 'interrupted'
-        assert record['failure_type'] == 'shutdown_unconfirmed'
-        assert record['finalization_state'] == 'pending'
-        assert record['bag']['state'] == 'pending'
-        assert not (tmp_path / 'run_0_0.done').exists()
-        assert not (tmp_path / 'run_0_1.status.json').exists()
+        runs = load_runs(tmp_path)['runs']
+        assert runs['run_0_0']['status'] == 'interrupted'
+        assert runs['run_0_0']['failure_type'] == 'shutdown_unconfirmed'
+        assert runs['run_0_0']['bag'] == 'pending'
+        assert 'run_0_1' not in runs
+    finally:
+        runner.destroy_node()
+        rclpy.shutdown()
+
+
+def test_dry_campaign_resumes_from_runs_json(tmp_path):
+    rclpy.init()
+    runner = ExperimentRunnerNode(parameter_overrides=(
+        _minimal_runner_params() + [Parameter('record_bags', value=False)]))
+    runner.experiments = [json.loads(_experiment('bt', 3))]
+    launched = []
+
+    def launch(*args):
+        launched.append(args[3])
+        runner._mission_done_event.set()
+
+    def run(readiness):
+        with patch.object(runner, 'create_experiment_folder',
+                          return_value=tmp_path), \
+                patch.object(runner, 'generate_mission_config_files',
+                             return_value=['c0.yaml', 'c1.yaml', 'c2.yaml']), \
+                patch.object(runner, 'launch_ardupilot'), \
+                patch.object(runner, 'launch_suave_simulation'), \
+                patch.object(runner, 'launch_experiment', side_effect=launch), \
+                patch.object(runner, '_wait_for_readiness',
+                             side_effect=readiness), \
+                patch.object(runner, 'shutdown_all_processes'), \
+                patch('suave_runner.suave_runner.time.sleep'):
+            runner.run_experiments()
+
+    try:
+        run([None, TimeoutError('Missing required services'), None])
+        first = load_runs(tmp_path)
+        assert first['campaign']['random_seed'] == runner.random_seed
+        assert [first['runs'][f'run_0_{i}']['status'] for i in range(3)] == [
+            'completed', 'failed', 'completed']
+        # A runner that died mid-run leaves its entry 'running'.
+        runs = open_runs(tmp_path)
+        start_attempt(runs, 'run_0_2', 'bt', 'suave', 'ros2 launch pkg file',
+                      **attempt_details('run_0_2', 'bt', 'suave', False))
+        write_runs(tmp_path, runs)
+        runner.random_seed += 1
+        launched.clear()
+        run([None, None])
+        assert launched == ['c1.yaml', 'c2.yaml']
+        resumed = load_runs(tmp_path)
+        assert resumed['campaign'] == first['campaign']
+        assert resumed['runs']['run_0_0'] == first['runs']['run_0_0']
+        run_0_1, run_0_2 = resumed['runs']['run_0_1'], resumed['runs']['run_0_2']
+        assert run_0_1['status'] == 'completed'
+        assert [a['failure_type'] for a in run_0_1['attempts']] == [
+            'readiness_missing_service']
+        assert run_0_2['status'] == 'completed'
+        assert [a['status'] for a in run_0_2['attempts']] == [
+            'completed', 'interrupted']
     finally:
         runner.destroy_node()
         rclpy.shutdown()
@@ -500,8 +556,9 @@ def test_launch_experiment_passes_attempt_recording_path(tmp_path):
             parameter_overrides=_minimal_runner_params())
         runner.start_launch_process = lambda *_args: (
             SimpleNamespace(), SimpleNamespace())
-        runner._active_attempt = attempt_details(
-            'run_0_0', 'bt', 'suave', True)
+        runner._active_attempt = ('run_0_0', start_attempt(
+            open_runs(tmp_path), 'run_0_0', 'bt', 'suave', 'ros2 launch',
+            **attempt_details('run_0_0', 'bt', 'suave', True)))
 
         with patch(
             'suave_runner.suave_runner.get_package_share_directory',
@@ -532,7 +589,7 @@ def test_launch_experiment_passes_attempt_recording_path(tmp_path):
         rclpy.shutdown()
 
 
-def test_launch_experiment_passes_recording_disabled():
+def test_launch_experiment_passes_recording_disabled(tmp_path):
     """Verify disabled recording is forwarded without a bag path."""
     rclpy.init()
     try:
@@ -540,8 +597,9 @@ def test_launch_experiment_passes_recording_disabled():
             parameter_overrides=_minimal_runner_params())
         runner.start_launch_process = lambda *_args: (
             SimpleNamespace(), SimpleNamespace())
-        runner._active_attempt = attempt_details(
-            'run_0_0', 'bt', 'suave', False)
+        runner._active_attempt = ('run_0_0', start_attempt(
+            open_runs(tmp_path), 'run_0_0', 'bt', 'suave', 'ros2 launch',
+            **attempt_details('run_0_0', 'bt', 'suave', False)))
 
         with patch(
             'suave_runner.suave_runner.get_package_share_directory',

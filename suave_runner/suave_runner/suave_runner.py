@@ -53,15 +53,17 @@ from suave_runner.attempt_processes import register_session
 from suave_runner.attempt_processes import stop_sessions
 from suave_runner.bag_validation import validate_bag
 from suave_runner.diagnose_batch import summary_lines
-from suave_runner.run_artifacts import artifact_path
 from suave_runner.run_artifacts import attempt_details
 from suave_runner.run_artifacts import campaign_lock
 from suave_runner.run_artifacts import finalize_attempt
 from suave_runner.run_artifacts import recording_enabled
 from suave_runner.run_artifacts import recover_attempts
-from suave_runner.run_status import load_statuses
-from suave_runner.run_status import start_status
-from suave_runner.run_status import write_status
+from suave_runner.run_status import finish_attempt
+from suave_runner.run_status import open_runs
+from suave_runner.run_status import start_attempt
+from suave_tools.runs import bag_dir
+from suave_tools.runs import log_dir as attempt_log_dir
+from suave_tools.runs import write_runs
 import yaml
 
 MISSION_DONE_QOS = QoSProfile(
@@ -531,11 +533,12 @@ class ExperimentRunnerNode(Node):
 
         exp_args['mission_config'] = mission_config_file
         if self._active_attempt is not None:
-            record = self._active_attempt
-            exp_args['record_bags'] = str(record['recording_enabled']).lower()
-            if record['recording_enabled']:
-                exp_args['bag_output_path'] = str(artifact_path(
-                    result_path, record['bag']['pending_path']))
+            run_id, entry = self._active_attempt
+            enabled = entry['bag'] is not None
+            exp_args['record_bags'] = str(enabled).lower()
+            if enabled:
+                exp_args['bag_output_path'] = str(bag_dir(
+                    result_path, run_id, entry, 'pending'))
 
         self.get_logger().info(
             f'    Launching Experiment from {exp_path} with args: {exp_args}')
@@ -586,10 +589,18 @@ class ExperimentRunnerNode(Node):
         """Execute campaigns under an exclusive lock and recover transactions."""
         result_path = self.create_experiment_folder()
         with campaign_lock(result_path):
-            recover_attempts(result_path, validate_bag, confirm_stopped)
-            self._run_experiments_locked(result_path)
+            runs = open_runs(result_path)
+            recover_attempts(result_path, runs, validate_bag, confirm_stopped)
+            if not runs['campaign']:
+                runs['campaign'] = {
+                    'random_seed': self.random_seed,
+                    'simulation_launch': self.suave_simulation_cmd,
+                    'ardupilot_command': self.ardupilot_cmd,
+                }
+                write_runs(result_path, runs)
+            self._run_experiments_locked(result_path, runs)
 
-    def _run_experiments_locked(self, result_path):
+    def _run_experiments_locked(self, result_path, runs):
         mission_configs = self.generate_mission_config_files(result_path)
         for exp_idx, experiment in enumerate(self.experiments):
             exp_launch, num_runs, filename, manager = (
@@ -605,23 +616,19 @@ class ExperimentRunnerNode(Node):
                 if self.terminate_flag:
                     return
                 run_id = f'run_{exp_idx}_{run_idx}'
-                if (result_path / f'{run_id}.done').exists():
+                if runs['runs'].get(run_id, {}).get('status') == 'completed':
                     self.get_logger().info(
                         f'  Skipping {manager} run {run_idx + 1}/{num_runs} '
-                        '(checkpoint found).')
+                        '(already completed).')
                     continue
                 mission = experiment.get('mission_name', f'mission_{exp_idx}')
                 details = attempt_details(run_id, manager, mission, enabled)
-                status_path, record = start_status(
-                    result_path, exp_idx, run_idx, manager, mission,
-                    mission_config=str(mission_configs[run_idx]),
-                    experiment_launch=exp_launch,
-                    simulation_launch=self.suave_simulation_cmd,
-                    ardupilot_command=self.ardupilot_cmd,
-                    random_seed=self.random_seed, **details)
-                log_dir = artifact_path(result_path, record['log_dir'])
+                entry = start_attempt(
+                    runs, run_id, manager, mission, exp_launch, **details)
+                write_runs(result_path, runs)
+                log_dir = attempt_log_dir(result_path, run_id, entry)
                 log_dir.mkdir(parents=True, exist_ok=True)
-                self._active_attempt = record
+                self._active_attempt = (run_id, entry)
                 self._active_log_dir = log_dir
                 self._mission_done_event.clear()
                 self._mission_failed_event.clear()
@@ -654,11 +661,11 @@ class ExperimentRunnerNode(Node):
                     try:
                         self.shutdown_all_processes(log_dir)
                     except Exception:
-                        record.update(
-                            execution_status='interrupted',
-                            failure_type='shutdown_unconfirmed',
-                            failure_reason='Launch shutdown was not confirmed')
-                        write_status(status_path, record)
+                        finish_attempt(
+                            entry, 'interrupted', entry['bag'],
+                            'Launch shutdown was not confirmed',
+                            'shutdown_unconfirmed')
+                        write_runs(result_path, runs)
                         raise
                     finally:
                         self._active_attempt = None
@@ -675,16 +682,15 @@ class ExperimentRunnerNode(Node):
                         self.record_broken_run(
                             result_path, exp_idx, run_idx, manager,
                             filename, broken)
-                record.update(execution_status=outcome,
-                              failure_reason=reason, failure_type=failure_type)
-                write_status(status_path, record)
-                finalize_attempt(result_path, status_path, record, validate_bag)
-                self._log_run_summary(result_path, record)
+                # The entry stays 'running' on disk until the bag has moved.
+                finalize_attempt(result_path, runs, run_id, outcome,
+                                 validate_bag, reason, failure_type)
+                self._log_run_summary(runs, run_id)
                 if self.terminate_flag:
                     return
                 time.sleep(10)
             self.get_logger().info(f'Experiment {exp_idx + 1} summary:')
-            for line in summary_lines(load_statuses(result_path)):
+            for line in summary_lines(runs['runs'].values()):
                 self.get_logger().info(line)
         self.get_logger().info('All experiment runs completed or aborted.')
 
@@ -706,12 +712,13 @@ class ExperimentRunnerNode(Node):
                         'mission_done_timeout')
         return 'interrupted', 'Termination requested', 'interrupted'
 
-    def _log_run_summary(self, result_path, record):
+    def _log_run_summary(self, runs, run_id):
+        entry = runs['runs'][run_id]
         self.get_logger().info(
-            f'  {record["run_id"]} {record["adaptation_manager"]}: '
-            f'{record["status"]}; {record["failure_type"]} '
-            f'{record["failure_reason"]}')
-        for line in summary_lines(load_statuses(result_path)):
+            f'  {run_id} {entry["adaptation_manager"]}: '
+            f'{entry["status"]}; {entry["failure_type"]} '
+            f'{entry["failure_reason"]}')
+        for line in summary_lines(runs['runs'].values()):
             if line.startswith('SYSTEMIC:'):
                 self.get_logger().error(line)
             else:

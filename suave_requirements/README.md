@@ -23,13 +23,16 @@ The `rebetmc` manager is labelled **TacticalRetreat** in figures.
 ### Which bags are used
 
 Bags are selected from the campaign folder (the parent of `--bags-dir`) with
-`suave_tools.bag_selection`, never by scanning directory names:
+`suave_tools.runs.accepted_runs`, never by scanning directory names:
 
-- A trial counts only if it has a `.done` marker.
-- Its `run_*.status.json` (`schema_version: 1`) must show a completed,
-  finalized attempt with an accepted bag. A checkpointed trial without a
-  valid status is an error, not a silent omission.
-- Trials run with recording disabled are reported as `recording_disabled`.
+- A trial counts only if its entry in the campaign's `runs.json`
+  (`schema_version: 2`) has `"status": "completed"`.
+- A completed trial must have `"bag": "accepted"`; its bag is
+  `rosbags/<manager>_<mission>_<run_id>_<attempt_id>/`. A completed trial
+  without an accepted bag, or an unsupported `runs.json`, is an error, not a
+  silent omission.
+- Trials run with recording disabled (`"bag": null`) are reported as
+  `recording_disabled`.
 - Bags under `rosbags/pending/` or `rosbags/failed/` are never loaded.
 
 An unreadable selected bag is an error. A bag that is readable but lacks a

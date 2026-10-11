@@ -29,7 +29,7 @@ from std_msgs.msg import Float32  # noqa: I100,I201
 from suave_requirements.requirement_monitor import (  # noqa: I100,I201
     fulfillment_topic, REACTION_TIME, REACTION_TIME_TYPES, SEARCH_FOOTPRINT,
     THRUSTER_AVAILABILITY)
-from suave_tools.bag_selection import select_accepted_bags  # noqa: I100,I201
+from suave_tools.runs import accepted_runs  # noqa: I100,I201
 
 
 REQUIREMENTS = {
@@ -113,9 +113,9 @@ def metadata_info(bag_dir):
 
 
 def accepted_entries(bags_dir, managers):
-    """Load explicit accepted-bag ownership for a campaign."""
+    """Load the accepted bags of a campaign's completed runs."""
     campaign = bags_dir.parent
-    selected, excluded = select_accepted_bags(campaign)
+    selected, excluded = accepted_runs(campaign)
     selected = [entry for entry in selected
                 if entry['adaptation_manager'] in managers]
     return campaign, selected, excluded

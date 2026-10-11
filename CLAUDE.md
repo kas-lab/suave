@@ -99,7 +99,7 @@ ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt result_filena
 ros2 launch suave_runner suave_runner_launch.py
 # Config: suave_runner/config/runner/runner_config.yml — controls experiments, disturbance timing, result_path
 
-# Batch runner (sequences multiple campaigns; checkpoints to state.json for resume)
+# Batch runner (sequences multiple campaigns; resume from its state.json manifest)
 ros2 launch suave_runner run_batch_launch.py
 # Config: suave_runner/config/runner/batch_campaigns.yml — see suave_runner/README.md "Batch runner" section
 
@@ -184,7 +184,8 @@ For **external managing systems**, include `suave_base/launch/suave_base.launch.
 `mission_metrics/done` (`std_msgs/Bool`) signals run completion. Both the `MissionMetrics` publisher and `ExperimentRunnerNode` subscriber must declare `RELIABLE` reliability + `TRANSIENT_LOCAL` durability (depth 1). Mismatched QoS causes DDS to silently drop the connection.
 Per-attempt logs are written to `<result_path>/logs/run_{exp_idx}_{run_idx}/<attempt_id>/`: `ardupilot.log` (raw SITL stdout/stderr), `simulation/` and `experiment/` (ROS node logs via `ROS_LOG_DIR`).
 `resume_result_path` parameter resumes a crashed campaign from an existing result folder; `random_seed` (default `100`) controls perturbation reproducibility.
-`run_batch`'s `resume_state_file` is a separate, batch-level resume mechanism — it points at a batch's `state.json`, not at a single campaign's result folder.
+Each campaign's `runs.json` (`schema_version: 2`, atomic tmp+fsync+rename, written only by the runner) is the single source of run progress: a run is complete iff `status == "completed"`, and resume skips only those. Bag and log paths are derived from `run_id` + `attempt_id`, not stored. The bag is moved before the final `runs.json` write, so recovery decides from where the bag is on disk.
+`run_batch`'s `resume_state_file` is a separate, batch-level resume mechanism — it points at a batch's `state.json`, not at a single campaign's result folder. `state.json` is a write-once manifest (`schema_version: 2`, campaign `name`/`package`/`config_file`); campaign progress is derived from `campaigns/<name>/runs.json` against the runner config.
 
 ## Code Conventions
 

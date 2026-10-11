@@ -20,7 +20,7 @@ from pathlib import Path
 import signal
 import time
 
-from suave_runner.run_status import write_status
+from suave_tools.runs import atomic_write_json
 
 
 def process_identity(pid):
@@ -36,7 +36,7 @@ def register_session(log_dir):
     directory = Path(log_dir)
     directory.mkdir(parents=True, exist_ok=True)
     _, session, start = process_identity(os.getpid())
-    write_status(directory / 'session.json', {
+    atomic_write_json(directory / 'session.json', {
         'session': session,
         'start': start,
         'boot': Path('/proc/sys/kernel/random/boot_id').read_text().strip(),

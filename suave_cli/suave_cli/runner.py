@@ -24,10 +24,19 @@ from suave_cli.targets import run_in_target, select_target, target_results_dir
 
 CAMPAIGN_GLOB = ('[0-9][0-9][0-9][0-9]_[0-9][0-9]_[0-9][0-9]_'
                  '[0-9][0-9]-[0-9][0-9]-[0-9][0-9]')
-BATCH_SUMMARY = (
-    'import json, sys; s = json.load(open(sys.argv[1])); o = s.get("campaign_order", []); '
-    'd = sum(1 for n in o if s["campaigns"].get(n, {}).get("status") == "completed"); '
-    'print(f"{sys.argv[1]}  {d}/{len(o)} campaigns completed")')
+# Progress is derived from each campaign's runs.json; the manifest only
+# lists campaigns, and expected counts need the (YAML) runner configs.
+RUNS_COMPLETED = (
+    'import json, os; '
+    'count = lambda d: sum(r["status"] == "completed" for r in json.load('
+    'open(os.path.join(d, "runs.json")))["runs"].values()) '
+    'if os.path.isfile(os.path.join(d, "runs.json")) else 0; ')
+BATCH_SUMMARY = RUNS_COMPLETED + (
+    'import sys; p = sys.argv[1]; m = json.load(open(p)); '
+    'b = os.path.join(os.path.dirname(p), "campaigns"); '
+    'print(p + "  runs completed: " + ", ".join('
+    'c["name"] + " " + str(count(os.path.join(b, c["name"]))) for c in m["campaigns"]))')
+CAMPAIGN_SUMMARY = RUNS_COMPLETED + 'import sys; print(count(sys.argv[1]))'
 
 RUN_EPILOG = """\
 examples:
@@ -143,7 +152,8 @@ def campaign_list_body(results_dir):
     """Return shell code listing campaign folders with their finished runs."""
     base = shlex.quote(results_dir)
     return (f'for d in $(ls -1d {base}/{CAMPAIGN_GLOB} 2>/dev/null | sort -r); '
-            'do echo "$d  $(ls "$d"/run_*_*.done 2>/dev/null | wc -l) runs done"; done')
+            f'do echo "$d  $(python3 -c {shlex.quote(CAMPAIGN_SUMMARY)} "$d") runs completed"; '
+            'done')
 
 
 def resolve_latest(ctx, target, kind):
