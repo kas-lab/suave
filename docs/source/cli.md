@@ -21,6 +21,7 @@ package adds `suave` to `PATH`), or symlink `suave_cli/bin/suave` into a folder 
     suave run --config my_runner.yml    # run a campaign
     suave batch start                   # run the campaigns in batch_campaigns.yml
     suave batch resume --latest         # resume the newest batch
+    suave batch diagnose --latest       # report failed runs of the newest batch
     suave campaign resume --latest --config my_runner.yml
 
 `suave docker run` shares the host display through a per-container X cookie (no

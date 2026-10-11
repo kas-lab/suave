@@ -59,6 +59,20 @@ def test_batch_start_bodies():
         'batch_campaigns.yml" -p batch_dir:=/b -p fail_fast:=true -p dry_run:=true')
 
 
+def test_batch_diagnose_body():
+    assert runner.batch_diagnose_body('/a path/state.json', True) == (
+        "ros2 run suave_runner diagnose_batch '/a path/state.json' --json")
+
+
+def test_batch_diagnose_latest(make_ctx, suave_root, fake_runner):
+    fake_runner.responses[RUNNING] = (0, 'true\n')
+    fake_runner.responses[('docker', 'exec')] = (0, '/b/state.json\n')
+    args = argparse.Namespace(path=None, latest=True, json=True)
+    assert runner.cmd_batch_diagnose(make_ctx(suave_root, args=args)) == 0
+    assert 'diagnose_batch /b/state.json --json' in fake_runner.find(
+        'docker', 'exec')[-1][-1]
+
+
 def test_batch_resume_body():
     body = runner.batch_resume_body('/b/state.json')
     assert body.startswith('if [ ! -e /b/state.json ]; then')

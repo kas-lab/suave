@@ -22,11 +22,13 @@ import tempfile
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import pytest
 import rclpy
 from rclpy.parameter import Parameter
 from std_msgs.msg import Bool
 from std_msgs.msg import String
 
+from suave_runner.run_artifacts import attempt_details
 from suave_runner.suave_runner import ExperimentRunnerNode
 import yaml
 
@@ -48,6 +50,102 @@ def _experiment(manager, num_runs):
         'adaptation_manager': manager,
         'mission_name': 'suave',
     })
+
+
+def test_readiness_checks_names_types_and_external_managers():
+    rclpy.init()
+    runner = ExperimentRunnerNode(parameter_overrides=_minimal_runner_params())
+    try:
+        runner.readiness_timeout = 0.0
+        with patch.object(runner, 'get_service_names_and_types', return_value=[]):
+            with pytest.raises(TimeoutError, match='f_maintain_motion'):
+                runner._wait_for_readiness('bt', {})
+            runner._wait_for_readiness('rebetmc', {})
+            runner._wait_for_readiness('bt', {'required_services': []})
+        services = [(f'/{name}/change_mode', ['system_modes_msgs/srv/ChangeMode'])
+                    for name in ('f_maintain_motion', 'f_generate_search_path',
+                                 'f_follow_pipeline')]
+        with patch.object(runner, 'get_service_names_and_types',
+                          return_value=services):
+            runner._wait_for_readiness('bt', {})
+            with pytest.raises(TimeoutError, match='generate_recharge_path'):
+                runner._wait_for_readiness('bt', {
+                    'experiment_launch': 'bt_executable:=suave_bt_extended'})
+        runner.terminate_flag = True
+        with pytest.raises(RuntimeError, match='Termination'):
+            runner._wait_for_readiness('bt', {})
+    finally:
+        runner.destroy_node()
+        rclpy.shutdown()
+
+
+def test_failed_readiness_continues_to_following_manager(tmp_path):
+    rclpy.init()
+    runner = ExperimentRunnerNode(parameter_overrides=(
+        _minimal_runner_params() + [Parameter('record_bags', value=False)]))
+    runner.experiments = [json.loads(_experiment('bt', 2)),
+                          json.loads(_experiment('none', 1))]
+
+    def launch(*args):
+        runner._mission_done_event.set()
+
+    try:
+        with patch.object(runner, 'create_experiment_folder',
+                          return_value=tmp_path), \
+                patch.object(runner, 'generate_mission_config_files',
+                             return_value=['config0.yaml', 'config1.yaml']), \
+                patch.object(runner, 'launch_ardupilot'), \
+                patch.object(runner, 'launch_suave_simulation'), \
+                patch.object(runner, 'launch_experiment', side_effect=launch), \
+                patch.object(runner, '_wait_for_readiness', side_effect=[
+                    TimeoutError('Missing required services'),
+                    TimeoutError('Missing required services'), None]), \
+                patch.object(runner, 'shutdown_all_processes'), \
+                patch('suave_runner.suave_runner.time.sleep'):
+            runner.run_experiments()
+        assert not (tmp_path / 'run_0_0.done').exists()
+        assert (tmp_path / 'run_1_0.done').exists()
+        failed = json.loads((tmp_path / 'run_0_1.status.json').read_text())
+        assert failed['failure_type'] == 'readiness_missing_service'
+        completed = json.loads((tmp_path / 'run_1_0.status.json').read_text())
+        assert completed['success']
+    finally:
+        runner.destroy_node()
+        rclpy.shutdown()
+
+
+def test_unconfirmed_shutdown_persists_reason_and_aborts(tmp_path):
+    rclpy.init()
+    runner = ExperimentRunnerNode(parameter_overrides=_minimal_runner_params())
+    runner.experiments = [json.loads(_experiment('bt', 2))]
+
+    def launch(*args):
+        runner._mission_done_event.set()
+
+    try:
+        with patch.object(runner, 'create_experiment_folder',
+                          return_value=tmp_path), \
+                patch.object(runner, 'generate_mission_config_files',
+                             return_value=['config0.yaml', 'config1.yaml']), \
+                patch.object(runner, 'launch_ardupilot'), \
+                patch.object(runner, 'launch_suave_simulation'), \
+                patch.object(runner, 'launch_experiment', side_effect=launch), \
+                patch.object(runner, '_wait_for_readiness'), \
+                patch.object(runner, 'shutdown_all_processes',
+                             side_effect=RuntimeError('still alive')), \
+                patch('suave_runner.suave_runner.time.sleep'):
+            with pytest.raises(RuntimeError, match='still alive'):
+                runner.run_experiments()
+        record = json.loads((tmp_path / 'run_0_0.status.json').read_text())
+        assert record['execution_status'] == 'interrupted'
+        assert record['failure_type'] == 'shutdown_unconfirmed'
+        assert record['finalization_state'] == 'pending'
+        assert record['bag']['state'] == 'pending'
+        assert not (tmp_path / 'run_0_0.done').exists()
+        assert not (tmp_path / 'run_0_1.status.json').exists()
+    finally:
+        runner.destroy_node()
+        rclpy.shutdown()
 
 
 def test_create_experiment_folder():
@@ -370,6 +468,85 @@ def test_launch_experiment_preserves_explicit_water_current_arg():
         rclpy.shutdown()
 
 
+def test_launch_experiment_passes_attempt_recording_path(tmp_path):
+    """Verify runner-owned recording arguments are injected."""
+    rclpy.init()
+    try:
+        runner = ExperimentRunnerNode(
+            parameter_overrides=_minimal_runner_params())
+        runner.start_launch_process = lambda *_args: (
+            SimpleNamespace(), SimpleNamespace())
+        runner._active_attempt = attempt_details(
+            'run_0_0', 'bt', 'suave', True)
+
+        with patch(
+            'suave_runner.suave_runner.get_package_share_directory',
+            return_value='/tmp'
+        ), patch(
+            'suave_runner.suave_runner.PythonLaunchDescriptionSource',
+            side_effect=lambda path: path
+        ), patch(
+            'suave_runner.suave_runner.IncludeLaunchDescription'
+        ) as include_launch:
+            include_launch.side_effect = lambda source, launch_arguments: (
+                SimpleNamespace(
+                    source=source,
+                    launch_arguments=dict(launch_arguments)))
+            runner.launch_experiment(
+                'ros2 launch suave_bringup mission.launch.py',
+                str(tmp_path),
+                'bt_suave',
+                '/tmp/mission_config.yaml',
+                Path('/tmp/logs'))
+
+        launch_args = dict(
+            include_launch.call_args.kwargs['launch_arguments'])
+        assert launch_args['record_bags'] == 'true'
+        assert launch_args['bag_output_path'].startswith(
+            str(tmp_path / 'rosbags' / 'pending'))
+    finally:
+        rclpy.shutdown()
+
+
+def test_launch_experiment_passes_recording_disabled():
+    """Verify disabled recording is forwarded without a bag path."""
+    rclpy.init()
+    try:
+        runner = ExperimentRunnerNode(
+            parameter_overrides=_minimal_runner_params())
+        runner.start_launch_process = lambda *_args: (
+            SimpleNamespace(), SimpleNamespace())
+        runner._active_attempt = attempt_details(
+            'run_0_0', 'bt', 'suave', False)
+
+        with patch(
+            'suave_runner.suave_runner.get_package_share_directory',
+            return_value='/tmp'
+        ), patch(
+            'suave_runner.suave_runner.PythonLaunchDescriptionSource',
+            side_effect=lambda path: path
+        ), patch(
+            'suave_runner.suave_runner.IncludeLaunchDescription'
+        ) as include_launch:
+            include_launch.side_effect = lambda source, launch_arguments: (
+                SimpleNamespace(
+                    source=source,
+                    launch_arguments=dict(launch_arguments)))
+            runner.launch_experiment(
+                'ros2 launch suave_bringup mission.launch.py',
+                '/tmp/results',
+                'bt_suave',
+                '/tmp/mission_config.yaml',
+                Path('/tmp/logs'))
+
+        launch_args = dict(
+            include_launch.call_args.kwargs['launch_arguments'])
+        assert launch_args['record_bags'] == 'false'
+        assert 'bag_output_path' not in launch_args
+    finally:
+        rclpy.shutdown()
+
+
 def test_record_process_exit_queues_nonzero_exit():
     stop_event = SimpleNamespace(is_set=lambda: False)
     failure_queue = Queue()
@@ -505,6 +682,30 @@ def test_detect_broken_run_uses_latest_attempt():
             '[f_generate_search_path_node]: on_activate() is called.\n',
             mtime=2000)
         assert runner.detect_broken_run(workdir) == ''
+    finally:
+        rclpy.shutdown()
+        shutil.rmtree(workdir, ignore_errors=True)
+
+
+def test_detect_broken_run_ignores_logs_that_only_mention_node():
+    rclpy.init()
+    workdir = Path(tempfile.mkdtemp())
+    try:
+        runner = ExperimentRunnerNode(
+            parameter_overrides=_minimal_runner_params())
+        experiment_dir = workdir / 'experiment'
+        _write_node_log(
+            experiment_dir, 'python3_10_1000.log',
+            '[INFO] [1.0] [f_generate_search_path_node]: '
+            'on_configure() is called.\n',
+            mtime=1000)
+        # The bag recorder logs its topic list and finishes last.
+        _write_node_log(
+            experiment_dir, 'python3_20_1000.log',
+            '[INFO] [2.0] [rosbag2_recorder]: Subscribed to topic '
+            "'/f_generate_search_path_node/transition_event'\n",
+            mtime=2000)
+        assert runner.detect_broken_run(workdir)
     finally:
         rclpy.shutdown()
         shutil.rmtree(workdir, ignore_errors=True)
