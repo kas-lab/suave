@@ -17,6 +17,8 @@
 import json
 import os
 from pathlib import Path
+import signal
+import time
 
 from suave_runner.run_status import write_status
 
@@ -42,8 +44,25 @@ def register_session(log_dir):
     })
 
 
+def stop_sessions(log_dir, timeout=15.0, poll=0.2):
+    """Terminate recorded launch sessions, escalating to SIGKILL."""
+    records = list(_session_records(log_dir))
+    _signal_members(records, signal.SIGTERM)
+    if not _wait_stopped(records, timeout, poll):
+        _signal_members(records, signal.SIGKILL)
+        _wait_stopped(records, min(timeout, 5.0), poll)
+    confirm_stopped(log_dir)
+
+
 def confirm_stopped(log_dir):
     """Refuse recovery while a recorded launch session has live members."""
+    for record in _session_records(log_dir):
+        for pid in _live_members(record):
+            raise RuntimeError(
+                f'Attempt writer/session still alive: PID {pid}')
+
+
+def _session_records(log_dir):
     boot = Path('/proc/sys/kernel/random/boot_id').read_text().strip()
     namespace = os.readlink('/proc/self/ns/pid')
     for path in Path(log_dir).glob('*/session.json'):
@@ -54,10 +73,11 @@ def confirm_stopped(log_dir):
             raise RuntimeError(
                 'Cannot verify writers from another PID namespace: '
                 f'{path}')
-        _confirm_session_stopped(record)
+        yield record
 
 
-def _confirm_session_stopped(record):
+def _live_members(record):
+    members = []
     for proc in Path('/proc').iterdir():
         if not proc.name.isdigit():
             continue
@@ -65,9 +85,26 @@ def _confirm_session_stopped(record):
             state, session, start = process_identity(proc.name)
         except FileNotFoundError:
             continue
-        live_member = (
-            state != 'Z' and session == record['session'] and
-            start >= record['start'])
-        if live_member:
-            raise RuntimeError(
-                f'Attempt writer/session still alive: PID {proc.name}')
+        if (state != 'Z' and session == record['session'] and
+                start >= record['start']):
+            members.append(int(proc.name))
+    return members
+
+
+def _signal_members(records, signum):
+    # Rescan so children forked during teardown are signalled too.
+    for record in records:
+        for pid in _live_members(record):
+            try:
+                os.kill(pid, signum)
+            except ProcessLookupError:
+                pass
+
+
+def _wait_stopped(records, timeout, poll):
+    deadline = time.monotonic() + timeout
+    while any(_live_members(record) for record in records):
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(poll)
+    return True

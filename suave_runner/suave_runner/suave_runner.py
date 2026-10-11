@@ -50,6 +50,7 @@ from std_msgs.msg import String
 from suave_monitor.thruster_monitor import read_thruster_events
 from suave_runner.attempt_processes import confirm_stopped
 from suave_runner.attempt_processes import register_session
+from suave_runner.attempt_processes import stop_sessions
 from suave_runner.bag_validation import validate_bag
 from suave_runner.diagnose_batch import summary_lines
 from suave_runner.run_artifacts import artifact_path
@@ -95,6 +96,7 @@ class ExperimentRunnerNode(Node):
         self.declare_parameter('resume_result_path', '')
         self.declare_parameter('record_bags', True)
         self._active_attempt = None
+        self._active_log_dir = None
 
         # Ardupilot parameters
         self.declare_parameter(
@@ -395,22 +397,21 @@ class ExperimentRunnerNode(Node):
                     'attempt remains pending for recovery')
         self.processes_stop_events.clear()
 
-    def kill_gz_sim(self):
-        """Terminate remaining Gazebo Sim processes."""
+    def shutdown_all_processes(self, log_dir=None):
+        """Stop ArduPilot, ROS launches, and orphans in their sessions."""
         try:
-            subprocess.run(['pkill', '-f', 'gz sim'], check=False)
-        except Exception as e:
-            print(f'Error killing gz sim processes: {e}')
-
-    def shutdown_all_processes(self):
-        """Stop ArduPilot, ROS launch processes, Gazebo, and log output."""
-        self.terminate_process(self.ardupilot_proc, 'ArduPilot')
-        self.shutdown_all_launch_processes()
-        self.kill_gz_sim()
-        ardupilot_log = getattr(self, '_ardupilot_log', None)
-        if ardupilot_log:
-            ardupilot_log.close()
-            self._ardupilot_log = None
+            self.terminate_process(self.ardupilot_proc, 'ArduPilot')
+            self.shutdown_all_launch_processes()
+            log_dir = log_dir or self._active_log_dir
+            if log_dir is not None:
+                # Launch only signals its direct children; forked servers
+                # such as Gazebo survive in the session until stopped here.
+                stop_sessions(log_dir)
+        finally:
+            ardupilot_log = getattr(self, '_ardupilot_log', None)
+            if ardupilot_log:
+                ardupilot_log.close()
+                self._ardupilot_log = None
         self.get_logger().info('All processes terminated.')
 
     def terminate_process(self, proc, name):
@@ -621,6 +622,7 @@ class ExperimentRunnerNode(Node):
                 log_dir = artifact_path(result_path, record['log_dir'])
                 log_dir.mkdir(parents=True, exist_ok=True)
                 self._active_attempt = record
+                self._active_log_dir = log_dir
                 self._mission_done_event.clear()
                 self._mission_failed_event.clear()
                 self._mission_failure_reason = ''
@@ -650,8 +652,7 @@ class ExperimentRunnerNode(Node):
                     # If shutdown cannot be verified, persist why, leave the bag
                     # pending and propagate; never start another attempt.
                     try:
-                        self.shutdown_all_processes()
-                        confirm_stopped(log_dir)
+                        self.shutdown_all_processes(log_dir)
                     except Exception:
                         record.update(
                             execution_status='interrupted',
@@ -661,6 +662,7 @@ class ExperimentRunnerNode(Node):
                         raise
                     finally:
                         self._active_attempt = None
+                        self._active_log_dir = None
 
                 if self.terminate_flag:
                     outcome, reason, failure_type = (

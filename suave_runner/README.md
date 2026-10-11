@@ -171,10 +171,14 @@ A campaign folder is locked (`.runner.lock`) while a runner uses it, so a second
 runner on the same folder fails immediately. Before starting new runs, a
 resumed runner first finishes any attempt that was interrupted mid-finalization:
 it confirms the attempt's launch session has no live processes, then completes
-the pending promotion or quarantine. If the runner cannot confirm that launch
-processes stopped after 30 seconds, it records the attempt as `interrupted`
-with `failure_type: shutdown_unconfirmed`, leaves the bag in `rosbags/pending/`,
-and stops the campaign rather than starting another attempt. A `.done` marker
+the pending promotion or quarantine; recovery only checks and never kills
+processes. After every attempt, the runner stops the launch processes, sends
+SIGTERM to any process still left in the attempt's launch sessions (for example
+a Gazebo server orphaned by its `gz sim` wrapper), and sends SIGKILL to
+survivors after 15 seconds. If a launch process has not exited after 30 seconds,
+or a session process survives SIGKILL, the runner records the attempt as
+`interrupted` with `failure_type: shutdown_unconfirmed`, leaves the bag in
+`rosbags/pending/`, and stops the campaign rather than starting another attempt. A `.done` marker
 whose accepted bag is missing stops recovery with an error instead of rerunning
 the trial. Bag acceptance does not change how CSV metric rows are written.
 

@@ -99,15 +99,40 @@ def test_failed_readiness_continues_to_following_manager(tmp_path):
                 patch.object(runner, '_wait_for_readiness', side_effect=[
                     TimeoutError('Missing required services'),
                     TimeoutError('Missing required services'), None]), \
-                patch.object(runner, 'shutdown_all_processes'), \
+                patch.object(runner, 'shutdown_all_processes') as shutdown, \
                 patch('suave_runner.suave_runner.time.sleep'):
             runner.run_experiments()
+        assert [call.args[0].parent.name for call in shutdown.call_args_list] == [
+            'run_0_0', 'run_0_1', 'run_1_0']
+        assert runner._active_log_dir is None
         assert not (tmp_path / 'run_0_0.done').exists()
         assert (tmp_path / 'run_1_0.done').exists()
         failed = json.loads((tmp_path / 'run_0_1.status.json').read_text())
         assert failed['failure_type'] == 'readiness_missing_service'
         completed = json.loads((tmp_path / 'run_1_0.status.json').read_text())
         assert completed['success']
+    finally:
+        runner.destroy_node()
+        rclpy.shutdown()
+
+
+def test_shutdown_stops_sessions_after_launch_processes(tmp_path):
+    rclpy.init()
+    runner = ExperimentRunnerNode(parameter_overrides=_minimal_runner_params())
+    calls = []
+    try:
+        with patch.object(runner, 'terminate_process',
+                          side_effect=lambda *a: calls.append('ardupilot')), \
+                patch.object(runner, 'shutdown_all_launch_processes',
+                             side_effect=lambda: calls.append('launch')), \
+                patch('suave_runner.suave_runner.stop_sessions',
+                      side_effect=calls.append):
+            runner.shutdown_all_processes(tmp_path / 'explicit')
+            runner._active_log_dir = tmp_path / 'active'
+            runner.shutdown_all_processes()
+        assert calls == [
+            'ardupilot', 'launch', tmp_path / 'explicit',
+            'ardupilot', 'launch', tmp_path / 'active']
     finally:
         runner.destroy_node()
         rclpy.shutdown()

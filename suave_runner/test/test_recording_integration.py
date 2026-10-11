@@ -24,7 +24,7 @@ from types import SimpleNamespace
 from launch import LaunchDescription
 from launch.actions import ExecuteProcess
 import pytest
-from suave_runner.attempt_processes import confirm_stopped
+from suave_runner.attempt_processes import stop_sessions
 from suave_runner.bag_validation import validate_bag
 from suave_runner.run_artifacts import artifact_path
 from suave_runner.run_artifacts import attempt_details
@@ -83,7 +83,7 @@ def test_real_recorder_is_stopped_validated_and_checkpointed(
     time.sleep(5)
 
     ExperimentRunnerNode.shutdown_all_launch_processes(runner)
-    confirm_stopped(log_dir)
+    stop_sessions(log_dir)
     assert runner._process_failure_queue.empty()
 
     record['execution_status'] = 'completed'
