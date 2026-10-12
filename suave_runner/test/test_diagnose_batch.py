@@ -20,6 +20,7 @@ from unittest.mock import patch
 import pytest
 
 from suave_runner.diagnose_batch import campaign_progress
+from suave_runner.diagnose_batch import classify
 from suave_runner.diagnose_batch import diagnose
 from suave_runner.diagnose_batch import diagnose_campaign
 from suave_runner.diagnose_batch import summarize
@@ -54,6 +55,14 @@ def test_failure_evidence_stops_at_teardown(tmp_path, attempt):
     report = diagnose_campaign(tmp_path)
     assert [e['type'] for e in report['runs'][0]['suspected_causes']] == [
         'missing_change_mode_service']
+
+
+def test_classify_lifecycle_watchdog_report():
+    line = ('12.0 [lifecycle_watchdog-14] [ERROR] [12.0] [lifecycle_watchdog]: '
+            'f_generate_search_path_node did not become active within 10.0s '
+            "of mode_manager's activate request")
+    assert classify(line) == 'lost_lifecycle_activation'
+    assert classify('f_generate_search_path_node did not become active') == ''
 
 
 def test_manifest_campaigns_and_corrupt_runs(tmp_path, attempt):

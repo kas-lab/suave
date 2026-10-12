@@ -115,6 +115,20 @@ def test_uncomputed_tests_and_escaped_labels(tmp_path, campaign):
     assert 'nan' not in table
 
 
+def test_shared_short_labels_and_order(tmp_path, campaign):
+    """Use the shared short labels in table order and explain MC."""
+    path = campaign()
+    frame = _results().replace({'bt': 'rosa_bt', 'planta': 'metacontrol'})
+    frame.to_csv(path, index=False)
+    assert batch.main([str(tmp_path)]) == 0
+    table = (tmp_path / 'campaigns_latex_tables' / 'wilcoxon_analysis' /
+             'exp1_wilcoxon.tex').read_text()
+    assert r'\textbf{ROSA-BT}' in table
+    assert r'\textbf{MC}' in table
+    assert table.index(r'\textbf{ROSA-BT}') < table.index(r'\textbf{MC}')
+    assert "``MC'' stands for Metacontrol." in table
+
+
 @pytest.mark.parametrize('problem, message', [
     ('missing_column', 'missing columns'),
     ('missing_pair', 'incomplete or unexpected'),

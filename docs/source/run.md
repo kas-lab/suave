@@ -105,7 +105,8 @@ To run SUAVE with different managing subsystems, replace the `experiment_launch`
 | `mission_config_pkg` | `suave_missions` | ROS package containing the mission config |
 | `mission_config_file` | `config/runner_mission_config.yaml` | Path to mission config within that package |
 | `enable_water_current` | `false` | Enable the optional `water_current` node for each run |
-| `ardupilot_executable` | `sim_vehicle.py -L RATBeach -v ArduSub --model=JSON` | Command used to start ArduPilot SITL |
+| `ardupilot_executable` | `sim_vehicle.py -N -L RATBeach -v ArduSub --model=JSON` | Command used to start ArduPilot SITL (`-N`: no rebuild) |
+| `ardupilot_ready_timeout` | `30.0` | Seconds to wait for SITL to listen on port 5760 (and for a previous SITL to release it) |
 | `suave_simulation` | `ros2 launch suave simulation.launch.py` | Simulation launch command |
 | `initial_pos_x` / `y` / `z` | `-17.0` / `2.5` / `-18.5` | AUV spawn position in the Gazebo world; Y comes from the shipped runner config |
 | `initial_pos_x_random_interval` | `[0.0, 0.0]` | Random offset range applied to X spawn position each run |
@@ -116,14 +117,15 @@ To run SUAVE with different managing subsystems, replace the `experiment_launch`
 | `thruster_events` | `[(1,failure,100), (3,failure,100)]` | List of thruster events: `(id, type, time_s)` |
 | `thruster_events_random_interval` | `[-100.0, 100.0]` | Random offset (s) applied to each thruster event time |
 | `random_interval` | `5` | Number of runs before re-randomising offsets |
-| `readiness_timeout` | `10.0` | Seconds to wait for the adaptation manager's required services before failing a run |
+| `simulation_ready_timeout` | `30.0` | Seconds to wait for the first `/model/bluerov2/pose` message after launching the simulation |
+| `readiness_timeout` | `10.0` | Seconds to wait for the experiment's `required_services` before failing a run |
 | `random_seed` | `100` | Seed for the perturbation RNG — fix this value for reproducible benchmark campaigns |
 | `resume_result_path` | `""` | Path to an existing result folder to resume a crashed campaign (empty = start a new timestamped folder) |
 | `experiments` | *(see file)* | List of experiment definitions (see below) |
 
 Water current remains disabled unless `enable_water_current` is set to `true` or an experiment launch command explicitly passes `enable_water_current:=true`. Current-model parameters such as `mean_current`, `amplitude`, `period`, `heading`, and `publish_period` are read by the `water_current` node from the mission config file. The heading oscillates around the mean `heading` with `heading_amplitude` and `heading_period`; optional seeded Gauss-Markov heading noise is enabled by setting `heading_noise_std` above zero (see `heading_noise_time_constant` and `heading_noise_seed`). The shipped `water_current_runner_config.yml` provides an example runner configuration with water current enabled. It can be selected with `ros2 launch suave_runner suave_runner_launch.py config_file:=<path-to-water_current_runner_config.yml>`.
 
-Each entry in `experiments` is a JSON string with four fields:
+Each entry in `experiments` is a JSON string with four required fields and an optional `required_services` list:
 
 ```yaml
 experiments:
@@ -142,6 +144,7 @@ experiments:
 | `num_runs` | Number of times to repeat this experiment |
 | `adaptation_manager` | Label written into result CSV files |
 | `mission_name` | Mission label written into result CSV files |
+| `required_services` | Optional absolute service names the runner waits for before the mission starts (see readiness below); absent means no wait |
 
 Multiple experiments can be listed and will be run sequentially. See the [Metrics Reference](metrics.md) for details on output files.
 
@@ -254,15 +257,16 @@ failed, and `2` for an invalid path.
 |---|---|
 | `mission_done_timeout` | No `mission_metrics/done` within `run_duration` |
 | `process_died_before_completion` | A launched process exited with a nonzero status |
-| `mission_control_failure` | A subsystem published `mission/control_failure` |
-| `readiness_missing_service` | Services the manager needs were missing after `readiness_timeout` |
+| `mission_control_failure` | A subsystem published `mission/control_failure`. This includes the `lifecycle_watchdog` node (launched by `suave.launch.py`), which reports a lifecycle node that did not become active within `activation_timeout` (10 s) of `mode_manager`'s activate request. The watchdog only reports; it never retries activation. Resume retries the run |
+| `readiness_timeout` | ArduPilot or the simulation was not ready within `ardupilot_ready_timeout` / `simulation_ready_timeout` |
+| `readiness_missing_service` | Services in the experiment's `required_services` were missing after `readiness_timeout` |
 | `startup_failure` | Launching the run's processes raised an error |
-| `broken_run` | The mission finished but hit a known bug, so the run is recorded as failed and retried on resume |
 | `interrupted` | The run was stopped by Ctrl+C or termination |
 | `unknown` | No recognizable cause was recorded |
 
 Suspected causes found in the attempt's `{experiment,simulation}/launch.log` are
-`mission_metrics_invalid_handle` and `missing_change_mode_service`; lines after
+`mission_metrics_invalid_handle`, `missing_change_mode_service`, and
+`lost_lifecycle_activation` (the watchdog's report); lines after
 the run's teardown (`sending signal 'SIGINT'`) are ignored.
 
 **Systemic warnings:** a line `SYSTEMIC: <manager>: repeated <failure_type>`
@@ -300,7 +304,7 @@ writes them as the last two columns, `run_idx` and `attempt_id`, of
 `<manager>_<mission>.csv` and of its three reaction-time CSVs
 (`*_component_recovery_time.csv`, `*_wv_reaction_time.csv`,
 `*_battery_reaction_time.csv`); both are empty outside the runner. Rows of
-failed attempts (for example a `broken_run`) stay in the CSVs. The paired
+failed attempts (for example a `mission_control_failure`) stay in the CSVs. The paired
 analysis scripts keep only each run's accepted attempt, the `attempt_id` of a
 `completed` run in `runs.json`, so there is no sorting step: no `sorted/`
 folder, no `*_sorted.csv`, no `rejected_runs.jsonl`, and no `*_rejected.csv`.
@@ -348,14 +352,36 @@ After each run the runner logs a per-manager summary, and `run_batch` logs one
 after each campaign; both include the systemic warnings described under
 [Diagnosing batch failures](#diagnosing-batch-failures).
 
-After launching a run, the runner waits up to `readiness_timeout` seconds
-(default `10.0`) for the services the adaptation manager needs. For `bt` these
-are `/f_maintain_motion/change_mode`, `/f_generate_search_path/change_mode`,
-and `/f_follow_pipeline/change_mode`, plus `/generate_recharge_path/change_mode`
-when the experiment launch uses `suave_bt_extended`. Other managers have no
-built-in list; give an experiment a `required_services` list of absolute
-service names to check them. A missing service fails the run as
-`readiness_missing_service`, and the runner continues with the next run.
+The runner has no fixed sleeps: each launch stage waits until it is ready,
+and the timeouts are ceilings. The runner logs how long each stage took
+(`ArduPilot ready after 2.1s`, `Simulation ready after 6.4s`).
+
+1. ArduPilot: the runner first waits for TCP port 5760 to be free (a SITL
+   left over from the previous attempt), then starts `ardupilot_executable`
+   and waits until SITL listens on port 5760, its MAVLink port. The check
+   reads `/proc/net/tcp` and never connects, because SITL serves one client
+   on that port and MAVProxy needs it. Both waits use
+   `ardupilot_ready_timeout` (default `30.0` s). The default command passes
+   `-N` (`--no-rebuild`) to `sim_vehicle.py`, so ArduSub must already be built
+   (the SUAVE images are).
+2. Simulation: after the simulation launch, the runner waits for the first
+   message on `/model/bluerov2/pose`, which `ros_gz_bridge` only forwards
+   once Gazebo runs with the vehicle spawned. The ceiling is
+   `simulation_ready_timeout` (default `30.0` s).
+3. Manager services: after the experiment launch, the runner waits up to
+   `readiness_timeout` seconds (default `10.0`) for the services listed in
+   the experiment's `required_services` (absolute service names; a
+   `/change_mode` service must also have type
+   `system_modes_msgs/srv/ChangeMode`). An experiment without
+   `required_services` does not wait. The shipped configs list
+   `/f_maintain_motion/change_mode`, `/f_generate_search_path/change_mode`,
+   and `/f_follow_pipeline/change_mode` for every `bt` experiment, plus
+   `/generate_recharge_path/change_mode` when it launches
+   `suave_bt_extended`.
+
+A stage that is not ready in time fails the run as `readiness_timeout`; a
+missing service fails it as `readiness_missing_service`. Either way the
+runner continues with the next run.
 
 To resume, pass the path of the interrupted result folder via
 `resume_result_path`:
@@ -890,11 +916,13 @@ the primary analysis CSV. The wrapper checks both metric blocks for complete,
 unique ordered pairs, consistent alternatives and correction policy, valid
 p-values, and notes explaining missing results.
 
-Known method labels use None, Random, BT, MC, ROSA, and PLANTA; captions
-explain that MC means Metacontrol. ROSA and PLANTA are labels for two
-third-party managing systems, each from its own separate repo (not bundled
-with this one) -- they only appear when their result CSVs are added
-alongside this repo's own for a combined comparison. Tables follow the
+Method labels and their order come from the shared table in
+`suave_tools/labels.py`: TacticalRetreat, ROSA-BT, BT, MC, PLANTA, Random,
+and None; captions explain that MC means Metacontrol. TacticalRetreat
+(`rebetmc`), ROSA-BT (`rosa_bt`) and PLANTA are labels for third-party
+managing systems, each from its own separate repo (not bundled with this
+one) -- they only appear when their result CSVs are added alongside this
+repo's own for a combined comparison. Unknown managers keep their raw key. Tables follow the
 paper's pairwise-table
 layout: a 1.65 cm row-label column and 1.2 row spacing. Value columns are
 slightly wider at 1.3 cm so the names fit in the manuscript's font.

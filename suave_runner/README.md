@@ -133,15 +133,16 @@ failed, and `2` for an invalid path.
 |---|---|
 | `mission_done_timeout` | No `mission_metrics/done` within `run_duration` |
 | `process_died_before_completion` | A launched process exited with a nonzero status |
-| `mission_control_failure` | A subsystem published `mission/control_failure` |
-| `readiness_missing_service` | Services the manager needs were missing after `readiness_timeout` |
+| `mission_control_failure` | A subsystem published `mission/control_failure`. This includes the `lifecycle_watchdog` node (launched by `suave.launch.py`), which reports a lifecycle node that did not become active within `activation_timeout` (10 s) of `mode_manager`'s activate request. The watchdog only reports; it never retries activation. Resume retries the run |
+| `readiness_timeout` | ArduPilot or the simulation was not ready within `ardupilot_ready_timeout` / `simulation_ready_timeout` |
+| `readiness_missing_service` | Services in the experiment's `required_services` were missing after `readiness_timeout` |
 | `startup_failure` | Launching the run's processes raised an error |
-| `broken_run` | The mission finished but hit a known bug, so the run is recorded as failed and retried on resume |
 | `interrupted` | The run was stopped by Ctrl+C or termination |
 | `unknown` | No recognizable cause was recorded |
 
 Suspected causes found in the attempt's `{experiment,simulation}/launch.log` are
-`mission_metrics_invalid_handle` and `missing_change_mode_service`; lines after
+`mission_metrics_invalid_handle`, `missing_change_mode_service`, and
+`lost_lifecycle_activation` (the watchdog's report); lines after
 the run's teardown (`sending signal 'SIGINT'`) are ignored.
 
 **Systemic warnings:** a line `SYSTEMIC: <manager>: repeated <failure_type>`
@@ -179,7 +180,7 @@ writes them as the last two columns, `run_idx` and `attempt_id`, of
 `<manager>_<mission>.csv` and of its three reaction-time CSVs
 (`*_component_recovery_time.csv`, `*_wv_reaction_time.csv`,
 `*_battery_reaction_time.csv`); both are empty outside the runner. Rows of
-failed attempts (for example a `broken_run`) stay in the CSVs. The paired
+failed attempts (for example a `mission_control_failure`) stay in the CSVs. The paired
 analysis scripts keep only each run's accepted attempt, the `attempt_id` of a
 `completed` run in `runs.json`, so there is no sorting step: no `sorted/`
 folder, no `*_sorted.csv`, no `rejected_runs.jsonl`, and no `*_rejected.csv`.
@@ -227,14 +228,36 @@ After each run the runner logs a per-manager summary, and `run_batch` logs one
 after each campaign; both include the systemic warnings described under
 [Diagnosing batch failures](#diagnosing-batch-failures).
 
-After launching a run, the runner waits up to `readiness_timeout` seconds
-(default `10.0`) for the services the adaptation manager needs. For `bt` these
-are `/f_maintain_motion/change_mode`, `/f_generate_search_path/change_mode`,
-and `/f_follow_pipeline/change_mode`, plus `/generate_recharge_path/change_mode`
-when the experiment launch uses `suave_bt_extended`. Other managers have no
-built-in list; give an experiment a `required_services` list of absolute
-service names to check them. A missing service fails the run as
-`readiness_missing_service`, and the runner continues with the next run.
+The runner has no fixed sleeps: each launch stage waits until it is ready,
+and the timeouts are ceilings. The runner logs how long each stage took
+(`ArduPilot ready after 2.1s`, `Simulation ready after 6.4s`).
+
+1. ArduPilot: the runner first waits for TCP port 5760 to be free (a SITL
+   left over from the previous attempt), then starts `ardupilot_executable`
+   and waits until SITL listens on port 5760, its MAVLink port. The check
+   reads `/proc/net/tcp` and never connects, because SITL serves one client
+   on that port and MAVProxy needs it. Both waits use
+   `ardupilot_ready_timeout` (default `30.0` s). The default command passes
+   `-N` (`--no-rebuild`) to `sim_vehicle.py`, so ArduSub must already be built
+   (the SUAVE images are).
+2. Simulation: after the simulation launch, the runner waits for the first
+   message on `/model/bluerov2/pose`, which `ros_gz_bridge` only forwards
+   once Gazebo runs with the vehicle spawned. The ceiling is
+   `simulation_ready_timeout` (default `30.0` s).
+3. Manager services: after the experiment launch, the runner waits up to
+   `readiness_timeout` seconds (default `10.0`) for the services listed in
+   the experiment's `required_services` (absolute service names; a
+   `/change_mode` service must also have type
+   `system_modes_msgs/srv/ChangeMode`). An experiment without
+   `required_services` does not wait. The shipped configs list
+   `/f_maintain_motion/change_mode`, `/f_generate_search_path/change_mode`,
+   and `/f_follow_pipeline/change_mode` for every `bt` experiment, plus
+   `/generate_recharge_path/change_mode` when it launches
+   `suave_bt_extended`.
+
+A stage that is not ready in time fails the run as `readiness_timeout`; a
+missing service fails it as `readiness_missing_service`. Either way the
+runner continues with the next run.
 
 To resume, pass the path of the existing result folder via `resume_result_path`:
 
@@ -765,11 +788,13 @@ the primary analysis CSV. The wrapper checks both metric blocks for complete,
 unique ordered pairs, consistent alternatives and correction policy, valid
 p-values, and notes explaining missing results.
 
-Known method labels use None, Random, BT, MC, ROSA, and PLANTA; captions
-explain that MC means Metacontrol. ROSA and PLANTA are labels for two
-third-party managing systems, each from its own separate repo (not bundled
-with this one) -- they only appear when their result CSVs are added
-alongside this repo's own for a combined comparison. Tables follow the
+Method labels and their order come from the shared table in
+`suave_tools/labels.py`: TacticalRetreat, ROSA-BT, BT, MC, PLANTA, Random,
+and None; captions explain that MC means Metacontrol. TacticalRetreat
+(`rebetmc`), ROSA-BT (`rosa_bt`) and PLANTA are labels for third-party
+managing systems, each from its own separate repo (not bundled with this
+one) -- they only appear when their result CSVs are added alongside this
+repo's own for a combined comparison. Unknown managers keep their raw key. Tables follow the
 paper's pairwise-table layout: a 1.65 cm row-label column and 1.2 row
 spacing. Value columns are
 slightly wider at 1.3 cm so the names fit in the manuscript's font.

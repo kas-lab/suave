@@ -29,6 +29,8 @@ from std_msgs.msg import Float32  # noqa: I100,I201
 from suave_requirements.requirement_monitor import (  # noqa: I100,I201
     fulfillment_topic, REACTION_TIME, REACTION_TIME_TYPES, SEARCH_FOOTPRINT,
     THRUSTER_AVAILABILITY)
+from suave_tools.labels import label  # noqa: I100,I201
+from suave_tools.labels import MANAGER_ORDER  # noqa: I100,I201
 from suave_tools.layout import batch_layout  # noqa: I100,I201
 from suave_tools.layout import RESULTS_DIR  # noqa: I100,I201
 from suave_tools.runs import accepted_runs  # noqa: I100,I201
@@ -61,15 +63,8 @@ REQUIREMENTS.update({
     for reaction_type in REACTION_TIME_TYPES
 })
 
-MANAGERS = ['rebetmc', 'rosa_bt', 'bt', 'metacontrol', 'random', 'none']
-MANAGER_LABELS = {
-    'rebetmc': 'TacticalRetreat',
-    'rosa_bt': 'ROSA-BT',
-    'bt': 'BT',
-    'metacontrol': 'Metacontrol',
-    'random': 'Random',
-    'none': 'None',
-}
+MANAGERS = list(MANAGER_ORDER)
+MANAGER_LABELS = {manager: label(manager) for manager in MANAGERS}
 COLORS = {
     'rebetmc': '#0072B2',
     'rosa_bt': '#009E73',
@@ -84,7 +79,8 @@ TOPICS = {spec['topic']: key for key, spec in REQUIREMENTS.items()}
 def parse_args(argv=None):
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description='Generate one plot per SUAVE requirement fulfillment.')
+        description=('Generate one plot per SUAVE requirement fulfillment. '
+                     'Run it in the sourced SUAVE container.'))
     parser.add_argument(
         'path',
         help='Batch, campaigns directory, state.json, or campaign folder.')

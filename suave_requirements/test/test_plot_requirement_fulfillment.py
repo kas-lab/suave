@@ -124,6 +124,7 @@ def test_plot_no_data_and_requirement_outputs(tmp_path):
     assert (tmp_path / 'battery_reaction_time.png').is_file()
     assert report['per_grid_counts']['rebetmc'] == [0, 1, 1]
     assert plotter.MANAGER_LABELS['rebetmc'] == 'TacticalRetreat'
+    assert plotter.MANAGER_LABELS['planta'] == 'PLANTA'
 
 
 @pytest.mark.parametrize('relative', ['', 'state.json', 'campaigns',

@@ -24,6 +24,8 @@ import numpy as np
 
 import pandas as pd
 
+from suave_tools.labels import label
+from suave_tools.labels import MANAGER_ORDER
 from suave_tools.layout import batch_layout
 from suave_tools.layout import LATEX_DIR
 from suave_tools.layout import RESULTS_DIR
@@ -37,7 +39,8 @@ else:
 
 HELP_TEXT = """Generate all campaign Wilcoxon LaTeX tables with the existing renderer.
 
-Keep latex_tables.py alongside this script. No ROS imports are required.
+Keep latex_tables.py alongside this script. Run it in the sourced SUAVE
+container: it imports suave_tools from the workspace.
 
     python3 wilcoxon_latex_tables_batch.py /path/to/batch
     python3 wilcoxon_latex_tables_batch.py /path/to/batch --p-values raw
@@ -51,10 +54,6 @@ script renders results without recomputing tests.
 """
 
 
-METHOD_LABELS = {
-    'none': 'None', 'random': 'Random', 'bt': 'BT',
-    'metacontrol': 'MC', 'rosa_bt': 'ROSA', 'planta': 'PLANTA',
-}
 METRIC_ALTERNATIVES = {'search_time': 'less', 'distance_inspected': 'greater'}
 TEX_ESCAPES = {
     '\\': r'\textbackslash{}', '&': r'\&', '%': r'\%', '$': r'\$',
@@ -152,7 +151,7 @@ def render_campaign(campaign, results_root, output_root, p_values, alpha):
             'run wilcoxon_analysis_batch.py first if analysis is missing')
     frame = load_results(inputs[0])
     keys_present = set(frame['row']) | set(frame['col'])
-    keys = [key for key in METHOD_LABELS if key in keys_present]
+    keys = [key for key in MANAGER_ORDER if key in keys_present]
     keys += sorted(keys_present - set(keys))
     correction = frame['correction'].iloc[0]
     value_column = 'p_adjusted' if p_values == 'adjusted' else 'p_raw'
@@ -180,8 +179,8 @@ def render_campaign(campaign, results_root, output_root, p_values, alpha):
         for metric in METRIC_ALTERNATIVES
     }
     latex_tables.generate_table_file({
-        'systems': [{'key': key, 'label': escape_tex(
-            METHOD_LABELS.get(key, key))} for key in keys],
+        'systems': [{'key': key, 'label': escape_tex(label(key, short=True))}
+                    for key in keys],
         'time_search_csv': matrices['search_time'],
         'distance_csv': matrices['distance_inspected'],
         'first_col_width': '1.65cm', 'col_width': '1.3cm',

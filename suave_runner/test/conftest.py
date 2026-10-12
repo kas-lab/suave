@@ -59,7 +59,7 @@ def metrics_campaign(attempt):
     def build(campaign, frames, retried=(), mission='suave'):
         # frames maps manager -> rows with run_idx, in experiment order. A
         # retried (manager, run_idx) first gets a failed attempt whose row
-        # holds sentinel 999 metrics, as a broken run would leave behind.
+        # holds sentinel 999 metrics, as a failed run would leave behind.
         campaign.mkdir(parents=True, exist_ok=True)
         for exp_idx, (manager, frame) in enumerate(frames.items()):
             rows = []
@@ -68,7 +68,7 @@ def metrics_campaign(attempt):
                 if (manager, row['run_idx']) in retried:
                     _, failed = attempt(
                         campaign, run_id, enabled=False, outcome='failed',
-                        failure_type='broken_run', manager=manager,
+                        failure_type='mission_control_failure', manager=manager,
                         mission=mission)
                     rows.append({
                         **{key: 999 for key in row},

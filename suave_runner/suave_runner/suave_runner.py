@@ -30,6 +30,7 @@ import time
 import traceback
 
 from ament_index_python.packages import get_package_share_directory
+from geometry_msgs.msg import Pose
 from launch import LaunchDescription
 from launch import LaunchService
 from launch import logging as launch_logging
@@ -72,6 +73,28 @@ MISSION_DONE_QOS = QoSProfile(
     history=QoSHistoryPolicy.KEEP_LAST,
     depth=1,
 )
+SITL_PORT = 5760  # SITL serial0 (MAVLink); MAVProxy connects here
+SIMULATION_READY_TOPIC = '/model/bluerov2/pose'  # bridged once Gazebo runs
+
+
+class ReadinessTimeout(TimeoutError):
+    """A launch stage did not become ready within its timeout."""
+
+
+def port_listening(port):
+    """Return whether a local TCP socket listens on port, without connecting."""
+    for table in ('/proc/net/tcp', '/proc/net/tcp6'):
+        try:
+            rows = Path(table).read_text().splitlines()[1:]
+        except OSError:
+            continue
+        for row in rows:
+            fields = row.split()
+            # fields[1] is 'address:port' in hex; state 0A is LISTEN.
+            if (int(fields[1].rsplit(':', 1)[1], 16) == port and
+                    fields[3] == '0A'):
+                return True
+    return False
 
 
 class ExperimentRunnerNode(Node):
@@ -91,6 +114,8 @@ class ExperimentRunnerNode(Node):
         self.declare_parameter('experiments', [''])
         self.declare_parameter('run_duration', 600)  # seconds
         self.declare_parameter('readiness_timeout', 10.0)
+        self.declare_parameter('ardupilot_ready_timeout', 30.0)
+        self.declare_parameter('simulation_ready_timeout', 30.0)
         self.declare_parameter('gui', False)  # whether to run GUI or not
         # whether to log experiment results or not
         self.declare_parameter('experiment_logging', False)
@@ -103,7 +128,7 @@ class ExperimentRunnerNode(Node):
         # Ardupilot parameters
         self.declare_parameter(
             'ardupilot_executable',
-            'sim_vehicle.py -L RATBeach -v ArduSub --model=JSON')
+            'sim_vehicle.py -N -L RATBeach -v ArduSub --model=JSON')
 
         # Simulation parameters
         self.declare_parameter(
@@ -165,8 +190,14 @@ class ExperimentRunnerNode(Node):
         self.run_duration = self.get_parameter(
             'run_duration').get_parameter_value().integer_value
         self.readiness_timeout = self.get_parameter('readiness_timeout').value
-        if self.readiness_timeout < 0:
-            raise ValueError('readiness_timeout must be non-negative')
+        self.ardupilot_ready_timeout = self.get_parameter(
+            'ardupilot_ready_timeout').value
+        self.simulation_ready_timeout = self.get_parameter(
+            'simulation_ready_timeout').value
+        for name in ('readiness_timeout', 'ardupilot_ready_timeout',
+                     'simulation_ready_timeout'):
+            if getattr(self, name) < 0:
+                raise ValueError(f'{name} must be non-negative')
         self.gui = self.get_parameter('gui').get_parameter_value().bool_value
         self.experiment_logging = self.get_parameter(
             'experiment_logging').get_parameter_value().bool_value
@@ -215,6 +246,13 @@ class ExperimentRunnerNode(Node):
         self._mission_failed_event = threading.Event()
         self._mission_failure_reason = ''
         self._process_failure_queue = multiprocessing.Queue()
+        self._simulation_ready_event = threading.Event()
+        self.create_subscription(
+            Pose,
+            SIMULATION_READY_TOPIC,
+            lambda _msg: self._simulation_ready_event.set(),
+            10,
+        )
         self.create_subscription(
             Bool,
             'mission_metrics/done',
@@ -300,16 +338,24 @@ class ExperimentRunnerNode(Node):
             details += f"; command: {failure['cmd']}"
         return details
 
-    def _wait_for_startup(self, duration):
-        """Wait between launch stages while monitoring early failures."""
-        deadline = time.monotonic() + duration
-        while time.monotonic() < deadline:
-            if self.terminate_flag:
-                raise RuntimeError('Termination requested during startup')
-            failure = self._get_process_failure()
-            if failure is not None:
-                raise RuntimeError(self._format_process_failure(failure))
-            time.sleep(min(0.2, deadline - time.monotonic()))
+    def _check_startup(self):
+        """Raise if termination was requested or a launched process died."""
+        if self.terminate_flag:
+            raise RuntimeError('Termination requested during startup')
+        failure = self._get_process_failure()
+        if failure is not None:
+            raise RuntimeError(self._format_process_failure(failure))
+
+    def _wait_until(self, predicate, timeout, what):
+        """Wait for predicate while monitoring early failures; return seconds."""
+        start = time.monotonic()
+        while True:
+            self._check_startup()
+            if predicate():
+                return time.monotonic() - start
+            if time.monotonic() - start >= timeout:
+                raise ReadinessTimeout(f'{what} not ready after {timeout}s')
+            time.sleep(0.2)
 
     def start_launch_process(
             self, launch_description: LaunchDescription, log_dir: Path,
@@ -411,6 +457,8 @@ class ExperimentRunnerNode(Node):
                 # such as Gazebo survive in the session until stopped here.
                 stop_sessions(log_dir)
         finally:
+            # Its exit code must not fail the next attempt's startup checks.
+            self.ardupilot_proc = None
             ardupilot_log = getattr(self, '_ardupilot_log', None)
             if ardupilot_log:
                 ardupilot_log.close()
@@ -453,6 +501,11 @@ class ExperimentRunnerNode(Node):
 
     def launch_ardupilot(self, log_path: Path):
         """Start ArduPilot and redirect its output to a run log."""
+        # A SITL left over from the previous attempt would satisfy the
+        # readiness check below, so wait for its port to be released first.
+        self._wait_until(lambda: not port_listening(SITL_PORT),
+                         self.ardupilot_ready_timeout,
+                         f'Free SITL port {SITL_PORT}')
         self.get_logger().info('    Launching ArduPilot...')
         self._ardupilot_log = open(log_path, 'w')
         self.ardupilot_proc = subprocess.Popen(
@@ -461,9 +514,10 @@ class ExperimentRunnerNode(Node):
             stderr=self._ardupilot_log,
             preexec_fn=os.setsid  # Launch in a new process group
         )
-        self.get_logger().info(
-            '    Sleeping 10 seconds before launching SUAVE simulation...')
-        self._wait_for_startup(10)
+        elapsed = self._wait_until(lambda: port_listening(SITL_PORT),
+                                   self.ardupilot_ready_timeout,
+                                   f'ArduPilot (SITL port {SITL_PORT})')
+        self.get_logger().info(f'    ArduPilot ready after {elapsed:.1f}s')
 
     def launch_suave_simulation(self, run_idx, log_dir: Path):
         """Launch the SUAVE simulation for a configured run position."""
@@ -496,13 +550,15 @@ class ExperimentRunnerNode(Node):
         )
         sim_launch_ld = LaunchDescription()
         sim_launch_ld.add_action(sim_launch)
+        self._simulation_ready_event.clear()
         sim_process, sim_stop_event = self.start_launch_process(
             sim_launch_ld, log_dir, 'simulation')
         self.processes_stop_events.append(
             (sim_process, sim_stop_event, 'simulation'))
-        self.get_logger().info(
-            '    Sleeping 10 seconds before launching next nodes...')
-        self._wait_for_startup(10)
+        elapsed = self._wait_until(self._simulation_ready_event.is_set,
+                                   self.simulation_ready_timeout,
+                                   f'Simulation ({SIMULATION_READY_TOPIC})')
+        self.get_logger().info(f'    Simulation ready after {elapsed:.1f}s')
 
     def launch_experiment(
             self,
@@ -563,24 +619,15 @@ class ExperimentRunnerNode(Node):
         return {'SUAVE_RUN_IDX': str(parse_run_id(run_id)[1]),
                 'SUAVE_ATTEMPT_ID': entry['attempt_id']}
 
-    def _wait_for_readiness(self, manager, experiment):
-        # BT XML uses change_mode even when behavior actions are enabled.
-        # External managers have different interfaces; do not guess theirs.
-        required = experiment.get('required_services')
-        if required is None:
-            required = [f'/{name}/change_mode' for name in (
-                'f_maintain_motion', 'f_generate_search_path',
-                'f_follow_pipeline')] if manager == 'bt' else []
-            if manager == 'bt' and 'suave_bt_extended' in experiment.get(
-                    'experiment_launch', ''):
-                required.append('/generate_recharge_path/change_mode')
+    def _wait_for_readiness(self, experiment):
+        required = experiment.get('required_services', [])
         if not isinstance(required, list) or any(
                 not isinstance(name, str) or not name.startswith('/')
                 for name in required):
             raise ValueError('required_services must be absolute service names')
         deadline = time.monotonic() + self.readiness_timeout
         while required:
-            self._wait_for_startup(0.001)
+            self._check_startup()
             if self._mission_failed_event.is_set():
                 raise RuntimeError(self._mission_failure_reason)
             available = dict(self.get_service_names_and_types())
@@ -653,16 +700,19 @@ class ExperimentRunnerNode(Node):
                     self.launch_experiment(
                         exp_launch, str(result_path), filename,
                         str(mission_configs[run_idx]), log_dir / 'experiment')
-                    self._wait_for_readiness(manager, experiment)
+                    self._wait_for_readiness(experiment)
                     stage = 'mission'
                     outcome, reason, failure_type = self._wait_for_mission()
                 except Exception as error:
                     reason = str(error)
-                    failure_type = (
-                        'readiness_missing_service'
-                        if stage == 'startup' and isinstance(error, TimeoutError)
-                        else 'startup_failure' if stage == 'startup'
-                        else 'runner_exception')
+                    if stage != 'startup':
+                        failure_type = 'runner_exception'
+                    elif isinstance(error, ReadinessTimeout):
+                        failure_type = 'readiness_timeout'
+                    elif isinstance(error, TimeoutError):
+                        failure_type = 'readiness_missing_service'
+                    else:
+                        failure_type = 'startup_failure'
                     self.get_logger().error(reason)
                 finally:
                     # If shutdown cannot be verified, persist why, leave the bag
@@ -683,18 +733,12 @@ class ExperimentRunnerNode(Node):
                 if self.terminate_flag:
                     outcome, reason, failure_type = (
                         'interrupted', 'Termination requested', 'interrupted')
-                if outcome == 'completed':
-                    broken = self.detect_broken_run(log_dir)
-                    if broken:
-                        outcome, reason, failure_type = (
-                            'failed', broken, 'broken_run')
                 # The entry stays 'running' on disk until the bag has moved.
                 finalize_attempt(result_path, runs, run_id, outcome,
                                  validate_bag, reason, failure_type)
                 self._log_run_summary(runs, run_id)
                 if self.terminate_flag:
                     return
-                time.sleep(10)
             self.get_logger().info(f'Experiment {exp_idx + 1} summary:')
             for line in summary_lines(runs['runs'].values()):
                 self.get_logger().info(line)
@@ -729,27 +773,6 @@ class ExperimentRunnerNode(Node):
                 self.get_logger().error(line)
             else:
                 self.get_logger().info(line)
-
-    def detect_broken_run(self, run_log_dir):
-        """Return a reason string if the finished run hit a known bug, else ''."""
-        return self._search_path_node_never_activated(run_log_dir)
-
-    def _search_path_node_never_activated(self, run_log_dir):
-        """Flag runs where the spiral search lifecycle node never activated."""
-        experiment_dir = run_log_dir / 'experiment'
-        # Match the node's own logger tag: other logs (e.g. the bag
-        # recorder's topic list) mention the node name too.
-        tag = '[f_generate_search_path_node]: '
-        for log_path in sorted(experiment_dir.glob('python3_*.log')):
-            try:
-                text = log_path.read_text(errors='replace')
-            except OSError:
-                continue
-            if (tag + 'on_configure() is called.' in text
-                    and tag + 'on_activate() is called.' not in text):
-                return ('f_generate_search_path_node configured but never '
-                        'activated (system_modes mode transition lost)')
-        return ''
 
     def generate_mission_config_files(self, result_path):
         """Generate per-run mission configurations with randomized events."""

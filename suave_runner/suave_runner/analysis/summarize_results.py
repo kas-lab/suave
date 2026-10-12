@@ -19,6 +19,9 @@ from pathlib import Path
 
 import pandas as pd
 
+from suave_tools.labels import label
+from suave_tools.labels import MANAGER_ORDER
+
 if __package__:
     from . import common
 else:
@@ -36,13 +39,6 @@ METRICS = {
     'reaction_time': 'mean reaction time (s)',
 }
 REQUIRED_COLUMNS = ['pipeline found', *METRICS.values()]
-DISPLAY_NAMES = {
-    'bt': 'BT',
-    'metacontrol': 'Metacontrol',
-    'none': 'None',
-    'random': 'Random',
-}
-MANAGING_SYSTEM_ORDER = tuple(DISPLAY_NAMES)
 
 
 def discover_result_files(results_path):
@@ -60,7 +56,7 @@ def discover_result_files(results_path):
         raise ValueError(
             f'No *{RESULT_FILE_SUFFIX} files found in {results_path}')
 
-    order = {name: index for index, name in enumerate(MANAGING_SYSTEM_ORDER)}
+    order = {name: index for index, name in enumerate(MANAGER_ORDER)}
     return sorted(
         result_files,
         key=lambda item: (order.get(item[0], len(order)), item[0]))
@@ -100,8 +96,7 @@ def calculate_statistics(results_path):
 
         summaries.append({
             'managing_system': managing_system,
-            'display_name': DISPLAY_NAMES.get(
-                managing_system, managing_system.replace('_', ' ').title()),
+            'display_name': label(managing_system),
             'runs': len(data),
             'pipelines_found': int(pipeline_found.sum()),
             'success_rate': float(pipeline_found.mean()),
@@ -197,7 +192,8 @@ def build_argument_parser():
     """Create the command-line argument parser."""
     parser = argparse.ArgumentParser(
         description=(
-            'Calculate mean and sample standard deviation for SUAVE results.'))
+            'Calculate mean and sample standard deviation for SUAVE results. '
+            'Run it in the sourced SUAVE container (it imports suave_tools).'))
     parser.add_argument(
         'results_path', type=Path,
         help='campaign folder containing *_suave.csv result files')

@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 2. `suave_msgs/msg/ReactionTime` and the `mission_metrics/reaction_time` topic, carrying the latest and mean reaction time, reaction count, and validity status of each adaptation type.
 
+3. `suave` `lifecycle_watchdog` node, launched by `suave.launch.py`. It watches the lifecycle nodes managed by `system_modes` (`watched_nodes`, default: the `type: node` parts of `suave_modes.yaml`). When `mode_manager` requests activation and the node does not become active within `activation_timeout` (default 10 s), it logs an error and publishes the reason on `mission/control_failure`. It never calls `change_state` or retries activation. `diagnose_batch` classifies its report as `lost_lifecycle_activation`.
+
+### Removed
+
+1. `suave_runner`: the after-the-fact log grep for runs whose search-path node never activated (`detect_broken_run`) and the `broken_run` failure type. The watchdog report ends such runs as `mission_control_failure`, which resume retries.
+
 ## 1.5.0
 
 ### Added

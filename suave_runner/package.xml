@@ -11,6 +11,7 @@
 
   <license>Apache-2.0</license>
 
+  <depend>geometry_msgs</depend>
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
   <depend>suave</depend>

@@ -41,6 +41,9 @@ def classify(line):
         return 'mission_metrics_invalid_handle'
     if 'change_mode service not available' in line:
         return 'missing_change_mode_service'
+    if ('did not become active within' in line and
+            "mode_manager's activate request" in line):
+        return 'lost_lifecycle_activation'
     return ''
 
 

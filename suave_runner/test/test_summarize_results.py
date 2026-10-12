@@ -70,6 +70,17 @@ def test_calculate_statistics_uses_na_when_no_reactions_exist(tmp_path):
     assert result['reaction_time_samples'] == 0
 
 
+def test_calculate_statistics_uses_shared_labels_and_order(tmp_path):
+    """Label and order every manager from the shared table."""
+    for name in ('none', 'my_manager', 'rebetmc', 'planta', 'rosa_bt'):
+        _write_results(tmp_path, name, _result_rows())
+
+    summary = calculate_statistics(tmp_path)
+
+    assert list(summary['display_name']) == [
+        'TacticalRetreat', 'ROSA-BT', 'PLANTA', 'None', 'my_manager']
+
+
 def test_render_latex_table_formats_names_rates_and_na(tmp_path):
     """Render publication names, success rates, and unavailable values."""
     _write_results(tmp_path, 'none', _result_rows((0.0, 0.0, 0.0)))

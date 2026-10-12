@@ -17,7 +17,8 @@ from pathlib import Path
 from queue import Empty
 from queue import Queue
 import shutil
-import tempfile
+import socket
+import time
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -31,6 +32,8 @@ from suave_runner.run_artifacts import attempt_details
 from suave_runner.run_status import open_runs
 from suave_runner.run_status import start_attempt
 from suave_runner.suave_runner import ExperimentRunnerNode
+from suave_runner.suave_runner import port_listening
+from suave_runner.suave_runner import ReadinessTimeout
 from suave_tools.runs import load_runs
 from suave_tools.runs import write_runs
 import yaml
@@ -55,28 +58,133 @@ def _experiment(manager, num_runs):
     })
 
 
-def test_readiness_checks_names_types_and_external_managers():
+BT_SERVICES = [f'/{name}/change_mode' for name in (
+    'f_maintain_motion', 'f_generate_search_path', 'f_follow_pipeline')]
+
+
+def test_readiness_checks_listed_services_and_types():
     rclpy.init()
     runner = ExperimentRunnerNode(parameter_overrides=_minimal_runner_params())
     try:
         runner.readiness_timeout = 0.0
         with patch.object(runner, 'get_service_names_and_types', return_value=[]):
             with pytest.raises(TimeoutError, match='f_maintain_motion'):
-                runner._wait_for_readiness('bt', {})
-            runner._wait_for_readiness('rebetmc', {})
-            runner._wait_for_readiness('bt', {'required_services': []})
-        services = [(f'/{name}/change_mode', ['system_modes_msgs/srv/ChangeMode'])
-                    for name in ('f_maintain_motion', 'f_generate_search_path',
-                                 'f_follow_pipeline')]
+                runner._wait_for_readiness({'required_services': BT_SERVICES})
+            runner._wait_for_readiness({'required_services': []})
+        services = [(name, ['system_modes_msgs/srv/ChangeMode'])
+                    for name in BT_SERVICES]
         with patch.object(runner, 'get_service_names_and_types',
                           return_value=services):
-            runner._wait_for_readiness('bt', {})
+            runner._wait_for_readiness({'required_services': BT_SERVICES})
             with pytest.raises(TimeoutError, match='generate_recharge_path'):
-                runner._wait_for_readiness('bt', {
-                    'experiment_launch': 'bt_executable:=suave_bt_extended'})
+                runner._wait_for_readiness({'required_services': BT_SERVICES + [
+                    '/generate_recharge_path/change_mode']})
+        with pytest.raises(ValueError, match='absolute'):
+            runner._wait_for_readiness({'required_services': ['relative']})
         runner.terminate_flag = True
         with pytest.raises(RuntimeError, match='Termination'):
-            runner._wait_for_readiness('bt', {})
+            runner._wait_for_readiness({'required_services': BT_SERVICES})
+    finally:
+        runner.destroy_node()
+        rclpy.shutdown()
+
+
+def test_readiness_without_required_services_does_not_wait():
+    rclpy.init()
+    runner = ExperimentRunnerNode(parameter_overrides=_minimal_runner_params())
+    try:
+        runner.readiness_timeout = 60.0
+        with patch.object(runner, 'get_service_names_and_types',
+                          side_effect=AssertionError('queried services')):
+            start = time.monotonic()
+            runner._wait_for_readiness(json.loads(_experiment('bt', 1)))
+            assert time.monotonic() - start < 1.0
+    finally:
+        runner.destroy_node()
+        rclpy.shutdown()
+
+
+def test_wait_until_returns_times_out_and_fails_early():
+    rclpy.init()
+    runner = ExperimentRunnerNode(parameter_overrides=_minimal_runner_params())
+    try:
+        assert runner._wait_until(lambda: True, 0.0, 'Ready') < 1.0
+        with pytest.raises(ReadinessTimeout, match='Stage not ready after 0.0s'):
+            runner._wait_until(lambda: False, 0.0, 'Stage')
+        runner._process_failure_queue = Queue()
+        runner._process_failure_queue.put({
+            'process_name': 'simulation launch service', 'pid': 7,
+            'returncode': 1, 'cmd': ''})
+        with pytest.raises(RuntimeError, match='exited with code 1'):
+            runner._wait_until(lambda: False, 60.0, 'Stage')
+        runner.terminate_flag = True
+        with pytest.raises(RuntimeError, match='Termination'):
+            runner._wait_until(lambda: False, 60.0, 'Stage')
+    finally:
+        runner.destroy_node()
+        rclpy.shutdown()
+
+
+def test_port_listening_detects_listener_without_connecting():
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        server.bind(('127.0.0.1', 0))
+        port = server.getsockname()[1]
+        assert not port_listening(port)
+        server.listen(1)
+        assert port_listening(port)
+    finally:
+        server.close()
+    assert not port_listening(port)
+
+
+def test_launch_ardupilot_waits_for_free_port_then_listener(tmp_path):
+    rclpy.init()
+    runner = ExperimentRunnerNode(parameter_overrides=_minimal_runner_params())
+    try:
+        assert '-N' in runner.ardupilot_cmd
+        states = iter([True, False, False, True])
+        with patch('suave_runner.suave_runner.port_listening',
+                   side_effect=lambda port: next(states)), \
+                patch('suave_runner.suave_runner.subprocess.Popen') as popen, \
+                patch('suave_runner.suave_runner.time.sleep'):
+            popen.return_value.poll.return_value = None
+            runner.launch_ardupilot(tmp_path / 'ardupilot.log')
+        popen.assert_called_once()
+        assert next(states, 'done') == 'done'
+        runner._ardupilot_log.close()
+        runner.ardupilot_proc = None
+        runner.ardupilot_ready_timeout = 0.0
+        with patch('suave_runner.suave_runner.port_listening',
+                   return_value=False), \
+                patch('suave_runner.suave_runner.subprocess.Popen') as popen:
+            popen.return_value.poll.return_value = None
+            with pytest.raises(ReadinessTimeout, match='ArduPilot'):
+                runner.launch_ardupilot(tmp_path / 'ardupilot.log')
+        runner._ardupilot_log.close()
+    finally:
+        runner.destroy_node()
+        rclpy.shutdown()
+
+
+def test_next_attempt_ignores_previous_killed_ardupilot(tmp_path):
+    rclpy.init()
+    runner = ExperimentRunnerNode(parameter_overrides=_minimal_runner_params())
+    try:
+        killed = SimpleNamespace(pid=1, returncode=-9, poll=lambda: -9)
+        runner.ardupilot_proc = killed
+        with patch.object(runner, 'terminate_process'), \
+                patch.object(runner, 'shutdown_all_launch_processes'), \
+                patch('suave_runner.suave_runner.stop_sessions'):
+            runner.shutdown_all_processes(tmp_path)
+        assert runner.ardupilot_proc is None
+        states = iter([False, True])
+        with patch('suave_runner.suave_runner.port_listening',
+                   side_effect=lambda port: next(states)), \
+                patch('suave_runner.suave_runner.subprocess.Popen') as popen:
+            popen.return_value.poll.return_value = None
+            runner.launch_ardupilot(tmp_path / 'ardupilot.log')
+        runner._ardupilot_log.close()
     finally:
         runner.destroy_node()
         rclpy.shutdown()
@@ -102,16 +210,17 @@ def test_failed_readiness_continues_to_following_manager(tmp_path):
                 patch.object(runner, 'launch_experiment', side_effect=launch), \
                 patch.object(runner, '_wait_for_readiness', side_effect=[
                     TimeoutError('Missing required services'),
-                    TimeoutError('Missing required services'), None]), \
-                patch.object(runner, 'shutdown_all_processes') as shutdown, \
-                patch('suave_runner.suave_runner.time.sleep'):
+                    ReadinessTimeout('Simulation not ready after 30.0s'),
+                    None]), \
+                patch.object(runner, 'shutdown_all_processes') as shutdown:
             runner.run_experiments()
         assert [call.args[0].parent.name for call in shutdown.call_args_list] == [
             'run_0_0', 'run_0_1', 'run_1_0']
         assert runner._active_log_dir is None
         runs = load_runs(tmp_path)['runs']
         assert runs['run_0_0']['status'] == 'failed'
-        assert runs['run_0_1']['failure_type'] == 'readiness_missing_service'
+        assert runs['run_0_0']['failure_type'] == 'readiness_missing_service'
+        assert runs['run_0_1']['failure_type'] == 'readiness_timeout'
         assert runs['run_1_0']['status'] == 'completed'
         assert runs['run_1_0']['bag'] is None
     finally:
@@ -159,8 +268,7 @@ def test_unconfirmed_shutdown_persists_reason_and_aborts(tmp_path):
                 patch.object(runner, 'launch_experiment', side_effect=launch), \
                 patch.object(runner, '_wait_for_readiness'), \
                 patch.object(runner, 'shutdown_all_processes',
-                             side_effect=RuntimeError('still alive')), \
-                patch('suave_runner.suave_runner.time.sleep'):
+                             side_effect=RuntimeError('still alive')):
             with pytest.raises(RuntimeError, match='still alive'):
                 runner.run_experiments()
         runs = load_runs(tmp_path)['runs']
@@ -194,8 +302,7 @@ def test_dry_campaign_resumes_from_runs_json(tmp_path):
                 patch.object(runner, 'launch_experiment', side_effect=launch), \
                 patch.object(runner, '_wait_for_readiness',
                              side_effect=readiness), \
-                patch.object(runner, 'shutdown_all_processes'), \
-                patch('suave_runner.suave_runner.time.sleep'):
+                patch.object(runner, 'shutdown_all_processes'):
             runner.run_experiments()
 
     try:
@@ -739,63 +846,3 @@ def test_handle_termination_sets_done_event():
         assert runner._mission_done_event.is_set()
     finally:
         rclpy.shutdown()
-
-
-def _write_node_log(experiment_dir, name, text):
-    experiment_dir.mkdir(parents=True, exist_ok=True)
-    log_path = experiment_dir / name
-    log_path.write_text(text)
-    return log_path
-
-
-def test_detect_broken_run_flags_configured_but_not_activated():
-    rclpy.init()
-    workdir = Path(tempfile.mkdtemp())
-    try:
-        runner = ExperimentRunnerNode(
-            parameter_overrides=_minimal_runner_params())
-        _write_node_log(
-            workdir / 'experiment', 'python3_10_1000.log',
-            '[f_generate_search_path_node]: on_configure() is called.\n')
-        assert runner.detect_broken_run(workdir)
-    finally:
-        rclpy.shutdown()
-        shutil.rmtree(workdir, ignore_errors=True)
-
-
-def test_detect_broken_run_passes_when_node_activated():
-    rclpy.init()
-    workdir = Path(tempfile.mkdtemp())
-    try:
-        runner = ExperimentRunnerNode(
-            parameter_overrides=_minimal_runner_params())
-        _write_node_log(
-            workdir / 'experiment', 'python3_10_1000.log',
-            '[f_generate_search_path_node]: on_configure() is called.\n'
-            '[f_generate_search_path_node]: on_activate() is called.\n')
-        assert runner.detect_broken_run(workdir) == ''
-    finally:
-        rclpy.shutdown()
-        shutil.rmtree(workdir, ignore_errors=True)
-
-
-def test_detect_broken_run_ignores_logs_that_only_mention_node():
-    rclpy.init()
-    workdir = Path(tempfile.mkdtemp())
-    try:
-        runner = ExperimentRunnerNode(
-            parameter_overrides=_minimal_runner_params())
-        experiment_dir = workdir / 'experiment'
-        _write_node_log(
-            experiment_dir, 'python3_10_1000.log',
-            '[INFO] [1.0] [f_generate_search_path_node]: '
-            'on_configure() is called.\n')
-        # The bag recorder logs its topic list, naming the node too.
-        _write_node_log(
-            experiment_dir, 'python3_20_1000.log',
-            '[INFO] [2.0] [rosbag2_recorder]: Subscribed to topic '
-            "'/f_generate_search_path_node/transition_event'\n")
-        assert runner.detect_broken_run(workdir)
-    finally:
-        rclpy.shutdown()
-        shutil.rmtree(workdir, ignore_errors=True)
