@@ -31,9 +31,12 @@ from std_msgs.msg import String
 from suave_runner.run_artifacts import attempt_details
 from suave_runner.run_status import open_runs
 from suave_runner.run_status import start_attempt
+from suave_runner.suave_runner import check_no_stale_simulation
 from suave_runner.suave_runner import ExperimentRunnerNode
 from suave_runner.suave_runner import port_listening
 from suave_runner.suave_runner import ReadinessTimeout
+from suave_runner.suave_runner import StaleSimulationError
+from suave_runner.suave_runner import udp_port_bound
 from suave_tools.runs import load_runs
 from suave_tools.runs import write_runs
 import yaml
@@ -138,6 +141,53 @@ def test_port_listening_detects_listener_without_connecting():
     assert not port_listening(port)
 
 
+def test_udp_port_bound_detects_bound_socket():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        sock.bind(('127.0.0.1', 0))
+        port = sock.getsockname()[1]
+        assert udp_port_bound(port)
+    finally:
+        sock.close()
+    assert not udp_port_bound(port)
+
+
+def test_check_no_stale_simulation_reports_gz_and_fdm_port():
+    with patch('suave_runner.suave_runner.live_gz_sim_processes',
+               return_value=[]), \
+            patch('suave_runner.suave_runner.udp_port_bound',
+                  return_value=False):
+        check_no_stale_simulation()
+    with patch('suave_runner.suave_runner.live_gz_sim_processes',
+               return_value=[27297]), \
+            patch('suave_runner.suave_runner.udp_port_bound',
+                  return_value=True):
+        with pytest.raises(StaleSimulationError,
+                           match=r'gz sim PIDs \[27297\].*UDP port 9002'):
+            check_no_stale_simulation()
+
+
+def test_stale_simulation_aborts_campaign_before_attempt(tmp_path):
+    rclpy.init()
+    runner = ExperimentRunnerNode(parameter_overrides=_minimal_runner_params())
+    runner.experiments = [json.loads(_experiment('bt', 2))]
+    try:
+        with patch('suave_runner.suave_runner.live_gz_sim_processes',
+                   return_value=[27297]), \
+                patch.object(runner, 'create_experiment_folder',
+                             return_value=tmp_path), \
+                patch.object(runner, 'generate_mission_config_files',
+                             return_value=['config0.yaml', 'config1.yaml']), \
+                patch.object(runner, 'launch_ardupilot') as launch_ardupilot:
+            with pytest.raises(StaleSimulationError, match='27297'):
+                runner.run_experiments()
+        launch_ardupilot.assert_not_called()
+        assert load_runs(tmp_path)['runs'] == {}
+    finally:
+        runner.destroy_node()
+        rclpy.shutdown()
+
+
 def test_launch_ardupilot_waits_for_free_port_then_listener(tmp_path):
     rclpy.init()
     runner = ExperimentRunnerNode(parameter_overrides=_minimal_runner_params())
@@ -201,8 +251,9 @@ def test_failed_readiness_continues_to_following_manager(tmp_path):
         runner._mission_done_event.set()
 
     try:
-        with patch.object(runner, 'create_experiment_folder',
-                          return_value=tmp_path), \
+        with patch('suave_runner.suave_runner.check_no_stale_simulation'), \
+                patch.object(runner, 'create_experiment_folder',
+                             return_value=tmp_path), \
                 patch.object(runner, 'generate_mission_config_files',
                              return_value=['config0.yaml', 'config1.yaml']), \
                 patch.object(runner, 'launch_ardupilot'), \
@@ -259,8 +310,9 @@ def test_unconfirmed_shutdown_persists_reason_and_aborts(tmp_path):
         runner._mission_done_event.set()
 
     try:
-        with patch.object(runner, 'create_experiment_folder',
-                          return_value=tmp_path), \
+        with patch('suave_runner.suave_runner.check_no_stale_simulation'), \
+                patch.object(runner, 'create_experiment_folder',
+                             return_value=tmp_path), \
                 patch.object(runner, 'generate_mission_config_files',
                              return_value=['config0.yaml', 'config1.yaml']), \
                 patch.object(runner, 'launch_ardupilot'), \
@@ -293,8 +345,9 @@ def test_dry_campaign_resumes_from_runs_json(tmp_path):
         runner._mission_done_event.set()
 
     def run(readiness):
-        with patch.object(runner, 'create_experiment_folder',
-                          return_value=tmp_path), \
+        with patch('suave_runner.suave_runner.check_no_stale_simulation'), \
+                patch.object(runner, 'create_experiment_folder',
+                             return_value=tmp_path), \
                 patch.object(runner, 'generate_mission_config_files',
                              return_value=['c0.yaml', 'c1.yaml', 'c2.yaml']), \
                 patch.object(runner, 'launch_ardupilot'), \

@@ -221,6 +221,16 @@ or a session process survives SIGKILL, the runner records the attempt as
 `rosbags/pending/` (`bag: pending`), and stops the campaign rather than starting
 another attempt. Bag acceptance does not change how CSV metric rows are written.
 
+Before every attempt the runner also refuses to start, raising
+`StaleSimulationError` and stopping the campaign without recording an attempt,
+while a live `gz sim` process exists or UDP port 9002 (the BlueROV2
+`ArduPilotPlugin` `fdm_port_in`) is bound. Session cleanup only sees processes
+the runner launched; a Gazebo server left from another session keeps that port,
+so the new SITL would drive its vehicle from wherever it last stopped. Stop the
+leftover server and resume the campaign. Zombie (`<defunct>`) processes are
+ignored: they hold no ports and cannot be killed, only reaped by PID 1. A
+container started without `--init` keeps them until it restarts.
+
 To plot requirement fulfillment from accepted bags only, see
 `suave_requirements/README.md`.
 

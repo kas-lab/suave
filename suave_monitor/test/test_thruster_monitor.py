@@ -17,6 +17,7 @@
 from unittest.mock import Mock
 
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
+from mavros_msgs.msg import State
 
 import pytest
 
@@ -114,3 +115,17 @@ def test_scheduled_failure_can_happen_after_recovery(monitor):
     node.change_thruster_status('1', 'failure')
     node.publish_operational_thrusters()
     assert published_values(publisher)['operational_thrusters_delta'] == '1'
+
+
+def test_guided_starts_timers_once_and_keeps_subscription(monitor):
+    """Repeated GUIDED states must not stack timers or destroy the sub."""
+    node, _ = monitor
+    node.destroy_subscription = Mock()
+    node.status_cb(State(mode='MANUAL'))
+    assert node.thruster_event_timer is None
+    node.status_cb(State(mode='GUIDED'))
+    timers = (node.thruster_event_timer, node.operational_thrusters_timer)
+    node.status_cb(State(mode='GUIDED'))
+    assert (node.thruster_event_timer,
+            node.operational_thrusters_timer) == timers
+    node.destroy_subscription.assert_not_called()

@@ -86,8 +86,11 @@ class PipelineDetection(Node):
 
     def pipeline_pose_cb(self, msg):
         """Store pipeline poses and calculate the interpolated path once."""
+        # Destroying a subscription from its own callback races the
+        # MultiThreadedExecutor, so keep it and ignore later messages.
+        if self.pipes_pose_array.poses:
+            return
         self.pipes_pose_array = msg
-        self.destroy_subscription(self.min_pipes_pipeline_pose_subscription)
         self.calculate_interpolated_path()
 
     def interpolate_line_by_points(self, pose1, pose2, n):
@@ -159,6 +162,8 @@ class PipelineDetection(Node):
 
     def detect_pipeline_cb(self, bluerov_pose):
         """Publish visibility and order the path on first detection."""
+        if not self.first_detection:
+            return
         if self.interpolated_path.poses:
             coverage_area = self.get_coverage_area(
                 bluerov_pose, self.interpolated_path.poses[0])
@@ -170,10 +175,8 @@ class PipelineDetection(Node):
                 pipe_detected = Bool()
                 pipe_detected.data = True
                 self.detect_pipeline_pub.publish(pipe_detected)
-                if self.first_detection:
-                    self.sort_pipe_path(i)
-                    self.first_detection = False
-                    self.destroy_subscription(self.bluerov2_pose_sub)
+                self.sort_pipe_path(i)
+                self.first_detection = False
                 return
         pipe_detected = Bool()
         pipe_detected.data = False

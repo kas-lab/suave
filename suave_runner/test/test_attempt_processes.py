@@ -24,6 +24,7 @@ import sys
 import time
 
 from suave_runner.attempt_processes import confirm_stopped
+from suave_runner.attempt_processes import live_gz_sim_processes
 from suave_runner.attempt_processes import process_identity
 from suave_runner.attempt_processes import stop_sessions
 
@@ -92,3 +93,25 @@ def test_unreaped_zombies_do_not_count_as_live(tmp_path):
         assert time.monotonic() - started < 1.0
     finally:
         _stop(child)
+
+
+def test_live_gz_sim_processes_ignores_zombies_and_other_commands():
+    gz = subprocess.Popen(
+        ['bash', '-c', 'exec -a "gz sim -r -s min_pipes.world" sleep 60'])
+    other = subprocess.Popen(['bash', '-c', 'exec -a "gz_simulator" sleep 60'])
+    try:
+        deadline = time.monotonic() + 5
+        while gz.pid not in live_gz_sim_processes():
+            assert time.monotonic() < deadline, 'gz sim never listed'
+            time.sleep(0.05)
+        assert other.pid not in live_gz_sim_processes()
+        gz.kill()
+        while process_identity(gz.pid)[0] != 'Z':
+            assert time.monotonic() < deadline, 'gz sim never exited'
+            time.sleep(0.05)
+        assert gz.pid not in live_gz_sim_processes()
+    finally:
+        for child in (gz, other):
+            if child.poll() is None:
+                child.kill()
+            child.wait()

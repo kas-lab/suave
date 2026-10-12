@@ -60,7 +60,6 @@ class WaterVisibilityObserver(Node):
         """Start advancing visibility at the first guided-mode observation."""
         if msg.mode == 'GUIDED' and self.initial_time is None:
             self.initial_time = self.get_clock().now().to_msg().sec
-            self.destroy_subscription(self.mavros_state_sub)
 
     def qa_publisher_cb(self):
         """Calculate and publish the current water visibility."""

@@ -17,10 +17,15 @@
 import json
 import os
 from pathlib import Path
+import re
 import signal
 import time
 
 from suave_tools.runs import atomic_write_json
+
+# Matches the ruby launcher ('ruby /usr/bin/gz sim ...') and the server,
+# which retitles itself 'gz sim ...'.
+GZ_SIM_COMMAND = re.compile(r'(^|[\s/])gz sim(\s|$)')
 
 
 def process_identity(pid):
@@ -28,6 +33,24 @@ def process_identity(pid):
     text = Path(f'/proc/{pid}/stat').read_text()
     fields = text[text.rindex(')') + 2:].split()
     return fields[0], int(fields[3]), int(fields[19])
+
+
+def live_gz_sim_processes():
+    """Return live ``gz sim`` PIDs from any session; zombies are skipped."""
+    pids = []
+    for proc in Path('/proc').iterdir():
+        if not proc.name.isdigit() or int(proc.name) == os.getpid():
+            continue
+        try:
+            state, _, _ = process_identity(proc.name)
+            argv = (proc / 'cmdline').read_bytes().split(b'\0')
+        except (FileNotFoundError, ProcessLookupError, PermissionError):
+            continue
+        # Zombies hold no sockets and cannot be killed; only PID 1 reaps them.
+        command = b' '.join(argv).decode(errors='replace')
+        if state != 'Z' and GZ_SIM_COMMAND.search(command):
+            pids.append(int(proc.name))
+    return pids
 
 
 def register_session(log_dir):

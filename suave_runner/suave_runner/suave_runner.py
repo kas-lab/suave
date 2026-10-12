@@ -49,6 +49,7 @@ from std_msgs.msg import Bool
 from std_msgs.msg import String
 from suave_monitor.thruster_monitor import read_thruster_events
 from suave_runner.attempt_processes import confirm_stopped
+from suave_runner.attempt_processes import live_gz_sim_processes
 from suave_runner.attempt_processes import register_session
 from suave_runner.attempt_processes import stop_sessions
 from suave_runner.bag_validation import validate_bag
@@ -74,11 +75,17 @@ MISSION_DONE_QOS = QoSProfile(
     depth=1,
 )
 SITL_PORT = 5760  # SITL serial0 (MAVLink); MAVProxy connects here
+# BlueROV2 ArduPilotPlugin fdm_port_in: the first Gazebo to bind it gets SITL.
+GZ_FDM_PORT = 9002
 SIMULATION_READY_TOPIC = '/model/bluerov2/pose'  # bridged once Gazebo runs
 
 
 class ReadinessTimeout(TimeoutError):
     """A launch stage did not become ready within its timeout."""
+
+
+class StaleSimulationError(RuntimeError):
+    """A simulation outside the runner's control would drive the next run."""
 
 
 def port_listening(port):
@@ -95,6 +102,33 @@ def port_listening(port):
                     fields[3] == '0A'):
                 return True
     return False
+
+
+def udp_port_bound(port):
+    """Return whether any local UDP socket is bound to port."""
+    for table in ('/proc/net/udp', '/proc/net/udp6'):
+        try:
+            rows = Path(table).read_text().splitlines()[1:]
+        except OSError:
+            continue
+        for row in rows:
+            if int(row.split()[1].rsplit(':', 1)[1], 16) == port:
+                return True
+    return False
+
+
+def check_no_stale_simulation():
+    """Refuse to start while a leftover Gazebo could capture SITL."""
+    problems = []
+    pids = live_gz_sim_processes()
+    if pids:
+        problems.append(f'live gz sim PIDs {pids}')
+    if udp_port_bound(GZ_FDM_PORT):
+        problems.append(f'UDP port {GZ_FDM_PORT} (ArduPilotPlugin) is bound')
+    if problems:
+        raise StaleSimulationError(
+            'Refusing to start a run: ' + '; '.join(problems) + '. '
+            'SITL would drive the stale vehicle; stop it and resume.')
 
 
 class ExperimentRunnerNode(Node):
@@ -677,6 +711,9 @@ class ExperimentRunnerNode(Node):
                         f'  Skipping {manager} run {run_idx + 1}/{num_runs} '
                         '(already completed).')
                     continue
+                # Session cleanup cannot see servers it never launched; abort
+                # the campaign rather than record contaminated attempts.
+                check_no_stale_simulation()
                 mission = experiment.get('mission_name', f'mission_{exp_idx}')
                 details = attempt_details(run_id, manager, mission, enabled)
                 entry = start_attempt(
