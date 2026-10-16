@@ -19,8 +19,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from suave_tools.labels import label
 from suave_tools.labels import MANAGER_ORDER
+from suave_tools.labels import label
 
 if __package__:
     from . import common
@@ -30,7 +30,13 @@ else:
 
 RESULT_FILE_SUFFIX = '_suave.csv'
 DEFAULT_LATEX_FILENAME = 'suave_results.tex'
-LATEX_CAPTION = 'SUAVE results mean and standard deviation.'
+LATEX_CAPTION = (
+    'SUAVE evaluation results. Search time and distance inspected are '
+    r'reported as mean $\pm$ standard deviation across runs. Failed runs '
+    'are excluded '
+    'from these statistics. Reaction time is reported as mean '
+    r'$\pm$ standard deviation of per-run averages. N/A indicates that '
+    'reaction time is not applicable.')
 LATEX_LABEL = 'tab:suave_results'
 
 METRICS = {
@@ -91,6 +97,8 @@ def calculate_statistics(results_path):
 
         pipeline_found = common.parse_pipeline_found(
             data['pipeline found'], csv_file)
+        search_values = metric_data['search_time'][pipeline_found]
+        distance_values = metric_data['distance_inspected'][pipeline_found]
         reaction_values = metric_data['reaction_time']
         reaction_values = reaction_values[reaction_values != 0]
 
@@ -100,12 +108,10 @@ def calculate_statistics(results_path):
             'runs': len(data),
             'pipelines_found': int(pipeline_found.sum()),
             'success_rate': float(pipeline_found.mean()),
-            'search_time_mean': metric_data['search_time'].mean(),
-            'search_time_std': metric_data['search_time'].std(ddof=1),
-            'distance_inspected_mean': (
-                metric_data['distance_inspected'].mean()),
-            'distance_inspected_std': (
-                metric_data['distance_inspected'].std(ddof=1)),
+            'search_time_mean': search_values.mean(),
+            'search_time_std': search_values.std(ddof=1),
+            'distance_inspected_mean': distance_values.mean(),
+            'distance_inspected_std': distance_values.std(ddof=1),
             'reaction_time_mean': reaction_values.mean(),
             'reaction_time_std': reaction_values.std(ddof=1),
             'reaction_time_samples': len(reaction_values),

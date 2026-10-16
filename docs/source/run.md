@@ -593,7 +593,9 @@ The terminal table reports the following information for each managing system:
 - mean and sample standard deviation of the distance inspected; and
 - mean and sample standard deviation of the reaction time.
 
-Search time and distance use every run. Reaction-time calculations exclude
+Search time and distance include only runs where the pipeline was found.
+Detection success rates still use all runs. If no run found the pipeline,
+search time and distance are reported as `N/A`. Reaction-time calculations exclude
 zero-valued runs because zero indicates that no reaction-time sample was
 recorded. Reaction time is reported as `N/A` if no nonzero samples remain. The
 sample standard deviation is also `N/A` when fewer than two applicable samples
@@ -635,7 +637,8 @@ The available arguments are:
 | `--precision N` | `2` | Use `N` decimal places in terminal and LaTeX output |
 
 The LaTeX output is a complete `table` environment with the caption
-`SUAVE results mean and standard deviation.` and label `tab:suave_results`.
+a caption describing successful-run mission statistics and per-run reaction-time
+averages, and label `tab:suave_results`.
 It uses `\toprule`, `\midrule`, and `\bottomrule` from `booktabs` and
 `\resizebox` from `graphicx`, so include both packages in the parent document:
 

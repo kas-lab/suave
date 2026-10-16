@@ -221,6 +221,15 @@ or a session process survives SIGKILL, the runner records the attempt as
 `rosbags/pending/` (`bag: pending`), and stops the campaign rather than starting
 another attempt. Bag acceptance does not change how CSV metric rows are written.
 
+Ctrl+C (SIGINT) and SIGTERM request cooperative termination: the runner stays
+alive while its campaign worker stops children and records the interrupted
+attempt. Repeated signals to the runner do not interrupt this cleanup. All
+launchers receive their stop request before the shared 30-second wait, and
+session cleanup still runs if a launcher times out. The supplied runner launch
+file allows 65 seconds before escalating to SIGTERM, then another 10 seconds
+before SIGKILL. Shutdown logs during that wait are expected; wait for the
+runner to exit before restarting. A forced SIGKILL cannot perform cleanup.
+
 Before every attempt the runner also refuses to start, raising
 `StaleSimulationError` and stopping the campaign without recording an attempt,
 while a live `gz sim` process exists or UDP port 9002 (the BlueROV2
@@ -545,7 +554,9 @@ The terminal table reports the following information for each managing system:
 - mean and sample standard deviation of the distance inspected; and
 - mean and sample standard deviation of the reaction time.
 
-Search time and distance use every run. Reaction-time calculations exclude
+Search time and distance include only runs where the pipeline was found.
+Detection success rates still use all runs. If no run found the pipeline,
+search time and distance are reported as `N/A`. Reaction-time calculations exclude
 zero-valued runs because zero indicates that no reaction-time sample was
 recorded. Reaction time is reported as `N/A` if no nonzero samples remain. The
 sample standard deviation is also `N/A` when fewer than two applicable samples
@@ -586,7 +597,8 @@ The available arguments are:
 | `--precision N` | `2` | Use `N` decimal places in terminal and LaTeX output |
 
 The LaTeX output is a complete `table` environment with the caption
-`SUAVE results mean and standard deviation.` and label `tab:suave_results`.
+a caption describing successful-run mission statistics and per-run reaction-time
+averages, and label `tab:suave_results`.
 It uses `\toprule`, `\midrule`, and `\bottomrule` from `booktabs` and
 `\resizebox` from `graphicx`, so include both packages in the parent document:
 

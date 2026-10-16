@@ -45,6 +45,7 @@ from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
+from rclpy.signals import SignalHandlerOptions
 from std_msgs.msg import Bool
 from std_msgs.msg import String
 from suave_monitor.thruster_monitor import read_thruster_events
@@ -469,27 +470,36 @@ class ExperimentRunnerNode(Node):
 
     def shutdown_all_launch_processes(self):
         """Request shutdown of every tracked ROS launch process."""
-        for process, stop_event, _launch_name in self.processes_stop_events:
+        for _process, stop_event, _name in self.processes_stop_events:
+            stop_event.set()
+        deadline = time.monotonic() + 30
+        survivors = []
+        for process, _stop_event, _name in self.processes_stop_events:
+            process.join(timeout=max(0.0, deadline - time.monotonic()))
             if process.is_alive():
-                stop_event.set()
-                process.join(timeout=30)
-            if process.is_alive():
-                # Do not forget the handle or move artifacts under live writers.
-                raise RuntimeError(
-                    f'Launch process {process.pid} did not exit cleanly; '
-                    'attempt remains pending for recovery')
+                survivors.append(process.pid)
+        if survivors:
+            # Retain handles and leave artifacts pending, even if the session
+            # fallback below succeeds in forcibly stopping these writers.
+            raise RuntimeError(
+                f'Launch processes {survivors} did not exit cleanly; '
+                'attempt remains pending for recovery')
         self.processes_stop_events.clear()
 
     def shutdown_all_processes(self, log_dir=None):
         """Stop ArduPilot, ROS launches, and orphans in their sessions."""
         try:
-            self.terminate_process(self.ardupilot_proc, 'ArduPilot')
-            self.shutdown_all_launch_processes()
-            log_dir = log_dir or self._active_log_dir
-            if log_dir is not None:
-                # Launch only signals its direct children; forked servers
-                # such as Gazebo survive in the session until stopped here.
-                stop_sessions(log_dir)
+            try:
+                self.terminate_process(self.ardupilot_proc, 'ArduPilot')
+            finally:
+                try:
+                    self.shutdown_all_launch_processes()
+                finally:
+                    log_dir = log_dir or self._active_log_dir
+                    if log_dir is not None:
+                        # Run even after a launch timeout: forked servers and
+                        # stuck launchers must not escape session cleanup.
+                        stop_sessions(log_dir)
         finally:
             # Its exit code must not fail the next attempt's startup checks.
             self.ardupilot_proc = None
@@ -501,10 +511,16 @@ class ExperimentRunnerNode(Node):
 
     def terminate_process(self, proc, name):
         """Terminate a running subprocess and its process group."""
-        if proc and proc.poll() is None:
+        if proc is not None:
+            # start_new_session makes the original PID the group ID. Children
+            # can still own sockets after that group leader has exited.
             self.get_logger().info(
-                f'Terminating {name} process group {os.getpgid(proc.pid)}...')
-            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                f'Terminating {name} process group {proc.pid}...')
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            proc.wait(timeout=5)
 
     def create_experiment_folder(self):
         """Return a resumed or newly created campaign result directory."""
@@ -546,7 +562,7 @@ class ExperimentRunnerNode(Node):
             self.ardupilot_cmd,
             stdout=self._ardupilot_log,
             stderr=self._ardupilot_log,
-            preexec_fn=os.setsid  # Launch in a new process group
+            start_new_session=True
         )
         elapsed = self._wait_until(lambda: port_listening(SITL_PORT),
                                    self.ardupilot_ready_timeout,
@@ -918,25 +934,40 @@ class ExperimentRunnerNode(Node):
 
 def main(args=None):
     """Run the SUAVE experiment campaign node."""
-    rclpy.init(args=args)
+    # Keep ROS alive until the campaign worker has stopped its children and
+    # finalized the interrupted attempt. Default rclpy handlers stop spinning
+    # immediately, leaving that worker (and its isolated sessions) behind.
+    rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
     executor = rclpy.executors.MultiThreadedExecutor()
     lc_node = ExperimentRunnerNode()
-    lc_node.randomize_experiments_configuration()
-    executor.add_node(lc_node)
+    previous_handlers = {}
+
+    def request_stop(_signum, _frame):
+        if not lc_node.terminate_flag:
+            lc_node.handle_termination()
 
     try:
+        for signum in (signal.SIGINT, signal.SIGTERM):
+            previous_handlers[signum] = signal.signal(signum, request_stop)
+        lc_node.randomize_experiments_configuration()
+        executor.add_node(lc_node)
         run_experiment_task = executor.create_task(lc_node.run_experiments)
-        executor.spin_until_future_complete(run_experiment_task)
+        # A bounded wait lets Python dispatch our signal handlers even when
+        # the middleware has no callbacks to wake its native wait set.
+        while not run_experiment_task.done() and rclpy.ok():
+            executor.spin_until_future_complete(
+                run_experiment_task, timeout_sec=0.2)
         run_experiment_task.result()  # Propagate artifact/recovery failures.
-    except KeyboardInterrupt:
-        print(' Ctrl+C received. Triggering shutdown...')
-        lc_node.handle_termination()
-        lc_node.shutdown_all_processes()
     finally:
+        # Only the campaign worker owns process cleanup; do not race it from
+        # the signal/main thread. Also join it if spinning fails unexpectedly.
+        lc_node.handle_termination()
+        executor.shutdown()
+        lc_node.destroy_node()
         if rclpy.ok():
-            executor.shutdown()
-            lc_node.destroy_node()
             rclpy.shutdown()
+        for signum, handler in previous_handlers.items():
+            signal.signal(signum, handler)
 
 
 if __name__ == '__main__':
