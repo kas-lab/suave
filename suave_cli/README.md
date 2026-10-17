@@ -136,7 +136,8 @@ Other run modes:
 
 Without package names both commands cover every SUAVE package: `suave`, `suave_base`,
 `suave_bringup`, `suave_bt`, `suave_metacontrol`, `suave_metrics`, `suave_missions`,
-`suave_monitor`, `suave_msgs`, `suave_none`, `suave_random`, `suave_runner`, `suave_tools`.
+`suave_monitor`, `suave_msgs`, `suave_none`, `suave_random`, `suave_requirements`,
+`suave_runner`, `suave_tools`.
 `suave_cli` is not in the list; use `suave self-test` for it.
 
 ```bash

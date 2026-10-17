@@ -8,7 +8,7 @@ Runtime stack: ROS 2 Humble, Gazebo Harmonic, ArduSub/ArduPilot SITL, MAVROS, Be
 
 ## Project Structure & Module Organization
 
-Core managed-system Python nodes live in `suave/suave/`, with launch files and sim config in `suave/launch/` and `suave/config/`. Top-level mission/manager composition is in `suave_bringup/`. Monitoring nodes are in `suave_monitor/`, missions and mission configs in `suave_missions/`, metrics in `suave_metrics/`, auxiliary tools in `suave_tools/`, and experiment orchestration plus statistical analysis in `suave_runner/`. Managing subsystems are under `suave_managing/`, including `suave_none`, `suave_random`, `suave_metacontrol`, and the C++ BehaviorTree.CPP package `suave_bt`. Custom services are defined in `suave_msgs/srv/`. Tests are usually in each package's `test/` directory. Docker assets are in `docker/`, runner scripts in `runner/`, and documentation in `docs/source/`.
+Core managed-system Python nodes live in `suave/suave/`, with launch files and sim config in `suave/launch/` and `suave/config/`. Top-level mission/manager composition is in `suave_bringup/`. Monitoring nodes are in `suave_monitor/`, missions and mission configs in `suave_missions/`, metrics in `suave_metrics/`, RELAX requirement fulfillment monitoring in `suave_requirements/`, auxiliary tools in `suave_tools/`, and experiment orchestration plus statistical analysis in `suave_runner/`. Managing subsystems are under `suave_managing/`, including `suave_none`, `suave_random`, `suave_metacontrol`, and the C++ BehaviorTree.CPP package `suave_bt`. Custom services are defined in `suave_msgs/srv/`. Tests are usually in each package's `test/` directory. Docker assets are in `docker/`, runner scripts in `runner/`, and documentation in `docs/source/`.
 
 ## Build, Test, and Development Commands
 
@@ -47,7 +47,7 @@ colcon test-result --verbose
 python3 -m pytest -q <package>/test
 
 # Test all SUAVE packages
-colcon test --event-handlers console_cohesion+ --packages-select suave suave_base suave_bt suave_bringup suave_metacontrol suave_metrics suave_missions suave_monitor suave_msgs suave_none suave_random suave_runner suave_tools
+colcon test --event-handlers console_cohesion+ --packages-select suave suave_base suave_bt suave_bringup suave_metacontrol suave_metrics suave_missions suave_monitor suave_msgs suave_none suave_random suave_requirements suave_runner suave_tools
 
 # Auto-format C++ in the package being edited
 ament_uncrustify --reformat
