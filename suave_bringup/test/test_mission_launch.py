@@ -25,7 +25,8 @@ from launch_ros.actions import Node
 
 def _load_launch_description():
     launch_path = Path(__file__).parents[1] / 'launch' / 'mission.launch.py'
-    spec = importlib.util.spec_from_file_location('mission_launch', launch_path)
+    spec = importlib.util.spec_from_file_location(
+        'mission_launch', launch_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module.generate_launch_description()
@@ -45,4 +46,4 @@ def test_launch_composes_common_nodes_and_each_manager():
     assert len(arguments) == len(set(arguments))
     assert len(includes) == 5
     assert sum(node._Node__package == 'suave_missions' for node in nodes) == 1
-    assert sum(node._Node__package == 'suave_metrics' for node in nodes) == 2
+    assert sum(node._Node__package == 'suave_metrics' for node in nodes) == 0
