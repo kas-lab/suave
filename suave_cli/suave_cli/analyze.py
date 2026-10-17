@@ -33,6 +33,31 @@ examples:
   suave analyze wilcoxon -- --ros-args --params-file my_analysis.yml
 """
 
+SUMMARIZE_EPILOG = """\
+Runs: ros2 run suave_runner summarize_results <results_path> [options]
+
+The results path is a campaign folder containing aggregate *_suave.csv files,
+for example bt_suave.csv, metacontrol_suave.csv, or another manager-specific
+<managing_system>_suave.csv. Per-event CSV files are ignored.
+
+Each aggregate CSV must contain these columns:
+  pipeline found
+  time searching pipeline (s)
+  distance inspected (m)
+  mean reaction time (s)
+
+Pass summarize_results arguments after '--'. For example:
+  CAMPAIGN=/home/ubuntu-user/suave/results/batches/BATCH/campaigns/exp3
+  suave analyze summarize -- $CAMPAIGN
+  suave analyze summarize -- $CAMPAIGN --latex
+  suave analyze summarize -- $CAMPAIGN --latex-output /tmp/suave_results.tex
+
+Useful summarize_results options:
+  --latex              write suave_results.tex in the campaign folder
+  --latex-output PATH  write the LaTeX table to PATH; also enables LaTeX output
+  --precision N        decimal places for terminal and LaTeX values (default: 2)
+"""
+
 
 def analysis_body(executable, extra):
     """Return the shell code that runs one analysis script."""
@@ -52,5 +77,12 @@ def register(subparsers, common):
         epilog=ANALYZE_EPILOG, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest='analysis', metavar='ANALYSIS', required=True)
     for name, (executable, summary) in ANALYSES.items():
-        leaf = sub.add_parser(name, parents=[common], help=summary)
+        kwargs = {'parents': [common], 'help': summary}
+        if name == 'summarize':
+            kwargs.update({
+                'description': 'Summarize one SUAVE campaign results folder.',
+                'epilog': SUMMARIZE_EPILOG,
+                'formatter_class': argparse.RawDescriptionHelpFormatter,
+            })
+        leaf = sub.add_parser(name, **kwargs)
         leaf.set_defaults(func=cmd_analyze, executable=executable, accepts_passthrough=True)

@@ -15,10 +15,12 @@
 """Tests for the pipeline detection node."""
 
 import math
+from unittest.mock import patch
 
 from diagnostic_msgs.msg import DiagnosticStatus
 
 from geometry_msgs.msg import Pose
+from geometry_msgs.msg import PoseArray
 
 import pytest
 
@@ -121,3 +123,29 @@ def test_detect_pipeline_publishes_current_coverage_area(pipeline_node):
     assert len(published_coverage) == 1
     delta = 3.0 * math.tan((math.pi / 3) / 2)
     assert published_coverage[0] == pytest.approx((2 * delta) * (2 * delta))
+
+
+def test_pipeline_callbacks_latch_without_destroying_subscriptions(
+        pipeline_node):
+    """Keep the first pipeline and detection; stop publishing afterwards."""
+    detected = FakePublisher()
+    pipeline_node.detect_pipeline_pub = detected
+    pipeline_node.publish_coverage_area = lambda area: None
+    first = PoseArray(poses=[make_pose(x=0.0, z=-4.0),
+                             make_pose(x=10.0, z=-4.0)])
+    second = PoseArray(poses=[make_pose(x=50.0, z=-4.0),
+                              make_pose(x=60.0, z=-4.0)])
+    with patch.object(pipeline_node, 'destroy_subscription') as destroy:
+        pipeline_node.pipeline_pose_cb(first)
+        pipeline_node.pipeline_pose_cb(second)
+        assert pipeline_node.pipes_pose_array is first
+        assert len(pipeline_node.interpolated_path.poses) == \
+            pipeline_node.interpolation_number
+
+        pipeline_node.detect_pipeline_cb(make_pose(x=5.0, z=-1.0))
+        assert [msg.data for msg in detected.messages] == [True]
+        sorted_path = pipeline_node.sorted_path
+        pipeline_node.detect_pipeline_cb(make_pose(x=500.0, z=-1.0))
+        assert [msg.data for msg in detected.messages] == [True]
+        assert pipeline_node.sorted_path is sorted_path
+        destroy.assert_not_called()

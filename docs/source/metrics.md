@@ -22,10 +22,12 @@ One row is appended per completed run.
 | `time searching pipeline (s)` | int | Time from mission start to pipeline detection (equals mission duration if not found) |
 | `distance inspected (m)` | float | Total pipeline distance covered during inspection |
 | `mean reaction time (s)` | float | Mean reaction time across all adaptation events (see below); 0.0 if no events occurred |
+| `run_idx` | int | Run index set by `suave_runner` through `SUAVE_RUN_IDX`; empty outside the runner |
+| `attempt_id` | string | Attempt id set by `suave_runner` through `SUAVE_ATTEMPT_ID`; empty outside the runner |
 
 ## Per-event files
 
-These files are only created if at least one event of the corresponding type occurred. Each has columns: `mission_name`, `datetime`, `reaction time (s)`.
+These files are only created if at least one event of the corresponding type occurred. Each has columns: `mission_name`, `datetime`, `reaction time (s)`, `run_idx`, `attempt_id` (the last two as in the summary file).
 
 ### `<result_filename>_component_recovery_time.csv`
 

@@ -57,7 +57,7 @@ Node(
 )
 ```
 
-For existing True/False string arguments in SUAVE that use exact matching, follow nearby `LaunchConfigurationEquals` patterns.
+Boolean arguments must use `IfCondition` / `UnlessCondition`, which accept `true`, `True`, `1`, `false`, `False`, and `0`. Do not use `LaunchConfigurationEquals(..., 'True')` for booleans: it is an exact string match, so `true` silently disables the node. Keep boolean defaults lowercase (`'true'` / `'false'`). Reserve `LaunchConfigurationEquals` for enum-like values such as `adaptation_manager`. `suave/test/test_launch_booleans.py` covers `task_bridge` and `system_modes`; extend it when adding boolean arguments to `suave.launch.py`.
 
 ## Mission config YAML conventions
 

@@ -130,7 +130,7 @@ The script builds the browser image as `suave:dev` and the headless runner image
 
 `source env.sh` (or build and source the workspace) to get the `suave` command:
 `suave docker build`, `suave docker run`, `suave test`, `suave run`,
-`suave batch resume --latest`. See [suave_cli/README.md](suave_cli/README.md) and
+`suave batch resume --latest`, `suave batch diagnose --latest`. See [suave_cli/README.md](suave_cli/README.md) and
 `suave --help`.
 
 ## Install SUAVE locally

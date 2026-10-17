@@ -14,10 +14,12 @@
 """module used to save metrics."""
 import csv
 from datetime import datetime
+import os
 from pathlib import Path
 
 import statistics
 import sys
+import threading
 
 from diagnostic_msgs.msg import DiagnosticArray
 
@@ -120,9 +122,16 @@ class MissionMetrics(Node):
 
         self.mission_name = self.get_parameter('mission_name').value
         self.mission_name += ' ' + self.adaptation_manager
+        # Set by suave_runner so analysis keeps only accepted attempts' rows.
+        self.run_idx = os.environ.get('SUAVE_RUN_IDX', '')
+        self.attempt_id = os.environ.get('SUAVE_ATTEMPT_ID', '')
 
         self.mission_start_time = None
         self.pipeline_detected_time = None
+        self.results_saved = False
+        self._save_lock = threading.Lock()
+        # Serialize progress and save callbacks without destroying live handles.
+        progress_group = MutuallyExclusiveCallbackGroup()
 
         # TODO: get this automatically
         self.initial_x = 0.0
@@ -148,7 +157,7 @@ class MissionMetrics(Node):
             'mavros/state',
             self.status_cb,
             10,
-            callback_group=MutuallyExclusiveCallbackGroup()
+            callback_group=progress_group
         )
 
         self.pipeline_detected_sub = self.create_subscription(
@@ -156,7 +165,7 @@ class MissionMetrics(Node):
             'pipeline/detected',
             self.pipeline_detected_cb,
             10,
-            callback_group=MutuallyExclusiveCallbackGroup()
+            callback_group=progress_group
         )
 
         self.pipeline_inspected_sub = self.create_subscription(
@@ -164,7 +173,7 @@ class MissionMetrics(Node):
             'pipeline/inspected',
             self.pipeline_inspected_cb,
             10,
-            callback_group=MutuallyExclusiveCallbackGroup()
+            callback_group=progress_group
         )
 
         self.pipeline_distance_inspected_sub = self.create_subscription(
@@ -172,7 +181,7 @@ class MissionMetrics(Node):
             'pipeline/distance_inspected',
             self.distance_inspected_cb,
             1,
-            callback_group=MutuallyExclusiveCallbackGroup()
+            callback_group=progress_group
         )
 
         self.gazebo_pos_sub = self.create_subscription(
@@ -180,7 +189,7 @@ class MissionMetrics(Node):
             'model/bluerov2/pose',
             self.gazebo_pos_cb,
             10,
-            callback_group=MutuallyExclusiveCallbackGroup()
+            callback_group=progress_group
         )
 
         self.qos = QoSProfile(
@@ -229,7 +238,7 @@ class MissionMetrics(Node):
             Empty,
             'mission_metrics/save',
             self.save_mission_results_cb,
-            callback_group=MutuallyExclusiveCallbackGroup()
+            callback_group=progress_group
         )
 
         self.mission_done_pub = self.create_publisher(
@@ -253,34 +262,32 @@ class MissionMetrics(Node):
 
     def status_cb(self, msg):
         """Record mission start when the vehicle enters guided mode."""
-        if msg.mode == 'GUIDED':
+        if msg.mode == 'GUIDED' and self.mission_start_time is None:
             self.mission_start_time = self.get_clock().now()
-            self.destroy_subscription(self.state_sub)
 
     def pipeline_detected_cb(self, msg):
         """Record the first successful pipeline detection time."""
-        if msg.data is True:
+        if (msg.data and self.pipeline_detected_time is None and
+                not self.results_saved):
             self.pipeline_detected_time = self.get_clock().now()
-            self.destroy_subscription(self.pipeline_detected_sub)
 
     def pipeline_inspected_cb(self, msg):
         """Save mission results when pipeline inspection completes."""
-        if msg.data is True:
+        if msg.data and not self.results_saved:
             self.save_mission_results()
-            self.destroy_subscription(self.pipeline_inspected_sub)
 
     def distance_inspected_cb(self, msg):
         """Update the latest inspected pipeline distance."""
-        self.distance_inspected = msg.data
+        if not self.results_saved:
+            self.distance_inspected = msg.data
 
     def gazebo_pos_cb(self, msg):
         """Record the vehicle's initial Gazebo position."""
-        self.gazebo_pos = msg
-        if self.first_gz_pose is True:
+        if self.first_gz_pose and not self.results_saved:
+            self.gazebo_pos = msg
             self.first_gz_pose = False
             self.initial_x = msg.position.x
             self.initial_y = msg.position.y
-            self.destroy_subscription(self.gazebo_pos_sub)
 
     def diagnostics_cb(self, msg):
         """Process quality and component diagnostic measurements."""
@@ -436,16 +443,22 @@ class MissionMetrics(Node):
 
     def save_mission_results_cb(
          self, req: Empty.Request, res: Empty.Response) -> None:
-        """Save results on service request and stop metric subscriptions."""
+        """Save results on service request and freeze progress measurements."""
         self.save_mission_results()
-        self.destroy_subscription(self.gazebo_pos_sub)
-        self.destroy_subscription(self.pipeline_detected_sub)
-        self.destroy_subscription(self.pipeline_inspected_sub)
-        self.destroy_subscription(self.pipeline_distance_inspected_sub)
         return res
 
     def save_mission_results(self) -> None:
-        """Process mission data and save it into a .csv file."""
+        """Save once even when inspection and service callbacks overlap."""
+        with self._save_lock:
+            if self.results_saved:
+                return
+            if self.mission_start_time is None:
+                self.get_logger().error('Cannot save before GUIDED is observed')
+                return
+            self._write_mission_results()
+            self.results_saved = True
+
+    def _write_mission_results(self):
         mission_time_delta = \
             self.get_clock().now() - self.mission_start_time
 
@@ -476,6 +489,8 @@ class MissionMetrics(Node):
             'time searching pipeline (s)',
             'distance inspected (m)',
             'mean reaction time (s)',
+            'run_idx',
+            'attempt_id',
         ]
 
         date = datetime.now().strftime('%d-%b-%Y-%H-%M-%S')
@@ -496,7 +511,9 @@ class MissionMetrics(Node):
             pipeline_detected,
             detection_time_delta,
             self.distance_inspected,
-            mean_reaction_time
+            mean_reaction_time,
+            self.run_idx,
+            self.attempt_id,
         ]
 
         self.save_metrics(
@@ -510,8 +527,9 @@ class MissionMetrics(Node):
             self.save_metrics(
                 self.result_path,
                 component_file,
-                ['mission_name', 'datetime', 'reaction time (s)'],
-                [self.mission_name, date, t]
+                ['mission_name', 'datetime', 'reaction time (s)', 'run_idx',
+                 'attempt_id'],
+                [self.mission_name, date, t, self.run_idx, self.attempt_id]
             )
 
         wv_file = self.result_filename + '_wv_reaction_time'
@@ -519,8 +537,9 @@ class MissionMetrics(Node):
             self.save_metrics(
                 self.result_path,
                 wv_file,
-                ['mission_name', 'datetime', 'reaction time (s)'],
-                [self.mission_name, date, t]
+                ['mission_name', 'datetime', 'reaction time (s)', 'run_idx',
+                 'attempt_id'],
+                [self.mission_name, date, t, self.run_idx, self.attempt_id]
             )
 
         battery_file = self.result_filename + '_battery_reaction_time'
@@ -528,8 +547,9 @@ class MissionMetrics(Node):
             self.save_metrics(
                 self.result_path,
                 battery_file,
-                ['mission_name', 'datetime', 'reaction time (s)'],
-                [self.mission_name, date, t]
+                ['mission_name', 'datetime', 'reaction time (s)', 'run_idx',
+                 'attempt_id'],
+                [self.mission_name, date, t, self.run_idx, self.attempt_id]
             )
 
         self.mission_done_pub.publish(Bool(data=True))
@@ -597,10 +617,14 @@ def main():
 
     mt_executor = rclpy.executors.MultiThreadedExecutor()
     mt_executor.add_node(metrics_node)
-    mt_executor.spin()
-
-    metrics_node.destroy_node()
-    rclpy.shutdown()
+    try:
+        mt_executor.spin()
+    except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
+        pass
+    finally:
+        mt_executor.shutdown()
+        metrics_node.destroy_node()
+        rclpy.try_shutdown()
 
 
 if __name__ == '__main__':

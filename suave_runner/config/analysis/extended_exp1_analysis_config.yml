@@ -1,8 +1,7 @@
 # Paths are resolved by the launch file through launch substitutions.
-# `results_root` must point at the directory holding extended_exp1's
-# run_idx-sorted CSVs, e.g. the --output directory from sort_results.py
-# (see the sort-suave-results skill) or a batch's
-# campaigns/extended_exp1/sorted/ directory.
+# `results_root` must point at the extended_exp1 campaign folder (the one
+# holding runs.json and the raw <manager>_<mission>.csv files);
+# only each run's accepted attempt is analyzed.
 #
 # extended_exp1_runner_config.yml currently only runs the `bt` managing
 # system, so there is nothing to pair it against yet. Add more
@@ -17,5 +16,5 @@
       - |
         {
           "managing_system": "bt",
-          "data_file": "$(var results_root)/bt_suave_extended_sorted.csv"
+          "data_file": "$(var results_root)/bt_suave_extended.csv"
         }

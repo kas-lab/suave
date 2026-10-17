@@ -182,6 +182,14 @@ def generate_launch_description():
         output=print_output,
     )
 
+    # Reports activations that mode_manager requested but never happened.
+    lifecycle_watchdog_node = Node(
+        package='suave',
+        executable='lifecycle_watchdog',
+        name='lifecycle_watchdog',
+        output=print_output,
+    )
+
     task_bridge_node = Node(
         package='suave',
         executable='task_bridge_none',
@@ -222,6 +230,7 @@ def generate_launch_description():
         follow_pipeline_node,
         recharge_battery_node,
         recover_thrusters_node,
+        lifecycle_watchdog_node,
         task_bridge_node,
         system_modes_launch,
     ])

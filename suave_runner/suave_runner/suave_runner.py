@@ -15,7 +15,6 @@
 """Run repeatable SUAVE experiment campaigns and collect their results."""
 
 import asyncio
-import csv
 from datetime import datetime
 import json
 import multiprocessing
@@ -23,6 +22,7 @@ import os
 from pathlib import Path
 from queue import Empty
 import random
+import shlex
 import signal
 import subprocess
 import threading
@@ -30,6 +30,7 @@ import time
 import traceback
 
 from ament_index_python.packages import get_package_share_directory
+from geometry_msgs.msg import Pose
 from launch import LaunchDescription
 from launch import LaunchService
 from launch import logging as launch_logging
@@ -44,9 +45,28 @@ from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
+from rclpy.signals import SignalHandlerOptions
 from std_msgs.msg import Bool
 from std_msgs.msg import String
 from suave_monitor.thruster_monitor import read_thruster_events
+from suave_runner.attempt_processes import confirm_stopped
+from suave_runner.attempt_processes import live_gz_sim_processes
+from suave_runner.attempt_processes import register_session
+from suave_runner.attempt_processes import stop_sessions
+from suave_runner.bag_validation import validate_bag
+from suave_runner.diagnose_batch import summary_lines
+from suave_runner.run_artifacts import attempt_details
+from suave_runner.run_artifacts import campaign_lock
+from suave_runner.run_artifacts import finalize_attempt
+from suave_runner.run_artifacts import recording_enabled
+from suave_runner.run_artifacts import recover_attempts
+from suave_runner.run_status import finish_attempt
+from suave_runner.run_status import open_runs
+from suave_runner.run_status import start_attempt
+from suave_tools.runs import bag_dir
+from suave_tools.runs import log_dir as attempt_log_dir
+from suave_tools.runs import parse_run_id
+from suave_tools.runs import write_runs
 import yaml
 
 MISSION_DONE_QOS = QoSProfile(
@@ -55,6 +75,61 @@ MISSION_DONE_QOS = QoSProfile(
     history=QoSHistoryPolicy.KEEP_LAST,
     depth=1,
 )
+SITL_PORT = 5760  # SITL serial0 (MAVLink); MAVProxy connects here
+# BlueROV2 ArduPilotPlugin fdm_port_in: the first Gazebo to bind it gets SITL.
+GZ_FDM_PORT = 9002
+SIMULATION_READY_TOPIC = '/model/bluerov2/pose'  # bridged once Gazebo runs
+
+
+class ReadinessTimeout(TimeoutError):
+    """A launch stage did not become ready within its timeout."""
+
+
+class StaleSimulationError(RuntimeError):
+    """A simulation outside the runner's control would drive the next run."""
+
+
+def port_listening(port):
+    """Return whether a local TCP socket listens on port, without connecting."""
+    for table in ('/proc/net/tcp', '/proc/net/tcp6'):
+        try:
+            rows = Path(table).read_text().splitlines()[1:]
+        except OSError:
+            continue
+        for row in rows:
+            fields = row.split()
+            # fields[1] is 'address:port' in hex; state 0A is LISTEN.
+            if (int(fields[1].rsplit(':', 1)[1], 16) == port and
+                    fields[3] == '0A'):
+                return True
+    return False
+
+
+def udp_port_bound(port):
+    """Return whether any local UDP socket is bound to port."""
+    for table in ('/proc/net/udp', '/proc/net/udp6'):
+        try:
+            rows = Path(table).read_text().splitlines()[1:]
+        except OSError:
+            continue
+        for row in rows:
+            if int(row.split()[1].rsplit(':', 1)[1], 16) == port:
+                return True
+    return False
+
+
+def check_no_stale_simulation():
+    """Refuse to start while a leftover Gazebo could capture SITL."""
+    problems = []
+    pids = live_gz_sim_processes()
+    if pids:
+        problems.append(f'live gz sim PIDs {pids}')
+    if udp_port_bound(GZ_FDM_PORT):
+        problems.append(f'UDP port {GZ_FDM_PORT} (ArduPilotPlugin) is bound')
+    if problems:
+        raise StaleSimulationError(
+            'Refusing to start a run: ' + '; '.join(problems) + '. '
+            'SITL would drive the stale vehicle; stop it and resume.')
 
 
 class ExperimentRunnerNode(Node):
@@ -73,16 +148,22 @@ class ExperimentRunnerNode(Node):
         # List of JSON-encoded dicts
         self.declare_parameter('experiments', [''])
         self.declare_parameter('run_duration', 600)  # seconds
+        self.declare_parameter('readiness_timeout', 10.0)
+        self.declare_parameter('ardupilot_ready_timeout', 30.0)
+        self.declare_parameter('simulation_ready_timeout', 30.0)
         self.declare_parameter('gui', False)  # whether to run GUI or not
         # whether to log experiment results or not
         self.declare_parameter('experiment_logging', False)
         # Resume an interrupted campaign from an existing result folder.
         self.declare_parameter('resume_result_path', '')
+        self.declare_parameter('record_bags', True)
+        self._active_attempt = None
+        self._active_log_dir = None
 
         # Ardupilot parameters
         self.declare_parameter(
             'ardupilot_executable',
-            'sim_vehicle.py -L RATBeach -v ArduSub --model=JSON')
+            'sim_vehicle.py -N -L RATBeach -v ArduSub --model=JSON')
 
         # Simulation parameters
         self.declare_parameter(
@@ -143,6 +224,15 @@ class ExperimentRunnerNode(Node):
         random.seed(self.random_seed)
         self.run_duration = self.get_parameter(
             'run_duration').get_parameter_value().integer_value
+        self.readiness_timeout = self.get_parameter('readiness_timeout').value
+        self.ardupilot_ready_timeout = self.get_parameter(
+            'ardupilot_ready_timeout').value
+        self.simulation_ready_timeout = self.get_parameter(
+            'simulation_ready_timeout').value
+        for name in ('readiness_timeout', 'ardupilot_ready_timeout',
+                     'simulation_ready_timeout'):
+            if getattr(self, name) < 0:
+                raise ValueError(f'{name} must be non-negative')
         self.gui = self.get_parameter('gui').get_parameter_value().bool_value
         self.experiment_logging = self.get_parameter(
             'experiment_logging').get_parameter_value().bool_value
@@ -191,6 +281,13 @@ class ExperimentRunnerNode(Node):
         self._mission_failed_event = threading.Event()
         self._mission_failure_reason = ''
         self._process_failure_queue = multiprocessing.Queue()
+        self._simulation_ready_event = threading.Event()
+        self.create_subscription(
+            Pose,
+            SIMULATION_READY_TOPIC,
+            lambda _msg: self._simulation_ready_event.set(),
+            10,
+        )
         self.create_subscription(
             Bool,
             'mission_metrics/done',
@@ -276,38 +373,49 @@ class ExperimentRunnerNode(Node):
             details += f"; command: {failure['cmd']}"
         return details
 
-    def _wait_for_startup(self, duration):
-        """Wait between launch stages while monitoring early failures."""
-        deadline = time.monotonic() + duration
-        while time.monotonic() < deadline:
-            if self.terminate_flag:
-                raise RuntimeError('Termination requested during startup')
-            failure = self._get_process_failure()
-            if failure is not None:
-                raise RuntimeError(self._format_process_failure(failure))
-            time.sleep(min(0.2, deadline - time.monotonic()))
+    def _check_startup(self):
+        """Raise if termination was requested or a launched process died."""
+        if self.terminate_flag:
+            raise RuntimeError('Termination requested during startup')
+        failure = self._get_process_failure()
+        if failure is not None:
+            raise RuntimeError(self._format_process_failure(failure))
+
+    def _wait_until(self, predicate, timeout, what):
+        """Wait for predicate while monitoring early failures; return seconds."""
+        start = time.monotonic()
+        while True:
+            self._check_startup()
+            if predicate():
+                return time.monotonic() - start
+            if time.monotonic() - start >= timeout:
+                raise ReadinessTimeout(f'{what} not ready after {timeout}s')
+            time.sleep(0.2)
 
     def start_launch_process(
             self, launch_description: LaunchDescription, log_dir: Path,
-            launch_name: str):
+            launch_name: str, env=None):
         """Start a ROS launch description in an isolated child process."""
         stop_event = multiprocessing.Event()
         process = multiprocessing.Process(
             target=self._run_launchfile,
             args=(stop_event, launch_description, log_dir, launch_name,
-                  self._process_failure_queue),
+                  self._process_failure_queue, env or {}),
         )
         process.start()
         return process, stop_event
 
     def _run_launchfile(
             self, stop_event, launch_description, log_dir, launch_name,
-            failure_queue):
+            failure_queue, env):
+        # Establish durable ownership before any launch action spawns children.
+        register_session(log_dir)
         # Ignore SIGINT in this process
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
         log_dir.mkdir(parents=True, exist_ok=True)
         os.environ['ROS_LOG_DIR'] = str(log_dir)
+        os.environ.update(env)
         launch_logging.reset()
         launch_logging.launch_config.log_dir = str(log_dir)
 
@@ -362,39 +470,57 @@ class ExperimentRunnerNode(Node):
 
     def shutdown_all_launch_processes(self):
         """Request shutdown of every tracked ROS launch process."""
-        for process, stop_event, _launch_name in self.processes_stop_events:
+        for _process, stop_event, _name in self.processes_stop_events:
+            stop_event.set()
+        deadline = time.monotonic() + 30
+        survivors = []
+        for process, _stop_event, _name in self.processes_stop_events:
+            process.join(timeout=max(0.0, deadline - time.monotonic()))
             if process.is_alive():
-                stop_event.set()
-                process.join(timeout=10)
-            if process.is_alive():
-                self.get_logger().warn(
-                    f'Launch process {process.pid} did not exit cleanly.')
+                survivors.append(process.pid)
+        if survivors:
+            # Retain handles and leave artifacts pending, even if the session
+            # fallback below succeeds in forcibly stopping these writers.
+            raise RuntimeError(
+                f'Launch processes {survivors} did not exit cleanly; '
+                'attempt remains pending for recovery')
         self.processes_stop_events.clear()
 
-    def kill_gz_sim(self):
-        """Terminate remaining Gazebo Sim processes."""
+    def shutdown_all_processes(self, log_dir=None):
+        """Stop ArduPilot, ROS launches, and orphans in their sessions."""
         try:
-            subprocess.run(['pkill', '-f', 'gz sim'], check=False)
-        except Exception as e:
-            print(f'Error killing gz sim processes: {e}')
-
-    def shutdown_all_processes(self):
-        """Stop ArduPilot, ROS launch processes, Gazebo, and log output."""
-        self.terminate_process(self.ardupilot_proc, 'ArduPilot')
-        self.shutdown_all_launch_processes()
-        self.kill_gz_sim()
-        ardupilot_log = getattr(self, '_ardupilot_log', None)
-        if ardupilot_log:
-            ardupilot_log.close()
-            self._ardupilot_log = None
+            try:
+                self.terminate_process(self.ardupilot_proc, 'ArduPilot')
+            finally:
+                try:
+                    self.shutdown_all_launch_processes()
+                finally:
+                    log_dir = log_dir or self._active_log_dir
+                    if log_dir is not None:
+                        # Run even after a launch timeout: forked servers and
+                        # stuck launchers must not escape session cleanup.
+                        stop_sessions(log_dir)
+        finally:
+            # Its exit code must not fail the next attempt's startup checks.
+            self.ardupilot_proc = None
+            ardupilot_log = getattr(self, '_ardupilot_log', None)
+            if ardupilot_log:
+                ardupilot_log.close()
+                self._ardupilot_log = None
         self.get_logger().info('All processes terminated.')
 
     def terminate_process(self, proc, name):
         """Terminate a running subprocess and its process group."""
-        if proc and proc.poll() is None:
+        if proc is not None:
+            # start_new_session makes the original PID the group ID. Children
+            # can still own sockets after that group leader has exited.
             self.get_logger().info(
-                f'Terminating {name} process group {os.getpgid(proc.pid)}...')
-            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                f'Terminating {name} process group {proc.pid}...')
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            proc.wait(timeout=5)
 
     def create_experiment_folder(self):
         """Return a resumed or newly created campaign result directory."""
@@ -425,17 +551,23 @@ class ExperimentRunnerNode(Node):
 
     def launch_ardupilot(self, log_path: Path):
         """Start ArduPilot and redirect its output to a run log."""
+        # A SITL left over from the previous attempt would satisfy the
+        # readiness check below, so wait for its port to be released first.
+        self._wait_until(lambda: not port_listening(SITL_PORT),
+                         self.ardupilot_ready_timeout,
+                         f'Free SITL port {SITL_PORT}')
         self.get_logger().info('    Launching ArduPilot...')
         self._ardupilot_log = open(log_path, 'w')
         self.ardupilot_proc = subprocess.Popen(
             self.ardupilot_cmd,
             stdout=self._ardupilot_log,
             stderr=self._ardupilot_log,
-            preexec_fn=os.setsid  # Launch in a new process group
+            start_new_session=True
         )
-        self.get_logger().info(
-            '    Sleeping 10 seconds before launching SUAVE simulation...')
-        self._wait_for_startup(10)
+        elapsed = self._wait_until(lambda: port_listening(SITL_PORT),
+                                   self.ardupilot_ready_timeout,
+                                   f'ArduPilot (SITL port {SITL_PORT})')
+        self.get_logger().info(f'    ArduPilot ready after {elapsed:.1f}s')
 
     def launch_suave_simulation(self, run_idx, log_dir: Path):
         """Launch the SUAVE simulation for a configured run position."""
@@ -468,13 +600,15 @@ class ExperimentRunnerNode(Node):
         )
         sim_launch_ld = LaunchDescription()
         sim_launch_ld.add_action(sim_launch)
+        self._simulation_ready_event.clear()
         sim_process, sim_stop_event = self.start_launch_process(
             sim_launch_ld, log_dir, 'simulation')
         self.processes_stop_events.append(
             (sim_process, sim_stop_event, 'simulation'))
-        self.get_logger().info(
-            '    Sleeping 10 seconds before launching next nodes...')
-        self._wait_for_startup(10)
+        elapsed = self._wait_until(self._simulation_ready_event.is_set,
+                                   self.simulation_ready_timeout,
+                                   f'Simulation ({SIMULATION_READY_TOPIC})')
+        self.get_logger().info(f'    Simulation ready after {elapsed:.1f}s')
 
     def launch_experiment(
             self,
@@ -484,7 +618,7 @@ class ExperimentRunnerNode(Node):
             mission_config_file: str,
             log_dir: Path):
         """Launch the mission and managing system for one experiment run."""
-        exp_launch_cmd_split = exp_launch.split()
+        exp_launch_cmd_split = shlex.split(exp_launch)
         exp_pkg, exp_file = exp_launch_cmd_split[2], exp_launch_cmd_split[3]
         exp_path = os.path.join(
             get_package_share_directory(exp_pkg),
@@ -493,8 +627,8 @@ class ExperimentRunnerNode(Node):
 
         exp_args = {}
         if len(exp_launch_cmd_split) > 4:
-            exp_args = {arg.split(':=')[0]: arg.split(':=')[1]
-                        for arg in exp_launch_cmd_split[4:]}
+            exp_args = dict(arg.split(':=', 1)
+                            for arg in exp_launch_cmd_split[4:])
         exp_args['result_path'] = result_path
         exp_args['result_filename'] = result_filename
         exp_args['gui'] = 'true' if self.gui else 'false'
@@ -505,6 +639,13 @@ class ExperimentRunnerNode(Node):
             exp_args['silent'] = 'true'
 
         exp_args['mission_config'] = mission_config_file
+        if self._active_attempt is not None:
+            run_id, entry = self._active_attempt
+            enabled = entry['bag'] is not None
+            exp_args['record_bags'] = str(enabled).lower()
+            if enabled:
+                exp_args['bag_output_path'] = str(bag_dir(
+                    result_path, run_id, entry, 'pending'))
 
         self.get_logger().info(
             f'    Launching Experiment from {exp_path} with args: {exp_args}')
@@ -516,187 +657,175 @@ class ExperimentRunnerNode(Node):
         experiment_ld = LaunchDescription()
         experiment_ld.add_action(exp_launch_desc)
         experiment_process, experiment_stop_event = self.start_launch_process(
-            experiment_ld, log_dir, 'experiment')
+            experiment_ld, log_dir, 'experiment', self._attempt_env())
         self.processes_stop_events.append(
             (experiment_process, experiment_stop_event, 'experiment'))
 
+    def _attempt_env(self):
+        """Return the run identity that mission_metrics writes to its CSVs."""
+        if self._active_attempt is None:
+            return {}
+        run_id, entry = self._active_attempt
+        return {'SUAVE_RUN_IDX': str(parse_run_id(run_id)[1]),
+                'SUAVE_ATTEMPT_ID': entry['attempt_id']}
+
+    def _wait_for_readiness(self, experiment):
+        required = experiment.get('required_services', [])
+        if not isinstance(required, list) or any(
+                not isinstance(name, str) or not name.startswith('/')
+                for name in required):
+            raise ValueError('required_services must be absolute service names')
+        deadline = time.monotonic() + self.readiness_timeout
+        while required:
+            self._check_startup()
+            if self._mission_failed_event.is_set():
+                raise RuntimeError(self._mission_failure_reason)
+            available = dict(self.get_service_names_and_types())
+            missing = [name for name in required if name not in available or (
+                name.endswith('/change_mode') and
+                'system_modes_msgs/srv/ChangeMode' not in available[name])]
+            if not missing:
+                return
+            if time.monotonic() >= deadline:
+                raise TimeoutError('Missing required services: ' +
+                                   ', '.join(missing))
+            time.sleep(0.1)
+
     def run_experiments(self):
-        """Execute configured campaigns with resumable checkpoints."""
+        """Execute campaigns under an exclusive lock and recover transactions."""
         result_path = self.create_experiment_folder()
-        mission_config_file_array = self.generate_mission_config_files(
-            result_path)
+        with campaign_lock(result_path):
+            runs = open_runs(result_path)
+            recover_attempts(result_path, runs, validate_bag, confirm_stopped)
+            if not runs['campaign']:
+                runs['campaign'] = {
+                    'random_seed': self.random_seed,
+                    'simulation_launch': self.suave_simulation_cmd,
+                    'ardupilot_command': self.ardupilot_cmd,
+                }
+                write_runs(result_path, runs)
+            self._run_experiments_locked(result_path, runs)
+
+    def _run_experiments_locked(self, result_path, runs):
+        mission_configs = self.generate_mission_config_files(result_path)
         for exp_idx, experiment in enumerate(self.experiments):
-            if self.terminate_flag:
-                break
-
-            experiment_data = self.initialize_experiment(experiment, exp_idx)
-            exp_launch, num_runs, result_filename, adaptation_manager = (
-                experiment_data)
-
+            exp_launch, num_runs, filename, manager = (
+                self.initialize_experiment(experiment, exp_idx))
             if not exp_launch:
-                self.get_logger().warn(
-                    f'Skipping experiment {exp_idx + 1}: Missing '
-                    "'experiment_launch'")
                 continue
-
+            enabled = recording_enabled(
+                exp_launch, self.get_parameter('record_bags').value)
             self.get_logger().info(
                 f'Running experiment {exp_idx + 1}/{len(self.experiments)} '
-                f'for {num_runs} runs with {adaptation_manager}')
-
+                f'for {num_runs} runs with {manager}')
             for run_idx in range(num_runs):
                 if self.terminate_flag:
-                    break
-
-                done_marker = result_path / f'run_{exp_idx}_{run_idx}.done'
-                if done_marker.exists():
+                    return
+                run_id = f'run_{exp_idx}_{run_idx}'
+                if runs['runs'].get(run_id, {}).get('status') == 'completed':
                     self.get_logger().info(
-                        f'  Skipping {adaptation_manager} run '
-                        f'{run_idx + 1}/{num_runs} (checkpoint found).')
+                        f'  Skipping {manager} run {run_idx + 1}/{num_runs} '
+                        '(already completed).')
                     continue
-
-                run_log_dir = result_path / 'logs' / f'run_{exp_idx}_{run_idx}'
-                run_log_dir.mkdir(parents=True, exist_ok=True)
-
+                # Session cleanup cannot see servers it never launched; abort
+                # the campaign rather than record contaminated attempts.
+                check_no_stale_simulation()
+                mission = experiment.get('mission_name', f'mission_{exp_idx}')
+                details = attempt_details(run_id, manager, mission, enabled)
+                entry = start_attempt(
+                    runs, run_id, manager, mission, exp_launch, **details)
+                write_runs(result_path, runs)
+                log_dir = attempt_log_dir(result_path, run_id, entry)
+                log_dir.mkdir(parents=True, exist_ok=True)
+                self._active_attempt = (run_id, entry)
+                self._active_log_dir = log_dir
                 self._mission_done_event.clear()
                 self._mission_failed_event.clear()
                 self._mission_failure_reason = ''
                 self._drain_process_failures()
                 self.get_logger().info(
-                    f'  Run {adaptation_manager} {run_idx + 1}/{num_runs}')
-
+                    f'  Run {manager} {run_idx + 1}/{num_runs}')
+                outcome, reason, failure_type = 'failed', '', ''
+                stage = 'startup'
                 try:
-                    self.launch_ardupilot(run_log_dir / 'ardupilot.log')
-                    self.launch_suave_simulation(
-                        run_idx, run_log_dir / 'simulation')
+                    self.launch_ardupilot(log_dir / 'ardupilot.log')
+                    self.launch_suave_simulation(run_idx, log_dir / 'simulation')
                     self.launch_experiment(
-                        exp_launch,
-                        str(result_path),
-                        result_filename,
-                        str(mission_config_file_array[run_idx]),
-                        run_log_dir / 'experiment')
-                except Exception as e:
-                    self.get_logger().error(f'Failed to launch processes: {e}')
-                    self.shutdown_all_processes()
-                    self.get_logger().info(
-                        f'  Run {run_idx + 1} completed (success: False).')
-                    time.sleep(10)
-                    continue
-
-                self.get_logger().info(
-                    '    Waiting for mission_metrics/done...')
-                start_time = time.time()
-                mission_complete = False
-                run_failure = None
-
-                while not self.terminate_flag:
-                    process_failure = self._get_process_failure()
-                    if process_failure is not None:
-                        run_failure = self._format_process_failure(
-                            process_failure)
-                        break
-                    if self._mission_failed_event.is_set():
-                        run_failure = self._mission_failure_reason or (
-                            'Experiment subsystem reported an unknown failure')
-                        break
-                    if self._mission_done_event.wait(timeout=0.2):
-                        mission_complete = True
-                        break
-                    if time.time() - start_time > self.run_duration:
-                        self.get_logger().warn(
-                            '    Timeout waiting for mission_metrics/done.')
-                        break
-
-                if run_failure:
-                    self.get_logger().error(
-                        f'    Run failed before mission completion: '
-                        f'{run_failure}')
-
-                self.shutdown_all_processes()
+                        exp_launch, str(result_path), filename,
+                        str(mission_configs[run_idx]), log_dir / 'experiment')
+                    self._wait_for_readiness(experiment)
+                    stage = 'mission'
+                    outcome, reason, failure_type = self._wait_for_mission()
+                except Exception as error:
+                    reason = str(error)
+                    if stage != 'startup':
+                        failure_type = 'runner_exception'
+                    elif isinstance(error, ReadinessTimeout):
+                        failure_type = 'readiness_timeout'
+                    elif isinstance(error, TimeoutError):
+                        failure_type = 'readiness_missing_service'
+                    else:
+                        failure_type = 'startup_failure'
+                    self.get_logger().error(reason)
+                finally:
+                    # If shutdown cannot be verified, persist why, leave the bag
+                    # pending and propagate; never start another attempt.
+                    try:
+                        self.shutdown_all_processes(log_dir)
+                    except Exception:
+                        finish_attempt(
+                            entry, 'interrupted', entry['bag'],
+                            'Launch shutdown was not confirmed',
+                            'shutdown_unconfirmed')
+                        write_runs(result_path, runs)
+                        raise
+                    finally:
+                        self._active_attempt = None
+                        self._active_log_dir = None
 
                 if self.terminate_flag:
-                    self.get_logger().info(
-                        'Termination requested. Stopping early.')
-                    break
-
-                if mission_complete:
-                    broken_reason = self.detect_broken_run(run_log_dir)
-                    if broken_reason:
-                        mission_complete = False
-                        self.get_logger().error(
-                            f'    Run {run_idx + 1} flagged as broken '
-                            f'({broken_reason}); not checkpointing, it will '
-                            're-run on --resume.')
-                        self.record_broken_run(
-                            result_path, exp_idx, run_idx, adaptation_manager,
-                            result_filename, broken_reason)
-
-                if mission_complete:
-                    done_marker.touch()
-
-                self.get_logger().info(
-                    f'  Run {run_idx + 1} completed '
-                    f'(success: {mission_complete}).')
-                time.sleep(10)
-
+                    outcome, reason, failure_type = (
+                        'interrupted', 'Termination requested', 'interrupted')
+                # The entry stays 'running' on disk until the bag has moved.
+                finalize_attempt(result_path, runs, run_id, outcome,
+                                 validate_bag, reason, failure_type)
+                self._log_run_summary(runs, run_id)
+                if self.terminate_flag:
+                    return
+            self.get_logger().info(f'Experiment {exp_idx + 1} summary:')
+            for line in summary_lines(runs['runs'].values()):
+                self.get_logger().info(line)
         self.get_logger().info('All experiment runs completed or aborted.')
 
-    def detect_broken_run(self, run_log_dir):
-        """Return a reason string if the finished run hit a known bug, else ''."""
-        return self._search_path_node_never_activated(run_log_dir)
+    def _wait_for_mission(self):
+        self.get_logger().info('    Waiting for mission_metrics/done...')
+        start = time.monotonic()
+        while not self.terminate_flag:
+            failure = self._get_process_failure()
+            if failure is not None:
+                return ('failed', self._format_process_failure(failure),
+                        'process_died_before_completion')
+            if self._mission_failed_event.is_set():
+                return ('failed', self._mission_failure_reason,
+                        'mission_control_failure')
+            if self._mission_done_event.wait(timeout=0.2):
+                return 'completed', '', ''
+            if time.monotonic() - start > self.run_duration:
+                return ('failed', 'Timeout waiting for mission_metrics/done.',
+                        'mission_done_timeout')
+        return 'interrupted', 'Termination requested', 'interrupted'
 
-    def _search_path_node_never_activated(self, run_log_dir):
-        """Flag runs where the spiral search lifecycle node never activated."""
-        experiment_dir = run_log_dir / 'experiment'
-        candidates = []
-        for log_path in experiment_dir.glob('python3_*.log'):
-            try:
-                text = log_path.read_text(errors='replace')
-            except OSError:
-                continue
-            if 'f_generate_search_path_node' in text:
-                candidates.append((log_path.stat().st_mtime, text))
-        if not candidates:
-            return ''
-        # The run log dir is reused across --resume attempts; use the newest.
-        _, text = max(candidates, key=lambda item: item[0])
-        if ('on_configure() is called.' in text
-                and 'on_activate() is called.' not in text):
-            return ('f_generate_search_path_node configured but never activated'
-                    ' (system_modes mode transition lost)')
-        return ''
-
-    def record_broken_run(
-            self, result_path, exp_idx, run_idx, manager, result_filename,
-            reason):
-        """Log a broken run and move its metrics row into a rejected file."""
-        result_path = Path(result_path)
-        record = {
-            'run': f'run_{exp_idx}_{run_idx}',
-            'adaptation_manager': manager,
-            'reason': reason,
-            'timestamp': datetime.now().isoformat(),
-        }
-        with open(result_path / 'rejected_runs.jsonl', 'a') as handle:
-            handle.write(json.dumps(record) + '\n')
-
-        results_csv = result_path / f'{result_filename}.csv'
-        if not results_csv.is_file():
-            return
-        with open(results_csv, newline='') as handle:
-            rows = list(csv.reader(handle))
-        if len(rows) <= 1:
-            return
-        header = rows[0]
-        rejected_row = rows[-1]
-        with open(results_csv, 'w', newline='') as handle:
-            csv.writer(handle).writerows(rows[:-1])
-        rejected_csv = result_path / f'{result_filename}_rejected.csv'
-        write_header = not rejected_csv.is_file()
-        with open(rejected_csv, 'a', newline='') as handle:
-            writer = csv.writer(handle)
-            if write_header:
-                writer.writerow(header)
-            writer.writerow(rejected_row)
+    def _log_run_summary(self, runs, run_id):
+        entry = runs['runs'][run_id]
+        self.get_logger().info(
+            f'  {run_id} {entry["adaptation_manager"]}: '
+            f'{entry["status"]}; {entry["failure_type"]} '
+            f'{entry["failure_reason"]}')
+        for line in summary_lines(runs['runs'].values()):
+            if line.startswith('SYSTEMIC:'):
+                self.get_logger().error(line)
+            else:
+                self.get_logger().info(line)
 
     def generate_mission_config_files(self, result_path):
         """Generate per-run mission configurations with randomized events."""
@@ -805,24 +934,40 @@ class ExperimentRunnerNode(Node):
 
 def main(args=None):
     """Run the SUAVE experiment campaign node."""
-    rclpy.init(args=args)
+    # Keep ROS alive until the campaign worker has stopped its children and
+    # finalized the interrupted attempt. Default rclpy handlers stop spinning
+    # immediately, leaving that worker (and its isolated sessions) behind.
+    rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
     executor = rclpy.executors.MultiThreadedExecutor()
     lc_node = ExperimentRunnerNode()
-    lc_node.randomize_experiments_configuration()
-    executor.add_node(lc_node)
+    previous_handlers = {}
+
+    def request_stop(_signum, _frame):
+        if not lc_node.terminate_flag:
+            lc_node.handle_termination()
 
     try:
+        for signum in (signal.SIGINT, signal.SIGTERM):
+            previous_handlers[signum] = signal.signal(signum, request_stop)
+        lc_node.randomize_experiments_configuration()
+        executor.add_node(lc_node)
         run_experiment_task = executor.create_task(lc_node.run_experiments)
-        executor.spin_until_future_complete(run_experiment_task)
-    except KeyboardInterrupt:
-        print(' Ctrl+C received. Triggering shutdown...')
-        lc_node.handle_termination()
-        lc_node.shutdown_all_processes()
+        # A bounded wait lets Python dispatch our signal handlers even when
+        # the middleware has no callbacks to wake its native wait set.
+        while not run_experiment_task.done() and rclpy.ok():
+            executor.spin_until_future_complete(
+                run_experiment_task, timeout_sec=0.2)
+        run_experiment_task.result()  # Propagate artifact/recovery failures.
     finally:
+        # Only the campaign worker owns process cleanup; do not race it from
+        # the signal/main thread. Also join it if spinning fails unexpectedly.
+        lc_node.handle_termination()
+        executor.shutdown()
+        lc_node.destroy_node()
         if rclpy.ok():
-            executor.shutdown()
-            lc_node.destroy_node()
             rclpy.shutdown()
+        for signum, handler in previous_handlers.items():
+            signal.signal(signum, handler)
 
 
 if __name__ == '__main__':

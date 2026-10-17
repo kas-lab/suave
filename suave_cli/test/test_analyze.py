@@ -50,3 +50,16 @@ def test_analyze_help_lists_analyses(capsys):
     out = capsys.readouterr().out
     assert 'wilcoxon' in out
     assert 'mann-whitney' in out
+
+
+def test_summarize_help_explains_passthrough_and_expected_results(capsys):
+    try:
+        main.main(['analyze', 'summarize', '--help'], env={})
+    except SystemExit:
+        pass
+    out = capsys.readouterr().out
+    assert "Pass summarize_results arguments after '--'" in out
+    assert '*_suave.csv' in out
+    assert 'pipeline found' in out
+    assert '/home/ubuntu-user/suave/results' in out
+    assert '--latex-output PATH' in out

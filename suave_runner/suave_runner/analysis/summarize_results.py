@@ -19,10 +19,24 @@ from pathlib import Path
 
 import pandas as pd
 
+from suave_tools.labels import MANAGER_ORDER
+from suave_tools.labels import label
+
+if __package__:
+    from . import common
+else:
+    import common
+
 
 RESULT_FILE_SUFFIX = '_suave.csv'
 DEFAULT_LATEX_FILENAME = 'suave_results.tex'
-LATEX_CAPTION = 'SUAVE results mean and standard deviation.'
+LATEX_CAPTION = (
+    'SUAVE evaluation results. Search time and distance inspected are '
+    r'reported as mean $\pm$ standard deviation across runs. Failed runs '
+    'are excluded '
+    'from these statistics. Reaction time is reported as mean '
+    r'$\pm$ standard deviation of per-run averages. N/A indicates that '
+    'reaction time is not applicable.')
 LATEX_LABEL = 'tab:suave_results'
 
 METRICS = {
@@ -31,13 +45,6 @@ METRICS = {
     'reaction_time': 'mean reaction time (s)',
 }
 REQUIRED_COLUMNS = ['pipeline found', *METRICS.values()]
-DISPLAY_NAMES = {
-    'bt': 'BT',
-    'metacontrol': 'Metacontrol',
-    'none': 'None',
-    'random': 'Random',
-}
-MANAGING_SYSTEM_ORDER = tuple(DISPLAY_NAMES)
 
 
 def discover_result_files(results_path):
@@ -55,7 +62,7 @@ def discover_result_files(results_path):
         raise ValueError(
             f'No *{RESULT_FILE_SUFFIX} files found in {results_path}')
 
-    order = {name: index for index, name in enumerate(MANAGING_SYSTEM_ORDER)}
+    order = {name: index for index, name in enumerate(MANAGER_ORDER)}
     return sorted(
         result_files,
         key=lambda item: (order.get(item[0], len(order)), item[0]))
@@ -88,24 +95,23 @@ def calculate_statistics(results_path):
                     f'{csv_file} contains missing values in {column}')
             metric_data[metric_name] = values
 
-        pipeline_found = _parse_pipeline_found(
+        pipeline_found = common.parse_pipeline_found(
             data['pipeline found'], csv_file)
+        search_values = metric_data['search_time'][pipeline_found]
+        distance_values = metric_data['distance_inspected'][pipeline_found]
         reaction_values = metric_data['reaction_time']
         reaction_values = reaction_values[reaction_values != 0]
 
         summaries.append({
             'managing_system': managing_system,
-            'display_name': DISPLAY_NAMES.get(
-                managing_system, managing_system.replace('_', ' ').title()),
+            'display_name': label(managing_system),
             'runs': len(data),
             'pipelines_found': int(pipeline_found.sum()),
             'success_rate': float(pipeline_found.mean()),
-            'search_time_mean': metric_data['search_time'].mean(),
-            'search_time_std': metric_data['search_time'].std(ddof=1),
-            'distance_inspected_mean': (
-                metric_data['distance_inspected'].mean()),
-            'distance_inspected_std': (
-                metric_data['distance_inspected'].std(ddof=1)),
+            'search_time_mean': search_values.mean(),
+            'search_time_std': search_values.std(ddof=1),
+            'distance_inspected_mean': distance_values.mean(),
+            'distance_inspected_std': distance_values.std(ddof=1),
             'reaction_time_mean': reaction_values.mean(),
             'reaction_time_std': reaction_values.std(ddof=1),
             'reaction_time_samples': len(reaction_values),
@@ -192,7 +198,8 @@ def build_argument_parser():
     """Create the command-line argument parser."""
     parser = argparse.ArgumentParser(
         description=(
-            'Calculate mean and sample standard deviation for SUAVE results.'))
+            'Calculate mean and sample standard deviation for SUAVE results. '
+            'Run it in the sourced SUAVE container (it imports suave_tools).'))
     parser.add_argument(
         'results_path', type=Path,
         help='campaign folder containing *_suave.csv result files')
@@ -232,17 +239,6 @@ def main(args=None):
             print(f'LaTeX table written to {output_path}')
     except ValueError as error:
         parser.error(str(error))
-
-
-def _parse_pipeline_found(values, csv_file):
-    normalized = values.map(
-        lambda value: str(value).strip().lower() if not pd.isna(value) else '')
-    true_values = {'true', '1', 'yes'}
-    false_values = {'false', '0', 'no'}
-    invalid = ~normalized.isin(true_values | false_values)
-    if invalid.any():
-        raise ValueError(f'{csv_file} contains invalid pipeline found values')
-    return normalized.isin(true_values)
 
 
 def _format_statistic(mean, standard_deviation, precision, latex=False):

@@ -20,6 +20,7 @@ import pandas as pd
 
 import pytest
 
+from suave_runner.analysis.summarize_results import LATEX_CAPTION
 from suave_runner.analysis.summarize_results import calculate_statistics
 from suave_runner.analysis.summarize_results import main
 from suave_runner.analysis.summarize_results import render_latex_table
@@ -39,8 +40,8 @@ def _result_rows(reaction_times=(0.0, 2.0, 4.0)):
     }
 
 
-def test_calculate_statistics_uses_all_runs_and_nonzero_reactions(tmp_path):
-    """Use every run except zero-valued reaction-time samples."""
+def test_calculate_statistics_uses_successes_and_nonzero_reactions(tmp_path):
+    """Filter mission metrics by detection success, but not reaction times."""
     _write_results(tmp_path, 'bt', _result_rows())
 
     result = calculate_statistics(tmp_path).iloc[0]
@@ -50,13 +51,36 @@ def test_calculate_statistics_uses_all_runs_and_nonzero_reactions(tmp_path):
     assert result['runs'] == 3
     assert result['pipelines_found'] == 2
     assert result['success_rate'] == pytest.approx(2 / 3)
-    assert result['search_time_mean'] == pytest.approx(12.0)
-    assert result['search_time_std'] == pytest.approx(2.0)
-    assert result['distance_inspected_mean'] == pytest.approx(22.0)
-    assert result['distance_inspected_std'] == pytest.approx(2.0)
+    assert result['search_time_mean'] == pytest.approx(11.0)
+    assert result['search_time_std'] == pytest.approx(2 ** 0.5)
+    assert result['distance_inspected_mean'] == pytest.approx(21.0)
+    assert result['distance_inspected_std'] == pytest.approx(2 ** 0.5)
     assert result['reaction_time_mean'] == pytest.approx(3.0)
     assert result['reaction_time_std'] == pytest.approx(2 ** 0.5)
     assert result['reaction_time_samples'] == 2
+
+
+@pytest.mark.parametrize('successes', [0, 1])
+def test_mission_statistics_with_fewer_than_two_successes(tmp_path, successes):
+    """Keep detection counts and render unavailable statistics as N/A."""
+    rows = _result_rows()
+    rows['pipeline found'] = [i < successes for i in range(3)]
+    _write_results(tmp_path, 'random', rows)
+
+    summary = calculate_statistics(tmp_path)
+    result = summary.iloc[0]
+    assert result['runs'] == 3
+    assert result['pipelines_found'] == successes
+    for metric in ('search_time', 'distance_inspected'):
+        assert pd.isna(result[f'{metric}_std'])
+        if successes == 0:
+            assert pd.isna(result[f'{metric}_mean'])
+        else:
+            assert result[f'{metric}_mean'] == rows[{
+                'search_time': 'time searching pipeline (s)',
+                'distance_inspected': 'distance inspected (m)',
+            }[metric]][0]
+    assert 'N/A' in render_latex_table(summary)
 
 
 def test_calculate_statistics_uses_na_when_no_reactions_exist(tmp_path):
@@ -70,6 +94,17 @@ def test_calculate_statistics_uses_na_when_no_reactions_exist(tmp_path):
     assert result['reaction_time_samples'] == 0
 
 
+def test_calculate_statistics_uses_shared_labels_and_order(tmp_path):
+    """Label and order every manager from the shared table."""
+    for name in ('none', 'my_manager', 'rebetmc', 'planta', 'rosa_bt'):
+        _write_results(tmp_path, name, _result_rows())
+
+    summary = calculate_statistics(tmp_path)
+
+    assert list(summary['display_name']) == [
+        'TacticalRetreat', 'ROSA-BT', 'PLANTA', 'None', 'my_manager']
+
+
 def test_render_latex_table_formats_names_rates_and_na(tmp_path):
     """Render publication names, success rates, and unavailable values."""
     _write_results(tmp_path, 'none', _result_rows((0.0, 0.0, 0.0)))
@@ -77,13 +112,13 @@ def test_render_latex_table_formats_names_rates_and_na(tmp_path):
 
     latex = render_latex_table(calculate_statistics(tmp_path))
 
-    assert r'\caption{SUAVE results mean and standard deviation.}' in latex
+    assert '\\caption{' + LATEX_CAPTION + '}' in latex
     assert r'\label{tab:suave_results}' in latex
     assert r'\resizebox{\linewidth}{!}{%' in latex
     assert latex.index(r'\resizebox{\linewidth}{!}{%') < latex.index(
-        r'\caption{SUAVE results mean and standard deviation.}')
+        '\\caption{' + LATEX_CAPTION + '}')
     assert r'None & 2/3 (66.67\%)' in latex
-    assert 'None & 2/3 (66.67\\%) & $12.00' in latex
+    assert 'None & 2/3 (66.67\\%) & $11.00' in latex
     assert '& N/A ' in latex
     assert 'Metacontrol' in latex
 

@@ -101,6 +101,10 @@ class InspectionMission(MissionPlanner):
 
     def battery_level_cb(self, msg):
         """Abort and save when the battery constraint is violated."""
+        # Destroying a subscription from its own callback races the
+        # MultiThreadedExecutor, so keep it and ignore later messages.
+        if self.abort_mission:
+            return
         battery_constraint_arg = self.get_parameter('battery_constraint').value
         if battery_constraint_arg is True:
             for status in msg.status:
@@ -117,7 +121,6 @@ class InspectionMission(MissionPlanner):
                                     self.save_mission_results_cli,
                                     Empty.Request()
                                 )
-                                self.destroy_subscription(self.battery_sub)
                             break
 
     def status_cb(self, msg):
@@ -125,11 +128,11 @@ class InspectionMission(MissionPlanner):
         self.status = msg
 
     def pipeline_detected_cb(self, msg):
-        """Update pipeline detection state and record first detection time."""
-        self.pipeline_detected = msg.data
-        if self.pipeline_detected is True:
-            self.pipeline_detected_time = self.get_clock().now()
-            self.destroy_subscription(self.pipeline_detected_sub)
+        """Latch the first pipeline detection and its time."""
+        if self.pipeline_detected or msg.data is not True:
+            return
+        self.pipeline_detected = True
+        self.pipeline_detected_time = self.get_clock().now()
 
     def pipeline_inspected_cb(self, msg):
         """Update whether pipeline inspection has completed."""
