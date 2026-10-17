@@ -19,8 +19,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from suave_tools.labels import MANAGER_ORDER
 from suave_tools.labels import label
+from suave_tools.labels import MANAGER_ORDER
 
 if __package__:
     from . import common
