@@ -1,512 +1,448 @@
 # Run SUAVE
 
-> Tip: the `suave` CLI ({doc}`cli`) wraps the runner, batch and resume commands below.
->
-> For statistical analysis, result summaries, plots, and LaTeX tables, see
-> {doc}`results`.
+Use the SUAVE CLI ({doc}`cli`) to run campaigns, sequence batches, diagnose
+failures, and resume interrupted experiments. See {doc}`results` for statistical
+analysis, summaries, plots, and LaTeX tables.
 
-## With Runner
-### Trying it out!
-If you simply want to try out the exemplar, simply enter the following commands in a terminal:
-```Bash
-cd ~/suave_ws/src/suave/runner/
-./example_run.sh
-```
-Within a couple of minutes, some new terminals should open as well as the Gazebo simulator.
-A default mission is executed of inspecting the pipeline with a time limit.
-To follow the robot as it progresses along its mission make sure to right click and follow it in the entity tree of Gazebo as shown below:
-![BLUEROV Follow](https://github.com/kas-lab/suave/blob/652db0676ec2995c4cc0653ef5de0fc49edd00ac/docker/follow_bluerov.PNG)
+## Prerequisites
 
-**Please note**: It can take a little while for the robot to get moving, it is an issue we are aware of. Once it does get a move on you should see it perform its mission for about 5 minutes.
+To run SUAVE you either need need to have a install SUAVE deps and build a ROS workspace with SUAVE, or you can use the docker images provided, check the isntalation and docker pages for more info. The easiest way to run SUAVE its through its CLI, which requires that you either run it after sourcing a workspace with SUAVE built, or sourcing `env.sh` directly, or running from a development container with ROS and the workspace installed.
+The CLI can invoke that container from the host. Put `suave` on `PATH` by
+sourcing the checkout's `env.sh`, or use the workspace's installed CLI hook.
+See {doc}`cli` for setup and execution-target settings.
 
-### Full Runner
+If the container is not named `suave`, pass `--container NAME`. Use paths visible
+inside that container. The CLI does not translate host paths, and relative
+configuration paths resolve from the container's workspace root.
 
-There are two ways to run a full experiment campaign.
+Run direct ROS commands inside the container. If the environment does not
+already source the workspace, run:
 
-**Option 1 — Shell runner** (simple, positional arguments):
-
-```Bash
-cd ~/suave_ws/src/suave/runner/
-./runner.sh false metacontrol time 2
-```
-
-The script takes 4 positional arguments:
-1. `true` or `false` — whether to show a GUI
-2. `metacontrol`, `random`, `none`, or `bt` — adaptation manager
-3. `time` or `distance` — mission type
-4. Number of runs (integer)
-
-**Option 2 — ROS 2 runner** (config-file driven, recommended for larger campaigns):
-
-First make sure you source the suave workspace:
-
-```Bash
-cd ~/suave_ws/
+```bash
+cd ~/suave_ws
 source install/setup.bash
 ```
 
-Then run:
+After changing installed configuration files, rebuild the package that owns
+them, for example `suave build suave_runner` or `suave build suave_missions`.
 
-Without gui:
-```Bash
-ros2 run suave_runner suave_runner \
-  --ros-args \
-  -p gui:=False \
-  -p experiments:='[
-    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt\", \
-      \"num_runs\": 2, \
-      \"adaptation_manager\": \"bt\", \
-      \"mission_name\": \"suave\"}"
-  ]'
+## Run a campaign
+
+A campaign runs one or more experiment definitions sequentially. Each definition
+selects a managing system and a number of repeated runs. The runner starts and
+stops SITL, simulation, and mission processes for each run.
+
+```bash
+suave run
+suave run --config src/suave/my_runner.yml
 ```
 
-With gui:
-```Bash
-ros2 run suave_runner suave_runner \
-  --ros-args \
-  -p gui:=True \
-  -p experiments:='[
-    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt\", \
-      \"num_runs\": 2, \
-      \"adaptation_manager\": \"bt\", \
-      \"mission_name\": \"suave\"}"
-  ]'
+The first command uses the installed
+[runner_config.yml](https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner/runner_config.yml).
+The second uses a custom ROS parameter file. Common overrides are:
+
+```bash
+suave run --config src/suave/my_runner.yml --gui --seed 100 --run-duration 600
+suave run --config src/suave/my_runner.yml -p record_bags:=false
 ```
 
-To run the BT manager through ROS 2 actions, append
-`use_action_server:=true` to its experiment command:
+`--gui` enables the Gazebo window. To disable it explicitly, pass `-p gui:=false`.
+`--run-duration` limits the wait for mission completion, not the entire startup
+and shutdown sequence.
 
-```Bash
-ros2 run suave_runner suave_runner \
-  --ros-args \
-  -p experiments:='[
-    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt use_action_server:=true\", \
-      \"num_runs\": 2, \
-      \"adaptation_manager\": \"bt\", \
-      \"mission_name\": \"suave\"}"
-  ]'
-```
+### Configuration example
 
-You can also use a launch file with a [config file](https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner/runner_config.yml) to make it easier to run the experiments:
-
-```Bash
-ros2 launch suave_runner suave_runner_launch.py
-```
-
-To run SUAVE with different managing subsystems, replace the `experiment_launch` with the proper launch file.
-
-### Runner configuration reference
-
-`suave_runner/config/runner/runner_config.yml` controls all experiment parameters. The key fields are:
-
-| Parameter | Default | Description |
-|---|---|---|
-| `result_path` | `~/suave/results` | Directory where CSV result files and per-run logs are written |
-| `gui` | `false` | Launch Gazebo with a visible window |
-| `experiment_logging` | `false` | Enable extra console output from the runner (ArduPilot and ROS node logs are always captured to `<result_path>/logs/run_<exp>_<run>/<attempt_id>/` regardless of this flag) |
-| `run_duration` | `600` | Maximum seconds to wait for `mission_metrics/done` before timing out a run |
-| `mission_config_pkg` | `suave_missions` | ROS package containing the mission config |
-| `mission_config_file` | `config/runner_mission_config.yaml` | Path to mission config within that package |
-| `enable_water_current` | `false` | Enable the optional `water_current` node for each run |
-| `ardupilot_executable` | `sim_vehicle.py -N -L RATBeach -v ArduSub --model=JSON` | Command used to start ArduPilot SITL (`-N`: no rebuild) |
-| `ardupilot_ready_timeout` | `30.0` | Seconds to wait for SITL to listen on port 5760 (and for a previous SITL to release it) |
-| `suave_simulation` | `ros2 launch suave simulation.launch.py` | Simulation launch command |
-| `initial_pos_x` / `y` / `z` | `-17.0` / `2.5` / `-18.5` | AUV spawn position in the Gazebo world; Y comes from the shipped runner config |
-| `initial_pos_x_random_interval` | `[0.0, 0.0]` | Random offset range applied to X spawn position each run |
-| `initial_pos_y_random_interval` | `[-0.5, 0.5]` | Random offset range applied to Y spawn position each run |
-| `initial_pos_z_random_interval` | `[0.0, 0.0]` | Random offset range applied to Z spawn position each run |
-| `water_visibility_sec_shift` | `0.0` | Fixed time offset (s) before the water visibility disturbance |
-| `water_visibility_sec_shift_random_interval` | `[0.0, 120.0]` | Random range added on top of the fixed offset |
-| `thruster_events` | `[(1,failure,100), (3,failure,100)]` | List of thruster events: `(id, type, time_s)` |
-| `thruster_events_random_interval` | `[-100.0, 100.0]` | Random offset (s) applied to each thruster event time |
-| `random_interval` | `5` | Number of runs before re-randomising offsets |
-| `simulation_ready_timeout` | `30.0` | Seconds to wait for the first `/model/bluerov2/pose` message after launching the simulation |
-| `readiness_timeout` | `10.0` | Seconds to wait for the experiment's `required_services` before failing a run |
-| `random_seed` | `100` | Seed for the perturbation RNG — fix this value for reproducible benchmark campaigns |
-| `resume_result_path` | `""` | Path to an existing result folder to resume a crashed campaign (empty = start a new timestamped folder) |
-| `experiments` | *(see file)* | List of experiment definitions (see below) |
-| `record_bags` | `true` | Whether to record ROS bags for the whole campaign. Individual experiments can override it in the `experiment_launch` command, e.g., `ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt record_bags:=true` |
-
-Each entry in `experiments` is a JSON string with four required fields and an optional `required_services` list:
+Save this file as `my_runner.yml` in the checkout:
 
 ```yaml
-experiments:
-  - |
-    {
-      "experiment_launch": "ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt",
-      "num_runs": 10,
-      "adaptation_manager": "bt",
-      "mission_name": "suave"
-    }
+/suave_runner_node:
+  ros__parameters:
+    gui: false
+    random_seed: 100
+    record_bags: true
+    mission_config_pkg: suave_missions
+    mission_config_file: config/runner_mission_config.yaml
+    experiments:
+      - |
+        {
+          "experiment_launch": "ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt",
+          "num_runs": 2,
+          "adaptation_manager": "bt",
+          "mission_name": "suave",
+          "required_services": ["/f_maintain_motion/change_mode", "/f_generate_search_path/change_mode", "/f_follow_pipeline/change_mode"]
+        }
 ```
 
-| Field | Description |
-|---|---|
-| `experiment_launch` | Full `ros2 launch` command and arguments for the managing subsystem; add `use_action_server:=true` here for BT action mode |
-| `num_runs` | Number of times to repeat this experiment |
-| `adaptation_manager` | Label written into result CSV files |
-| `mission_name` | Mission label written into result CSV files |
-| `required_services` | Optional absolute service names the runner waits for before the mission starts (see readiness below), absent means no wait |
+Append experiment entries to compare more systems. For an external manager,
+replace `experiment_launch` with its launch command. For BT action mode, append
+`use_action_server:=true` to that command. An individual experiment can override
+campaign recording with `record_bags:=false` or `record_bags:=true` in the same
+command.
 
-Multiple experiments can be listed and will be run sequentially. See the [Metrics Reference](metrics.md) for details on output files.
+### Direct ROS alternatives
 
-**Experiment startup procedure:** The runner has no fixed sleeps: each launch stage waits until it is ready,
-and the timeouts are ceilings. The runner logs how long each stage took
-(`ArduPilot ready after 2.1s`, `Simulation ready after 6.4s`).
+Use the runner launch file with its installed configuration or a custom path:
 
-1. ArduPilot: the runner first waits for TCP port 5760 to be free,
-   then starts `ardupilot_executable` and waits until SITL listens on port 5760, 
-   its MAVLink port (they might be blocked by leftover processes). The waiting time is configured via the param
-   `ardupilot_ready_timeout` (default `30.0` s).
-3. Simulation: after the simulation launch, the runner waits for the first
-   message on `/model/bluerov2/pose`, which `ros_gz_bridge` only forwards
-   once Gazebo runs with the vehicle spawned. The ceiling is
-   `simulation_ready_timeout` (default `30.0` s).
-4. Manager services: after the experiment launch, the runner waits up to
-   `readiness_timeout` seconds (default `10.0`) for the services listed in
-   the experiment's `required_services`. An experiment without
-   `required_services` does not wait. The shipped configs list
-   `/f_maintain_motion/change_mode`, `/f_generate_search_path/change_mode`,
-   and `/f_follow_pipeline/change_mode` for every `bt` experiment, plus
-   `/generate_recharge_path/change_mode` when it launches
-   `suave_bt_extended`. **If you are adding your custom managing system, it can be useful to customize this parameter to make sure it maps all services required by it**
-
-When a stage that not ready in time, the runner aborts the run and mark it as failed with the code `readiness_timeout`. A
-missing service fails it as `readiness_missing_service`. Either way the runner continues with the next run.
-
-### Runner output and behavior reference
-
-The runner stores its results, logs, rosbags (when `record_bags` = `true`), and meta-data in the folder
-registered in the `result_path` parameter. The result folder output has the following structure:
-
-- `result_path`/`<year_month_day_time>`/
-  - `<adaptation_manager>`_`<mission_name>`.csv : CSV file with the resulting metrics for each managing system
-  - `logs`/`run_<exp_idx>_<run_idx>`/
-    - `<attempt_id>` : Process stdout, stderr, launch events, and ROS logs
-  - `rosbags`/
-    - `pending`/ : rosbags that correspond to runs that were not yet classified as successful or failed
-    - `<adaptation_manager>_<mission>_<run_id>_<attempt_id>/`: bags from runs that were considered successful
-    - `failed`/`<adaptation_manager>_<mission>_<run_id>_<attempt_id>/`: bags from runs that were considered as failed
-  - `runs.json` : meta-data about the runs
-
-Each campaign folder has one `runs.json` file which is written only by
-the runner. Its `campaign` header records `random_seed`, `simulation_launch`, and
-`ardupilot_command` once. It contains a `runs` field which records each run 
-`run_<exp_idx>_<run_idx>` configuration and status, i.e., the `adaptation_manager`, 
-`mission_name`, `experiment_launch`, `status` (`running`, `completed`, `failed`, or `interrupted`), `attempt_id`, `bag` (`null` when recording is disabled, otherwise `pending`, `accepted`, or
-`failed`), `failure_type`, `failure_reason`, `started_at`, and `finished_at`. 
-When a run fails and is later retried, its earlier attempts configuration and status
-are stored under `attempts`. A run is complete if and only if its `status` is `completed`.
-
-Example of a run that had one failure and got rerun once and succeeded:
-
-```json
-"run_1_27": {
-  "adaptation_manager": "rosa_bt",
-  "mission_name": "suave",
-  "experiment_launch": "ros2 launch suave_rosa_bt suave_rosa_bt.launch.py",
-  "status": "completed",
-  "attempt_id": "6b7cca229ca04dd0bb6e2fad8d1eb7eb",
-  "bag": "accepted",
-  "failure_type": "",
-  "failure_reason": "",
-  "started_at": "2026-10-13T09:33:24-03:00",
-  "finished_at": "2026-10-13T09:37:47-03:00",
-  "attempts": [
-    {
-      "attempt_id": "a3c8456a2b7443538cd38942153ec4c0",
-      "status": "failed",
-      "bag": "failed",
-      "failure_type": "pipeline_not_found",
-      "failure_reason": "Mission completed without finding the pipeline; manually rejected after review.",
-      "started_at": "2026-10-12T23:25:18-03:00",
-      "finished_at": "2026-10-12T23:29:41-03:00"
-    }
-  ]
-},
+```bash
+ros2 launch suave_runner suave_runner_launch.py
+ros2 launch suave_runner suave_runner_launch.py \
+  config_file:=/home/ubuntu-user/suave_ws/src/suave/my_runner.yml
 ```
 
-The runner ends a run immediately when a launched process exits with a
-nonzero status or a subsystem publishes `mission/control_failure`. The run is
-recorded as `failed` and the runner continues with the remaining runs.
+To override individual node parameters, run the node directly:
 
-When bag recording is enabled (`record_bags` = `true`), the runner records each run
-attempt under `rosbags/pending/` first. When a run completes, the runner validates the MCAP
-metadata, storage files, and reader stream, moves the bag to
-`rosbags/<manager>_<mission>_<run_id>_<attempt_id>/`, and only then writes
-`status: completed` with `bag: accepted` to the `runs.json` file. Failed, interrupted, or
-invalid-recording attempts are moved to `rosbags/failed/` (`bag: failed`), so
-resume retries them. 
-
-After each run the runner logs a per-manager summary, and `run_batch` logs one
-after each campaign. For example:
-
-```Bash
-[INFO] [1792333651.235502187] [suave_runner_node]: bt: 2/2 completed; failures={}
-[INFO] [1792333651.235856561] [suave_runner_node]: Experiment 1 summary:
-[INFO] [1792333651.236125541] [suave_runner_node]: bt: 2/2 completed; failures={}
-[INFO] [1792333651.236287649] [suave_runner_node]: All experiment runs completed or aborted.
+```bash
+ros2 run suave_runner suave_runner --ros-args \
+  --params-file src/suave/my_runner.yml -p gui:=false
 ```
 
-### Batch runner
+## Run a batch
 
-To run several campaigns sequentially in one go, use the generic `run_batch`
-node, configured through a YAML manifest (see
-[config/runner/batch_campaigns.yml](https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner/batch_campaigns.yml)
-for a runnable example). A third-party managing system's own runner config can
-be added the same way, check the third-party [PLANTA batch configuration](https://github.com/kas-lab/suave_planta/blob/main/config/runner/batch_campaigns.yml).
-
-With the `suave_cli`:
+A batch runs several campaigns sequentially. Each campaign references a runner
+configuration installed by a ROS package. Use the bundled manifest or a custom
+one:
 
 ```bash
 suave batch start
-suave batch start --config my_batch.yml
+suave batch start --config src/suave/my_batch.yml --fail-fast
+suave batch start --config src/suave/my_batch.yml --dry-run-batch
 ```
 
-**Tip:** Check ({doc}`cli`) or run `suave batch --help` for more info on how to use the suave CLI. Dont forget to source the workspace or `env.sh` before using the cli
+`--dry-run-batch` prints campaign commands without executing them or creating
+batch files. It does not check installed configuration files.
+The CLI's global `--dry-run` instead previews the CLI's wrapped command.
+`--fail-fast` stops when a campaign process cannot start or exits nonzero.
+An incomplete campaign that exits zero does not trigger this condition.
 
-With the `run_batch` launchfile:
+Example `my_batch.yml`:
 
-```Bash
-ros2 launch suave_runner run_batch_launch.py
+```yaml
+/run_batch_node:
+  ros__parameters:
+    campaigns:
+      - '{"name": "exp1", "package": "suave_runner", "config_file": "config/runner/exp1_runner_config.yml"}'
+      - '{"name": "exp2", "package": "suave_runner", "config_file": "config/runner/exp2_runner_config.yml"}'
 ```
 
-Or with the run_batch node pointing at any batch manifest:
+Campaign names must be unique. List entries in execution order. Third-party
+packages can supply their own installed configurations through the same fields.
+See the bundled
+[batch_campaigns.yml](https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner/batch_campaigns.yml).
+Batches can take hours or days. Use `screen` or `tmux` for unattended execution.
 
-```Bash
-ros2 run suave_runner run_batch \
-  --ros-args --params-file config/runner/batch_campaigns.yml
-```
-
-
-The available parameters for a batch manifest (i.e., batch_campaigns.yml) are:
-
-| Parameter | Type | Default | Purpose |
-|-----------|------|---------|---------|
-| `batch_dir` | string | `''` | New batch output directory; must not already exist. Empty generates `~/suave/results/batches/batch_YYYYMMDD_HHMMSS`. |
-| `resume_state_file` | string | `''` | Existing batch `state.json` to resume. Mutually exclusive with `batch_dir`, campaigns are loaded from that file. |
-| `fail_fast` | bool | `false` | Stop after a campaign process fails to start or exits nonzero. |
-| `dry_run` | bool | `false` | Print campaign commands without executing them or creating batch files. Uses `campaigns`, not the resume manifest. |
-| `campaigns` | string array | `['']` | Ordered JSON-encoded objects containing `name`, `package`, and `config_file` (relative to the package share directory). Required for new batches and dry runs; names must be unique. |
-
-**Note:** running every campaign back-to-back can take several hours to a few
-days, depending on the machine and `num_runs` per experiment -- plan to leave
-it running unattended (e.g. in `screen`/`tmux`) rather than waiting on it.
-
-Running a batch creates a timestamped batch directory under `~/suave/results/batches/`
-(e.g. `batch_20260913_104200/`) containing:
-
-- `state.json` -- the batch manifest: the campaign
-  list (`name`, `package`, `config_file`), written once when the batch starts.
-  Progress is not stored there
-- `run_batch.log` -- the overall orchestration log
-- `<campaign_name>.log` -- combined stdout/stderr for each campaign (e.g.
-  `exp1.log`)
-- `campaigns/<campaign_name>/` -- each campaign's own results directory, in
-  the same layout `suave_runner` produces for a single campaign
-
-
-**Checking whether a batch needs to be resumed:** a batch finished cleanly if
-`run_batch.log` ends with `All campaigns completed successfully.`. If it
-stops early -- Ctrl+C, a crash, a failed campaign -- the log ends instead with
-a `Batch interrupted; ...` or `Batch finished with N unfinished campaign(s): ...`
-line followed by the exact resume command to use. A campaign is done when the
-number of `"status": "completed"` entries in its `campaigns/<name>/runs.json`
-equals the number of runs its runner config declares. `suave batch list`
-prints the completed runs per campaign, and `diagnose_batch` prints
-completed/expected counts.
-
-**Resuming an interrupted batch:** pass the batch's `state.json` as the
-`resume_state_file` parameter. Campaigns whose runs have all completed are
-skipped, and an unfinished campaign picks up from its `runs.json` instead of
-starting over:
-
-With the cli:
-
-```Bash
-suave batch resume --latest               # resume the newest batch under the results dir
-suave batch resume ~/suave/results/batches/batch_20260926_101500/state.json  # resume a specific batch
-```
-
-With the `run_batch` node:
-
-```Bash
-ros2 run suave_runner run_batch --ros-args \
-  -p resume_state_file:=~/suave/results/batches/<batch_dir>/state.json
-```
-
-To run a custom subset or order of campaigns, write your own manifest (or
-edit `config/runner/batch_campaigns.yml`) and pass it via `--params-file` before
-starting a new batch. `-p fail_fast:=true` stops the batch as soon as a
-campaign fails instead of continuing to the next one, and `-p dry_run:=true`
-prints the `ros2 run` command for each campaign without executing anything.
-
-### Diagnosing batch failures
-
-`diagnose_batch` reads a batch's or campaign's result files and reports which
-runs failed, why, and where the evidence is. It only reads files, so it works
-on a finished batch, a running one, or a copy on another machine:
+Direct ROS alternatives:
 
 ```bash
-ros2 run suave_runner diagnose_batch ~/suave/results/batches/<batch_dir>/state.json
-ros2 run suave_runner diagnose_batch ~/suave/results/batches/<batch_dir>
-ros2 run suave_runner diagnose_batch ~/suave/results/<campaign_folder>
-ros2 run suave_runner diagnose_batch <path> --json
+ros2 launch suave_runner run_batch_launch.py
+ros2 run suave_runner run_batch --ros-args \
+  --params-file src/suave/my_batch.yml -p fail_fast:=true
 ```
 
-With the `suave` CLI: `suave batch diagnose --latest` or
-`suave batch diagnose <path> [--json]`.
+The batch launch file always loads the installed `batch_campaigns.yml` and
+declares no configuration-path argument. Use the node or CLI for custom files.
 
-For each campaign it prints the completed and expected run counts, one line
-per adaptation manager (for example
-`bt: 18/20 completed; failures={'mission_done_timeout': 2}`), and, for each
-run that did not complete, its status, failure type, reason, log folder, and
-the first log lines that point at a cause (`suspected <type>: <log>:<line>`).
-It reads each campaign's `runs.json` and, for a batch, the manifest.
+## Monitor and diagnose
+
+```bash
+suave campaign list
+suave batch list
+suave batch diagnose --latest
+suave batch diagnose /home/ubuntu-user/suave/results/batches/BATCH --json
+```
+
+`diagnose` accepts a batch directory, its `state.json`, or a campaign directory.
+It only reads files. It reports completed and expected run counts, failures by
+manager, failure reasons, attempt log paths, and log lines that suggest a cause.
+The direct equivalent is `ros2 run suave_runner diagnose_batch PATH [--json]`.
+
+The runner prints per-manager summaries after each run. The batch runner prints
+them after each campaign. A batch completes when all configured runs have
+`status: completed` in their campaign's `runs.json`. The normal success message
+is `All campaigns completed successfully.` An unfinished or interrupted batch
+normally prints a resume command. Early startup errors can stop it before that
+summary.
 
 | Failure type | Meaning |
 |---|---|
 | `mission_done_timeout` | No `mission_metrics/done` within `run_duration` |
-| `process_died_before_completion` | A launched process exited with a nonzero status |
-| `mission_control_failure` | A subsystem published `mission/control_failure`. This includes the `lifecycle_watchdog` node (launched by `suave.launch.py`), which reports a lifecycle node that did not become active within `activation_timeout` (10 s) of `mode_manager`'s activate request. |
-| `readiness_timeout` | ArduPilot or the simulation was not ready within `ardupilot_ready_timeout` / `simulation_ready_timeout` |
-| `readiness_missing_service` | Services in the experiment's `required_services` were missing after `readiness_timeout` |
-| `startup_failure` | Launching the run's processes raised an error |
-| `interrupted` | The run was stopped by Ctrl+C or termination |
-| `unknown` | No recognizable cause was recorded |
+| `process_died_before_completion` | A launched process exited nonzero |
+| `mission_control_failure` | A subsystem published `mission/control_failure`, including lifecycle-watchdog activation failures |
+| `readiness_timeout` | SITL or simulation did not become ready before its timeout |
+| `readiness_missing_service` | A required experiment service did not appear before `readiness_timeout` |
+| `startup_failure` | Starting the run raised an exception |
+| `recording_invalid` | The completed attempt's recording failed validation |
+| `shutdown_unconfirmed` | The runner could not confirm process shutdown and stopped the campaign |
+| `runner_exception` | The runner raised an exception during the mission stage |
+| `interrupted` | Termination interrupted the run |
+| `unknown` | The diagnostic summary has no recorded failure type |
 
-**Systemic warnings:** a line `SYSTEMIC: <manager>: repeated <failure_type>`
-means that manager failed with the same type at least 3 times, or at least
-twice and in more than half of its attempted runs. That usually indicates there is
-a bug in either SUAVE (the managed system) or in the managing system, an incorrect experiment configuration, 
-or something wrong in the environment (e.g., in the docker container or your host machine) where the experiments are being executed (e.g., a missing package, wrong dependency version etc) rather than a random failure. So, if you keep getting systemic warnings, we suggest you inspect one failed run's logs and try to fix the issue before rerunning.
+A `SYSTEMIC: <manager>: repeated <failure_type>` warning identifies the same
+failure in at least three runs, or in at least two runs and more than half of
+that manager's attempted runs. Inspect one failed attempt's logs and correct
+configuration, dependency, or runtime problems before retrying.
 
-### Resuming a crashed campaign
+## Resume
 
-If the runner is interrupted mid-campaign (crash, Ctrl+C, power loss), it can
-resume from where it left off without re-running completed runs. To resume, pass 
-the path of the interrupted result folder via `resume_result_path`:
+### Batch
 
-With the cli:
-
-```Bash
-suave batch resume --latest               # resume the newest batch under the results dir
-suave batch resume ~/suave/results/batches/batch_20260926_101500/state.json  # resume a specific batch
+```bash
+suave batch resume --latest
+suave batch resume /home/ubuntu-user/suave/results/batches/BATCH/state.json
 ```
 
-With the `suave_runner` node:
+The batch skips completed campaigns and resumes unfinished ones from their
+`runs.json`. Its `state.json` stores campaign configuration references, not
+progress. Keep those installed configurations unchanged when resuming.
 
-```Bash
-ros2 run suave_runner suave_runner \
-  --ros-args \
-  -p resume_result_path:=~/suave/results/2026_06_19_10-30-00 \
-  -p experiments:='[
-    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt\", \
-      \"num_runs\": 10, \
-      \"adaptation_manager\": \"bt\", \
-      \"mission_name\": \"suave\"}"
-  ]'
+Direct ROS equivalent:
+
+```bash
+ros2 run suave_runner run_batch --ros-args \
+  -p resume_state_file:=/home/ubuntu-user/suave/results/batches/BATCH/state.json
 ```
 
-The `experiments` parameter must match the original campaign exactly so that
-run indices line up with the marker files. Per-run mission config files
-(`mission_config_run*.yaml`) are reused from the existing folder if present,
-otherwise they are regenerated using the same random seed. 
+### Campaign
 
-**How it resuming works under the hood:**
-
-Before starting new runs, a
-resumed runner settles every run left `running` (or `interrupted` with a
-`pending` bag): it confirms the attempt's launch session has no live processes
-(recovery only checks and never kills processes), then decides from where the
-bag is on disk. A bag only under `rosbags/` is validated and the run becomes
-`completed`, or `failed` with the bag quarantined if it is invalid. A bag 
-under `rosbags/pending/` is moved to `rosbags/failed/` and the run becomes
-`interrupted`, with no bag the run becomes `interrupted`, a bag in both places
-stops recovery with an error. The accepted bag of every completed run is
-re-validated too, and a missing one stops recovery instead of rerunning the
-trial. 
-
-Before every attempt, if a live `gz sim` process exists or UDP port 9002 (the BlueROV2
-`ArduPilotPlugin` `fdm_port_in`) is bound, the runner refuses to start, raising
-`StaleSimulationError` and stopping the campaign without recording an attempt.
-If this happens, stop the leftover `gz sim` server and/or ardupilot and resume the campaign. 
-
-## Without the runner
-
-**Configuring SUAVE:**
-SUAVE has a number of parameters that may be of interest when running experiments with its missions, such as the time limit of a time constrained mission or the frequency of thruster failure. These can be found in the [mission_config.yaml](https://github.com/kas-lab/suave/blob/main/suave_missions/config/mission_config.yaml) file. **Note:** When you change the mission_config file, you need to rebuild the suave_ws with `colcon build --symlink-install`
-
-**Note:** Before starting the simulation or the ros nodes, remember that you have to source SUAVE's workspace. If you are using the dockerized version this is already done for you, therefore sourcing the workspace is not necessary.
-
-Navigate to the workspace and source it:
-```Bash
-cd ~/suave_ws/
-source install/setup.bash
+```bash
+suave campaign resume --latest --config src/suave/my_runner.yml
+suave campaign resume /home/ubuntu-user/suave/results/CAMPAIGN \
+  --config src/suave/my_runner.yml
 ```
 
-With SUAVE configured and sourced, start ArduSub, the simulation, and the SUAVE's nodes with the following instructions.
+Reuse the original runner configuration, including experiment order, run counts,
+seed, spawn settings, and perturbations. The runner indexes completion by
+`run_<experiment_index>_<run_index>` in `runs.json`, not by CSV rows.
+Changing the configuration can associate existing checkpoints with different
+experiments. Existing `mission_config_run*.yaml` files are reused. Missing
+files are regenerated from the supplied configuration and seed.
 
-### Start ArduSub
+`suave campaign resume --latest` searches standalone timestamped campaigns,
+not campaigns nested inside a batch. Use batch resume for the latter.
 
-Run:
-```Bash
-sim_vehicle.py -L RATBeach -v ArduSub  --model=JSON --console
+Direct ROS equivalent:
+
+```bash
+ros2 run suave_runner suave_runner --ros-args \
+  --params-file src/suave/my_runner.yml \
+  -p resume_result_path:=/home/ubuntu-user/suave/results/CAMPAIGN
 ```
 
-### Start the simulation
+### Recovery safeguards
 
-Run:
-```Bash
-ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
+Before retrying an unfinished attempt, the runner checks that its recorded
+launch session has no live processes. Recovery does not kill those processes.
+It then resolves the attempt from its recording location:
+
+| Recording state | Recovery action |
+|---|---|
+| Accepted recording only | Validate it and mark the run completed, or quarantine it and mark the run failed |
+| Pending recording only | Move it to `rosbags/failed/` and mark the run interrupted |
+| No recording | Mark the unfinished run interrupted |
+| Both pending and accepted locations | Stop recovery with an error |
+| Completed run with recording enabled | Revalidate its accepted recording. Stop on a missing or invalid recording rather than rerunning the run |
+
+Before each new attempt, the runner also refuses to start if it detects a live
+`gz sim` process or a bound UDP port 9002, used by the vehicle's
+`ArduPilotPlugin`. Stop the leftover simulation or SITL process before resuming.
+These checks prevent a new run from controlling a stale vehicle.
+
+## Configuration reference
+
+### Runner parameters
+
+These are **node defaults**, not the overrides in the shipped
+`runner_config.yml`. Pass overrides through a ROS parameter file or CLI `-p`.
+
+| Parameter | Node default | Description |
+|---|---|---|
+| `result_path` | `~/suave/results` | Parent directory for new timestamped campaign folders |
+| `gui` | `false` | Show the Gazebo window |
+| `experiment_logging` | `false` | Enable simulation and experiment console output through their `silent` launch argument. Process and ROS logs remain captured either way |
+| `run_duration` | `600` | Maximum seconds to wait for mission completion after startup readiness checks |
+| `mission_config_pkg` | `suave_missions` | Package containing the mission configuration |
+| `mission_config_file` | `config/mission_config.yaml` | Mission configuration path relative to the package share directory |
+| `enable_water_current` | `false` | Enable the optional water-current node |
+| `ardupilot_executable` | `sim_vehicle.py -N -L RATBeach -v ArduSub --model=JSON` | SITL command. `-N` disables rebuilding |
+| `ardupilot_ready_timeout` | `30.0` | Timeout in seconds for each SITL port-release and startup wait |
+| `suave_simulation` | `ros2 launch suave simulation.launch.py` | Simulation launch command |
+| `initial_pos_x` / `initial_pos_y` / `initial_pos_z` | `-17.0` / `2.0` / `-18.5` | Spawn position in the Gazebo world |
+| `initial_pos_x_random_interval` | `[0.0, 0.0]` | X spawn-offset range |
+| `initial_pos_y_random_interval` | `[0.0, 0.0]` | Y spawn-offset range |
+| `initial_pos_z_random_interval` | `[0.0, 0.0]` | Z spawn-offset range |
+| `water_visibility_sec_shift` | `0.0` | Fixed visibility-disturbance time shift in seconds |
+| `water_visibility_sec_shift_random_interval` | `[0.0, 0.0]` | Additional random visibility time-shift range |
+| `thruster_events` | `['']` | Thruster-event strings `(id, type, time_s)`. The default specifies no events |
+| `thruster_events_random_interval` | `[0.0, 0.0]` | Random time-shift range applied to the thruster events |
+| `random_interval` | `5` | Number of run indices sharing offsets before resampling |
+| `random_seed` | `100` | Perturbation RNG seed |
+| `simulation_ready_timeout` | `30.0` | Seconds to wait for the first `/model/bluerov2/pose` message |
+| `readiness_timeout` | `10.0` | Seconds to wait for experiment `required_services` |
+| `resume_result_path` | `''` | Existing campaign folder to resume. Empty starts a timestamped folder |
+| `experiments` | `['']` | Placeholder. Supply JSON experiment entries as in the configuration example |
+| `record_bags` | `true` | Record each attempt. An experiment's launch command can override this setting |
+
+The shipped `runner_config.yml` sets Y to `2.5`, its random range to
+`[-0.5, 0.5]`, the visibility-shift range to `[0.0, 120.0]`, and the thruster
+shift range to `[-100.0, 100.0]`. It schedules failures of thrusters 1 and 3 at
+100 seconds, selects `config/runner_mission_config.yaml`, and defines four
+managers with ten runs each. Other campaign configurations can differ.
+
+Offsets remain constant for `random_interval` runs and reuse the same run-index
+configuration across managers. Keep the seed and configuration fixed for
+reproducible comparisons.
+
+### Experiment fields and startup
+
+| Field | Description |
+|---|---|
+| `experiment_launch` | Full `ros2 launch` command for the mission and managing subsystem |
+| `num_runs` | Number of repetitions |
+| `adaptation_manager` | Manager identifier used in result filenames and run metadata |
+| `mission_name` | Mission identifier used in result filenames and run metadata |
+| `required_services` | Optional absolute service names to await. Omission disables this wait |
+
+Provide all four main fields. The runner starts each attempt in this order,
+using readiness checks rather than fixed startup delays:
+
+1. Wait for TCP port 5760 to become free, start SITL, then wait for it to listen
+   on that port. Each wait uses `ardupilot_ready_timeout`.
+2. Start simulation and wait for `/model/bluerov2/pose`, bounded by
+   `simulation_ready_timeout`.
+3. Launch the experiment and wait for `required_services`, bounded by
+   `readiness_timeout`. Then wait for `mission_metrics/done`.
+
+The bundled BT configurations require the three mode-change services shown in
+the example. Extended BT configurations also require
+`/generate_recharge_path/change_mode`. List the services required by an external
+manager in its experiment entry.
+
+### Batch parameters
+
+| Parameter | Default | Description |
+|---|---|---|
+| `batch_dir` | `''` | New batch directory, which must not exist. Empty generates `~/suave/results/batches/batch_YYYYMMDD_HHMMSS` |
+| `resume_state_file` | `''` | Existing batch manifest to resume. Mutually exclusive with `batch_dir` |
+| `fail_fast` | `false` | Stop if a campaign process cannot start or exits nonzero |
+| `dry_run` | `false` | Print campaign commands from `campaigns` without executing them. Does not load a resume manifest |
+| `campaigns` | `['']` | JSON strings with unique `name`, installed `package`, and package-relative `config_file`. Required for new batches and dry runs |
+
+## Output layout and completion status
+
+Standalone campaigns create `<result_path>/YYYY_MM_DD_HH-MM-SS/`.
+Batch campaigns use `<batch_dir>/campaigns/<campaign_name>/` instead.
+Each campaign contains:
+
+```text
+CAMPAIGN/
+  <manager>_<mission>.csv
+  mission_config_run<run_index>.yaml
+  runs.json
+  logs/run_<experiment_index>_<run_index>/<attempt_id>/
+    ardupilot.log
+    simulation/
+    experiment/
+  rosbags/
+    pending/<manager>_<mission>_<run_id>_<attempt_id>/
+    <manager>_<mission>_<run_id>_<attempt_id>/
+    failed/<manager>_<mission>_<run_id>_<attempt_id>/
 ```
 
-**Note:** It is possible to pass arguments to specify the x and y coordinates of where the UUV spawns, by changing the values. In the above launch command the initial coordinates are set to (-17.0, 2.0).
+The runner writes `runs.json` as the completion checkpoint. Each run records its
+configuration, current attempt ID, status, recording state, timestamps, and
+failure details. Earlier attempts remain under `attempts`. The campaign header
+records the seed, simulation launch command, and SITL command.
 
-### Start SUAVE's nodes
+A run is complete only when its status is `completed`. Mission completion does
+not imply pipeline detection. A failed process or `mission/control_failure`
+fails the run. The runner continues after ordinary run failures, but stops if
+it cannot establish safe shutdown or detects a stale simulation.
 
-Run:
-```Bash
-ros2 launch suave_bringup mission.launch.py
-```
+With recording enabled, attempts start under `rosbags/pending/`. After mission
+completion and process shutdown, the runner validates MCAP metadata, storage
+files, and the reader stream. It moves a valid bag to the accepted location
+before writing `status: completed` and `bag: accepted`. Failed or interrupted
+attempts move to `rosbags/failed/` when a recording exists. Without recording,
+`bag` is `null` and completion does not require bag validation.
 
-**Mission results:** The mission results will be saved in the path specified in the [mission_config.yaml](https://github.com/kas-lab/suave/blob/main/suave_missions/config/mission_config.yaml) file.
+A batch also contains `state.json`, `run_batch.log`, and one `<campaign_name>.log`
+with combined campaign stdout and stderr. The manifest stores campaign
+references. Each campaign's `runs.json` stores progress. See {doc}`metrics` for
+CSV contents and {doc}`results` for selecting attempts during analysis.
 
-**Selecting the managing system and mission type:**
-Launching the mission file without launch arguments will start a time-constrained mission without a managing subsystem. To select a different managing subsystem or a different type of mission, the following launch arguments can be used:
+## Run manually
 
-```
-'adaptation_manager':
-    Managing subsystem to be used
-    available values: none/metacontrol/random/bt
-    (default: 'none')
+Start these commands in **three separate terminals** inside the container,
+with the workspace environment available in each.
 
-'result_filename':
-    Filename for the mission measured metrics
-    available values: any name
-    (default: empty; the metrics node uses its default filename)
+1. Start SITL:
 
-'mission_type':
-    Mission label written to metrics
-    (default: 'time_constrained_mission')
+   ```bash
+   sim_vehicle.py -L RATBeach -v ArduSub --model=JSON --console
+   ```
 
-'use_action_server':
-    For the BT manager, start managed behaviors through ROS 2 actions
-    available values: true/false
-    (default: false)
-```
+2. Start simulation:
 
-The arguments can be defined by adding the above arguments with the notation `<name>:=<value>` to the end of the command line.
+   ```bash
+   ros2 launch suave simulation.launch.py x:=-17.0 y:=2.0
+   ```
 
-An example of running a mission with metacontrol saving to a file called 'measurement_1':
+3. Start the mission:
 
-```Bash
-ros2 launch suave_bringup mission.launch.py adaptation_manager:=metacontrol result_filename:=measurement_1
-```
+   ```bash
+   ros2 launch suave_bringup mission.launch.py
+   ```
 
-An example of running the BT manager in action-server mode:
+Wait for SITL and simulation to become ready before starting the mission.
+The default launch runs a time-constrained mission without an adaptation manager.
+To follow the vehicle in Gazebo, right-click its entity and select follow.
 
-```Bash
+| Launch argument | Default | Purpose |
+|---|---|---|
+| `adaptation_manager` | `none` | Select `none`, `metacontrol`, `random`, or `bt` |
+| `mission_config` | Installed `suave_missions/config/mission_config.yaml` | Mission parameters, including the time limit and disturbance settings |
+| `mission_type` | `time_constrained_mission` | Metrics label, not a mission-executable selector |
+| `result_path` | `~/suave/results` | CSV and recording output directory. Overrides the mission YAML's metrics path |
+| `result_filename` | Empty | Metrics filename. Empty uses the metrics node's default |
+| `record_bags` | `true` | Enable MCAP recording |
+| `use_action_server` | `false` | Run BT-managed behaviors through ROS actions |
+| `bt_executable` | `suave_bt` | Select `suave_bt` or `suave_bt_extended` |
+
+For non-BT managers, the launch file starts `time_constrained_mission`.
+Changing `mission_type` only changes the metrics label. BT execution controls
+its own mission sequence. Inspect all launch arguments with
+`ros2 launch suave_bringup mission.launch.py --show-args`.
+
+Examples:
+
+```bash
+ros2 launch suave_bringup mission.launch.py \
+  adaptation_manager:=metacontrol result_filename:=measurement_1 record_bags:=false
 ros2 launch suave_bringup mission.launch.py \
   adaptation_manager:=bt use_action_server:=true
 ```
+
+## Legacy desktop shell runner
+
+The shell runner requires a GUI desktop and `xfce4-terminal`, even when Gazebo's
+GUI is disabled. It uses fixed startup delays and broad process cleanup rather
+than the ROS runner's readiness checks and `runs.json` recovery. Run it in a
+dedicated container without unrelated ROS or Gazebo processes.
+
+```bash
+cd ~/suave_ws/src/suave/runner
+./example_run.sh
+```
+
+The example runs one time-constrained mission with Metacontrol and the GUI.
+For explicit settings:
+
+```bash
+./runner.sh false metacontrol time 2
+```
+
+The four positional arguments are GUI (`true` or `false`), manager (`none`,
+`metacontrol`, `random`, or `bt`), mission label (`time`, `distance`, or
+`extended`), and repetition count. The script maps these labels to launch
+arguments. The distance label does not select a distance-constrained executable
+in the current mission launch file. The `bt extended` combination selects
+`suave_bt_extended`.
