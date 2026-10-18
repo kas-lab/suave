@@ -49,8 +49,8 @@ suave_base = IncludeLaunchDescription(
 
 `suave_base.launch.py` starts the managed system (with `task_bridge` disabled — your manager owns task routing) and the mission metrics node. It does **not** start a mission node, add that separately if your manager relies on it.
 
-### Option B — Built-in manager (contributed upstream to the suave repo)
-
+### Option B — Built-in manager
+ 
 Create a manager-only launch file (see [suave_metacontrol.launch.py](https://github.com/kas-lab/suave/blob/main/suave_managing/suave_metacontrol/launch/suave_metacontrol.launch.py) for an example). The manager launch must not start the managed system, mission node, or metrics — `suave_bringup` owns that composition.
 
 Declare the manager package as an `exec_depend` of `suave_bringup`, then add it to [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_bringup/launch/mission.launch.py) behind an `adaptation_manager` condition:

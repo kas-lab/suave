@@ -52,6 +52,7 @@ jobs:
         run: |
           source ${{ steps.action_ros_ci_step.outputs.ros-workspace-directory-name }}/install/setup.bash
           sphinx-build -W --keep-going docs/source docs/build
+          test -s docs/build/results.html
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
