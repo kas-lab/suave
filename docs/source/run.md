@@ -92,7 +92,7 @@ ros2 launch suave_runner suave_runner_launch.py
 
 To run SUAVE with different managing subsystems, replace the `experiment_launch` with the proper launch file.
 
-### Runner config reference
+### Runner configuration reference
 
 `suave_runner/config/runner/runner_config.yml` controls all experiment parameters. The key fields are:
 
@@ -122,8 +122,7 @@ To run SUAVE with different managing subsystems, replace the `experiment_launch`
 | `random_seed` | `100` | Seed for the perturbation RNG — fix this value for reproducible benchmark campaigns |
 | `resume_result_path` | `""` | Path to an existing result folder to resume a crashed campaign (empty = start a new timestamped folder) |
 | `experiments` | *(see file)* | List of experiment definitions (see below) |
-
-Water current remains disabled unless `enable_water_current` is set to `true` or an experiment launch command explicitly passes `enable_water_current:=true`. Current-model parameters such as `mean_current`, `amplitude`, `period`, `heading`, and `publish_period` are read by the `water_current` node from the mission config file. The heading oscillates around the mean `heading` with `heading_amplitude` and `heading_period`; optional seeded Gauss-Markov heading noise is enabled by setting `heading_noise_std` above zero (see `heading_noise_time_constant` and `heading_noise_seed`). The shipped `water_current_runner_config.yml` provides an example runner configuration with water current enabled. It can be selected with `ros2 launch suave_runner suave_runner_launch.py config_file:=<path-to-water_current_runner_config.yml>`.
+| `record_bags` | `true` | Whether to record ROS bags for the whole campaign. Individual experiments can override it in the `experiment_launch` command, e.g., `ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt record_bags:=true` |
 
 Each entry in `experiments` is a JSON string with four required fields and an optional `required_services` list:
 
@@ -144,46 +143,165 @@ experiments:
 | `num_runs` | Number of times to repeat this experiment |
 | `adaptation_manager` | Label written into result CSV files |
 | `mission_name` | Mission label written into result CSV files |
-| `required_services` | Optional absolute service names the runner waits for before the mission starts (see readiness below); absent means no wait |
+| `required_services` | Optional absolute service names the runner waits for before the mission starts (see readiness below), absent means no wait |
 
 Multiple experiments can be listed and will be run sequentially. See the [Metrics Reference](metrics.md) for details on output files.
+
+**Experiment startup procedure:** The runner has no fixed sleeps: each launch stage waits until it is ready,
+and the timeouts are ceilings. The runner logs how long each stage took
+(`ArduPilot ready after 2.1s`, `Simulation ready after 6.4s`).
+
+1. ArduPilot: the runner first waits for TCP port 5760 to be free,
+   then starts `ardupilot_executable` and waits until SITL listens on port 5760, 
+   its MAVLink port (they might be blocked by leftover processes). The waiting time is configured via the param
+   `ardupilot_ready_timeout` (default `30.0` s).
+3. Simulation: after the simulation launch, the runner waits for the first
+   message on `/model/bluerov2/pose`, which `ros_gz_bridge` only forwards
+   once Gazebo runs with the vehicle spawned. The ceiling is
+   `simulation_ready_timeout` (default `30.0` s).
+4. Manager services: after the experiment launch, the runner waits up to
+   `readiness_timeout` seconds (default `10.0`) for the services listed in
+   the experiment's `required_services`. An experiment without
+   `required_services` does not wait. The shipped configs list
+   `/f_maintain_motion/change_mode`, `/f_generate_search_path/change_mode`,
+   and `/f_follow_pipeline/change_mode` for every `bt` experiment, plus
+   `/generate_recharge_path/change_mode` when it launches
+   `suave_bt_extended`. **If you are adding your custom managing system, it can be useful to customize this parameter to make sure it maps all services required by it**
+
+When a stage that not ready in time, the runner aborts the run and mark it as failed with the code `readiness_timeout`. A
+missing service fails it as `readiness_missing_service`. Either way the runner continues with the next run.
+
+### Runner output and behavior reference
+
+The runner stores its results, logs, rosbags (when `record_bags` = `true`), and meta-data in the folder
+registered in the `result_path` parameter. The result folder output has the following structure:
+
+- `result_path`/`<year_month_day_time>`/
+  - `<adaptation_manager>`_`<mission_name>`.csv : CSV file with the resulting metrics for each managing system
+  - `logs`/`run_<exp_idx>_<run_idx>`/
+    - `<attempt_id>` : Process stdout, stderr, launch events, and ROS logs
+  - `rosbags`/
+    - `pending`/ : rosbags that correspond to runs that were not yet classified as successful or failed
+    - `<adaptation_manager>_<mission>_<run_id>_<attempt_id>/`: bags from runs that were considered successful
+    - `failed`/`<adaptation_manager>_<mission>_<run_id>_<attempt_id>/`: bags from runs that were considered as failed
+  - `runs.json` : meta-data about the runs
+
+Each campaign folder has one `runs.json` file which is written only by
+the runner. Its `campaign` header records `random_seed`, `simulation_launch`, and
+`ardupilot_command` once. It contains a `runs` field which records each run 
+`run_<exp_idx>_<run_idx>` configuration and status, i.e., the `adaptation_manager`, 
+`mission_name`, `experiment_launch`, `status` (`running`, `completed`, `failed`, or `interrupted`), `attempt_id`, `bag` (`null` when recording is disabled, otherwise `pending`, `accepted`, or
+`failed`), `failure_type`, `failure_reason`, `started_at`, and `finished_at`. 
+When a run fails and is later retried, its earlier attempts configuration and status
+are stored under `attempts`. A run is complete if and only if its `status` is `completed`.
+
+Example of a run that had one failure and got rerun once and succeeded:
+
+```json
+"run_1_27": {
+  "adaptation_manager": "rosa_bt",
+  "mission_name": "suave",
+  "experiment_launch": "ros2 launch suave_rosa_bt suave_rosa_bt.launch.py",
+  "status": "completed",
+  "attempt_id": "6b7cca229ca04dd0bb6e2fad8d1eb7eb",
+  "bag": "accepted",
+  "failure_type": "",
+  "failure_reason": "",
+  "started_at": "2026-10-13T09:33:24-03:00",
+  "finished_at": "2026-10-13T09:37:47-03:00",
+  "attempts": [
+    {
+      "attempt_id": "a3c8456a2b7443538cd38942153ec4c0",
+      "status": "failed",
+      "bag": "failed",
+      "failure_type": "pipeline_not_found",
+      "failure_reason": "Mission completed without finding the pipeline; manually rejected after review.",
+      "started_at": "2026-10-12T23:25:18-03:00",
+      "finished_at": "2026-10-12T23:29:41-03:00"
+    }
+  ]
+},
+```
+
+The runner ends a run immediately when a launched process exits with a
+nonzero status or a subsystem publishes `mission/control_failure`. The run is
+recorded as `failed` and the runner continues with the remaining runs.
+
+When bag recording is enabled (`record_bags` = `true`), the runner records each run
+attempt under `rosbags/pending/` first. When a run completes, the runner validates the MCAP
+metadata, storage files, and reader stream, moves the bag to
+`rosbags/<manager>_<mission>_<run_id>_<attempt_id>/`, and only then writes
+`status: completed` with `bag: accepted` to the `runs.json` file. Failed, interrupted, or
+invalid-recording attempts are moved to `rosbags/failed/` (`bag: failed`), so
+resume retries them. 
+
+After each run the runner logs a per-manager summary, and `run_batch` logs one
+after each campaign. For example:
+
+```Bash
+[INFO] [1792333651.235502187] [suave_runner_node]: bt: 2/2 completed; failures={}
+[INFO] [1792333651.235856561] [suave_runner_node]: Experiment 1 summary:
+[INFO] [1792333651.236125541] [suave_runner_node]: bt: 2/2 completed; failures={}
+[INFO] [1792333651.236287649] [suave_runner_node]: All experiment runs completed or aborted.
+```
 
 ### Batch runner
 
 To run several campaigns sequentially in one go, use the generic `run_batch`
 node, configured through a YAML manifest (see
 [config/runner/batch_campaigns.yml](https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner/batch_campaigns.yml)
-for a runnable example covering `exp1`-`exp3` and `extended_exp1`-`extended_exp3`
-with the `bt`, `metacontrol`, `random`, and `none` managing systems bundled
-with this repository; a third-party managing system's own runner config can
-be added the same way, from its own repo):
+for a runnable example). A third-party managing system's own runner config can
+be added the same way, check the third-party [PLANTA batch configuration](https://github.com/kas-lab/suave_planta/blob/main/config/runner/batch_campaigns.yml).
+
+With the `suave_cli`:
+
+```bash
+suave batch start
+suave batch start --config my_batch.yml
+```
+
+**Tip:** Check ({doc}`cli`) or run `suave batch --help` for more info on how to use the suave CLI. Dont forget to source the workspace or `env.sh` before using the cli
+
+With the `run_batch` launchfile:
 
 ```Bash
 ros2 launch suave_runner run_batch_launch.py
 ```
 
-Or directly, pointing at any manifest:
+Or with the run_batch node pointing at any batch manifest:
 
 ```Bash
 ros2 run suave_runner run_batch \
   --ros-args --params-file config/runner/batch_campaigns.yml
 ```
 
+
+The available parameters for a batch manifest (i.e., batch_campaigns.yml) are:
+
+| Parameter | Type | Default | Purpose |
+|-----------|------|---------|---------|
+| `batch_dir` | string | `''` | New batch output directory; must not already exist. Empty generates `~/suave/results/batches/batch_YYYYMMDD_HHMMSS`. |
+| `resume_state_file` | string | `''` | Existing batch `state.json` to resume. Mutually exclusive with `batch_dir`, campaigns are loaded from that file. |
+| `fail_fast` | bool | `false` | Stop after a campaign process fails to start or exits nonzero. |
+| `dry_run` | bool | `false` | Print campaign commands without executing them or creating batch files. Uses `campaigns`, not the resume manifest. |
+| `campaigns` | string array | `['']` | Ordered JSON-encoded objects containing `name`, `package`, and `config_file` (relative to the package share directory). Required for new batches and dry runs; names must be unique. |
+
 **Note:** running every campaign back-to-back can take several hours to a few
 days, depending on the machine and `num_runs` per experiment -- plan to leave
 it running unattended (e.g. in `screen`/`tmux`) rather than waiting on it.
 
-This creates a timestamped batch directory under `~/suave/results/batches/`
+Running a batch creates a timestamped batch directory under `~/suave/results/batches/`
 (e.g. `batch_20260913_104200/`) containing:
 
-- `state.json` -- the batch manifest (`schema_version: 2`): the campaign
+- `state.json` -- the batch manifest: the campaign
   list (`name`, `package`, `config_file`), written once when the batch starts.
-  Progress is not stored there; it is derived from each campaign's `runs.json`
+  Progress is not stored there
 - `run_batch.log` -- the overall orchestration log
 - `<campaign_name>.log` -- combined stdout/stderr for each campaign (e.g.
   `exp1.log`)
 - `campaigns/<campaign_name>/` -- each campaign's own results directory, in
   the same layout `suave_runner` produces for a single campaign
+
 
 **Checking whether a batch needs to be resumed:** a batch finished cleanly if
 `run_batch.log` ends with `All campaigns completed successfully.`. If it
@@ -196,9 +314,18 @@ prints the completed runs per campaign, and `diagnose_batch` prints
 completed/expected counts.
 
 **Resuming an interrupted batch:** pass the batch's `state.json` as the
-`resume_state_file` parameter; campaigns whose runs have all completed are
+`resume_state_file` parameter. Campaigns whose runs have all completed are
 skipped, and an unfinished campaign picks up from its `runs.json` instead of
 starting over:
+
+With the cli:
+
+```Bash
+suave batch resume --latest               # resume the newest batch under the results dir
+suave batch resume ~/suave/results/batches/batch_20260926_101500/state.json  # resume a specific batch
+```
+
+With the `run_batch` node:
 
 ```Bash
 ros2 run suave_runner run_batch --ros-args \
@@ -224,18 +351,6 @@ ros2 run suave_runner diagnose_batch ~/suave/results/<campaign_folder>
 ros2 run suave_runner diagnose_batch <path> --json
 ```
 
-**Accepted result paths.** `diagnose_batch`, `qq_plot_batch.py`,
-`wilcoxon_analysis_batch.py`, `wilcoxon_latex_tables_batch.py`, and
-`suave_requirements`' `plot_requirement_fulfillment.py` resolve their input
-the same way (`suave_tools.layout.batch_layout`): a batch folder, its
-`campaigns/` folder, its `state.json`, or one campaign folder (any folder
-holding `runs.json`). A campaign inside `<batch>/campaigns/` uses the batch's
-output folders; a campaign outside a batch uses its parent folder. New outputs
-go under `<root>/campaign_results/`. Existing `campaings_results/` folders
-are not renamed; for a `runs.json` batch whose analysis was written there,
-pass `--results-root` to the LaTeX script. Batches without `runs.json`
-(created before schema 2) are not supported.
-
 With the `suave` CLI: `suave batch diagnose --latest` or
 `suave batch diagnose <path> [--json]`.
 
@@ -244,157 +359,39 @@ per adaptation manager (for example
 `bt: 18/20 completed; failures={'mission_done_timeout': 2}`), and, for each
 run that did not complete, its status, failure type, reason, log folder, and
 the first log lines that point at a cause (`suspected <type>: <log>:<line>`).
-It reads each campaign's `runs.json` and, for a batch, the manifest; the
-expected run count comes from the runner config the manifest names (`unknown`
-if that package is not found). An unreadable `runs.json`, or a completed run
-whose bag is not accepted, is reported as a warning. Results written before
-`runs.json` (`schema_version: 2`) are not supported. Mission CSV row
-counts are listed for reference but are not treated as proof of completion.
-The exit code is `0` whenever the diagnosis itself succeeded, even if runs
-failed, and `2` for an invalid path.
+It reads each campaign's `runs.json` and, for a batch, the manifest.
 
 | Failure type | Meaning |
 |---|---|
 | `mission_done_timeout` | No `mission_metrics/done` within `run_duration` |
 | `process_died_before_completion` | A launched process exited with a nonzero status |
-| `mission_control_failure` | A subsystem published `mission/control_failure`. This includes the `lifecycle_watchdog` node (launched by `suave.launch.py`), which reports a lifecycle node that did not become active within `activation_timeout` (10 s) of `mode_manager`'s activate request. The watchdog only reports; it never retries activation. Resume retries the run |
+| `mission_control_failure` | A subsystem published `mission/control_failure`. This includes the `lifecycle_watchdog` node (launched by `suave.launch.py`), which reports a lifecycle node that did not become active within `activation_timeout` (10 s) of `mode_manager`'s activate request. |
 | `readiness_timeout` | ArduPilot or the simulation was not ready within `ardupilot_ready_timeout` / `simulation_ready_timeout` |
 | `readiness_missing_service` | Services in the experiment's `required_services` were missing after `readiness_timeout` |
 | `startup_failure` | Launching the run's processes raised an error |
 | `interrupted` | The run was stopped by Ctrl+C or termination |
 | `unknown` | No recognizable cause was recorded |
 
-Suspected causes found in the attempt's `{experiment,simulation}/launch.log` are
-`mission_metrics_invalid_handle`, `missing_change_mode_service`, and
-`lost_lifecycle_activation` (the watchdog's report); lines after
-the run's teardown (`sending signal 'SIGINT'`) are ignored.
-
 **Systemic warnings:** a line `SYSTEMIC: <manager>: repeated <failure_type>`
 means that manager failed with the same type at least 3 times, or at least
-twice and in more than half of its attempted runs. That usually points at the
-configuration or environment rather than at chance, so inspect one failed run's
-logs before rerunning. The runner, `run_batch`, and `diagnose_batch` print it
-in red on a terminal and as plain text in log files.
+twice and in more than half of its attempted runs. That usually indicates there is
+a bug in either SUAVE (the managed system) or in the managing system, an incorrect experiment configuration, 
+or something wrong in the environment (e.g., in the docker container or your host machine) where the experiments are being executed (e.g., a missing package, wrong dependency version etc) rather than a random failure. So, if you keep getting systemic warnings, we suggest you inspect one failed run's logs and try to fix the issue before rerunning.
 
 ### Resuming a crashed campaign
 
 If the runner is interrupted mid-campaign (crash, Ctrl+C, power loss), it can
-resume from where it left off without re-running completed runs.
+resume from where it left off without re-running completed runs. To resume, pass 
+the path of the interrupted result folder via `resume_result_path`:
 
-Each campaign folder has one `runs.json` (`schema_version: 2`), written only by
-the runner and replaced atomically (temporary file, fsync, rename). Its
-`campaign` header records `random_seed`, `simulation_launch`, and
-`ardupilot_command` once. `runs` maps each `run_<exp_idx>_<run_idx>` to its
-current attempt: `adaptation_manager`, `mission_name`, `experiment_launch`,
-`status` (`running`, `completed`, `failed`, or `interrupted`), `attempt_id`,
-`bag` (`null` when recording is disabled, otherwise `pending`, `accepted`, or
-`failed`), `failure_type`, `failure_reason`, `started_at`, and `finished_at`.
-A retried run keeps its earlier attempts under `attempts`. A run is complete
-if and only if its `status` is `completed`: on resume the runner skips those
-runs and retries every other one, including runs that timed out (no
-`mission_metrics/done` within `run_duration`). Paths are derived, not stored:
-logs are under `logs/<run_id>/<attempt_id>/`, the mission config is
-`mission_config_run<run_idx>.yaml`, and the bag is
-`<manager>_<mission>_<run_id>_<attempt_id>` under `rosbags/pending/`,
-`rosbags/`, or `rosbags/failed/` according to `bag`.
+With the cli:
 
-The runner passes each attempt's identity to the experiment launch as the
-environment variables `SUAVE_RUN_IDX` and `SUAVE_ATTEMPT_ID`. `mission_metrics`
-writes them as the last two columns, `run_idx` and `attempt_id`, of
-`<manager>_<mission>.csv` and of its three reaction-time CSVs
-(`*_component_recovery_time.csv`, `*_wv_reaction_time.csv`,
-`*_battery_reaction_time.csv`); both are empty outside the runner. Rows of
-failed attempts (for example a `mission_control_failure`) stay in the CSVs. The paired
-analysis scripts keep only each run's accepted attempt, the `attempt_id` of a
-`completed` run in `runs.json`, so there is no sorting step: no `sorted/`
-folder, no `*_sorted.csv`, no `rejected_runs.jsonl`, and no `*_rejected.csv`.
+```Bash
+suave batch resume --latest               # resume the newest batch under the results dir
+suave batch resume ~/suave/results/batches/batch_20260926_101500/state.json  # resume a specific batch
+```
 
-The runner also ends a run immediately when a launched process exits with a
-nonzero status or a subsystem publishes `mission/control_failure`; the run is
-recorded as `failed` and the runner continues with the remaining runs.
-Process stdout, stderr, launch events, and ROS logs are retained below
-`logs/run_<exp_idx>_<run_idx>/<attempt_id>/`; setting `experiment_logging` to
-`false` only suppresses console output.
-
-When bag recording is enabled, the runner records each attempt under
-`rosbags/pending/` first. When a run completes, the runner validates the MCAP
-metadata, storage files, and reader stream, moves the bag to
-`rosbags/<manager>_<mission>_<run_id>_<attempt_id>/`, and only then writes
-`status: completed` with `bag: accepted`. Failed, interrupted, or
-invalid-recording attempts are moved to `rosbags/failed/` (`bag: failed`), so
-resume retries them. With `record_bags` set to false, `bag` is `null` and no
-bag is required.
-
-A campaign folder is locked (`.runner.lock`) while a runner uses it, so a second
-runner on the same folder fails immediately. Before starting new runs, a
-resumed runner settles every run left `running` (or `interrupted` with a
-`pending` bag): it confirms the attempt's launch session has no live processes
-(recovery only checks and never kills processes), then decides from where the
-bag is on disk. A bag only under `rosbags/` is validated and the run becomes
-`completed`, or `failed` with the bag quarantined if it is invalid; a bag only
-under `rosbags/pending/` is moved to `rosbags/failed/` and the run becomes
-`interrupted`; with no bag the run becomes `interrupted`; a bag in both places
-stops recovery with an error. The accepted bag of every completed run is
-re-validated too, and a missing one stops recovery instead of rerunning the
-trial. After every attempt, the runner stops the launch processes, sends
-SIGTERM to any process still left in the attempt's launch sessions (for example
-a Gazebo server orphaned by its `gz sim` wrapper), and sends SIGKILL to
-survivors after 15 seconds. If a launch process has not exited after 30 seconds,
-or a session process survives SIGKILL, the runner records the attempt as
-`interrupted` with `failure_type: shutdown_unconfirmed`, leaves the bag in
-`rosbags/pending/` (`bag: pending`), and stops the campaign rather than starting
-another attempt. Bag acceptance does not change how CSV metric rows are written.
-
-Before every attempt the runner also refuses to start, raising
-`StaleSimulationError` and stopping the campaign without recording an attempt,
-while a live `gz sim` process exists or UDP port 9002 (the BlueROV2
-`ArduPilotPlugin` `fdm_port_in`) is bound. Session cleanup only sees processes
-the runner launched; a Gazebo server left from another session keeps that port,
-so the new SITL would drive its vehicle from wherever it last stopped. Stop the
-leftover server and resume the campaign. Zombie (`<defunct>`) processes are
-ignored: they hold no ports and cannot be killed, only reaped by PID 1. A
-container started without `--init` keeps them until it restarts.
-
-To plot requirement fulfillment from accepted bags only, see
-`suave_requirements/README.md`.
-
-After each run the runner logs a per-manager summary, and `run_batch` logs one
-after each campaign; both include the systemic warnings described under
-[Diagnosing batch failures](#diagnosing-batch-failures).
-
-The runner has no fixed sleeps: each launch stage waits until it is ready,
-and the timeouts are ceilings. The runner logs how long each stage took
-(`ArduPilot ready after 2.1s`, `Simulation ready after 6.4s`).
-
-1. ArduPilot: the runner first waits for TCP port 5760 to be free (a SITL
-   left over from the previous attempt), then starts `ardupilot_executable`
-   and waits until SITL listens on port 5760, its MAVLink port. The check
-   reads `/proc/net/tcp` and never connects, because SITL serves one client
-   on that port and MAVProxy needs it. Both waits use
-   `ardupilot_ready_timeout` (default `30.0` s). The default command passes
-   `-N` (`--no-rebuild`) to `sim_vehicle.py`, so ArduSub must already be built
-   (the SUAVE images are).
-2. Simulation: after the simulation launch, the runner waits for the first
-   message on `/model/bluerov2/pose`, which `ros_gz_bridge` only forwards
-   once Gazebo runs with the vehicle spawned. The ceiling is
-   `simulation_ready_timeout` (default `30.0` s).
-3. Manager services: after the experiment launch, the runner waits up to
-   `readiness_timeout` seconds (default `10.0`) for the services listed in
-   the experiment's `required_services` (absolute service names; a
-   `/change_mode` service must also have type
-   `system_modes_msgs/srv/ChangeMode`). An experiment without
-   `required_services` does not wait. The shipped configs list
-   `/f_maintain_motion/change_mode`, `/f_generate_search_path/change_mode`,
-   and `/f_follow_pipeline/change_mode` for every `bt` experiment, plus
-   `/generate_recharge_path/change_mode` when it launches
-   `suave_bt_extended`.
-
-A stage that is not ready in time fails the run as `readiness_timeout`; a
-missing service fails it as `readiness_missing_service`. Either way the
-runner continues with the next run.
-
-To resume, pass the path of the interrupted result folder via
-`resume_result_path`:
+With the `suave_runner` node:
 
 ```Bash
 ros2 run suave_runner suave_runner \
@@ -410,8 +407,27 @@ ros2 run suave_runner suave_runner \
 
 The `experiments` parameter must match the original campaign exactly so that
 run indices line up with the marker files. Per-run mission config files
-(`mission_config_run*.yaml`) are reused from the existing folder if present;
-otherwise they are regenerated using the same random seed.
+(`mission_config_run*.yaml`) are reused from the existing folder if present,
+otherwise they are regenerated using the same random seed. 
+
+**How it resuming works under the hood:**
+
+Before starting new runs, a
+resumed runner settles every run left `running` (or `interrupted` with a
+`pending` bag): it confirms the attempt's launch session has no live processes
+(recovery only checks and never kills processes), then decides from where the
+bag is on disk. A bag only under `rosbags/` is validated and the run becomes
+`completed`, or `failed` with the bag quarantined if it is invalid. A bag 
+under `rosbags/pending/` is moved to `rosbags/failed/` and the run becomes
+`interrupted`, with no bag the run becomes `interrupted`, a bag in both places
+stops recovery with an error. The accepted bag of every completed run is
+re-validated too, and a missing one stops recovery instead of rerunning the
+trial. 
+
+Before every attempt, if a live `gz sim` process exists or UDP port 9002 (the BlueROV2
+`ArduPilotPlugin` `fdm_port_in`) is bound, the runner refuses to start, raising
+`StaleSimulationError` and stopping the campaign without recording an attempt.
+If this happens, stop the leftover `gz sim` server and/or ardupilot and resume the campaign. 
 
 ### Wilcoxon analysis (paired)
 
@@ -422,9 +438,16 @@ performing the `wilcoxon-analysis`, check the skill for the full workflow. Summa
 
 **Input: raw campaign CSVs.** Point `data_files` at the raw
 `<manager>_<mission>.csv` files of one campaign folder (the folder holding
-`runs.json`). Every row carries `run_idx` and `attempt_id`; only the rows of
-each run's accepted attempt, read from `runs.json`, are analyzed, so retried
-or failed attempts never enter a comparison:
+`runs.json`). Every row carries `run_idx` and `attempt_id`. Only the sucessful runs are analyzed, 
+read from `runs.json`, retried or failed attempts never enter a comparison:
+
+With the CLI:
+
+```Bash
+suave analyze wilcoxon -- --ros-args --params-file my_analysis.yml
+```
+
+With the `wilcoxon_analysis` node:
 
 ```bash
 ros2 run suave_runner wilcoxon_analysis \
@@ -577,6 +600,20 @@ Each aggregate result file must contain at least these columns:
 The `pipeline found` column accepts `true`/`false`, `1`/`0`, or `yes`/`no`
 (case-insensitive). Metric columns must contain numeric, non-missing values,
 and each file must contain at least one result row.
+
+With the suave CLI:
+
+```bash
+suave analyze summarize -- /home/ubuntu-user/suave/results/batches/BATCH/campaigns/exp3 --latex-output /tmp/suave_results.tex
+```
+
+Useful options:
+
+```bash
+  --latex              write suave_results.tex in the campaign folder
+  --latex-output PATH  write the LaTeX table to PATH; also enables LaTeX output
+  --precision N        decimal places for terminal and LaTeX values (default: 2)
+```
 
 Run the command from a sourced SUAVE workspace, passing the campaign folder as
 the positional argument:
