@@ -188,8 +188,6 @@ export GZ_VERSION=harmonic
 sudo bash -c 'wget https://raw.githubusercontent.com/osrf/osrf-rosdep/master/gz/00-gazebo.list -O /etc/ros/rosdep/sources.list.d/00-gazebo.list'
 rosdep update
 rosdep resolve gz-harmonic
-# Navigate to your ROS workspace before the next command.
-rosdep install --from-paths src --ignore-src -y
 ```
 
 Clone and build the repository:
@@ -447,7 +445,7 @@ There are two ways to connect a new managing subsystem:
 
 **External package (recommended for standalone managing systems):** Add `exec_depend` on `suave_base` in your `package.xml` and include [`suave_base.launch.py`](https://github.com/kas-lab/suave/blob/main/suave_base/launch/suave_base.launch.py) from your launch file. This starts the managed system and metrics without requiring any changes to the suave repository.
 
-**Built-in manager (contributed upstream):** Create a manager-only launch file, declare the package as a `suave_bringup` dependency, and include it behind an `adaptation_manager` condition in [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_bringup/launch/mission.launch.py). The manager launch must not start the managed system, mission node, or metrics.
+**Built-in manager :** Create a manager-only launch file, declare the package as a `suave_bringup` dependency, and include it behind an `adaptation_manager` condition in [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_bringup/launch/mission.launch.py). Add the manager identifier to the `choices` of the `adaptation_manager` launch argument so ROS launch accepts it. The manager launch must not start the managed system, mission node, or metrics.
 
 See the [Extending SUAVE](docs/source/extend.md) page for full details and examples.
 
@@ -457,11 +455,9 @@ To extend SUAVE with new functionalities, it is only required to add new LifeCyc
 
 ## Troubleshooting
 
-List of known problems and their solutions. If you find new problems and find a solution for it, please consider contributing to this section.
+## MAVROS and ArduSub integration
 
-#### MAVROS and ArduSub integration problems:
-
-A common problem that occurs over time is that some packages are upgraded in Ubuntu 22.04 and the connection between MAVROS and ArduSub stops working. I don't know how to fix this issue long term, but a workaround is to update MAVROS and/or ArduSub and check if it works again.
+A common problem that occurs over time is that some packages are upgraded in Ubuntu and the connection between MAVROS and ArduSub stops working. I don't know how to fix this issue long term, but a workaround is to update MAVROS and/or ArduSub and check if it works again.
 
 Before updating MAVROS and ArduSub upgrade your Ubuntu:
 
@@ -469,7 +465,12 @@ Before updating MAVROS and ArduSub upgrade your Ubuntu:
 sudo apt update && sudo apt upgrade
 ```
 
-**Update ArduSub:**
+Inspect SITL and MAVROS logs before changing dependencies. Use the tested
+ArduSub commit `571e8c7bd3793fce1bc5184a2f6586feb8a616e5` and MAVROS `2.14.0`
+as the starting point. ArduSub, MAVROS, and the Gazebo plugin must remain
+compatible. Do not delete an existing checkout to change versions.
+
+#### ArduSub
 
 Due to ArduSub usage of submodules, it is simpler to remove the whole ArduPilot repository and build it from scratch again.
 
@@ -479,27 +480,37 @@ rm -rf ~/ardupilot
 
 To find the latest version of ArduSub go to the [ardupilot repo](https://github.com/ArduPilot/ardupilot) and look for the newest branch of ArduSub. This repository is tested with [ArduSub commit `571e8c7`](https://github.com/ArduPilot/ardupilot/tree/571e8c7bd3793fce1bc5184a2f6586feb8a616e5). Follow the [install ArduSub](#install-ardusub) instructions with the selected commit or branch.
 
-**Update MAVROS:**
-To update MAVROS, change its version in [suave.repos](https://github.com/kas-lab/suave/blob/main/suave.repos) to the desired [MAVROS](https://github.com/mavlink/mavros) version or branch, then pull the workspace repositories:
+#### MAVROS
 
-```Bash
-cd ~/suave_ws/
-vcs pull src
-```
+Inspect and preserve local changes, then check out the tested version:
 
-Alternatively, update MAVROS manually:
-
-```Bash
+```bash
 cd ~/suave_ws/src/mavros
-git checkout ros2
-git pull
+git status --short
 ```
 
-Don't forget to rebuild the suave workspace:
-```Bash
-cd ~/suave_ws/
+After saving local changes:
+
+```bash
+git fetch origin --tags
+git checkout 2.14.0
+```
+
+For another version, update the MAVROS entry in `suave.repos` and explicitly
+check out that same tag, commit, or branch in the existing repository.
+Editing the manifest does not change an existing checkout. `vcs pull src`
+pulls the currently checked-out branches and does not apply manifest versions.
+
+Rebuild the workspace after changing MAVROS:
+
+```bash
+cd ~/suave_ws
+source /opt/ros/humble/setup.bash
 colcon build --symlink-install
 ```
+
+For campaign failures, use the [runner diagnostics](docs/source/run.md#monitor-and-diagnose)
+and inspect the reported attempt logs before retrying.
 
 ## Related repository
 

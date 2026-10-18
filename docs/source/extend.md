@@ -53,7 +53,11 @@ suave_base = IncludeLaunchDescription(
  
 Create a manager-only launch file (see [suave_metacontrol.launch.py](https://github.com/kas-lab/suave/blob/main/suave_managing/suave_metacontrol/launch/suave_metacontrol.launch.py) for an example). The manager launch must not start the managed system, mission node, or metrics — `suave_bringup` owns that composition.
 
-Declare the manager package as an `exec_depend` of `suave_bringup`, then add it to [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_bringup/launch/mission.launch.py) behind an `adaptation_manager` condition:
+Declare the manager package as an `exec_depend` of `suave_bringup`. In
+[mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_bringup/launch/mission.launch.py),
+add the manager identifier to the `choices` of the `adaptation_manager` launch
+argument, then include its launch file behind an `adaptation_manager` condition.
+Without the new choice, ROS launch rejects the manager identifier:
 
 ```python
 IncludeLaunchDescription(

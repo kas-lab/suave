@@ -10,7 +10,13 @@ Each run produces a main summary file plus up to three optional per-event files,
 
 ## Main summary file — `<result_filename>.csv`
 
-One row is appended per completed run.
+The metrics node appends a row when it saves mission results. A row does not
+establish successful completion of a runner attempt. It can remain after
+recording validation fails or an attempt is superseded by a retry.
+For runner campaigns, use `runs.json` to select runs with `status: completed`
+and match each CSV row's `run_idx` and `attempt_id` to the current completed
+attempt. See [Inputs and filtering](results.md#inputs-and-filtering) for
+tool-specific selection rules.
 
 | Column | Type | Description |
 |---|---|---|
