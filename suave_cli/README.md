@@ -1,9 +1,14 @@
 # suave CLI
 
-A command line interface (CLI) for everyday SUAVE work: build docker images, manages containers, runs colcon build/test, runs experiment batches, and analyzes suave results. The suave cli is available after building and sorcing a ros workspace that contains SUAVE, or by sourcing the `env.sh` script located inside the suave_cli package. Sourcing `env.sh` directly is useful if you don't want to build SUAVE locally and only use it via docker, this approach doesn't require ROS to be installed in your machine.
+The SUAVE command-line interface builds Docker images, manages containers, builds and tests packages, runs campaigns, and analyzes results. Source the checkout-root `env.sh` to use it without a local ROS installation, or build the optional `suave_cli` package and source the workspace.
+
+See the [CLI guide](../docs/source/cli.md) for execution targets, path handling, configuration, and command examples.
 
 - Plain Python (>= 3.10, stdlib only). It runs from the checkout and needs no build or `pip`.
 - It never imports ROS, so it also works on a host that has only Docker.
+- A container is optional. Use `--exec host --workspace ~/suave_ws` to run ROS
+  commands directly on a host with ROS 2 Humble, a SUAVE workspace, and the
+  required dependencies. Campaign execution also requires simulation and SITL.
 - `suave --help` and `suave COMMAND --help` are the full option reference. This file covers
   the concepts, workflows and pitfalls.
 
@@ -169,8 +174,8 @@ Things to keep in mind:
   config.
 - Pass `campaign resume` the **same** `--config` the campaign started with. Without it the
   CLI warns and falls back to the installed `runner_config.yml`.
-- `--dry-run-batch` sets the `run_batch` node's `dry_run` parameter, which checks the
-  campaigns without running them. It is not the global `--dry-run`, which only prints
+- `--dry-run-batch` sets the `run_batch` node's `dry_run` parameter, which prints
+  campaign commands without executing them or checking installed configuration files. It is not the global `--dry-run`, which only prints
   commands.
 - `--latest` picks the newest batch or campaign in the results folder, looking inside
   wherever the command runs.
@@ -236,9 +241,12 @@ command runs, from the workspace root:
   not your current directory.
 - A config file must be in a folder the container can see: the mounted checkout, the
   results folder, or an [extra mount](#extra-mounts).
-- `--latest` always works, because the lookup runs where the command runs.
+- `--latest` searches the target's configured results directory for supported
+  timestamped names. It fails if no matching result exists.
 
-If a path does not exist, the command prints `not found: <path>` and exits with code 2.
+Commands with explicit path guards, such as custom runner configuration and
+resume commands, print `not found: <path>` and exit with code 2 for missing paths.
+Forwarded arguments use the wrapped tool's validation.
 
 ```bash
 # container mode: use container paths, or --latest
@@ -316,14 +324,16 @@ suave build my_package
 - **`--dry-run`** prints the commands instead of running them, but still asks Docker which
   containers and images exist. `--exec container --dry-run` therefore still fails when the
   container is not running.
-- **Without a terminal** (CI, scripts, agents) the CLI never prompts and never writes a
-  config. It prints a one-line tip if no config exists.
+- **Without a terminal** (CI, scripts, agents) the CLI does not offer setup or
+  automatically write an initial config. Explicit `config set` commands still
+  write configuration. It prints a one-line tip if no config exists.
 - **`--yes`** approves an image pull. Without it, a run with no terminal that needs a pull
   fails with a message.
 - **Exit codes:**
   - The wrapped command's exit code is passed through.
   - `suave test` fails if any selected package failed.
-  - A missing path gives exit code 2.
+  - An explicit missing-path guard returns exit code 2. Forwarded arguments use
+    the wrapped tool's exit behavior.
   - CLI errors print `error: ...` and exit non-zero.
 - Set `SUAVE_CONTAINER_NAME` or pass `--container` when the container is not called `suave`.
 
