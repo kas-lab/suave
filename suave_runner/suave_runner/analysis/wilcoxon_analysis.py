@@ -14,11 +14,12 @@
 
 """Compare SUAVE experiment metrics using the paired Wilcoxon signed-rank test."""
 
-# Every input CSV must already carry a `run_idx` column identifying which run
-# of that managing system each row is, produced by `sort_results.py` (see the
-# sort-suave-results skill). Pairing by row order or position is not
-# supported: a CSV without `run_idx`, with duplicate `run_idx` values, or with
-# no matching counterpart in the other system raises rather than guessing.
+# Every input CSV is a raw campaign CSV whose rows carry the `run_idx` and
+# `attempt_id` written by mission_metrics. Only each run's accepted attempt,
+# read from the campaign's runs.json, is kept; rows of failed attempts are
+# dropped. Pairing by row order or position is not supported: a CSV without
+# those columns, outside a runs.json campaign, or with no matching
+# counterpart in the other system raises rather than guessing.
 
 import json
 from pathlib import Path
@@ -30,6 +31,11 @@ from rclpy.node import Node
 from scipy.stats import rankdata
 from scipy.stats import wilcoxon
 
+if __package__:
+    from . import common
+else:
+    import common
+
 # (CSV column, result key, alternative, exclude pairs with pipeline-not-found)
 METRICS = [
     ('time searching pipeline (s)', 'search_time', 'less', True),
@@ -38,23 +44,11 @@ METRICS = [
 
 
 def load_system(managing_system, csv_path):
-    """Load one managing system's sorted, run_idx-tagged result CSV."""
-    df = pd.read_csv(csv_path)
-    if 'run_idx' not in df.columns:
-        raise ValueError(
-            f"{csv_path} ({managing_system}) has no 'run_idx' column. Sort "
-            'it first with sort_results.py (see the sort-suave-results '
-            'skill) -- pairing by row position is not supported.')
-    if df['run_idx'].duplicated().any():
-        duplicates = sorted(df.loc[df['run_idx'].duplicated(), 'run_idx'])
-        raise ValueError(
-            f'{csv_path} ({managing_system}): duplicate run_idx values '
-            f'{duplicates}; refusing to pair on an ambiguous key.')
+    """Load one managing system's accepted rows from a raw campaign CSV."""
+    df = common.accepted_rows(csv_path, managing_system)
     if 'pipeline found' in df.columns:
-        df = df.copy()
-        df['pipeline found'] = (
-            df['pipeline found'].astype(str).str.strip().str.lower()
-            == 'true')
+        df['pipeline found'] = common.parse_pipeline_found(
+            df['pipeline found'], csv_path)
     return df
 
 
@@ -136,11 +130,82 @@ def paired_test(row_system, col_system, row_df, col_df, column, key,
     return result
 
 
+def apply_correction(results, correction):
+    """Set ``correction`` and ``p_adjusted`` on every result in place."""
+    for result in results:
+        result['correction'] = correction
+        result['p_adjusted'] = (
+            result['p_raw'] if correction != 'holm' else float('nan'))
+    if correction != 'holm':
+        return
+    valid = [r for r in results if not np.isnan(r['p_raw'])]
+    for result, adjusted in zip(
+            valid, holm_correction([r['p_raw'] for r in valid])):
+        result['p_adjusted'] = adjusted
+
+
+def format_result(result):
+    """Return a one-line, human-readable summary of one comparison."""
+    if np.isnan(result['p_raw']):
+        return (f"{result['row']} vs {result['col']} {result['metric']}: "
+                f"{result['note']}")
+    verdict = 'SIGNIFICANT' if result['p_raw'] < 0.05 else 'not significant'
+    return (f"{result['row']} vs {result['col']} {result['metric']} "
+            f"({result['alternative']}): p={result['p_raw']:.5f} "
+            f'({verdict}), n_used={result["n_used"]}')
+
+
+def analyze(systems, correction, log=print):
+    """Run every ordered-pair, per-metric comparison of ``systems``."""
+    results = []
+    for row_system, row_df in systems:
+        for col_system, col_df in systems:
+            if row_system == col_system:
+                continue
+            for column, key, alternative, censor in METRICS:
+                result = paired_test(
+                    row_system, col_system, row_df, col_df, column, key,
+                    alternative, censor)
+                results.append(result)
+                log(format_result(result))
+    apply_correction(results, correction)
+    return results
+
+
+def save_results(results, systems, result_path, filename):
+    """Write the tidy per-comparison CSV and compatibility matrices."""
+    result_path.mkdir(parents=True, exist_ok=True)
+
+    tidy = pd.DataFrame(results)
+    column_order = [
+        'row', 'col', 'metric', 'alternative', 'declared_pairs',
+        'n_used', 'n_pos', 'n_neg', 'n_zero', 'median_diff', 'statistic',
+        'p_raw', 'p_adjusted', 'correction', 'effect_size',
+        'missing_row', 'missing_col', 'excluded_extra', 'note',
+    ]
+    tidy = tidy[[c for c in column_order if c in tidy.columns]]
+    results_path = result_path / f'{filename}_results.csv'
+    tidy.to_csv(results_path, index=False)
+
+    names = [name for name, _ in systems]
+    matrix_metrics = {
+        'search_time': 'time_search_pipeline',
+        'distance_inspected': 'distance_inspected',
+    }
+    for metric_key, file_suffix in matrix_metrics.items():
+        matrix = pd.DataFrame(index=names, columns=names)
+        for result in results:
+            if result['metric'] == metric_key:
+                matrix.loc[result['row'], result['col']] = result['p_raw']
+        matrix.to_csv(result_path / f'{filename}_{file_suffix}.csv')
+    return results_path
+
+
 class WilcoxonAnalysis(Node):
-    """Calculate pairwise, run-matched Wilcoxon signed-rank tests."""
+    """ROS front end for the pairwise, run-matched Wilcoxon analysis."""
 
     def __init__(self, **kwargs):
-        """Load configured, run_idx-tagged datasets."""
+        """Load the configured campaign CSVs' accepted rows."""
         super().__init__('wilcoxon_analysis', **kwargs)
 
         self.declare_parameter('result_path', '~/suave/results')
@@ -148,17 +213,11 @@ class WilcoxonAnalysis(Node):
         self.declare_parameter('data_files', [''])
         self.declare_parameter('correction', 'none')
 
-        self.result_path = Path(self.get_parameter(
-            'result_path').get_parameter_value().string_value).expanduser()
-        self.filename = self.get_parameter(
-            'filename').get_parameter_value().string_value
-        self.correction = self.get_parameter(
-            'correction').get_parameter_value().string_value
-
-        data_files_param = self.get_parameter(
-            'data_files').get_parameter_value().string_array_value
-        data_files = [json.loads(entry) for entry in data_files_param]
-
+        self.result_path = Path(
+            self.get_parameter('result_path').value).expanduser()
+        self.filename = self.get_parameter('filename').value
+        self.correction = self.get_parameter('correction').value
+        data_files = map(json.loads, self.get_parameter('data_files').value)
         self.systems = [
             (entry['managing_system'],
              load_system(entry['managing_system'], entry['data_file']))
@@ -167,96 +226,22 @@ class WilcoxonAnalysis(Node):
 
     def perform_analysis(self):
         """Run all pairwise, per-metric comparisons and save the results."""
-        results = []
-        for row_system, row_df in self.systems:
-            for col_system, col_df in self.systems:
-                if row_system == col_system:
-                    continue
-                for column, key, alternative, censor in METRICS:
-                    result = paired_test(
-                        row_system, col_system, row_df, col_df, column, key,
-                        alternative, censor)
-                    results.append(result)
-                    self._log_result(result)
-
-        self._apply_correction(results)
-        self._save_results(results)
-
-    def _apply_correction(self, results):
-        for result in results:
-            result['correction'] = self.correction
-
-        if self.correction != 'holm':
-            for result in results:
-                result['p_adjusted'] = result['p_raw']
-            return
-
-        valid_indices = [
-            i for i, r in enumerate(results) if not np.isnan(r['p_raw'])]
-        adjusted = holm_correction([results[i]['p_raw'] for i in valid_indices])
-        for position, index in enumerate(valid_indices):
-            results[index]['p_adjusted'] = adjusted[position]
-        for result in results:
-            result.setdefault('p_adjusted', float('nan'))
-
-    def _log_result(self, result):
-        if np.isnan(result['p_raw']):
-            self.get_logger().info(
-                f"{result['row']} vs {result['col']} {result['metric']}: "
-                f"{result['note']}")
-            return
-        verdict = 'SIGNIFICANT' if result['p_raw'] < 0.05 else 'not significant'
-        self.get_logger().info(
-            f"{result['row']} vs {result['col']} {result['metric']} "
-            f"({result['alternative']}): p={result['p_raw']:.5f} "
-            f'({verdict}), n_used={result["n_used"]}')
-
-    def _save_results(self, results):
-        """Write the tidy per-comparison CSV and compatibility matrices."""
-        if not self.result_path.is_dir():
-            self.result_path.mkdir(parents=True)
-
-        tidy = pd.DataFrame(results)
-        column_order = [
-            'row', 'col', 'metric', 'alternative', 'declared_pairs',
-            'n_used', 'n_pos', 'n_neg', 'n_zero', 'median_diff', 'statistic',
-            'p_raw', 'p_adjusted', 'correction', 'effect_size',
-            'missing_row', 'missing_col', 'excluded_extra', 'note',
-        ]
-        tidy = tidy[[c for c in column_order if c in tidy.columns]]
-        tidy.to_csv(
-            self.result_path / f'{self.filename}_results.csv', index=False)
-
-        systems = [name for name, _ in self.systems]
-        matrix_metrics = {
-            'search_time': 'time_search_pipeline',
-            'distance_inspected': 'distance_inspected',
-        }
-        for metric_key, file_suffix in matrix_metrics.items():
-            matrix = pd.DataFrame(index=systems, columns=systems)
-            for result in results:
-                if result['metric'] == metric_key:
-                    matrix.loc[result['row'], result['col']] = result['p_raw']
-            matrix.to_csv(
-                self.result_path / f'{self.filename}_{file_suffix}.csv')
+        results = analyze(
+            self.systems, self.correction, self.get_logger().info)
+        save_results(results, self.systems, self.result_path, self.filename)
 
 
 def main(args=None):
     """Run the Wilcoxon analysis node."""
     rclpy.init(args=args)
-    executor = rclpy.executors.SingleThreadedExecutor()
-    lc_node = WilcoxonAnalysis()
-    executor.add_node(lc_node)
-
+    node = WilcoxonAnalysis()
     try:
-        analysis_task = executor.create_task(lc_node.perform_analysis)
-        executor.spin_until_future_complete(analysis_task)
+        node.perform_analysis()
     except KeyboardInterrupt:
-        print(' Ctrl+C received. Triggering shutdown...')
+        pass
     finally:
+        node.destroy_node()
         if rclpy.ok():
-            executor.shutdown()
-            lc_node.destroy_node()
             rclpy.shutdown()
 
 

@@ -42,12 +42,14 @@ def generate_launch_description():
     mission_type = LaunchConfiguration('mission_type')
     result_path = LaunchConfiguration('result_path')
     result_filename = LaunchConfiguration('result_filename')
+    record_bags = LaunchConfiguration('record_bags')
     mission_config = LaunchConfiguration('mission_config')
     battery_constraint = LaunchConfiguration('battery_constraint')
     battery_constraint_value = LaunchConfiguration('battery_constraint_value')
     reasoning_time_filename = LaunchConfiguration(
         'mc_reasoning_time_filename')
     use_action_server = LaunchConfiguration('use_action_server')
+    enable_water_current = LaunchConfiguration('enable_water_current')
     bt_executable = LaunchConfiguration('bt_executable')
     silent = LaunchConfiguration('silent')
 
@@ -75,6 +77,14 @@ def generate_launch_description():
             default_value='',
             description='Name of the results file'),
         DeclareLaunchArgument(
+            'bag_output_path', default_value='',
+            description='Explicit bag directory; empty uses timestamp naming'),
+        DeclareLaunchArgument(
+            'record_bags',
+            default_value='true',
+            description='Record SUAVE topics to an MCAP bag under '
+                        '<result_path>/rosbags'),
+        DeclareLaunchArgument(
             'mission_config',
             default_value=mission_config_default,
             description='Mission configuration file'),
@@ -95,6 +105,10 @@ def generate_launch_description():
             default_value='false',
             description='Start BT-managed behaviors through action servers'),
         DeclareLaunchArgument(
+            'enable_water_current',
+            default_value='false',
+            description='Enable the sinusoidal ocean-current publisher'),
+        DeclareLaunchArgument(
             'bt_executable',
             default_value='suave_bt',
             choices=['suave_bt', 'suave_bt_extended'],
@@ -109,12 +123,19 @@ def generate_launch_description():
         "'True' if '", adaptation_manager, "' == 'none' else 'False'"])
     managed_system = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            _launch_file('suave', 'suave.launch.py')),
+            _launch_file('suave_base', 'suave_base.launch.py')),
         launch_arguments={
             'task_bridge': task_bridge,
             'mission_config': mission_config,
             'use_action_server': use_action_server,
+            'enable_water_current': enable_water_current,
             'silent': silent,
+            'adaptation_manager': adaptation_manager,
+            'mission_type': mission_type,
+            'result_path': result_path,
+            'result_filename': result_filename,
+            'record_bags': record_bags,
+            'bag_output_path': LaunchConfiguration('bag_output_path'),
         }.items())
 
     mission_node = Node(
@@ -126,28 +147,6 @@ def generate_launch_description():
             'battery_constraint_value': battery_constraint_value,
         }],
         condition=LaunchConfigurationNotEquals('adaptation_manager', 'bt'))
-
-    mission_metrics_node = Node(
-        package='suave_metrics',
-        executable='mission_metrics',
-        name='mission_metrics',
-        parameters=[mission_config, {
-            'adaptation_manager': adaptation_manager,
-            'mission_name': mission_type,
-            'result_path': result_path,
-        }],
-        condition=LaunchConfigurationEquals('result_filename', ''))
-    mission_metrics_node_override = Node(
-        package='suave_metrics',
-        executable='mission_metrics',
-        name='mission_metrics',
-        parameters=[mission_config, {
-            'adaptation_manager': adaptation_manager,
-            'mission_name': mission_type,
-            'result_path': result_path,
-            'result_filename': result_filename,
-        }],
-        condition=LaunchConfigurationNotEquals('result_filename', ''))
 
     manager_launches = [
         IncludeLaunchDescription(
@@ -185,7 +184,5 @@ def generate_launch_description():
         *arguments,
         managed_system,
         mission_node,
-        mission_metrics_node,
-        mission_metrics_node_override,
         *manager_launches,
     ])

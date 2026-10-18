@@ -20,7 +20,7 @@ using namespace std::placeholders;
 using namespace std::chrono_literals;
 
 SuaveMission::SuaveMission(std::string none_name, const rclcpp::NodeOptions & options)
-: Node(none_name, options), search_started_(false), mission_aborted_(false)
+: Node(none_name, options), mission_started_(false), search_started_(false), mission_aborted_(false)
 {
   this->declare_parameter("time_limit", 300);
   this->declare_parameter("use_action_server", false);
@@ -44,10 +44,10 @@ void SuaveMission::time_limit_cb()
 
 bool SuaveMission::time_limit_reached()
 {
-  if (search_started_) {
-    return (this->get_clock()->now() - start_time_) >= rclcpp::Duration(time_limit_, 0);
+  if (!mission_started_) {
+    return false;
   }
-  return false;
+  return (this->get_clock()->now() - mission_start_time_) >= rclcpp::Duration(time_limit_, 0);
 }
 
 void SuaveMission::finish_mission()
@@ -77,12 +77,17 @@ bool SuaveMission::request_save_mission_results()
   }
 }
 
-void SuaveMission::set_search_started()
+void SuaveMission::set_mission_started()
 {
-  if (search_started_ == true) {
+  if (mission_started_ == true) {
     return;
   }
-  start_time_ = this->get_clock()->now();
+  mission_start_time_ = this->get_clock()->now();
+  mission_started_ = true;
+}
+
+void SuaveMission::set_search_started()
+{
   search_started_ = true;
 }
 

@@ -64,7 +64,6 @@ class RecoverThrustersLC(Node):
         self._legacy_recovery_finished.set()
         self.recover_task = None
 
-        self.declare_parameter('system_mode_marker', '__DEFAULT__')
         self.declare_parameter('use_action_server', False)
 
         self.trigger_configure()
@@ -173,7 +172,7 @@ class RecoverThrustersLC(Node):
             self._recover_thrusters(self._abort_event.is_set)
         except Exception as exception:
             self.get_logger().error(
-                'Legacy thruster recovery failed: {}'.format(exception))
+                f'Legacy thruster recovery failed: {exception}')
         finally:
             self._legacy_recovery_finished.set()
 
@@ -231,24 +230,24 @@ class RecoverThrustersLC(Node):
             if response is None:
                 all_recovered = False
                 self.get_logger().error(
-                    'Failed to recover thruster {}: no MAVROS parameter '
-                    'response'.format(thruster))
+                    f'Failed to recover thruster {thruster}: no MAVROS parameter '
+                    'response')
                 continue
             if not response.results:
                 all_recovered = False
                 self.get_logger().error(
-                    'Failed to recover thruster {}: empty MAVROS parameter '
-                    'response'.format(thruster))
+                    f'Failed to recover thruster {thruster}: empty MAVROS parameter '
+                    'response')
                 continue
             if not all(result.successful for result in response.results):
                 all_recovered = False
                 self.get_logger().error(
-                    'Failed to recover thruster {}: MAVROS rejected '
-                    'parameter update'.format(thruster))
+                    f'Failed to recover thruster {thruster}: MAVROS rejected '
+                    'parameter update')
                 continue
 
             key_value = KeyValue()
-            key_value.key = 'c_thruster_{}'.format(thruster)
+            key_value.key = f'c_thruster_{thruster}'
             key_value.value = 'RECOVERED'
 
             status_msg = DiagnosticStatus()

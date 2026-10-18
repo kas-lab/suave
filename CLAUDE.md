@@ -18,6 +18,7 @@ Runtime stack: ROS 2 Humble · Gazebo Harmonic · ArduSub/ArduPilot SITL · MAVR
 | `suave_bringup/` | Top-level mission and manager launch composition for built-in managers |
 | `suave_missions/` | Mission planners, configuration, and mission-only launches |
 | `suave_metrics/` | Metrics collection |
+| `suave_requirements/` | Runtime fulfillment of the SUAVE RELAX requirements (`requirement_monitor`) |
 | `suave_runner/` | Experiment runner and statistical analysis |
 | `suave_tools/` | Auxiliary tools (PlotJuggler config, etc.) |
 | `suave_msgs/` | Custom ROS service definitions (`Task.srv`, `GetPath.srv`) — `ament_cmake` |
@@ -62,7 +63,7 @@ colcon test --packages-select <package_name> --event-handlers console_direct+
 colcon test-result --verbose
 
 # Test all suave packages at once
-colcon test --event-handlers console_cohesion+ --packages-select suave suave_bt suave_metacontrol suave_metrics suave_missions suave_monitor suave_msgs suave_none suave_random suave_runner suave_tools
+colcon test --event-handlers console_cohesion+ --packages-select suave suave_bt suave_metacontrol suave_metrics suave_missions suave_monitor suave_msgs suave_none suave_random suave_requirements suave_runner suave_tools
 
 # Auto-fix C++ style (run from inside the package directory)
 ament_uncrustify --reformat
@@ -98,7 +99,7 @@ ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt result_filena
 ros2 launch suave_runner suave_runner_launch.py
 # Config: suave_runner/config/runner/runner_config.yml — controls experiments, disturbance timing, result_path
 
-# Batch runner (sequences multiple campaigns; checkpoints to state.json for resume)
+# Batch runner (sequences multiple campaigns; resume from its state.json manifest)
 ros2 launch suave_runner run_batch_launch.py
 # Config: suave_runner/config/runner/batch_campaigns.yml — see suave_runner/README.md "Batch runner" section
 
@@ -153,6 +154,7 @@ suave build [PKG ...] [--clean]                 # colcon build (default: all SUA
 suave test [PKG ...] [--no-build] [--lint] [-k EXPR]   # non-zero exit if any package failed
 suave run [--config FILE] [--seed N] [-p KEY:=VALUE]   # suave_runner campaign
 suave batch start|resume [STATE_JSON | --latest]|list
+suave batch diagnose [STATE_OR_RESULT_PATH | --latest] [--json]   # read-only failure report
 suave campaign resume [RESULT_PATH | --latest] --config FILE | list
 suave analyze wilcoxon|mann-whitney|summarize -- <script args>
 suave config show|set|unset|init|path
@@ -180,9 +182,11 @@ For **external managing systems**, include `suave_base/launch/suave_base.launch.
 
 ## Runner / Metrics IPC
 `mission_metrics/done` (`std_msgs/Bool`) signals run completion. Both the `MissionMetrics` publisher and `ExperimentRunnerNode` subscriber must declare `RELIABLE` reliability + `TRANSIENT_LOCAL` durability (depth 1). Mismatched QoS causes DDS to silently drop the connection.
-Per-run logs are written to `<result_path>/logs/run_{exp_idx}_{run_idx}/`: `ardupilot.log` (raw SITL stdout/stderr), `simulation/` and `experiment/` (ROS node logs via `ROS_LOG_DIR`).
+Per-attempt logs are written to `<result_path>/logs/run_{exp_idx}_{run_idx}/<attempt_id>/`: `ardupilot.log` (raw SITL stdout/stderr), `simulation/` and `experiment/` (ROS node logs via `ROS_LOG_DIR`).
 `resume_result_path` parameter resumes a crashed campaign from an existing result folder; `random_seed` (default `100`) controls perturbation reproducibility.
-`run_batch`'s `resume_state_file` is a separate, batch-level resume mechanism — it points at a batch's `state.json`, not at a single campaign's result folder.
+Each campaign's `runs.json` (`schema_version: 2`, atomic tmp+fsync+rename, written only by the runner) is the single source of run progress: a run is complete iff `status == "completed"`, and resume skips only those. Bag and log paths are derived from `run_id` + `attempt_id`, not stored. The bag is moved before the final `runs.json` write, so recovery decides from where the bag is on disk.
+The runner passes `SUAVE_RUN_IDX`/`SUAVE_ATTEMPT_ID` to the experiment launch; `mission_metrics` writes them as the `run_idx`/`attempt_id` columns of all four CSVs. Failed attempts' rows stay in the CSVs: analysis keeps only each completed run's `attempt_id` from `runs.json` (`suave_runner/analysis/common.py`); there is no sorting step.
+`run_batch`'s `resume_state_file` is a separate, batch-level resume mechanism — it points at a batch's `state.json`, not at a single campaign's result folder. `state.json` is a write-once manifest (`schema_version: 2`, campaign `name`/`package`/`config_file`); campaign progress is derived from `campaigns/<name>/runs.json` against the runner config.
 
 ## Code Conventions
 

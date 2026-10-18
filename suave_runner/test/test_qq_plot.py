@@ -30,6 +30,11 @@ import pytest
 matplotlib.use('Agg')
 SCRIPT = (Path(__file__).parents[1] / 'suave_runner' /
           'analysis' / 'qq_plot.py')
+COMMON_SPEC = importlib.util.spec_from_file_location(
+    'common', SCRIPT.with_name('common.py'))
+common = importlib.util.module_from_spec(COMMON_SPEC)
+sys.modules['common'] = common
+COMMON_SPEC.loader.exec_module(common)
 SPEC = importlib.util.spec_from_file_location('qq_plot', SCRIPT)
 qq_plot = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(qq_plot)
@@ -38,6 +43,21 @@ BATCH_SPEC = importlib.util.spec_from_file_location(
     'qq_plot_batch', SCRIPT.with_name('qq_plot_batch.py'))
 qq_plot_batch = importlib.util.module_from_spec(BATCH_SPEC)
 BATCH_SPEC.loader.exec_module(qq_plot_batch)
+
+
+def _runs(values):
+    return pd.DataFrame({'run_idx': range(len(values)), 'metric': values})
+
+
+@pytest.fixture
+def campaign(metrics_campaign):
+    """Build a campaign with three methods; a's run 1 was retried once."""
+    def build(path, methods=('a', 'b', 'c')):
+        return metrics_campaign(
+            path, {method: _runs([1, 3, 5]) for method in methods},
+            retried={('a', 1)})
+
+    return build
 
 
 def test_single_csv_preserves_pairing_and_sign():
@@ -129,34 +149,41 @@ def test_interactive_plot_labels_and_constant_differences(monkeypatch):
     assert not plt.get_fignums()
 
 
-def test_batch_keeps_campaigns_separate(tmp_path, capsys):
-    """Plot all pairs per metric using only each campaign's sorted files."""
-    for campaign in ('exp1', 'extended_exp1'):
-        folder = tmp_path / 'batch' / 'campaigns' / campaign / 'sorted'
-        folder.mkdir(parents=True)
-        (folder.parent / 'raw.csv').write_text('invalid raw data')
-        for method in ('a', 'b', 'c'):
-            (folder / f'{method}_sorted.csv').write_text(
-                'run_idx,metric\n0,1\n1,3\n2,5\n')
+def test_batch_keeps_campaigns_separate(tmp_path, campaign, capsys):
+    """Plot all pairs per metric from each campaign's accepted rows."""
+    for name in ('exp1', 'extended_exp1'):
+        path = campaign(tmp_path / 'batch' / 'campaigns' / name)
+        (path / 'unrelated.csv').write_text('invalid raw data')
     output = tmp_path / 'plots'
     assert qq_plot_batch.main([
         str(tmp_path / 'batch'), '--metrics', 'metric',
         '--output', str(output)]) == 0
     assert len(list(output.glob('exp1/q-q-plots/*.png'))) == 3
     assert len(list(output.glob('extended_exp1/q-q-plots/*.png'))) == 3
-    assert 'Completed 6 plots; 0 failures.' in capsys.readouterr().out
+    text = capsys.readouterr().out
+    assert 'Completed 6 plots; 0 failures.' in text
+    # The failed attempt's 999 row would make a - b nonzero.
+    assert 'a - b' in text and 'Maximum: 0' in text
 
 
-def test_batch_reports_errors_and_continues(tmp_path, capsys):
+def test_two_csvs_keep_accepted_attempts(tmp_path, campaign, capsys):
+    """Pair two raw campaign CSVs on run_idx after attempt filtering."""
+    path = campaign(tmp_path / 'campaign', ('a', 'b'))
+    assert qq_plot.main([
+        str(path / 'a_suave.csv'), str(path / 'b_suave.csv'),
+        '--column-a', 'metric', '--column-b', 'metric',
+        '--output', str(tmp_path / 'qq.png')]) == 0
+    text = capsys.readouterr().out
+    assert 'Number of valid pairs: 3' in text
+    assert 'Maximum: 0' in text
+
+
+def test_batch_reports_errors_and_continues(tmp_path, campaign, capsys):
     """Return failure while generating comparisons with available metrics."""
-    folder = tmp_path / 'campaign' / 'sorted'
-    folder.mkdir(parents=True)
-    for method in ('a', 'b'):
-        (folder / f'{method}_sorted.csv').write_text(
-            'run_idx,metric\n0,1\n1,3\n2,5\n')
+    path = campaign(tmp_path / 'campaign', ('a', 'b'))
     output = tmp_path / 'plots'
     assert qq_plot_batch.main([
-        str(folder.parent), '--metrics', 'absent', 'metric',
+        str(path), '--metrics', 'absent', 'metric',
         '--output', str(output)]) == 1
     assert len(list(output.glob('campaign/q-q-plots/*.png'))) == 1
     assert 'absent' in capsys.readouterr().err
@@ -169,42 +196,42 @@ def test_missing_file_cli(tmp_path, capsys):
     assert 'does not exist' in capsys.readouterr().err
 
 
-def test_batch_defaults_save_both_metrics_under_batch_root(tmp_path):
+def test_batch_defaults_save_both_metrics_under_batch_root(
+        tmp_path, metrics_campaign):
     """Save default metrics per campaign without specifying an output path."""
-    for campaign in ('exp1', 'exp2'):
-        folder = tmp_path / 'campaigns' / campaign / 'sorted'
-        folder.mkdir(parents=True)
-        for method in ('a', 'b'):
-            pd.DataFrame({
+    for name in ('exp1', 'exp2'):
+        metrics_campaign(tmp_path / 'campaigns' / name, {
+            method: pd.DataFrame({
                 'run_idx': [0, 1, 2],
                 'time searching pipeline (s)': [1, 2, 4],
                 'distance inspected (m)': [5, 3, 2],
-            }).to_csv(folder / f'{method}_sorted.csv', index=False)
+            }) for method in ('a', 'b')})
     # Unrelated batch folders must never be mistaken for campaigns.
     (tmp_path / 'archived').mkdir()
     assert qq_plot_batch.main([str(tmp_path)]) == 0
-    output = tmp_path / 'campaings_results'
+    output = tmp_path / 'campaign_results'
     assert len(list((output / 'exp1').glob('q-q-plots/*.png'))) == 2
     assert len(list((output / 'exp2').glob('q-q-plots/*.png'))) == 2
     assert {p.name for p in output.iterdir()} == {'exp1', 'exp2'}
     # Output folders must not affect discovery on subsequent invocations.
-    batch_root, campaigns = qq_plot_batch.resolve_layout(tmp_path)
-    assert batch_root == tmp_path
-    assert [p.name for p in campaigns] == ['exp1', 'exp2']
+    assert qq_plot_batch.main([str(tmp_path)]) == 0
 
 
-def test_layout_accepts_campaigns_and_single_campaign(tmp_path):
+@pytest.mark.parametrize('relative', ['', 'campaigns', 'campaigns/exp1'])
+def test_batch_accepts_campaigns_dir_and_single_campaign(
+        tmp_path, campaign, relative):
     """Keep the default result root consistent for narrower input paths."""
-    campaign = tmp_path / 'campaigns' / 'exp1'
-    (campaign / 'sorted').mkdir(parents=True)
-    for path in (tmp_path, tmp_path / 'campaigns', campaign):
-        assert qq_plot_batch.resolve_layout(path) == (tmp_path, [campaign])
+    campaign(tmp_path / 'campaigns' / 'exp1')
+    assert qq_plot_batch.main([str(tmp_path / relative),
+                               '--metrics', 'metric']) == 0
+    assert len(list((tmp_path / 'campaign_results' / 'exp1' /
+                     'q-q-plots').glob('*.png'))) == 3
 
 
 def test_batch_missing_root(tmp_path, capsys):
     """Report a nonexistent batch before attempting to create outputs."""
     assert qq_plot_batch.main([str(tmp_path / 'missing')]) == 1
-    assert 'does not exist' in capsys.readouterr().err
+    assert 'not found' in capsys.readouterr().err
 
 
 def test_csv_script_directs_folder_input_to_orchestrator(tmp_path, capsys):

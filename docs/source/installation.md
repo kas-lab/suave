@@ -53,8 +53,6 @@ export GZ_VERSION=harmonic
 sudo bash -c 'wget https://raw.githubusercontent.com/osrf/osrf-rosdep/master/gz/00-gazebo.list -O /etc/ros/rosdep/sources.list.d/00-gazebo.list'
 rosdep update
 rosdep resolve gz-harmonic
-# Navigate to your ROS workspace before the next command.
-rosdep install --from-paths src --ignore-src -y
 ```
 
 Clone and build the repository:

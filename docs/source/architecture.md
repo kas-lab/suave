@@ -67,17 +67,17 @@ nodes and the BT blackboard so the execution policy stays consistent.
 
 ## Monitor subsystem
 
-The `suave_monitor` package contains three monitor nodes that continuously observe the environment or the system and report their findings on the `/diagnostics` topic using `diagnostic_msgs/DiagnosticArray`.
+SUAVE monitor and support nodes continuously observe the environment or the system and report their findings on the `/diagnostics` topic using `diagnostic_msgs/DiagnosticArray`. The pipeline-detection and water-current nodes also publish quality attributes on the same topic.
 
 | Node | Observes | Published key |
 |---|---|---|
-| `thruster_monitor` | Simulated thruster status | `c_thruster_<N>` = `FALSE`/`RECOVERED` |
+| `thruster_monitor` | Simulated thruster status and available actuation | `c_thruster_<N>` = `FALSE`/`RECOVERED`; `operational_thrusters` = integer count |
 | `water_visibility_observer` | Simulated water visibility | `water_visibility` = float (m) |
+| `water_current` | Simulated horizontal water current | `water_current` = `[x y z]` vector string (m/s) |
 | `battery_monitor` | Simulated battery state | `battery_level` = float (0–1) |
+| `pipeline_detection` / `pipeline_detection_wv` | Camera footprint from vehicle altitude and field of view | `coverage_area` = float (m²) |
 
-All three publish at regular intervals. The managing subsystem is expected to maintain its own internal model by subscribing to `/diagnostics`.
-
-The water-visibility monitor also publishes immediately at startup. It holds the
+The water-visibility monitor publishes immediately at startup. It holds the
 visibility function at experiment time zero until the first GUIDED state, then
 advances the function from that point. `water_visibility_sec_shift` applies to
 both the initial value and subsequent values. This makes the initial observation
@@ -104,13 +104,15 @@ The managing subsystem closes the adaptation loop. It has no prescribed internal
 
 See [Extending SUAVE](extend.md) for launch file conventions when connecting a new managing subsystem.
 
+**Note:** For managing the system's lifecycle nodes and parameters, you can skip `system_modes` entirely and change the node's states directly with the standard ROS services for managing lifecycle nodes states and parameters. In the date of writing this comment (18/10/26), System Modes is unmaintained, so we actually recommend skipping it if possible. We are currently working on a new execution interface to replace System Modes.
+
 ---
 
 ## Adaptation loop
 
 The end-to-end adaptation cycle follows the MAPE-K pattern:
 
-1. **Monitor** — `suave_monitor` nodes observe thruster health, water visibility, and battery level and publish findings to `/diagnostics`.
+1. **Monitor** — SUAVE nodes observe thruster health, water visibility, water current, and battery level and publish findings to `/diagnostics`.
 2. **Analyze** — The managing subsystem subscribes to `/diagnostics` and detects whether the system is meeting its quality requirements.
 3. **Plan** — The managing subsystem selects the appropriate function design (mode) for each affected functionality.
 4. **Execute** — The managing subsystem calls `change_mode` on the relevant `system_modes` service. `system_modes` transitions the lifecycle node to the target mode, which may change node parameters (e.g., spiral altitude) or activate/deactivate nodes.

@@ -8,7 +8,7 @@ Runtime stack: ROS 2 Humble, Gazebo Harmonic, ArduSub/ArduPilot SITL, MAVROS, Be
 
 ## Project Structure & Module Organization
 
-Core managed-system Python nodes live in `suave/suave/`, with launch files and sim config in `suave/launch/` and `suave/config/`. Top-level mission/manager composition is in `suave_bringup/`. Monitoring nodes are in `suave_monitor/`, missions and mission configs in `suave_missions/`, metrics in `suave_metrics/`, auxiliary tools in `suave_tools/`, and experiment orchestration plus statistical analysis in `suave_runner/`. Managing subsystems are under `suave_managing/`, including `suave_none`, `suave_random`, `suave_metacontrol`, and the C++ BehaviorTree.CPP package `suave_bt`. Custom services are defined in `suave_msgs/srv/`. Tests are usually in each package's `test/` directory. Docker assets are in `docker/`, runner scripts in `runner/`, and documentation in `docs/source/`.
+Core managed-system Python nodes live in `suave/suave/`, with launch files and sim config in `suave/launch/` and `suave/config/`. Top-level mission/manager composition is in `suave_bringup/`. Monitoring nodes are in `suave_monitor/`, missions and mission configs in `suave_missions/`, metrics in `suave_metrics/`, RELAX requirement fulfillment monitoring in `suave_requirements/`, auxiliary tools in `suave_tools/`, and experiment orchestration plus statistical analysis in `suave_runner/`. Managing subsystems are under `suave_managing/`, including `suave_none`, `suave_random`, `suave_metacontrol`, and the C++ BehaviorTree.CPP package `suave_bt`. Custom services are defined in `suave_msgs/srv/`. Tests are usually in each package's `test/` directory. Docker assets are in `docker/`, runner scripts in `runner/`, and documentation in `docs/source/`.
 
 ## Build, Test, and Development Commands
 
@@ -47,7 +47,7 @@ colcon test-result --verbose
 python3 -m pytest -q <package>/test
 
 # Test all SUAVE packages
-colcon test --event-handlers console_cohesion+ --packages-select suave suave_base suave_bt suave_bringup suave_metacontrol suave_metrics suave_missions suave_monitor suave_msgs suave_none suave_random suave_runner suave_tools
+colcon test --event-handlers console_cohesion+ --packages-select suave suave_base suave_bt suave_bringup suave_metacontrol suave_metrics suave_missions suave_monitor suave_msgs suave_none suave_random suave_requirements suave_runner suave_tools
 
 # Auto-format C++ in the package being edited
 ament_uncrustify --reformat
@@ -112,6 +112,7 @@ suave build [PKG ...] [--clean]                 # colcon build (default: all SUA
 suave test [PKG ...] [--no-build] [--lint] [-k EXPR]   # non-zero exit if any package failed
 suave run [--config FILE] [--seed N] [-p KEY:=VALUE]   # suave_runner campaign
 suave batch start|resume [STATE_JSON | --latest]|list
+suave batch diagnose [STATE_OR_RESULT_PATH | --latest] [--json]   # read-only failure report
 suave campaign resume [RESULT_PATH | --latest] --config FILE | list
 suave analyze wilcoxon|mann-whitney|summarize -- <script args>
 suave config show|set|unset|init|path
@@ -138,7 +139,11 @@ There are two ways to connect a managing subsystem. For **external packages**, i
 
 `mission_metrics/done` (`std_msgs/Bool`) signals completion of an experiment run. Both the `MissionMetrics` publisher and `ExperimentRunnerNode` subscriber must use `RELIABLE` reliability, `TRANSIENT_LOCAL` durability, and depth 1; incompatible QoS can silently prevent DDS matching.
 
-Per-run output belongs under `<result_path>/logs/run_{exp_idx}_{run_idx}/`: `ardupilot.log` contains SITL output, while `simulation/` and `experiment/` contain ROS logs redirected through `ROS_LOG_DIR`. `resume_result_path` resumes an interrupted campaign from an existing results folder. `random_seed`, defaulting to `100`, controls reproducible perturbation sequences.
+Per-attempt output belongs under `<result_path>/logs/run_{exp_idx}_{run_idx}/<attempt_id>/`: `ardupilot.log` contains SITL output, while `simulation/` and `experiment/` contain ROS logs redirected through `ROS_LOG_DIR`. `resume_result_path` resumes an interrupted campaign from an existing results folder. `random_seed`, defaulting to `100`, controls reproducible perturbation sequences.
+
+The runner passes each attempt's `SUAVE_RUN_IDX` and `SUAVE_ATTEMPT_ID` to the experiment launch, and `mission_metrics` writes them as the `run_idx` and `attempt_id` columns of all four metrics CSVs. Rows of failed attempts stay in the CSVs; the paired analysis keeps only each completed run's `attempt_id` from `runs.json` (`suave_runner/analysis/common.py`). There is no sorting step.
+
+To diagnose a failed batch or campaign, start with `suave batch diagnose --latest` (or `ros2 run suave_runner diagnose_batch <state.json|batch dir|campaigns dir|campaign dir> [--json]`); it only reads files. Then open the reported `logs/run_*/<attempt_id>/experiment/launch.log` lines, and check the campaign's `runs.json` entry for `failure_type`, `failure_reason`, and earlier `attempts`. `runs.json` (`"status": "completed"`) is the only resume checkpoint; do not infer completion from CSV rows. A `SYSTEMIC: <manager>: repeated <failure_type>` line means the same failure repeated (at least 3 times, or at least twice and in more than half of that manager's runs): treat it as a configuration or environment problem and fix it before rerunning. `readiness_missing_service` means the services in the experiment's `required_services` (none if the key is absent; the shipped configs list them for `bt`) were absent after `readiness_timeout`; `readiness_timeout` means ArduPilot (SITL port 5760) or the simulation (first `/model/bluerov2/pose` message) was not ready within `ardupilot_ready_timeout`/`simulation_ready_timeout`. Boolean launch arguments use `IfCondition`/`UnlessCondition`, never `LaunchConfigurationEquals(..., 'True')`.
 
 ## Lifecycle Action Server Patterns
 
@@ -211,6 +216,27 @@ The VCS dependencies file is `suave.repos`. The old name `suave.rosinstall` is o
 ## Commit & Pull Request Guidelines
 
 Recent commits use short imperative subjects, for example `add statistical_analysis` or `pass mission_config to task_bridge_none`; an emoji prefix appears occasionally for fixes. Keep commits focused and mention the affected package when useful. Pull requests should describe behavior changes, list test commands and results, link related issues, and include screenshots or logs for simulator, UI, Docker, or mission-run changes.
+
+## Agent Skills And Pi Extensions
+
+Project-specific Pi skills live under `.claude/skills/` and are exposed
+through `.agents/skills/`. Workspace-root symlinks may expose selected SUAVE
+skills when working from an integration workspace root.
+
+Useful SUAVE skills:
+
+- `suave-python-node-diagnostics`
+- `suave-launch-config`
+- `suave-lifecycle-action`
+- `ros-gz-bridge-cheatsheet`
+
+Project Pi extensions live under `.pi/extensions/`. Current commands include:
+
+- `/ros-check`
+- `/ros-launch-check`
+- `/changed-check`
+
+Run `/reload` after modifying skills or extensions.
 
 ## Agent-Specific Instructions
 

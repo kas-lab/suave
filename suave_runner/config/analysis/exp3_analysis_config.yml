@@ -1,7 +1,7 @@
 # Paths are resolved by the launch file through launch substitutions.
-# `results_root` must point at the directory holding exp3's run_idx-sorted
-# CSVs, e.g. the --output directory from sort_results.py (see the
-# sort-suave-results skill) or a batch's campaigns/exp3/sorted/ directory.
+# `results_root` must point at the exp3 campaign folder (the one
+# holding runs.json and the raw <manager>_<mission>.csv files);
+# only each run's accepted attempt is analyzed.
 /wilcoxon_analysis:
   ros__parameters:
     result_path: '$(var output_root)'
@@ -11,20 +11,20 @@
       - |
         {
           "managing_system": "none",
-          "data_file": "$(var results_root)/none_suave_sorted.csv"
+          "data_file": "$(var results_root)/none_suave.csv"
         }
       - |
         {
           "managing_system": "random",
-          "data_file": "$(var results_root)/random_suave_sorted.csv"
+          "data_file": "$(var results_root)/random_suave.csv"
         }
       - |
         {
           "managing_system": "bt",
-          "data_file": "$(var results_root)/bt_suave_sorted.csv"
+          "data_file": "$(var results_root)/bt_suave.csv"
         }
       - |
         {
           "managing_system": "metacontrol",
-          "data_file": "$(var results_root)/metacontrol_suave_sorted.csv"
+          "data_file": "$(var results_root)/metacontrol_suave.csv"
         }

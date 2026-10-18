@@ -3,7 +3,7 @@
 <package format="3">
   <name>suave_cli</name>
   <version>0.0.0</version>
-  <description>suave command-line helper; building it only adds the CLI to PATH</description>
+  <description>suave command-line helper</description>
   <maintainer email="g.rezendesilva@tudelft.nl">Gustavo Rezende</maintainer>
   <license>Apache-2.0</license>
 

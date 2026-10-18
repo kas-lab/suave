@@ -27,6 +27,11 @@ import pandas as pd
 
 from scipy import stats
 
+if __package__:
+    from . import common
+else:
+    import common
+
 
 HELP_TEXT = r"""Plot normal Q-Q plots of paired differences, without normality tests.
 
@@ -36,13 +41,15 @@ Run from the directory containing this script, for example:
     python3 qq_plot.py results.csv --column-a suave --column-b baseline \
         --output qq_suave_baseline.png
 
-    python3 qq_plot.py metacontrol_sorted.csv bt_sorted.csv \
+    python3 qq_plot.py campaign/metacontrol_suave.csv campaign/bt_suave.csv \
         --column-a 'time searching pipeline (s)' \
         --column-b 'time searching pipeline (s)' --output qq_search.png
 
-One CSV pairs columns by row. Two CSVs pair by unique run_idx values and
-must describe the same campaign. Use qq_plot_batch.py to process a batch
-and save every within-campaign comparison to campaings_results.
+One CSV pairs columns by row. Two CSVs must be raw CSVs of the same
+campaign: each keeps only the accepted attempt of every run (from the
+campaign's runs.json), and they pair by run_idx. Use qq_plot_batch.py to
+process a batch and save every within-campaign comparison to
+campaign_results.
 All complete pairs are included, even if pipeline found is false or a
 metric is zero. No automatic normal/non-normal classification is made.
 """
@@ -83,8 +90,8 @@ def validate_run_ids(frame, run_column, source):
     """Require nonmissing, unique run identifiers before joining two files."""
     if run_column not in frame.columns:
         raise ValueError(
-            f'{source}: missing pairing column {run_column!r}; use sorted '
-            'CSV files with verified run IDs or specify --run-column.')
+            f'{source}: missing pairing column {run_column!r}; use raw '
+            'campaign CSVs with run IDs or specify --run-column.')
     ids = frame[run_column]
     if ids.isna().any() or ids.duplicated().any():
         raise ValueError(
@@ -187,7 +194,7 @@ def plot_differences(difference, label_a, label_b, output=None, context=''):
 def method_name(path):
     """Derive a method label from an aggregate result filename."""
     name = Path(path).stem
-    for suffix in ('_sorted', '_suave_extended', '_suave'):
+    for suffix in ('_suave_extended', '_suave'):
         if name.endswith(suffix):
             name = name[:-len(suffix)]
     return name
@@ -232,8 +239,11 @@ def main(argv=None):
             for path in (args.input, args.csv_b) if path is not None
         ):
             parser.error('--output must differ from the input CSV paths.')
-        frame_a = read_csv(args.input)
-        frame_b = read_csv(args.csv_b) if args.csv_b else None
+        if args.csv_b:
+            frame_a = common.accepted_rows(args.input)
+            frame_b = common.accepted_rows(args.csv_b.expanduser())
+        else:
+            frame_a, frame_b = read_csv(args.input), None
         difference, dropped = paired_differences(
             frame_a, args.column_a, args.input, frame_b,
             args.column_b, args.csv_b, args.run_column)

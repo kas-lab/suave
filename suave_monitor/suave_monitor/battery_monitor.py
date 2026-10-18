@@ -54,16 +54,16 @@ class BatteryMonitor(Node):
             'battery_monitor/recharge',
             self.recharge_battery_cb)
 
+        self.qa_publisher_timer = None
         self.mavros_state_sub = self.create_subscription(
             State, 'mavros/state', self.status_cb, 10)
 
     def status_cb(self, msg):
         """Start battery updates when the vehicle enters guided mode."""
-        if msg.mode == 'GUIDED':
+        if msg.mode == 'GUIDED' and self.qa_publisher_timer is None:
             self.last_time = self.get_clock().now().to_msg().sec
             self.qa_publisher_timer = self.create_timer(
                 self.qa_publishing_period, self.qa_publisher_cb)
-            self.destroy_subscription(self.mavros_state_sub)
 
     def qa_publisher_cb(self):
         """Publish the next battery-level measurement."""
@@ -80,8 +80,7 @@ class BatteryMonitor(Node):
             self.last_time = current_time
 
         v = self.battery_level - (1/discharge_time)*dt
-        if v < 0.0:
-            v = 0.0
+        v = max(v, 0.0)
         self.battery_level = v
 
         key_value = KeyValue()

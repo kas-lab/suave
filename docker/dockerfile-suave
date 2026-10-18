@@ -49,6 +49,8 @@ RUN apt update && apt install -y \
   python3-rosdep \
   python3-vcstool \
   python3-colcon-common-extensions  \
+  ros-humble-ros2bag \
+  ros-humble-rosbag2-storage-mcap \
   && rm -rf /var/lib/apt/lists/
 
 RUN rosdep init
@@ -150,6 +152,7 @@ COPY --chown=kasm-user:kasm-user suave_managing/ $HOME/suave_ws/src/suave/suave_
 COPY --chown=kasm-user:kasm-user suave_metrics/ $HOME/suave_ws/src/suave/suave_metrics/
 COPY --chown=kasm-user:kasm-user suave_missions/ $HOME/suave_ws/src/suave/suave_missions/
 COPY --chown=kasm-user:kasm-user suave_monitor/ $HOME/suave_ws/src/suave/suave_monitor/
+COPY --chown=kasm-user:kasm-user suave_requirements/ $HOME/suave_ws/src/suave/suave_requirements/
 COPY --chown=kasm-user:kasm-user suave_msgs/ $HOME/suave_ws/src/suave/suave_msgs/
 COPY --chown=kasm-user:kasm-user suave_runner/ $HOME/suave_ws/src/suave/suave_runner/
 COPY --chown=kasm-user:kasm-user suave_tools/ $HOME/suave_ws/src/suave/suave_tools/

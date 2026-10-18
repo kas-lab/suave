@@ -35,13 +35,15 @@ public:
     std::string none_name, const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
   bool time_limit_reached();
+  void set_mission_started();
   void set_search_started();
   bool is_mission_aborted() {return mission_aborted_;}
   bool use_action_server() const {return use_action_server_;}
   void finish_mission();
 
 private:
-  rclcpp::Time start_time_;
+  rclcpp::Time mission_start_time_;
+  bool mission_started_ = false;
   bool search_started_ = false;
   int time_limit_;
   bool use_action_server_;

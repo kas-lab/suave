@@ -14,13 +14,17 @@
 
 """Launch the SUAVE managed system and mission metrics without a manager."""
 
+from datetime import datetime
 import os
 
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
+from launch.actions import ExecuteProcess
 from launch.actions import IncludeLaunchDescription
+from launch.actions import OpaqueFunction
+from launch.conditions import IfCondition
 from launch.conditions import LaunchConfigurationEquals
 from launch.conditions import LaunchConfigurationNotEquals
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -28,12 +32,84 @@ from launch.substitutions import LaunchConfiguration
 
 from launch_ros.actions import Node
 
+# Topics published or subscribed by SUAVE nodes, MAVROS, the Gazebo bridges,
+# and the system_modes mode manager. Every node runs in the root namespace.
+RECORDED_TOPICS = [
+    '/diagnostics',
+    '/parameter_events',
+    # Mission progress
+    '/pipeline/detected',
+    '/pipeline/inspected',
+    '/pipeline/distance_inspected',
+    '/battery_monitor/recharge/complete',
+    # MAVROS
+    '/mavros/state',
+    '/mavros/local_position/pose',
+    '/mavros/setpoint_position/local',
+    # Gazebo bridges (/ocean_current only when enable_water_current is true)
+    '/model/bluerov2/pose',
+    '/model/min_pipes_pipeline/pose',
+    '/ocean_current',
+    # Metrics
+    '/mission_metrics/done',
+    '/mission_metrics/reaction_time',
+    # Requirement monitor
+    '/requirements/thruster_availability/fulfillment',
+    '/requirements/search_footprint/fulfillment',
+    '/requirements/adaptation_reaction_time/fulfillment',
+    '/requirements/adaptation_reaction_time/thruster/fulfillment',
+    '/requirements/adaptation_reaction_time/water_visibility/fulfillment',
+    '/requirements/adaptation_reaction_time/battery/fulfillment',
+    # Lifecycle transitions of the managed functions
+    '/f_generate_search_path_node/transition_event',
+    '/f_follow_pipeline_node/transition_event',
+    '/f_maintain_motion_node/transition_event',
+    '/generate_recharge_path_node/transition_event',
+    # system_modes mode changes
+    '/f_generate_search_path/mode_event',
+    '/f_follow_pipeline/mode_event',
+    '/f_maintain_motion/mode_event',
+    '/generate_recharge_path/mode_event',
+]
+
+
+def record_bags(context, *args, **kwargs):
+    """Return a recorder writing to <result_path>/rosbags/<run_name>."""
+    result_path = os.path.expanduser(
+        LaunchConfiguration('result_path').perform(context))
+    prefix = LaunchConfiguration('result_filename').perform(context)
+    run_name = '{}_{}'.format(
+        prefix or 'suave', datetime.now().strftime('%Y%m%d_%H%M%S'))
+    rosbags_path = os.path.join(result_path, 'rosbags')
+    explicit = LaunchConfiguration('bag_output_path', default='').perform(context)
+    output_path = (os.path.expanduser(explicit) if explicit else
+                   os.path.join(rosbags_path, run_name))
+    # ros2 bag creates the run folder and fails if it already exists.
+    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+    return [ExecuteProcess(
+        cmd=[
+            'ros2', 'bag', 'record',
+            '-s', 'mcap',
+            '--storage-preset-profile', 'fastwrite',
+            '-o', output_path,
+            *RECORDED_TOPICS,
+        ],
+        name='rosbag_record',
+        # Give the recorder time to finalize the bag after SIGINT.
+        sigterm_timeout='20',
+    )]
+
 
 def generate_launch_description():
     """Return the base SUAVE launch description."""
     mission_config = LaunchConfiguration('mission_config')
     use_action_server = LaunchConfiguration('use_action_server')
+    enable_water_current = LaunchConfiguration('enable_water_current')
     silent = LaunchConfiguration('silent')
+    task_bridge = LaunchConfiguration('task_bridge')
+    system_modes = LaunchConfiguration('system_modes')
+    recover_thrusters_use_action_server = LaunchConfiguration(
+        'recover_thrusters_use_action_server')
     adaptation_manager = LaunchConfiguration('adaptation_manager')
     mission_type = LaunchConfiguration('mission_type')
     result_path = LaunchConfiguration('result_path')
@@ -54,9 +130,26 @@ def generate_launch_description():
             default_value='false',
             description='Start managed behaviors through ROS action servers'),
         DeclareLaunchArgument(
+            'enable_water_current',
+            default_value='false',
+            description='Enable the sinusoidal ocean-current publisher'),
+        DeclareLaunchArgument(
             'silent',
             default_value='false',
             description='Suppress all output'),
+        DeclareLaunchArgument(
+            'task_bridge',
+            default_value='false',
+            description='Enable the managed-system task bridge'),
+        DeclareLaunchArgument(
+            'system_modes',
+            default_value='true',
+            description='Enable the managed-system mode manager'),
+        DeclareLaunchArgument(
+            'recover_thrusters_use_action_server',
+            default_value=use_action_server,
+            description='Override use_action_server for the recover '
+                        'thrusters node only'),
         DeclareLaunchArgument(
             'adaptation_manager',
             default_value='',
@@ -73,6 +166,14 @@ def generate_launch_description():
             'result_filename',
             default_value='',
             description='Name of the results file'),
+        DeclareLaunchArgument(
+            'bag_output_path', default_value='',
+            description='Explicit bag directory; empty uses timestamp naming'),
+        DeclareLaunchArgument(
+            'record_bags',
+            default_value='true',
+            description='Record SUAVE topics to an MCAP bag under '
+                        '<result_path>/rosbags'),
     ]
 
     managed_system = IncludeLaunchDescription(
@@ -81,9 +182,13 @@ def generate_launch_description():
                 get_package_share_directory('suave'),
                 'launch', 'suave.launch.py')),
         launch_arguments={
-            'task_bridge': 'False',
+            'task_bridge': task_bridge,
             'mission_config': mission_config,
             'use_action_server': use_action_server,
+            'recover_thrusters_use_action_server': (
+                recover_thrusters_use_action_server),
+            'enable_water_current': enable_water_current,
+            'system_modes': system_modes,
             'silent': silent,
         }.items())
 
@@ -110,9 +215,20 @@ def generate_launch_description():
         }],
         condition=LaunchConfigurationNotEquals('result_filename', ''))
 
+    requirement_monitor_node = Node(
+        package='suave_requirements',
+        executable='requirement_monitor',
+        name='requirement_monitor')
+
+    bag_recorder = OpaqueFunction(
+        function=record_bags,
+        condition=IfCondition(LaunchConfiguration('record_bags')))
+
     return LaunchDescription([
         *arguments,
         managed_system,
         mission_metrics_node,
         mission_metrics_node_filename,
+        requirement_monitor_node,
+        bag_recorder,
     ])

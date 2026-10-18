@@ -1,45 +1,62 @@
 # Troubleshooting
 
-List of known problems and their solutions. If you find new problems and find a solution for it, please consider contributing to this section.
+## MAVROS and ArduSub integration
 
-## MAVROS and ArduSub integration problems:
+Inspect SITL and MAVROS logs before changing dependencies. Use the tested
+ArduSub commit `571e8c7bd3793fce1bc5184a2f6586feb8a616e5` and MAVROS `2.14.0`
+as the starting point. ArduSub, MAVROS, and the Gazebo plugin must remain
+compatible. Do not delete an existing checkout to change versions.
 
-A common problem that occurs over time is that some packages are upgraded in Ubuntu 22.04 and the connection between MAVROS and ArduSub stops working. I don't know how to fix this issue long term, but a workaround is to update MAVROS and/or ArduSub and check if it works again.
+### ArduSub
 
-Before updating MAVROS and ArduSub upgrade your Ubuntu:
+Inspect the checkout and its submodules first:
 
-```Bash
-sudo apt update && sudo apt upgrade
+```bash
+cd ~/ardupilot
+git status --short
+git submodule foreach --recursive git status --short
 ```
 
-**Update ArduSub:**
+Save local changes before switching versions. To restore the tested revision:
 
-Due to ArduSub usage of submodules, it is simpler to remove the whole ArduPilot repository and build it from scratch again.
-
-```Bash
-rm -rf ~/ardupilot
+```bash
+git fetch origin
+git checkout 571e8c7bd3793fce1bc5184a2f6586feb8a616e5
+git submodule update --init --recursive
 ```
 
-SUAVE is tested with [ArduSub commit `571e8c7`](https://github.com/ArduPilot/ardupilot/tree/571e8c7bd3793fce1bc5184a2f6586feb8a616e5). To test a different version, select a branch or commit from the [ArduPilot repository](https://github.com/ArduPilot/ardupilot), follow the [ArduSub installation instructions](installation.md#install-ardusub), and rebuild the workspace. ArduPilot, MAVROS, and the Gazebo plugin must remain mutually compatible.
+Follow the [ArduSub installation instructions](installation.md#install-ardusub)
+for prerequisites, then rebuild SITL when starting it. Do not use `-N` for the
+first start after changing the source revision.
 
-**Update MAVROS:**
-To update MAVROS, change its version in the [suave.repos](https://github.com/kas-lab/suave/blob/main/suave.repos) file with the newest version of [mavros](https://github.com/mavlink/mavros), or simply change the version to `ros2`. Then pull the repo:
+### MAVROS
 
-```Bash
-cd ~/suave_ws/
-vcs pull src
-```
+Inspect and preserve local changes, then check out the tested version:
 
-Alternatively, instead of updating the [suave.repos](https://github.com/kas-lab/suave/blob/main/suave.repos) file, you can just update mavros manually:
-
-```Bash
+```bash
 cd ~/suave_ws/src/mavros
-git checkout ros2
-git pull
+git status --short
 ```
 
-Don't forget to rebuild the suave workspace:
-```Bash
-cd ~/suave_ws/
+After saving local changes:
+
+```bash
+git fetch origin --tags
+git checkout 2.14.0
+```
+
+For another version, update the MAVROS entry in `suave.repos` and explicitly
+check out that same tag, commit, or branch in the existing repository.
+Editing the manifest does not change an existing checkout. `vcs pull src`
+pulls the currently checked-out branches and does not apply manifest versions.
+
+Rebuild the workspace after changing MAVROS:
+
+```bash
+cd ~/suave_ws
+source /opt/ros/humble/setup.bash
 colcon build --symlink-install
 ```
+
+For campaign failures, use the [runner diagnostics](run.md#monitor-and-diagnose)
+and inspect the reported attempt logs before retrying.

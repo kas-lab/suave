@@ -17,6 +17,7 @@ This repository is organized as following:
 - The package [suave_base](https://github.com/kas-lab/suave/tree/main/suave_base) provides a reusable base launch (managed system + metrics) for external managing systems
 - The package [suave_bringup](https://github.com/kas-lab/suave/tree/main/suave_bringup) composes missions with the built-in managing subsystems
 - The package [suave_metrics](https://github.com/kas-lab/suave/tree/main/suave_metrics) contains a node used for collecting mission metrics
+- The package [suave_requirements](https://github.com/kas-lab/suave/tree/main/suave_requirements) contains a node that monitors the runtime fulfillment of the SUAVE RELAX requirements
 - The package [suave_metacontrol](https://github.com/kas-lab/suave/tree/main/suave_managing/suave_metacontrol) contains the metacontrol implementation of the managing subsystem
 - The package [suave_random](https://github.com/kas-lab/suave/tree/main/suave_managing/suave_random) contains the implementation of a random managing subsystems
 - The package [suave_bt](https://github.com/kas-lab/suave/tree/main/suave_managing/suave_bt) contains the behavior tree implementation of the managing subsystem
@@ -129,7 +130,7 @@ The script builds the browser image as `suave:dev` and the headless runner image
 
 `source env.sh` (or build and source the workspace) to get the `suave` command:
 `suave docker build`, `suave docker run`, `suave test`, `suave run`,
-`suave batch resume --latest`. See [suave_cli/README.md](suave_cli/README.md) and
+`suave batch resume --latest`, `suave batch diagnose --latest`. See [suave_cli/README.md](suave_cli/README.md) and
 `suave --help`.
 
 ## Install SUAVE locally
@@ -187,8 +188,6 @@ export GZ_VERSION=harmonic
 sudo bash -c 'wget https://raw.githubusercontent.com/osrf/osrf-rosdep/master/gz/00-gazebo.list -O /etc/ros/rosdep/sources.list.d/00-gazebo.list'
 rosdep update
 rosdep resolve gz-harmonic
-# Navigate to your ROS workspace before the next command.
-rosdep install --from-paths src --ignore-src -y
 ```
 
 Clone and build the repository:
@@ -427,24 +426,26 @@ ros2 launch suave_bringup mission.launch.py \
 
 ### Connecting managing subsystems
 
-SUAVE is designed to allow for different managing subsystems to be used, as long as they adhere to the correct ROS 2 interfaces.
-SUAVE's ROS2 interfaces are:
+SUAVE exposes several ROS 2 interfaces that managing subsystems can use at different abstraction levels. A managing subsystem does not need to use all of them. It should use the subset that matches its control strategy.
 
-1. The `/diagnostics` topic, which is where monitoring information is published. This topic uses the [diagnostic_msgs/DiagnosticArray](https://docs.ros2.org/foxy/api/diagnostic_msgs/msg/DiagnosticArray.html) message type
-2. The `/task/request` and `/task/cancel` services, which are used to request and cancel tasks, respectively. Both services use the [suave_msgs/Task](https://github.com/kas-lab/suave/blob/main/suave_msgs/srv/Task.srv) service type
-3. Three [system_modes](https://github.com/micro-ROS/system_modes) services to change SUAVE's LifeCycle nodes mode. These services use the [system_modes_msgs/ChangeMode](https://github.com/micro-ROS/system_modes/blob/master/system_modes_msgs/srv/ChangeMode.srv) service type:
+1. The `/diagnostics` topic publishes monitoring information using the [diagnostic_msgs/DiagnosticArray](https://docs.ros2.org/foxy/api/diagnostic_msgs/msg/DiagnosticArray.html) message type. Common QA keys include `water_visibility`, `water_current`, `battery_level`, `coverage_area`, `operational_thrusters`, and `c_thruster_<N>`.
+2. The optional `/task/request` and `/task/cancel` services provide a high-level task interface through `task_bridge`. Both services use the [suave_msgs/Task](https://github.com/kas-lab/suave/blob/main/suave_msgs/srv/Task.srv) service type. They are useful for clients or managers that want to request abstract mission tasks instead of controlling individual functions directly.
+3. Three [system_modes](https://github.com/micro-ROS/system_modes) services provide a function-level reconfiguration interface. These services use the [system_modes_msgs/ChangeMode](https://github.com/micro-ROS/system_modes/blob/master/system_modes_msgs/srv/ChangeMode.srv) service type:
     1. Service `/f_maintain_motion/change_mode` to change the Maintain Motion node modes
     2. Service `/f_generate_search_path/change_mode` to change the Generate Search Path node modes
     3. Service `/f_follow_pipeline/change_mode` to change the Follow Pipeline node modes
 
-Thus, to connect a different managing subsystem to SUAVE, it must subscribe to `/diagnostics` to get monitoring information, send adaptation goals (task) requests via `/task/request` and `/task/cancel`, and send reconfiguration requests via `/f_maintain_motion/change_mode`, `/f_generate_search_path/change_mode`, or `/f_follow_pipeline/change_mode`.
+    Managers such as the Behavior Tree manager subscribe to `/diagnostics` and call these services directly.
+4. A managing subsystem may also bypass `task_bridge` and `system_modes` entirely and control the managed ROS 2 nodes directly through standard ROS 2 lifecycle transition services and parameter services. This lower-level integration is more tightly coupled to the managed nodes, but it can be appropriate for managers that need direct lifecycle or parameter control.
+
+Thus, to connect a managing subsystem to SUAVE, choose the integration level that matches the manager. A task-level manager uses `/task/request` and `/task/cancel`. A function-level manager typically uses `/diagnostics` plus the `system_modes` services. A low-level manager may use `/diagnostics` plus ROS 2 lifecycle and parameter APIs directly.
 
 
 There are two ways to connect a new managing subsystem:
 
 **External package (recommended for standalone managing systems):** Add `exec_depend` on `suave_base` in your `package.xml` and include [`suave_base.launch.py`](https://github.com/kas-lab/suave/blob/main/suave_base/launch/suave_base.launch.py) from your launch file. This starts the managed system and metrics without requiring any changes to the suave repository.
 
-**Built-in manager (contributed upstream):** Create a manager-only launch file, declare the package as a `suave_bringup` dependency, and include it behind an `adaptation_manager` condition in [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_bringup/launch/mission.launch.py). The manager launch must not start the managed system, mission node, or metrics.
+**Built-in manager :** Create a manager-only launch file, declare the package as a `suave_bringup` dependency, and include it behind an `adaptation_manager` condition in [mission.launch.py](https://github.com/kas-lab/suave/blob/main/suave_bringup/launch/mission.launch.py). Add the manager identifier to the `choices` of the `adaptation_manager` launch argument so ROS launch accepts it. The manager launch must not start the managed system, mission node, or metrics.
 
 See the [Extending SUAVE](docs/source/extend.md) page for full details and examples.
 
@@ -454,11 +455,9 @@ To extend SUAVE with new functionalities, it is only required to add new LifeCyc
 
 ## Troubleshooting
 
-List of known problems and their solutions. If you find new problems and find a solution for it, please consider contributing to this section.
+## MAVROS and ArduSub integration
 
-#### MAVROS and ArduSub integration problems:
-
-A common problem that occurs over time is that some packages are upgraded in Ubuntu 22.04 and the connection between MAVROS and ArduSub stops working. I don't know how to fix this issue long term, but a workaround is to update MAVROS and/or ArduSub and check if it works again.
+A common problem that occurs over time is that some packages are upgraded in Ubuntu and the connection between MAVROS and ArduSub stops working. I don't know how to fix this issue long term, but a workaround is to update MAVROS and/or ArduSub and check if it works again.
 
 Before updating MAVROS and ArduSub upgrade your Ubuntu:
 
@@ -466,7 +465,12 @@ Before updating MAVROS and ArduSub upgrade your Ubuntu:
 sudo apt update && sudo apt upgrade
 ```
 
-**Update ArduSub:**
+Inspect SITL and MAVROS logs before changing dependencies. Use the tested
+ArduSub commit `571e8c7bd3793fce1bc5184a2f6586feb8a616e5` and MAVROS `2.14.0`
+as the starting point. ArduSub, MAVROS, and the Gazebo plugin must remain
+compatible. Do not delete an existing checkout to change versions.
+
+#### ArduSub
 
 Due to ArduSub usage of submodules, it is simpler to remove the whole ArduPilot repository and build it from scratch again.
 
@@ -476,27 +480,37 @@ rm -rf ~/ardupilot
 
 To find the latest version of ArduSub go to the [ardupilot repo](https://github.com/ArduPilot/ardupilot) and look for the newest branch of ArduSub. This repository is tested with [ArduSub commit `571e8c7`](https://github.com/ArduPilot/ardupilot/tree/571e8c7bd3793fce1bc5184a2f6586feb8a616e5). Follow the [install ArduSub](#install-ardusub) instructions with the selected commit or branch.
 
-**Update MAVROS:**
-To update MAVROS, change its version in [suave.repos](https://github.com/kas-lab/suave/blob/main/suave.repos) to the desired [MAVROS](https://github.com/mavlink/mavros) version or branch, then pull the workspace repositories:
+#### MAVROS
 
-```Bash
-cd ~/suave_ws/
-vcs pull src
-```
+Inspect and preserve local changes, then check out the tested version:
 
-Alternatively, update MAVROS manually:
-
-```Bash
+```bash
 cd ~/suave_ws/src/mavros
-git checkout ros2
-git pull
+git status --short
 ```
 
-Don't forget to rebuild the suave workspace:
-```Bash
-cd ~/suave_ws/
+After saving local changes:
+
+```bash
+git fetch origin --tags
+git checkout 2.14.0
+```
+
+For another version, update the MAVROS entry in `suave.repos` and explicitly
+check out that same tag, commit, or branch in the existing repository.
+Editing the manifest does not change an existing checkout. `vcs pull src`
+pulls the currently checked-out branches and does not apply manifest versions.
+
+Rebuild the workspace after changing MAVROS:
+
+```bash
+cd ~/suave_ws
+source /opt/ros/humble/setup.bash
 colcon build --symlink-install
 ```
+
+For campaign failures, use the [runner diagnostics](docs/source/run.md#monitor-and-diagnose)
+and inspect the reported attempt logs before retrying.
 
 ## Related repository
 

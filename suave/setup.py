@@ -53,8 +53,10 @@ setup(
             'recharge_battery = suave.recharge_battery_lc:main',
             'spiral_search = suave.spiral_search_lc:main',
             'follow_pipeline = suave.follow_pipeline_lc:main',
+            'lifecycle_watchdog = suave.lifecycle_watchdog:main',
             'recover_thrusters = suave.recover_thrusters_lc:main',
             'task_bridge_none = suave.task_bridge_none:main',
+            'water_current = suave.water_current:main',
         ],
     },
 )

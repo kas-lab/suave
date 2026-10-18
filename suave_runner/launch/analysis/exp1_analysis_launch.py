@@ -31,9 +31,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             'results_root',
-            description='Directory with run_idx-sorted CSVs for exp1, '
-                        'e.g. the sort_results.py --output directory or '
-                        'a batch campaigns/exp1/sorted/ directory'),
+            description='The exp1 campaign folder'),
         DeclareLaunchArgument(
             'output_root', default_value=LaunchConfiguration('results_root'),
             description='Directory for output CSVs'),
