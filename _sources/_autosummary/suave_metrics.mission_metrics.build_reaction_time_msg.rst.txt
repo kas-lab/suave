@@ -1,0 +1,6 @@
+suave\_metrics.mission\_metrics.build\_reaction\_time\_msg
+==========================================================
+
+.. currentmodule:: suave_metrics.mission_metrics
+
+.. autofunction:: build_reaction_time_msg

@@ -1,0 +1,39 @@
+RechargeBattery
+===============
+
+.. currentmodule:: suave.recharge_battery_lc
+
+.. autoclass:: RechargeBattery
+
+   
+
+   
+    .. automethod:: __init__
+    .. automethod:: on_activate
+    .. automethod:: on_cleanup
+    .. automethod:: on_configure
+    .. automethod:: on_deactivate
+    .. automethod:: on_shutdown
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~RechargeBattery.__init__
+      ~RechargeBattery.on_activate
+      ~RechargeBattery.on_cleanup
+      ~RechargeBattery.on_configure
+      ~RechargeBattery.on_deactivate
+      ~RechargeBattery.on_shutdown
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+   
+   

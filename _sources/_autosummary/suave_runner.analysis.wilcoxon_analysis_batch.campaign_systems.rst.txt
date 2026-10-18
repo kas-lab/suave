@@ -1,0 +1,6 @@
+suave\_runner.analysis.wilcoxon\_analysis\_batch.campaign\_systems
+==================================================================
+
+.. currentmodule:: suave_runner.analysis.wilcoxon_analysis_batch
+
+.. autofunction:: campaign_systems

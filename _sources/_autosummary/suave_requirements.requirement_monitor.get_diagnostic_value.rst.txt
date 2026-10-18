@@ -1,0 +1,6 @@
+suave\_requirements.requirement\_monitor.get\_diagnostic\_value
+===============================================================
+
+.. currentmodule:: suave_requirements.requirement_monitor
+
+.. autofunction:: get_diagnostic_value

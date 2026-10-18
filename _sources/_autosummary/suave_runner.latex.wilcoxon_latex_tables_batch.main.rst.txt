@@ -1,0 +1,6 @@
+suave\_runner.latex.wilcoxon\_latex\_tables\_batch.main
+=======================================================
+
+.. currentmodule:: suave_runner.latex.wilcoxon_latex_tables_batch
+
+.. autofunction:: main

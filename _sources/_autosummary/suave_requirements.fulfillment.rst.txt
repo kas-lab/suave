@@ -1,0 +1,42 @@
+﻿suave\_requirements.fulfillment
+===============================
+
+.. automodule:: suave_requirements.fulfillment
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      exponential_decay
+      left_shoulder
+      reaction_time_fulfillment
+      right_shoulder
+      search_footprint_fulfillment
+      thruster_availability_fulfillment
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+   
+      MovingAverage
+   
+   
+
+   
+   
+   
+
+
+

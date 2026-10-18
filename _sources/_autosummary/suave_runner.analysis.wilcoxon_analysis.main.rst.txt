@@ -1,0 +1,6 @@
+suave\_runner.analysis.wilcoxon\_analysis.main
+==============================================
+
+.. currentmodule:: suave_runner.analysis.wilcoxon_analysis
+
+.. autofunction:: main

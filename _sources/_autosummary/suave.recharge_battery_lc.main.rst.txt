@@ -1,0 +1,6 @@
+suave.recharge\_battery\_lc.main
+================================
+
+.. currentmodule:: suave.recharge_battery_lc
+
+.. autofunction:: main

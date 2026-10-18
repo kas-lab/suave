@@ -1,0 +1,6 @@
+suave\_runner.analysis.wilcoxon\_analysis.format\_result
+========================================================
+
+.. currentmodule:: suave_runner.analysis.wilcoxon_analysis
+
+.. autofunction:: format_result

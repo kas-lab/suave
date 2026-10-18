@@ -1,0 +1,6 @@
+suave\_runner.latex.wilcoxon\_latex\_tables\_batch.render\_campaign
+===================================================================
+
+.. currentmodule:: suave_runner.latex.wilcoxon_latex_tables_batch
+
+.. autofunction:: render_campaign

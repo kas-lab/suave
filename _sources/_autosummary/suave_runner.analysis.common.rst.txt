@@ -1,0 +1,32 @@
+﻿suave\_runner.analysis.common
+=============================
+
+.. automodule:: suave_runner.analysis.common
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      accepted_rows
+      campaign_methods
+      parse_pipeline_found
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

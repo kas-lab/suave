@@ -1,0 +1,41 @@
+MavrosPositionController
+========================
+
+.. currentmodule:: suave.mavros_position_controller
+
+.. autoclass:: MavrosPositionController
+
+   
+
+   
+    .. automethod:: __init__
+    .. automethod:: destroy
+    .. automethod:: is_setpoint_reached
+    .. automethod:: is_xy_setpoint_reached
+    .. automethod:: publish_gazebo_setpoint
+    .. automethod:: publish_xy_setpoint
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MavrosPositionController.__init__
+      ~MavrosPositionController.destroy
+      ~MavrosPositionController.is_setpoint_reached
+      ~MavrosPositionController.is_xy_setpoint_reached
+      ~MavrosPositionController.publish_gazebo_setpoint
+      ~MavrosPositionController.publish_xy_setpoint
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~MavrosPositionController.has_local_pose
+      ~MavrosPositionController.local_pose
+   
+   

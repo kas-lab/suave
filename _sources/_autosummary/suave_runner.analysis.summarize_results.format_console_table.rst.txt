@@ -1,0 +1,6 @@
+suave\_runner.analysis.summarize\_results.format\_console\_table
+================================================================
+
+.. currentmodule:: suave_runner.analysis.summarize_results
+
+.. autofunction:: format_console_table

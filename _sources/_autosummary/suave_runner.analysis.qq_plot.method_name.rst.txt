@@ -1,0 +1,6 @@
+suave\_runner.analysis.qq\_plot.method\_name
+============================================
+
+.. currentmodule:: suave_runner.analysis.qq_plot
+
+.. autofunction:: method_name

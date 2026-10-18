@@ -1,0 +1,32 @@
+MovingAverage
+=============
+
+.. currentmodule:: suave_requirements.fulfillment
+
+.. autoclass:: MovingAverage
+
+   
+
+   
+    .. automethod:: __init__
+    .. automethod:: add
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MovingAverage.__init__
+      ~MovingAverage.add
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~MovingAverage.value
+   
+   

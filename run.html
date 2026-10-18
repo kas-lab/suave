@@ -1,0 +1,742 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Run SUAVE &mdash; SUAVE 1.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e0a75244"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Processing results" href="results.html" />
+    <link rel="prev" title="Use SUAVE with Docker" href="docker.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SUAVE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Install SUAVE locally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker.html">Use SUAVE with Docker</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Run SUAVE</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#run-a-campaign">Run a campaign</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#configuration-example">Configuration example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#direct-ros-alternatives">Direct ROS alternatives</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#run-a-batch">Run a batch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#monitor-and-diagnose">Monitor and diagnose</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#resume">Resume</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#batch">Batch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#campaign">Campaign</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#recovery-safeguards">Recovery safeguards</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration-reference">Configuration reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#runner-parameters">Runner parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#experiment-fields-and-startup">Experiment fields and startup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#batch-parameters">Batch parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#output-layout-and-completion-status">Output layout and completion status</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#run-manually">Run manually</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#legacy-desktop-shell-runner">Legacy desktop shell runner</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="results.html">Processing results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">SUAVE CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">System Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extend.html">Extending SUAVE and connecting managing subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementations.html">Managing Subsystem Implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="related.html">Related works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citing.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SUAVE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Run SUAVE</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/run.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="run-suave">
+<h1>Run SUAVE<a class="headerlink" href="#run-suave" title="Link to this heading"></a></h1>
+<p>Use the SUAVE CLI (<a class="reference internal" href="cli.html"><span class="doc">SUAVE CLI</span></a>) to run campaigns, sequence batches, diagnose
+failures, and resume interrupted experiments. See <a class="reference internal" href="results.html"><span class="doc">Processing results</span></a> for statistical
+analysis, summaries, plots, and LaTeX tables.</p>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<p>To run SUAVE you either need need to have a install SUAVE deps and build a ROS workspace with SUAVE, or you can use the docker images provided, check the isntalation and docker pages for more info. The easiest way to run SUAVE its through its CLI, which requires that you either run it after sourcing a workspace with SUAVE built, or sourcing <code class="docutils literal notranslate"><span class="pre">env.sh</span></code> directly, or running from a development container with ROS and the workspace installed.
+The CLI can invoke that container from the host. Put <code class="docutils literal notranslate"><span class="pre">suave</span></code> on <code class="docutils literal notranslate"><span class="pre">PATH</span></code> by
+sourcing the checkout’s <code class="docutils literal notranslate"><span class="pre">env.sh</span></code>, or use the workspace’s installed CLI hook.
+See <a class="reference internal" href="cli.html"><span class="doc">SUAVE CLI</span></a> for setup and execution-target settings.</p>
+<p>If the container is not named <code class="docutils literal notranslate"><span class="pre">suave</span></code>, pass <code class="docutils literal notranslate"><span class="pre">--container</span> <span class="pre">NAME</span></code>. Use paths visible
+inside that container. The CLI does not translate host paths, and relative
+configuration paths resolve from the container’s workspace root.</p>
+<p>Run direct ROS commands inside the container. If the environment does not
+already source the workspace, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/suave_ws
+<span class="nb">source</span><span class="w"> </span>install/setup.bash
+</pre></div>
+</div>
+<p>After changing installed configuration files, rebuild the package that owns
+them, for example <code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">build</span> <span class="pre">suave_runner</span></code> or <code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">build</span> <span class="pre">suave_missions</span></code>.</p>
+</section>
+<section id="run-a-campaign">
+<h2>Run a campaign<a class="headerlink" href="#run-a-campaign" title="Link to this heading"></a></h2>
+<p>A campaign runs one or more experiment definitions sequentially. Each definition
+selects a managing system and a number of repeated runs. The runner starts and
+stops SITL, simulation, and mission processes for each run.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>run
+suave<span class="w"> </span>run<span class="w"> </span>--config<span class="w"> </span>src/suave/my_runner.yml
+</pre></div>
+</div>
+<p>The first command uses the installed
+<a class="reference external" href="https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner/runner_config.yml">runner_config.yml</a>.
+The second uses a custom ROS parameter file. Common overrides are:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>run<span class="w"> </span>--config<span class="w"> </span>src/suave/my_runner.yml<span class="w"> </span>--gui<span class="w"> </span>--seed<span class="w"> </span><span class="m">100</span><span class="w"> </span>--run-duration<span class="w"> </span><span class="m">600</span>
+suave<span class="w"> </span>run<span class="w"> </span>--config<span class="w"> </span>src/suave/my_runner.yml<span class="w"> </span>-p<span class="w"> </span>record_bags:<span class="o">=</span><span class="nb">false</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">--gui</span></code> enables the Gazebo window. To disable it explicitly, pass <code class="docutils literal notranslate"><span class="pre">-p</span> <span class="pre">gui:=false</span></code>.
+<code class="docutils literal notranslate"><span class="pre">--run-duration</span></code> limits the wait for mission completion, not the entire startup
+and shutdown sequence.</p>
+<section id="configuration-example">
+<h3>Configuration example<a class="headerlink" href="#configuration-example" title="Link to this heading"></a></h3>
+<p>Save this file as <code class="docutils literal notranslate"><span class="pre">my_runner.yml</span></code> in the checkout:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">/suave_runner_node</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ros__parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">gui</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">random_seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">    </span><span class="nt">record_bags</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">mission_config_pkg</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">suave_missions</span>
+<span class="w">    </span><span class="nt">mission_config_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">config/runner_mission_config.yaml</span>
+<span class="w">    </span><span class="nt">experiments</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">{</span>
+<span class="w">          </span><span class="no">"experiment_launch": "ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt",</span>
+<span class="w">          </span><span class="no">"num_runs": 2,</span>
+<span class="w">          </span><span class="no">"adaptation_manager": "bt",</span>
+<span class="w">          </span><span class="no">"mission_name": "suave",</span>
+<span class="w">          </span><span class="no">"required_services": ["/f_maintain_motion/change_mode", "/f_generate_search_path/change_mode", "/f_follow_pipeline/change_mode"]</span>
+<span class="w">        </span><span class="no">}</span>
+</pre></div>
+</div>
+<p>Append experiment entries to compare more systems. For an external manager,
+replace <code class="docutils literal notranslate"><span class="pre">experiment_launch</span></code> with its launch command. For BT action mode, append
+<code class="docutils literal notranslate"><span class="pre">use_action_server:=true</span></code> to that command. An individual experiment can override
+campaign recording with <code class="docutils literal notranslate"><span class="pre">record_bags:=false</span></code> or <code class="docutils literal notranslate"><span class="pre">record_bags:=true</span></code> in the same
+command.</p>
+</section>
+<section id="direct-ros-alternatives">
+<h3>Direct ROS alternatives<a class="headerlink" href="#direct-ros-alternatives" title="Link to this heading"></a></h3>
+<p>Use the runner launch file with its installed configuration or a custom path:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>suave_runner<span class="w"> </span>suave_runner_launch.py
+ros2<span class="w"> </span>launch<span class="w"> </span>suave_runner<span class="w"> </span>suave_runner_launch.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>config_file:<span class="o">=</span>/home/ubuntu-user/suave_ws/src/suave/my_runner.yml
+</pre></div>
+</div>
+<p>To override individual node parameters, run the node directly:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>suave_runner<span class="w"> </span>suave_runner<span class="w"> </span>--ros-args<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--params-file<span class="w"> </span>src/suave/my_runner.yml<span class="w"> </span>-p<span class="w"> </span>gui:<span class="o">=</span><span class="nb">false</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="run-a-batch">
+<h2>Run a batch<a class="headerlink" href="#run-a-batch" title="Link to this heading"></a></h2>
+<p>A batch runs several campaigns sequentially. Each campaign references a runner
+configuration installed by a ROS package. Use the bundled manifest or a custom
+one:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>batch<span class="w"> </span>start
+suave<span class="w"> </span>batch<span class="w"> </span>start<span class="w"> </span>--config<span class="w"> </span>src/suave/my_batch.yml<span class="w"> </span>--fail-fast
+suave<span class="w"> </span>batch<span class="w"> </span>start<span class="w"> </span>--config<span class="w"> </span>src/suave/my_batch.yml<span class="w"> </span>--dry-run-batch
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">--dry-run-batch</span></code> prints campaign commands without executing them or creating
+batch files. It does not check installed configuration files.
+The CLI’s global <code class="docutils literal notranslate"><span class="pre">--dry-run</span></code> instead previews the CLI’s wrapped command.
+<code class="docutils literal notranslate"><span class="pre">--fail-fast</span></code> stops when a campaign process cannot start or exits nonzero.
+An incomplete campaign that exits zero does not trigger this condition.</p>
+<p>Example <code class="docutils literal notranslate"><span class="pre">my_batch.yml</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">/run_batch_node</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ros__parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">campaigns</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">'{"name":</span><span class="nv"> </span><span class="s">"exp1",</span><span class="nv"> </span><span class="s">"package":</span><span class="nv"> </span><span class="s">"suave_runner",</span><span class="nv"> </span><span class="s">"config_file":</span><span class="nv"> </span><span class="s">"config/runner/exp1_runner_config.yml"}'</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">'{"name":</span><span class="nv"> </span><span class="s">"exp2",</span><span class="nv"> </span><span class="s">"package":</span><span class="nv"> </span><span class="s">"suave_runner",</span><span class="nv"> </span><span class="s">"config_file":</span><span class="nv"> </span><span class="s">"config/runner/exp2_runner_config.yml"}'</span>
+</pre></div>
+</div>
+<p>Campaign names must be unique. List entries in execution order. Third-party
+packages can supply their own installed configurations through the same fields.
+See the bundled
+<a class="reference external" href="https://github.com/kas-lab/suave/blob/main/suave_runner/config/runner/batch_campaigns.yml">batch_campaigns.yml</a>.
+Batches can take hours or days. Use <code class="docutils literal notranslate"><span class="pre">screen</span></code> or <code class="docutils literal notranslate"><span class="pre">tmux</span></code> for unattended execution.</p>
+<p>Direct ROS alternatives:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>suave_runner<span class="w"> </span>run_batch_launch.py
+ros2<span class="w"> </span>run<span class="w"> </span>suave_runner<span class="w"> </span>run_batch<span class="w"> </span>--ros-args<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--params-file<span class="w"> </span>src/suave/my_batch.yml<span class="w"> </span>-p<span class="w"> </span>fail_fast:<span class="o">=</span><span class="nb">true</span>
+</pre></div>
+</div>
+<p>The batch launch file always loads the installed <code class="docutils literal notranslate"><span class="pre">batch_campaigns.yml</span></code> and
+declares no configuration-path argument. Use the node or CLI for custom files.</p>
+</section>
+<section id="monitor-and-diagnose">
+<h2>Monitor and diagnose<a class="headerlink" href="#monitor-and-diagnose" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>campaign<span class="w"> </span>list
+suave<span class="w"> </span>batch<span class="w"> </span>list
+suave<span class="w"> </span>batch<span class="w"> </span>diagnose<span class="w"> </span>--latest
+suave<span class="w"> </span>batch<span class="w"> </span>diagnose<span class="w"> </span>/home/ubuntu-user/suave/results/batches/BATCH<span class="w"> </span>--json
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">diagnose</span></code> accepts a batch directory, its <code class="docutils literal notranslate"><span class="pre">state.json</span></code>, or a campaign directory.
+It only reads files. It reports completed and expected run counts, failures by
+manager, failure reasons, attempt log paths, and log lines that suggest a cause.
+The direct equivalent is <code class="docutils literal notranslate"><span class="pre">ros2</span> <span class="pre">run</span> <span class="pre">suave_runner</span> <span class="pre">diagnose_batch</span> <span class="pre">PATH</span> <span class="pre">[--json]</span></code>.</p>
+<p>The runner prints per-manager summaries after each run. The batch runner prints
+them after each campaign. A batch completes when all configured runs have
+<code class="docutils literal notranslate"><span class="pre">status:</span> <span class="pre">completed</span></code> in their campaign’s <code class="docutils literal notranslate"><span class="pre">runs.json</span></code>. The normal success message
+is <code class="docutils literal notranslate"><span class="pre">All</span> <span class="pre">campaigns</span> <span class="pre">completed</span> <span class="pre">successfully.</span></code> An unfinished or interrupted batch
+normally prints a resume command. Early startup errors can stop it before that
+summary.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Failure type</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mission_done_timeout</span></code></p></td>
+<td><p>No <code class="docutils literal notranslate"><span class="pre">mission_metrics/done</span></code> within <code class="docutils literal notranslate"><span class="pre">run_duration</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">process_died_before_completion</span></code></p></td>
+<td><p>A launched process exited nonzero</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mission_control_failure</span></code></p></td>
+<td><p>A subsystem published <code class="docutils literal notranslate"><span class="pre">mission/control_failure</span></code>, including lifecycle-watchdog activation failures</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">readiness_timeout</span></code></p></td>
+<td><p>SITL or simulation did not become ready before its timeout</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">readiness_missing_service</span></code></p></td>
+<td><p>A required experiment service did not appear before <code class="docutils literal notranslate"><span class="pre">readiness_timeout</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">startup_failure</span></code></p></td>
+<td><p>Starting the run raised an exception</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">recording_invalid</span></code></p></td>
+<td><p>The completed attempt’s recording failed validation</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">shutdown_unconfirmed</span></code></p></td>
+<td><p>The runner could not confirm process shutdown and stopped the campaign</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">runner_exception</span></code></p></td>
+<td><p>The runner raised an exception during the mission stage</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">interrupted</span></code></p></td>
+<td><p>Termination interrupted the run</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">unknown</span></code></p></td>
+<td><p>The diagnostic summary has no recorded failure type</p></td>
+</tr>
+</tbody>
+</table>
+<p>A <code class="docutils literal notranslate"><span class="pre">SYSTEMIC:</span> <span class="pre">&lt;manager&gt;:</span> <span class="pre">repeated</span> <span class="pre">&lt;failure_type&gt;</span></code> warning identifies the same
+failure in at least three runs, or in at least two runs and more than half of
+that manager’s attempted runs. Inspect one failed attempt’s logs and correct
+configuration, dependency, or runtime problems before retrying.</p>
+</section>
+<section id="resume">
+<h2>Resume<a class="headerlink" href="#resume" title="Link to this heading"></a></h2>
+<section id="batch">
+<h3>Batch<a class="headerlink" href="#batch" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>batch<span class="w"> </span>resume<span class="w"> </span>--latest
+suave<span class="w"> </span>batch<span class="w"> </span>resume<span class="w"> </span>/home/ubuntu-user/suave/results/batches/BATCH/state.json
+</pre></div>
+</div>
+<p>The batch skips completed campaigns and resumes unfinished ones from their
+<code class="docutils literal notranslate"><span class="pre">runs.json</span></code>. Its <code class="docutils literal notranslate"><span class="pre">state.json</span></code> stores campaign configuration references, not
+progress. Keep those installed configurations unchanged when resuming.</p>
+<p>Direct ROS equivalent:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>suave_runner<span class="w"> </span>run_batch<span class="w"> </span>--ros-args<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>resume_state_file:<span class="o">=</span>/home/ubuntu-user/suave/results/batches/BATCH/state.json
+</pre></div>
+</div>
+</section>
+<section id="campaign">
+<h3>Campaign<a class="headerlink" href="#campaign" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>campaign<span class="w"> </span>resume<span class="w"> </span>--latest<span class="w"> </span>--config<span class="w"> </span>src/suave/my_runner.yml
+suave<span class="w"> </span>campaign<span class="w"> </span>resume<span class="w"> </span>/home/ubuntu-user/suave/results/CAMPAIGN<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--config<span class="w"> </span>src/suave/my_runner.yml
+</pre></div>
+</div>
+<p>Reuse the original runner configuration, including experiment order, run counts,
+seed, spawn settings, and perturbations. The runner indexes completion by
+<code class="docutils literal notranslate"><span class="pre">run_&lt;experiment_index&gt;_&lt;run_index&gt;</span></code> in <code class="docutils literal notranslate"><span class="pre">runs.json</span></code>, not by CSV rows.
+Changing the configuration can associate existing checkpoints with different
+experiments. Existing <code class="docutils literal notranslate"><span class="pre">mission_config_run*.yaml</span></code> files are reused. Missing
+files are regenerated from the supplied configuration and seed.</p>
+<p><code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">campaign</span> <span class="pre">resume</span> <span class="pre">--latest</span></code> searches standalone timestamped campaigns,
+not campaigns nested inside a batch. Use batch resume for the latter.</p>
+<p>Direct ROS equivalent:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>suave_runner<span class="w"> </span>suave_runner<span class="w"> </span>--ros-args<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--params-file<span class="w"> </span>src/suave/my_runner.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>resume_result_path:<span class="o">=</span>/home/ubuntu-user/suave/results/CAMPAIGN
+</pre></div>
+</div>
+</section>
+<section id="recovery-safeguards">
+<h3>Recovery safeguards<a class="headerlink" href="#recovery-safeguards" title="Link to this heading"></a></h3>
+<p>Before retrying an unfinished attempt, the runner checks that its recorded
+launch session has no live processes. Recovery does not kill those processes.
+It then resolves the attempt from its recording location:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Recording state</p></th>
+<th class="head"><p>Recovery action</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Accepted recording only</p></td>
+<td><p>Validate it and mark the run completed, or quarantine it and mark the run failed</p></td>
+</tr>
+<tr class="row-odd"><td><p>Pending recording only</p></td>
+<td><p>Move it to <code class="docutils literal notranslate"><span class="pre">rosbags/failed/</span></code> and mark the run interrupted</p></td>
+</tr>
+<tr class="row-even"><td><p>No recording</p></td>
+<td><p>Mark the unfinished run interrupted</p></td>
+</tr>
+<tr class="row-odd"><td><p>Both pending and accepted locations</p></td>
+<td><p>Stop recovery with an error</p></td>
+</tr>
+<tr class="row-even"><td><p>Completed run with recording enabled</p></td>
+<td><p>Revalidate its accepted recording. Stop on a missing or invalid recording rather than rerunning the run</p></td>
+</tr>
+</tbody>
+</table>
+<p>Before each new attempt, the runner also refuses to start if it detects a live
+<code class="docutils literal notranslate"><span class="pre">gz</span> <span class="pre">sim</span></code> process or a bound UDP port 9002, used by the vehicle’s
+<code class="docutils literal notranslate"><span class="pre">ArduPilotPlugin</span></code>. Stop the leftover simulation or SITL process before resuming.
+These checks prevent a new run from controlling a stale vehicle.</p>
+</section>
+</section>
+<section id="configuration-reference">
+<h2>Configuration reference<a class="headerlink" href="#configuration-reference" title="Link to this heading"></a></h2>
+<section id="runner-parameters">
+<h3>Runner parameters<a class="headerlink" href="#runner-parameters" title="Link to this heading"></a></h3>
+<p>These are <strong>node defaults</strong>, not the overrides in the shipped
+<code class="docutils literal notranslate"><span class="pre">runner_config.yml</span></code>. Pass overrides through a ROS parameter file or CLI <code class="docutils literal notranslate"><span class="pre">-p</span></code>.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Node default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">result_path</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">~/suave/results</span></code></p></td>
+<td><p>Parent directory for new timestamped campaign folders</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">gui</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+<td><p>Show the Gazebo window</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">experiment_logging</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+<td><p>Enable simulation and experiment console output through their <code class="docutils literal notranslate"><span class="pre">silent</span></code> launch argument. Process and ROS logs remain captured either way</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">run_duration</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">600</span></code></p></td>
+<td><p>Maximum seconds to wait for mission completion after startup readiness checks</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mission_config_pkg</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">suave_missions</span></code></p></td>
+<td><p>Package containing the mission configuration</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mission_config_file</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">config/mission_config.yaml</span></code></p></td>
+<td><p>Mission configuration path relative to the package share directory</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">enable_water_current</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+<td><p>Enable the optional water-current node</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ardupilot_executable</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">sim_vehicle.py</span> <span class="pre">-N</span> <span class="pre">-L</span> <span class="pre">RATBeach</span> <span class="pre">-v</span> <span class="pre">ArduSub</span> <span class="pre">--model=JSON</span></code></p></td>
+<td><p>SITL command. <code class="docutils literal notranslate"><span class="pre">-N</span></code> disables rebuilding</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ardupilot_ready_timeout</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">30.0</span></code></p></td>
+<td><p>Timeout in seconds for each SITL port-release and startup wait</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">suave_simulation</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ros2</span> <span class="pre">launch</span> <span class="pre">suave</span> <span class="pre">simulation.launch.py</span></code></p></td>
+<td><p>Simulation launch command</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">initial_pos_x</span></code> / <code class="docutils literal notranslate"><span class="pre">initial_pos_y</span></code> / <code class="docutils literal notranslate"><span class="pre">initial_pos_z</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">-17.0</span></code> / <code class="docutils literal notranslate"><span class="pre">2.0</span></code> / <code class="docutils literal notranslate"><span class="pre">-18.5</span></code></p></td>
+<td><p>Spawn position in the Gazebo world</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">initial_pos_x_random_interval</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[0.0,</span> <span class="pre">0.0]</span></code></p></td>
+<td><p>X spawn-offset range</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">initial_pos_y_random_interval</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[0.0,</span> <span class="pre">0.0]</span></code></p></td>
+<td><p>Y spawn-offset range</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">initial_pos_z_random_interval</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[0.0,</span> <span class="pre">0.0]</span></code></p></td>
+<td><p>Z spawn-offset range</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">water_visibility_sec_shift</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.0</span></code></p></td>
+<td><p>Fixed visibility-disturbance time shift in seconds</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">water_visibility_sec_shift_random_interval</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[0.0,</span> <span class="pre">0.0]</span></code></p></td>
+<td><p>Additional random visibility time-shift range</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">thruster_events</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">['']</span></code></p></td>
+<td><p>Thruster-event strings <code class="docutils literal notranslate"><span class="pre">(id,</span> <span class="pre">type,</span> <span class="pre">time_s)</span></code>. The default specifies no events</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">thruster_events_random_interval</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[0.0,</span> <span class="pre">0.0]</span></code></p></td>
+<td><p>Random time-shift range applied to the thruster events</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">random_interval</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">5</span></code></p></td>
+<td><p>Number of run indices sharing offsets before resampling</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">random_seed</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">100</span></code></p></td>
+<td><p>Perturbation RNG seed</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">simulation_ready_timeout</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">30.0</span></code></p></td>
+<td><p>Seconds to wait for the first <code class="docutils literal notranslate"><span class="pre">/model/bluerov2/pose</span></code> message</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">readiness_timeout</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">10.0</span></code></p></td>
+<td><p>Seconds to wait for experiment <code class="docutils literal notranslate"><span class="pre">required_services</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">resume_result_path</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">''</span></code></p></td>
+<td><p>Existing campaign folder to resume. Empty starts a timestamped folder</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">experiments</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">['']</span></code></p></td>
+<td><p>Placeholder. Supply JSON experiment entries as in the configuration example</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">record_bags</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+<td><p>Record each attempt. An experiment’s launch command can override this setting</p></td>
+</tr>
+</tbody>
+</table>
+<p>The shipped <code class="docutils literal notranslate"><span class="pre">runner_config.yml</span></code> sets Y to <code class="docutils literal notranslate"><span class="pre">2.5</span></code>, its random range to
+<code class="docutils literal notranslate"><span class="pre">[-0.5,</span> <span class="pre">0.5]</span></code>, the visibility-shift range to <code class="docutils literal notranslate"><span class="pre">[0.0,</span> <span class="pre">120.0]</span></code>, and the thruster
+shift range to <code class="docutils literal notranslate"><span class="pre">[-100.0,</span> <span class="pre">100.0]</span></code>. It schedules failures of thrusters 1 and 3 at
+100 seconds, selects <code class="docutils literal notranslate"><span class="pre">config/runner_mission_config.yaml</span></code>, and defines four
+managers with ten runs each. Other campaign configurations can differ.</p>
+<p>Offsets remain constant for <code class="docutils literal notranslate"><span class="pre">random_interval</span></code> runs and reuse the same run-index
+configuration across managers. Keep the seed and configuration fixed for
+reproducible comparisons.</p>
+</section>
+<section id="experiment-fields-and-startup">
+<h3>Experiment fields and startup<a class="headerlink" href="#experiment-fields-and-startup" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">experiment_launch</span></code></p></td>
+<td><p>Full <code class="docutils literal notranslate"><span class="pre">ros2</span> <span class="pre">launch</span></code> command for the mission and managing subsystem</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">num_runs</span></code></p></td>
+<td><p>Number of repetitions</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">adaptation_manager</span></code></p></td>
+<td><p>Manager identifier used in result filenames and run metadata</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mission_name</span></code></p></td>
+<td><p>Mission identifier used in result filenames and run metadata</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">required_services</span></code></p></td>
+<td><p>Optional absolute service names to await. Omission disables this wait</p></td>
+</tr>
+</tbody>
+</table>
+<p>Provide all four main fields. The runner starts each attempt in this order,
+using readiness checks rather than fixed startup delays:</p>
+<ol class="arabic simple">
+<li><p>Wait for TCP port 5760 to become free, start SITL, then wait for it to listen
+on that port. Each wait uses <code class="docutils literal notranslate"><span class="pre">ardupilot_ready_timeout</span></code>.</p></li>
+<li><p>Start simulation and wait for <code class="docutils literal notranslate"><span class="pre">/model/bluerov2/pose</span></code>, bounded by
+<code class="docutils literal notranslate"><span class="pre">simulation_ready_timeout</span></code>.</p></li>
+<li><p>Launch the experiment and wait for <code class="docutils literal notranslate"><span class="pre">required_services</span></code>, bounded by
+<code class="docutils literal notranslate"><span class="pre">readiness_timeout</span></code>. Then wait for <code class="docutils literal notranslate"><span class="pre">mission_metrics/done</span></code>.</p></li>
+</ol>
+<p>The bundled BT configurations require the three mode-change services shown in
+the example. Extended BT configurations also require
+<code class="docutils literal notranslate"><span class="pre">/generate_recharge_path/change_mode</span></code>. List the services required by an external
+manager in its experiment entry.</p>
+</section>
+<section id="batch-parameters">
+<h3>Batch parameters<a class="headerlink" href="#batch-parameters" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">batch_dir</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">''</span></code></p></td>
+<td><p>New batch directory, which must not exist. Empty generates <code class="docutils literal notranslate"><span class="pre">~/suave/results/batches/batch_YYYYMMDD_HHMMSS</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">resume_state_file</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">''</span></code></p></td>
+<td><p>Existing batch manifest to resume. Mutually exclusive with <code class="docutils literal notranslate"><span class="pre">batch_dir</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fail_fast</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+<td><p>Stop if a campaign process cannot start or exits nonzero</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dry_run</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+<td><p>Print campaign commands from <code class="docutils literal notranslate"><span class="pre">campaigns</span></code> without executing them. Does not load a resume manifest</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">campaigns</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">['']</span></code></p></td>
+<td><p>JSON strings with unique <code class="docutils literal notranslate"><span class="pre">name</span></code>, installed <code class="docutils literal notranslate"><span class="pre">package</span></code>, and package-relative <code class="docutils literal notranslate"><span class="pre">config_file</span></code>. Required for new batches and dry runs</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="output-layout-and-completion-status">
+<h2>Output layout and completion status<a class="headerlink" href="#output-layout-and-completion-status" title="Link to this heading"></a></h2>
+<p>Standalone campaigns create <code class="docutils literal notranslate"><span class="pre">&lt;result_path&gt;/YYYY_MM_DD_HH-MM-SS/</span></code>.
+Batch campaigns use <code class="docutils literal notranslate"><span class="pre">&lt;batch_dir&gt;/campaigns/&lt;campaign_name&gt;/</span></code> instead.
+Each campaign contains:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>CAMPAIGN/
+  &lt;manager&gt;_&lt;mission&gt;.csv
+  mission_config_run&lt;run_index&gt;.yaml
+  runs.json
+  logs/run_&lt;experiment_index&gt;_&lt;run_index&gt;/&lt;attempt_id&gt;/
+    ardupilot.log
+    simulation/
+    experiment/
+  rosbags/
+    pending/&lt;manager&gt;_&lt;mission&gt;_&lt;run_id&gt;_&lt;attempt_id&gt;/
+    &lt;manager&gt;_&lt;mission&gt;_&lt;run_id&gt;_&lt;attempt_id&gt;/
+    failed/&lt;manager&gt;_&lt;mission&gt;_&lt;run_id&gt;_&lt;attempt_id&gt;/
+</pre></div>
+</div>
+<p>The runner writes <code class="docutils literal notranslate"><span class="pre">runs.json</span></code> as the completion checkpoint. Each run records its
+configuration, current attempt ID, status, recording state, timestamps, and
+failure details. Earlier attempts remain under <code class="docutils literal notranslate"><span class="pre">attempts</span></code>. The campaign header
+records the seed, simulation launch command, and SITL command.</p>
+<p>A run is complete only when its status is <code class="docutils literal notranslate"><span class="pre">completed</span></code>. Mission completion does
+not imply pipeline detection. A failed process or <code class="docutils literal notranslate"><span class="pre">mission/control_failure</span></code>
+fails the run. The runner continues after ordinary run failures, but stops if
+it cannot establish safe shutdown or detects a stale simulation.</p>
+<p>With recording enabled, attempts start under <code class="docutils literal notranslate"><span class="pre">rosbags/pending/</span></code>. After mission
+completion and process shutdown, the runner validates MCAP metadata, storage
+files, and the reader stream. It moves a valid bag to the accepted location
+before writing <code class="docutils literal notranslate"><span class="pre">status:</span> <span class="pre">completed</span></code> and <code class="docutils literal notranslate"><span class="pre">bag:</span> <span class="pre">accepted</span></code>. Failed or interrupted
+attempts move to <code class="docutils literal notranslate"><span class="pre">rosbags/failed/</span></code> when a recording exists. Without recording,
+<code class="docutils literal notranslate"><span class="pre">bag</span></code> is <code class="docutils literal notranslate"><span class="pre">null</span></code> and completion does not require bag validation.</p>
+<p>A batch also contains <code class="docutils literal notranslate"><span class="pre">state.json</span></code>, <code class="docutils literal notranslate"><span class="pre">run_batch.log</span></code>, and one <code class="docutils literal notranslate"><span class="pre">&lt;campaign_name&gt;.log</span></code>
+with combined campaign stdout and stderr. The manifest stores campaign
+references. Each campaign’s <code class="docutils literal notranslate"><span class="pre">runs.json</span></code> stores progress. See <a class="reference internal" href="metrics.html"><span class="doc">Metrics Reference</span></a> for
+CSV contents and <a class="reference internal" href="results.html"><span class="doc">Processing results</span></a> for selecting attempts during analysis.</p>
+</section>
+<section id="run-manually">
+<h2>Run manually<a class="headerlink" href="#run-manually" title="Link to this heading"></a></h2>
+<p>Start these commands in <strong>three separate terminals</strong> inside the container,
+with the workspace environment available in each.</p>
+<ol class="arabic">
+<li><p>Start SITL:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sim_vehicle.py<span class="w"> </span>-L<span class="w"> </span>RATBeach<span class="w"> </span>-v<span class="w"> </span>ArduSub<span class="w"> </span>--model<span class="o">=</span>JSON<span class="w"> </span>--console
+</pre></div>
+</div>
+</li>
+<li><p>Start simulation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>suave<span class="w"> </span>simulation.launch.py<span class="w"> </span>x:<span class="o">=</span>-17.0<span class="w"> </span>y:<span class="o">=</span><span class="m">2</span>.0
+</pre></div>
+</div>
+</li>
+<li><p>Start the mission:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>suave_bringup<span class="w"> </span>mission.launch.py
+</pre></div>
+</div>
+</li>
+</ol>
+<p>Wait for SITL and simulation to become ready before starting the mission.
+The default launch runs a time-constrained mission without an adaptation manager.
+To follow the vehicle in Gazebo, right-click its entity and select follow.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Launch argument</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">adaptation_manager</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">none</span></code></p></td>
+<td><p>Select <code class="docutils literal notranslate"><span class="pre">none</span></code>, <code class="docutils literal notranslate"><span class="pre">metacontrol</span></code>, <code class="docutils literal notranslate"><span class="pre">random</span></code>, or <code class="docutils literal notranslate"><span class="pre">bt</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mission_config</span></code></p></td>
+<td><p>Installed <code class="docutils literal notranslate"><span class="pre">suave_missions/config/mission_config.yaml</span></code></p></td>
+<td><p>Mission parameters, including the time limit and disturbance settings</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mission_type</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">time_constrained_mission</span></code></p></td>
+<td><p>Metrics label, not a mission-executable selector</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">result_path</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">~/suave/results</span></code></p></td>
+<td><p>CSV and recording output directory. Overrides the mission YAML’s metrics path</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">result_filename</span></code></p></td>
+<td><p>Empty</p></td>
+<td><p>Metrics filename. Empty uses the metrics node’s default</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">record_bags</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+<td><p>Enable MCAP recording</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">use_action_server</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+<td><p>Run BT-managed behaviors through ROS actions</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bt_executable</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">suave_bt</span></code></p></td>
+<td><p>Select <code class="docutils literal notranslate"><span class="pre">suave_bt</span></code> or <code class="docutils literal notranslate"><span class="pre">suave_bt_extended</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>For non-BT managers, the launch file starts <code class="docutils literal notranslate"><span class="pre">time_constrained_mission</span></code>.
+Changing <code class="docutils literal notranslate"><span class="pre">mission_type</span></code> only changes the metrics label. BT execution controls
+its own mission sequence. Inspect all launch arguments with
+<code class="docutils literal notranslate"><span class="pre">ros2</span> <span class="pre">launch</span> <span class="pre">suave_bringup</span> <span class="pre">mission.launch.py</span> <span class="pre">--show-args</span></code>.</p>
+<p>Examples:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>suave_bringup<span class="w"> </span>mission.launch.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>adaptation_manager:<span class="o">=</span>metacontrol<span class="w"> </span>result_filename:<span class="o">=</span>measurement_1<span class="w"> </span>record_bags:<span class="o">=</span><span class="nb">false</span>
+ros2<span class="w"> </span>launch<span class="w"> </span>suave_bringup<span class="w"> </span>mission.launch.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>adaptation_manager:<span class="o">=</span>bt<span class="w"> </span>use_action_server:<span class="o">=</span><span class="nb">true</span>
+</pre></div>
+</div>
+</section>
+<section id="legacy-desktop-shell-runner">
+<h2>Legacy desktop shell runner<a class="headerlink" href="#legacy-desktop-shell-runner" title="Link to this heading"></a></h2>
+<p>The shell runner requires a GUI desktop and <code class="docutils literal notranslate"><span class="pre">xfce4-terminal</span></code>, even when Gazebo’s
+GUI is disabled. It uses fixed startup delays and broad process cleanup rather
+than the ROS runner’s readiness checks and <code class="docutils literal notranslate"><span class="pre">runs.json</span></code> recovery. Run it in a
+dedicated container without unrelated ROS or Gazebo processes.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/suave_ws/src/suave/runner
+./example_run.sh
+</pre></div>
+</div>
+<p>The example runs one time-constrained mission with Metacontrol and the GUI.
+For explicit settings:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./runner.sh<span class="w"> </span><span class="nb">false</span><span class="w"> </span>metacontrol<span class="w"> </span><span class="nb">time</span><span class="w"> </span><span class="m">2</span>
+</pre></div>
+</div>
+<p>The four positional arguments are GUI (<code class="docutils literal notranslate"><span class="pre">true</span></code> or <code class="docutils literal notranslate"><span class="pre">false</span></code>), manager (<code class="docutils literal notranslate"><span class="pre">none</span></code>,
+<code class="docutils literal notranslate"><span class="pre">metacontrol</span></code>, <code class="docutils literal notranslate"><span class="pre">random</span></code>, or <code class="docutils literal notranslate"><span class="pre">bt</span></code>), mission label (<code class="docutils literal notranslate"><span class="pre">time</span></code>, <code class="docutils literal notranslate"><span class="pre">distance</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">extended</span></code>), and repetition count. The script maps these labels to launch
+arguments. The distance label does not select a distance-constrained executable
+in the current mission launch file. The <code class="docutils literal notranslate"><span class="pre">bt</span> <span class="pre">extended</span></code> combination selects
+<code class="docutils literal notranslate"><span class="pre">suave_bt_extended</span></code>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="docker.html" class="btn btn-neutral float-left" title="Use SUAVE with Docker" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="results.html" class="btn btn-neutral float-right" title="Processing results" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gustavo Rezende, Juliane Päßler, Jeroen Zwanepol, Elvin Alberts, Lizeth Tarifa, Ilias Gerostathopoulos, Einar Johnsen, Carlos Hernández.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

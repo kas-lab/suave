@@ -1,0 +1,6 @@
+suave\_requirements.fulfillment.search\_footprint\_fulfillment
+==============================================================
+
+.. currentmodule:: suave_requirements.fulfillment
+
+.. autofunction:: search_footprint_fulfillment

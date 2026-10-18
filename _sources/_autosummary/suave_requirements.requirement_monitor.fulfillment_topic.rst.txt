@@ -1,0 +1,6 @@
+suave\_requirements.requirement\_monitor.fulfillment\_topic
+===========================================================
+
+.. currentmodule:: suave_requirements.requirement_monitor
+
+.. autofunction:: fulfillment_topic

@@ -1,0 +1,6 @@
+suave.water\_current.main
+=========================
+
+.. currentmodule:: suave.water_current
+
+.. autofunction:: main

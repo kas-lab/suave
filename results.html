@@ -1,0 +1,619 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Processing results &mdash; SUAVE 1.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e0a75244"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="SUAVE CLI" href="cli.html" />
+    <link rel="prev" title="Run SUAVE" href="run.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SUAVE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Install SUAVE locally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker.html">Use SUAVE with Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run.html">Run SUAVE</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Processing results</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#choose-a-tool">Choose a tool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#inputs-and-filtering">Inputs and filtering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#result-summary">Result summary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#wilcoxon-analysis-paired">Wilcoxon analysis (paired)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#single-campaign-usage">Single-campaign usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#batch-usage">Batch usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#statistical-rules-and-outputs">Statistical rules and outputs</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#mann-whitney-analysis">Mann-Whitney analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#q-q-plots-of-paired-differences">Q-Q plots of paired differences</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#single-comparisons">Single comparisons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#batch-plots">Batch plots</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#wilcoxon-latex-tables">Wilcoxon LaTeX tables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#output-layout-and-tool-locations">Output layout and tool locations</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">SUAVE CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">System Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extend.html">Extending SUAVE and connecting managing subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementations.html">Managing Subsystem Implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="related.html">Related works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citing.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SUAVE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Processing results</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/results.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="processing-results">
+<h1>Processing results<a class="headerlink" href="#processing-results" title="Link to this heading"></a></h1>
+<p>This page describes campaign summaries, statistical comparisons, Q-Q plots, and
+LaTeX tables. See <a class="reference internal" href="run.html"><span class="doc">Run SUAVE</span></a> for campaign execution, output files, failure
+diagnosis, and recovery.</p>
+<section id="choose-a-tool">
+<h2>Choose a tool<a class="headerlink" href="#choose-a-tool" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Task</p></th>
+<th class="head"><p>Tool</p></th>
+<th class="head"><p>Experimental design</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Summarize detection rates and mission metrics</p></td>
+<td><p><a class="reference internal" href="#result-summary">Result summary</a></p></td>
+<td><p>One campaign</p></td>
+</tr>
+<tr class="row-odd"><td><p>Compare systems on matched scenarios</p></td>
+<td><p><a class="reference internal" href="#wilcoxon-analysis-paired">Wilcoxon analysis</a></p></td>
+<td><p>Paired runs</p></td>
+</tr>
+<tr class="row-even"><td><p>Compare independent samples</p></td>
+<td><p><a class="reference internal" href="#mann-whitney-analysis">Mann-Whitney analysis</a></p></td>
+<td><p>Independent runs</p></td>
+</tr>
+<tr class="row-odd"><td><p>Inspect paired-difference distributions</p></td>
+<td><p><a class="reference internal" href="#q-q-plots-of-paired-differences">Q-Q plots</a></p></td>
+<td><p>Paired observations</p></td>
+</tr>
+<tr class="row-even"><td><p>Generate pairwise comparison tables</p></td>
+<td><p><a class="reference internal" href="#wilcoxon-latex-tables">Wilcoxon LaTeX tables</a></p></td>
+<td><p>Existing Wilcoxon results</p></td>
+</tr>
+</tbody>
+</table>
+<p>Use the SUAVE CLI (<a class="reference internal" href="cli.html"><span class="doc">SUAVE CLI</span></a>) for summaries and single-campaign statistical
+comparisons. Pass analysis arguments after <code class="docutils literal notranslate"><span class="pre">--</span></code>. The CLI does not wrap the
+batch analysis, Q-Q plotting, or pairwise LaTeX scripts.</p>
+</section>
+<section id="inputs-and-filtering">
+<h2>Inputs and filtering<a class="headerlink" href="#inputs-and-filtering" title="Link to this heading"></a></h2>
+<p>A campaign folder contains raw <code class="docutils literal notranslate"><span class="pre">&lt;manager&gt;_&lt;mission&gt;.csv</span></code> files and <code class="docutils literal notranslate"><span class="pre">runs.json</span></code>.
+The tools differ in how they select observations.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Tool</p></th>
+<th class="head"><p>Attempt selection</p></th>
+<th class="head"><p>Metric filtering</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Summary</p></td>
+<td><p>All CSV rows, including rows from failed attempts</p></td>
+<td><p>Search time and distance require pipeline detection. Reaction time excludes zero values</p></td>
+</tr>
+<tr class="row-odd"><td><p>Mann-Whitney</p></td>
+<td><p>All CSV rows, including rows from failed attempts</p></td>
+<td><p>Uses the supplied metric samples without the paired-detection filter</p></td>
+</tr>
+<tr class="row-even"><td><p>Wilcoxon</p></td>
+<td><p>Completed attempts identified by <code class="docutils literal notranslate"><span class="pre">runs.json</span></code>, <code class="docutils literal notranslate"><span class="pre">run_idx</span></code>, and <code class="docutils literal notranslate"><span class="pre">attempt_id</span></code></p></td>
+<td><p>Both systems must detect the pipeline for both metrics</p></td>
+</tr>
+<tr class="row-odd"><td><p>Q-Q, separate campaign CSVs</p></td>
+<td><p>Completed attempts identified by <code class="docutils literal notranslate"><span class="pre">runs.json</span></code>, <code class="docutils literal notranslate"><span class="pre">run_idx</span></code>, and <code class="docutils literal notranslate"><span class="pre">attempt_id</span></code></p></td>
+<td><p>Keeps complete numeric pairs, including zeros and nondetections</p></td>
+</tr>
+</tbody>
+</table>
+<p>For paired analyses, verify that matching run IDs represent the same scenario
+and compatible non-treatment settings. Equal IDs alone do not establish pairing
+across campaigns. Batch tools compare systems within each campaign, never across
+campaigns.</p>
+<p>The completed-attempt loader rejects missing identity columns, missing
+<code class="docutils literal notranslate"><span class="pre">runs.json</span></code>, managers without completed runs, duplicate accepted rows, and
+completed runs without CSV rows. These checks do not establish scenario equivalence.</p>
+<p>The metric column names are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pipeline</span> <span class="pre">found</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">time</span> <span class="pre">searching</span> <span class="pre">pipeline</span> <span class="pre">(s)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">distance</span> <span class="pre">inspected</span> <span class="pre">(m)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mean</span> <span class="pre">reaction</span> <span class="pre">time</span> <span class="pre">(s)</span></code></p></li>
+</ul>
+<p>The summary requires all four columns. Wilcoxon requires the first three.
+Mann-Whitney requires the three numeric metrics. Q-Q plots use the selected
+numeric columns. Detection values accept <code class="docutils literal notranslate"><span class="pre">true</span></code>/<code class="docutils literal notranslate"><span class="pre">false</span></code>, <code class="docutils literal notranslate"><span class="pre">1</span></code>/<code class="docutils literal notranslate"><span class="pre">0</span></code>, or <code class="docutils literal notranslate"><span class="pre">yes</span></code>/<code class="docutils literal notranslate"><span class="pre">no</span></code>,
+without case sensitivity. Validate metric values before analysis.</p>
+</section>
+<section id="result-summary">
+<h2>Result summary<a class="headerlink" href="#result-summary" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">summarize_results</span></code> discovers <code class="docutils literal notranslate"><span class="pre">&lt;manager&gt;_suave.csv</span></code> files in one campaign folder
+and ignores per-event CSVs. Each input file must contain at least one row and
+numeric, non-missing metric values.</p>
+<p>Use the CLI to print statistics and optionally export a LaTeX table:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>analyze<span class="w"> </span>summarize<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>/home/ubuntu-user/suave/results/batches/BATCH/campaigns/exp3<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--latex-output<span class="w"> </span>/tmp/suave_results.tex
+</pre></div>
+</div>
+<p>The direct ROS equivalent is <code class="docutils literal notranslate"><span class="pre">ros2</span> <span class="pre">run</span> <span class="pre">suave_runner</span> <span class="pre">summarize_results</span></code>, followed
+by the same path and options.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Argument</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">results_path</span></code></p></td>
+<td><p>Required</p></td>
+<td><p>Campaign folder containing <code class="docutils literal notranslate"><span class="pre">*_suave.csv</span></code> files</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--latex</span></code></p></td>
+<td><p>Disabled</p></td>
+<td><p>Write <code class="docutils literal notranslate"><span class="pre">&lt;results_path&gt;/suave_results.tex</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--latex-output</span> <span class="pre">PATH</span></code></p></td>
+<td><p>Not set</p></td>
+<td><p>Write to <code class="docutils literal notranslate"><span class="pre">PATH</span></code> and create parent directories. Also enables LaTeX output</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--precision</span> <span class="pre">N</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2</span></code></p></td>
+<td><p>Decimal places in terminal and LaTeX output</p></td>
+</tr>
+</tbody>
+</table>
+<p>The summary reports detection counts and percentages, and the mean and sample
+standard deviation of each metric. It applies the filters in
+<a class="reference internal" href="#inputs-and-filtering">Inputs and filtering</a>. It reports <code class="docutils literal notranslate"><span class="pre">N/A</span></code> when no applicable
+observations remain, or when fewer than two observations support a sample
+standard deviation. Zero reaction time indicates that the run recorded no
+reaction-time sample.</p>
+<p>The tool derives manager identifiers from filenames and uses the display labels
+in <code class="docutils literal notranslate"><span class="pre">suave_tools/labels.py</span></code>. Unknown identifiers remain unchanged.</p>
+<p>The LaTeX output contains a complete <code class="docutils literal notranslate"><span class="pre">table</span></code> environment with label
+<code class="docutils literal notranslate"><span class="pre">tab:suave_results</span></code>. Include it in a document with:</p>
+<div class="highlight-latex notranslate"><div class="highlight"><pre><span></span><span class="k">\usepackage</span><span class="nb">{</span>booktabs,graphicx<span class="nb">}</span>
+<span class="c">% In the document body:</span>
+<span class="k">\input</span><span class="nb">{</span>tables/suave<span class="nb">_</span>results.tex<span class="nb">}</span>
+</pre></div>
+</div>
+</section>
+<section id="wilcoxon-analysis-paired">
+<h2>Wilcoxon analysis (paired)<a class="headerlink" href="#wilcoxon-analysis-paired" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">wilcoxon_analysis</span></code> applies one-sided Wilcoxon signed-rank tests to every ordered
+pair of systems. Use it for matched scenarios, as in SUAVE campaigns that reuse
+perturbation configurations across systems.</p>
+<section id="single-campaign-usage">
+<h3>Single-campaign usage<a class="headerlink" href="#single-campaign-usage" title="Link to this heading"></a></h3>
+<p>Run the CLI with a ROS parameter file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>analyze<span class="w"> </span>wilcoxon<span class="w"> </span>--<span class="w"> </span>--ros-args<span class="w"> </span>--params-file<span class="w"> </span>my_analysis.yml
+</pre></div>
+</div>
+<p>Example <code class="docutils literal notranslate"><span class="pre">my_analysis.yml</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">/wilcoxon_analysis</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ros__parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">result_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/home/ubuntu-user/suave/results/campaign/wilcoxon_analysis</span>
+<span class="w">    </span><span class="nt">filename</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">none_vs_bt</span>
+<span class="w">    </span><span class="nt">correction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">holm</span>
+<span class="w">    </span><span class="nt">data_files</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">'{"managing_system":</span><span class="nv"> </span><span class="s">"none",</span><span class="nv"> </span><span class="s">"data_file":</span><span class="nv"> </span><span class="s">"/home/ubuntu-user/suave/results/campaign/none_suave.csv"}'</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">'{"managing_system":</span><span class="nv"> </span><span class="s">"bt",</span><span class="nv"> </span><span class="s">"data_file":</span><span class="nv"> </span><span class="s">"/home/ubuntu-user/suave/results/campaign/bt_suave.csv"}'</span>
+</pre></div>
+</div>
+<p>Replace the paths with raw CSVs from the same campaign. Use unique system labels.
+The direct ROS equivalent is:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>suave_runner<span class="w"> </span>wilcoxon_analysis<span class="w"> </span>--ros-args<span class="w"> </span>--params-file<span class="w"> </span>my_analysis.yml
+</pre></div>
+</div>
+<p>For the bundled <code class="docutils literal notranslate"><span class="pre">exp1</span></code> through <code class="docutils literal notranslate"><span class="pre">exp3</span></code> and <code class="docutils literal notranslate"><span class="pre">extended_exp1</span></code> through <code class="docutils literal notranslate"><span class="pre">extended_exp3</span></code>
+campaigns, preconfigured launch files provide the CSV mappings:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>suave_runner<span class="w"> </span>exp1_analysis_launch.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>results_root:<span class="o">=</span>/home/ubuntu-user/suave/results/campaign<span class="w"> </span>correction:<span class="o">=</span>holm
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">results_root</span></code> identifies the campaign folder. <code class="docutils literal notranslate"><span class="pre">output_root</span></code> defaults to
+<code class="docutils literal notranslate"><span class="pre">results_root</span></code>. Check the mappings in
+<a class="reference external" href="https://github.com/kas-lab/suave/blob/main/suave_runner/config/analysis/exp1_analysis_config.yml">exp1_analysis_config.yml</a>
+when the campaign uses different systems.</p>
+</section>
+<section id="parameters">
+<h3>Parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h3>
+<p>Wilcoxon and Mann-Whitney share the following ROS parameters, with different
+filename defaults:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">data_files</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">['']</span></code></p></td>
+<td><p>Required array of JSON strings containing <code class="docutils literal notranslate"><span class="pre">managing_system</span></code> and <code class="docutils literal notranslate"><span class="pre">data_file</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">result_path</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">~/suave/results</span></code></p></td>
+<td><p>Output directory</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">filename</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">suave_wilcoxon_analysis</span></code> for Wilcoxon, <code class="docutils literal notranslate"><span class="pre">suave_statistical_analysis</span></code> for Mann-Whitney</p></td>
+<td><p>Output filename prefix</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">correction</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">none</span></code></p></td>
+<td><p>Wilcoxon only. Set <code class="docutils literal notranslate"><span class="pre">holm</span></code> for Holm-Bonferroni correction</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="batch-usage">
+<h3>Batch usage<a class="headerlink" href="#batch-usage" title="Link to this heading"></a></h3>
+<p>The batch script analyzes every manager listed in each campaign’s <code class="docutils literal notranslate"><span class="pre">runs.json</span></code>,
+in experiment order. Each campaign needs at least two managers.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>src/suave/suave_runner/suave_runner/analysis/wilcoxon_analysis_batch.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>/home/ubuntu-user/suave/results/batches/BATCH<span class="w"> </span>--correction<span class="w"> </span>holm
+</pre></div>
+</div>
+<p>The batch scripts accept a batch root, its <code class="docutils literal notranslate"><span class="pre">campaigns</span></code> directory, its <code class="docutils literal notranslate"><span class="pre">state.json</span></code>,
+or one campaign folder. Wilcoxon writes to
+<code class="docutils literal notranslate"><span class="pre">&lt;batch&gt;/campaign_results/&lt;experiment&gt;/wilcoxon_analysis/</span></code> by default.
+<code class="docutils literal notranslate"><span class="pre">--output</span> <span class="pre">PATH</span></code> replaces the <code class="docutils literal notranslate"><span class="pre">campaign_results</span></code> root. <code class="docutils literal notranslate"><span class="pre">--correction</span></code> defaults to
+<code class="docutils literal notranslate"><span class="pre">none</span></code>.</p>
+<p>The batch wrapper requires identical run-ID sets, nonnegative integer IDs,
+finite numeric metrics, and valid detection values. The single-campaign engine
+instead uses the intersection of run IDs and reports unmatched IDs in its
+output. Check and resolve incomplete pairing before interpreting that output.
+The engine does not provide the batch wrapper’s full input validation.</p>
+</section>
+<section id="statistical-rules-and-outputs">
+<h3>Statistical rules and outputs<a class="headerlink" href="#statistical-rules-and-outputs" title="Link to this heading"></a></h3>
+<p>For systems A and B, the paired difference is A minus B:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Metric</p></th>
+<th class="head"><p>Alternative</p></th>
+<th class="head"><p>Effect direction favoring A</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Search time</p></td>
+<td><p>A is lower than B (<code class="docutils literal notranslate"><span class="pre">less</span></code>)</p></td>
+<td><p>Negative</p></td>
+</tr>
+<tr class="row-odd"><td><p>Distance inspected</p></td>
+<td><p>A is greater than B (<code class="docutils literal notranslate"><span class="pre">greater</span></code>)</p></td>
+<td><p>Positive</p></td>
+</tr>
+</tbody>
+</table>
+<p>Both metrics require detection by both systems. Nondetection censors search
+time at the mission duration and prevents inspection. Retain zero distance
+when both systems found the pipeline. The comparisons therefore describe
+performance conditional on detection, not overall detection success.</p>
+<p>Holm correction pools all computed ordered-pair tests across both metrics in
+one invocation. The batch script applies correction separately within each
+campaign. With <code class="docutils literal notranslate"><span class="pre">correction:</span> <span class="pre">none</span></code>, <code class="docutils literal notranslate"><span class="pre">p_adjusted</span></code> equals <code class="docutils literal notranslate"><span class="pre">p_raw</span></code>.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Output</p></th>
+<th class="head"><p>Contents</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&lt;filename&gt;_results.csv</span></code></p></td>
+<td><p>Primary output with pair counts, positive/negative/zero differences, median difference, test statistic, raw and adjusted p-values, rank-biserial effect size, exclusions, and notes</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&lt;filename&gt;_time_search_pipeline.csv</span></code></p></td>
+<td><p>Search-time matrix of raw p-values</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&lt;filename&gt;_distance_inspected.csv</span></code></p></td>
+<td><p>Distance matrix of raw p-values</p></td>
+</tr>
+</tbody>
+</table>
+<p>Batch filenames use <code class="docutils literal notranslate"><span class="pre">&lt;experiment&gt;_wilcoxon</span></code> as the prefix. Matrix cell <code class="docutils literal notranslate"><span class="pre">(A,</span> <span class="pre">B)</span></code>
+tests the directional alternative for A against B. Diagonal cells are empty.</p>
+<p>The engine does not compute a test with fewer than two nonzero differences.
+<code class="docutils literal notranslate"><span class="pre">n_used</span></code> includes zeros, while <code class="docutils literal notranslate"><span class="pre">n_pos</span> <span class="pre">+</span> <span class="pre">n_neg</span></code> counts nonzero differences.
+Use <code class="docutils literal notranslate"><span class="pre">p_adjusted</span></code> from the primary CSV for corrected conclusions. Secondary
+matrices and console significance labels use raw p-values.</p>
+<p>A nonsignificant result does not establish equality. The usual location-shift
+interpretation requires independent pairs and reasonably symmetric paired
+differences. Normality of individual system samples does not determine whether
+the experimental design is paired.</p>
+</section>
+</section>
+<section id="mann-whitney-analysis">
+<h2>Mann-Whitney analysis<a class="headerlink" href="#mann-whitney-analysis" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">mann_whitney_analysis</span></code> treats systems’ runs as independent samples. Use it when
+the experimental design does not match scenarios across systems. It compares
+sample ranks and distributions, not arithmetic means directly.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>analyze<span class="w"> </span>mann-whitney<span class="w"> </span>--<span class="w"> </span>--ros-args<span class="w"> </span>--params-file<span class="w"> </span>independent_analysis.yml
+</pre></div>
+</div>
+<p>Use the <a class="reference internal" href="#parameters">shared parameters</a> in a ROS parameter file under
+<code class="docutils literal notranslate"><span class="pre">/analysis</span></code>, the Mann-Whitney node name. Omit <code class="docutils literal notranslate"><span class="pre">correction</span></code> and supply CSVs
+from independent samples. The direct ROS equivalent is <code class="docutils literal notranslate"><span class="pre">ros2</span> <span class="pre">run</span> <span class="pre">suave_runner</span> <span class="pre">mann_whitney_analysis</span></code>, followed by the same ROS arguments.</p>
+<p>The tool reports Shapiro-Wilk normality diagnostics and one-sided Mann-Whitney
+U tests. The diagnostics do not alter the tests. Alternatives are lower search
+time, greater distance inspected, and lower mean reaction time for row system A
+against column system B.</p>
+<p>The tool writes raw-p-value matrices with suffixes <code class="docutils literal notranslate"><span class="pre">_time_search_pipeline.csv</span></code>,
+<code class="docutils literal notranslate"><span class="pre">_distance_inspected.csv</span></code>, and <code class="docutils literal notranslate"><span class="pre">_mean_reaction_time.csv</span></code>. Diagonal cells are
+empty. It uses a significance threshold of <code class="docutils literal notranslate"><span class="pre">0.05</span></code> and applies no
+multiple-comparison correction. A nonsignificant result does not establish
+equality or the opposite direction.</p>
+<p>Unlike Wilcoxon, this tool includes nondetections and failed-attempt CSV rows.
+Nondetection sets search time to the mission duration. A run without adaptation
+events has mean reaction time <code class="docutils literal notranslate"><span class="pre">0.0</span></code>.</p>
+</section>
+<section id="q-q-plots-of-paired-differences">
+<h2>Q-Q plots of paired differences<a class="headerlink" href="#q-q-plots-of-paired-differences" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">qq_plot.py</span></code> plots A minus B against normal quantiles to inspect the paired
+t-test normality assumption. It fits a reference line to the differences but
+does not perform a formal normality test or classify the distribution.</p>
+<section id="single-comparisons">
+<h3>Single comparisons<a class="headerlink" href="#single-comparisons" title="Link to this heading"></a></h3>
+<p>Compare two columns in one CSV, paired by row:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>src/suave/suave_runner/suave_runner/analysis/qq_plot.py<span class="w"> </span>results.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--column-a<span class="w"> </span>suave<span class="w"> </span>--column-b<span class="w"> </span>baseline<span class="w"> </span>--output<span class="w"> </span>qq_suave_baseline.png
+</pre></div>
+</div>
+<p>Compare one metric in two raw CSVs from the same campaign:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>src/suave/suave_runner/suave_runner/analysis/qq_plot.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>/path/to/campaign/metacontrol_suave.csv<span class="w"> </span>/path/to/campaign/bt_suave.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--column-a<span class="w"> </span><span class="s1">'time searching pipeline (s)'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--column-b<span class="w"> </span><span class="s1">'time searching pipeline (s)'</span><span class="w"> </span>--output<span class="w"> </span>qq_search.png
+</pre></div>
+</div>
+<p>Separate files use completed attempts and match unique <code class="docutils literal notranslate"><span class="pre">run_idx</span></code> values,
+regardless of row order. <code class="docutils literal notranslate"><span class="pre">--run-column</span></code> selects another pairing key.
+The tool rejects unmatched or duplicate IDs. <code class="docutils literal notranslate"><span class="pre">--label-a</span></code> and <code class="docutils literal notranslate"><span class="pre">--label-b</span></code>
+override filename-derived labels. Without <code class="docutils literal notranslate"><span class="pre">--output</span></code>, the tool displays the
+plot interactively.</p>
+</section>
+<section id="batch-plots">
+<h3>Batch plots<a class="headerlink" href="#batch-plots" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>src/suave/suave_runner/suave_runner/analysis/qq_plot_batch.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>/home/ubuntu-user/suave/results/batches/BATCH
+</pre></div>
+</div>
+<p>The script accepts the <a class="reference internal" href="#batch-usage">batch input forms</a>. It reads managers
+from <code class="docutils literal notranslate"><span class="pre">runs.json</span></code> and plots every unordered pair for search time and distance
+inspected by default. It always saves figures without a display.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--metrics</span> <span class="pre">COLUMN</span> <span class="pre">...</span></code></p></td>
+<td><p>Search time and distance inspected</p></td>
+<td><p>Metric columns to plot</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--run-column</span> <span class="pre">COLUMN</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">run_idx</span></code></p></td>
+<td><p>Pairing key</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--output</span> <span class="pre">PATH</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&lt;batch&gt;/campaign_results</span></code></p></td>
+<td><p>Output root with <code class="docutils literal notranslate"><span class="pre">&lt;experiment&gt;/q-q-plots/</span></code> subdirectories</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">pdf|png|svg</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">png</span></code></p></td>
+<td><p>Figure format</p></td>
+</tr>
+</tbody>
+</table>
+<p>Both scripts remove a pair if either value is missing, reject infinite or
+nonnumeric values, and require at least three complete pairs. They retain
+zero metrics and nondetections, unlike Wilcoxon. They print the retained and
+removed pair counts, mean, median, sample standard deviation, minimum, and
+maximum of the differences.</p>
+</section>
+</section>
+<section id="wilcoxon-latex-tables">
+<h2>Wilcoxon LaTeX tables<a class="headerlink" href="#wilcoxon-latex-tables" title="Link to this heading"></a></h2>
+<p>Run the batch Wilcoxon analysis first, then generate one table per campaign:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>src/suave/suave_runner/suave_runner/latex/wilcoxon_latex_tables_batch.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>/home/ubuntu-user/suave/results/batches/BATCH
+</pre></div>
+</div>
+<p>The script accepts the <a class="reference internal" href="#batch-usage">batch input forms</a> and reads
+<code class="docutils literal notranslate"><span class="pre">&lt;batch&gt;/campaign_results/&lt;experiment&gt;/wilcoxon_analysis/*_results.csv</span></code>.
+It uses <code class="docutils literal notranslate"><span class="pre">p_adjusted</span></code> by default and does not recompute tests or corrections.
+Each table contains search-time and distance-inspected blocks.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--results-root</span> <span class="pre">PATH</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&lt;batch&gt;/campaign_results</span></code></p></td>
+<td><p>Analysis input root</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--output</span> <span class="pre">PATH</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&lt;batch&gt;/campaigns_latex_tables/wilcoxon_analysis</span></code></p></td>
+<td><p>Directory for all generated tables</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--p-values</span> <span class="pre">adjusted|raw</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">adjusted</span></code></p></td>
+<td><p>P-value column to display</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--alpha</span> <span class="pre">VALUE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.05</span></code></p></td>
+<td><p>Cell-color threshold</p></td>
+</tr>
+</tbody>
+</table>
+<p>Captions identify the p-value policy, alternatives, and detection condition.
+Green cells indicate p-values below alpha. Blue cells indicate other computed
+values. Colors use unrounded values. Printed values use three decimal places,
+with values that would round to <code class="docutils literal notranslate"><span class="pre">0.000</span></code> shown as <code class="docutils literal notranslate"><span class="pre">&lt;0.001</span></code>. A dash indicates a
+diagonal cell or an uncomputed test. Consult the primary CSV for exclusions and
+uncomputed-test notes.</p>
+<p>The renderer validates complete, unique ordered pairs, alternatives, correction
+policy, p-values, and missing-result notes. Labels and ordering follow
+<code class="docutils literal notranslate"><span class="pre">suave_tools/labels.py</span></code>. Unknown managers retain their raw keys. Tables use
+<code class="docutils literal notranslate"><span class="pre">0.7\textwidth</span></code> for up to three systems and <code class="docutils literal notranslate"><span class="pre">\textwidth</span></code> otherwise. Rerunning
+the command refreshes the generated files.</p>
+<p>Include a generated table with:</p>
+<div class="highlight-latex notranslate"><div class="highlight"><pre><span></span><span class="k">\usepackage</span><span class="nb">{</span>array,graphicx,multirow<span class="nb">}</span>
+<span class="k">\usepackage</span><span class="na">[table]</span><span class="nb">{</span>xcolor<span class="nb">}</span>
+<span class="k">\definecolor</span><span class="nb">{</span>pvalue<span class="nb">_</span>green<span class="nb">}{</span>RGB<span class="nb">}{</span>210,245,210<span class="nb">}</span>
+<span class="k">\definecolor</span><span class="nb">{</span>pvalue<span class="nb">_</span>blue<span class="nb">}{</span>RGB<span class="nb">}{</span>210,225,245<span class="nb">}</span>
+<span class="c">% In the document body:</span>
+<span class="k">\input</span><span class="nb">{</span>path/to/exp1<span class="nb">_</span>wilcoxon.tex<span class="nb">}</span>
+</pre></div>
+</div>
+</section>
+<section id="output-layout-and-tool-locations">
+<h2>Output layout and tool locations<a class="headerlink" href="#output-layout-and-tool-locations" title="Link to this heading"></a></h2>
+<p>The batch commands create separate outputs. No single command creates the
+entire structure below:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>BATCH/
+  campaigns/
+    exp1/runs.json, *.csv
+  campaign_results/
+    exp1/
+      q-q-plots/*.png
+      wilcoxon_analysis/
+        exp1_wilcoxon_results.csv
+        exp1_wilcoxon_time_search_pipeline.csv
+        exp1_wilcoxon_distance_inspected.csv
+  campaigns_latex_tables/
+    wilcoxon_analysis/
+      exp1_wilcoxon.tex
+</pre></div>
+</div>
+<p>Batch tools report failures, continue with remaining campaigns or comparisons,
+and return a nonzero exit status if any operation fails.</p>
+<p>The Python tools reside under <code class="docutils literal notranslate"><span class="pre">suave_runner/suave_runner/</span></code>:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Directory</p></th>
+<th class="head"><p>Tools</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">analysis/</span></code></p></td>
+<td><p>Summaries, statistical tests, Q-Q plots, batch analysis, and shared CSV helpers</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">latex/</span></code></p></td>
+<td><p>Pairwise table renderer and batch LaTeX generation</p></td>
+</tr>
+</tbody>
+</table>
+<p>Keep this package structure when invoking scripts directly. Use each script’s
+<code class="docutils literal notranslate"><span class="pre">--help</span></code> for its command-line reference.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="run.html" class="btn btn-neutral float-left" title="Run SUAVE" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="cli.html" class="btn btn-neutral float-right" title="SUAVE CLI" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gustavo Rezende, Juliane Päßler, Jeroen Zwanepol, Elvin Alberts, Lizeth Tarifa, Ilias Gerostathopoulos, Einar Johnsen, Carlos Hernández.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

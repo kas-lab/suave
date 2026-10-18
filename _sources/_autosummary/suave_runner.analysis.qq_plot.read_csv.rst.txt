@@ -1,0 +1,6 @@
+suave\_runner.analysis.qq\_plot.read\_csv
+=========================================
+
+.. currentmodule:: suave_runner.analysis.qq_plot
+
+.. autofunction:: read_csv

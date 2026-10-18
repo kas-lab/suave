@@ -1,0 +1,6 @@
+suave\_metrics.mission\_metrics.main
+====================================
+
+.. currentmodule:: suave_metrics.mission_metrics
+
+.. autofunction:: main

@@ -1,0 +1,6 @@
+suave\_requirements.fulfillment.exponential\_decay
+==================================================
+
+.. currentmodule:: suave_requirements.fulfillment
+
+.. autofunction:: exponential_decay

@@ -1,0 +1,6 @@
+suave\_runner.analysis.wilcoxon\_analysis.apply\_correction
+===========================================================
+
+.. currentmodule:: suave_runner.analysis.wilcoxon_analysis
+
+.. autofunction:: apply_correction

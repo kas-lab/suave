@@ -1,0 +1,550 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SUAVE CLI &mdash; SUAVE 1.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e0a75244"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="System Architecture" href="architecture.html" />
+    <link rel="prev" title="Processing results" href="results.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SUAVE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Install SUAVE locally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker.html">Use SUAVE with Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run.html">Run SUAVE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="results.html">Processing results</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">SUAVE CLI</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#setup-and-requirements">Setup and requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#quick-start">Quick start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#where-commands-run">Where commands run</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#run-directly-on-the-host">Run directly on the host</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#paths-and-workspace-selection">Paths and workspace selection</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#command-reference">Command reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#docker-lifecycle-and-images">Docker lifecycle and images</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#additional-mounts">Additional mounts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-and-test">Build and test</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#campaigns-and-batches">Campaigns and batches</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#analysis">Analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#command-previews-and-automation">Command previews and automation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">System Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extend.html">Extending SUAVE and connecting managing subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementations.html">Managing Subsystem Implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="related.html">Related works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citing.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SUAVE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">SUAVE CLI</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/cli.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="suave-cli">
+<h1>SUAVE CLI<a class="headerlink" href="#suave-cli" title="Link to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">suave</span></code> command wraps Docker, colcon, and ROS commands for development and
+experiment execution. It calls the existing scripts and launch files rather
+than replacing them. This page documents CLI behavior. See <a class="reference internal" href="run.html"><span class="doc">Run SUAVE</span></a> for
+campaign configuration and recovery, <a class="reference internal" href="results.html"><span class="doc">Processing results</span></a> for analysis, and
+<a class="reference internal" href="docker.html"><span class="doc">Use SUAVE with Docker</span></a> for image variants and direct Docker commands.</p>
+<section id="setup-and-requirements">
+<h2>Setup and requirements<a class="headerlink" href="#setup-and-requirements" title="Link to this heading"></a></h2>
+<p>The CLI requires Python 3.10 or newer and uses only the Python standard library.
+It does not import ROS. A host with Docker can therefore invoke ROS commands
+inside a SUAVE container without installing ROS locally.</p>
+<p><strong>A container is optional.</strong> Build, test, campaign, batch, and analysis commands
+can also run directly on the host when ROS 2 Humble, the SUAVE workspace, and
+the dependencies required by the selected command are installed. See
+<a class="reference internal" href="installation.html"><span class="doc">Install SUAVE locally</span></a> for local setup.</p>
+<p>From the checkout root, add the CLI to the current Bash session:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>env.sh
+suave<span class="w"> </span>--help
+suave<span class="w"> </span>config<span class="w"> </span>show
+</pre></div>
+</div>
+<p>Alternatively, build the optional <code class="docutils literal notranslate"><span class="pre">suave_cli</span></code> package and source the workspace,
+or symlink <code class="docutils literal notranslate"><span class="pre">&lt;checkout&gt;/suave_cli/bin/suave</span></code> into a directory on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>. The SUAVE
+images already provide the command. Without changing <code class="docutils literal notranslate"><span class="pre">PATH</span></code>, invoke
+<code class="docutils literal notranslate"><span class="pre">suave_cli/bin/suave</span></code> from the checkout root.</p>
+<p>The CLI uses the checkout selected by <code class="docutils literal notranslate"><span class="pre">--suave-root</span></code>, then <code class="docutils literal notranslate"><span class="pre">SUAVE_ROOT</span></code>, then the
+location of its launcher. Configuration files belong to that checkout.</p>
+</section>
+<section id="quick-start">
+<h2>Quick start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<p>On a host with Docker:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>docker<span class="w"> </span>run<span class="w"> </span>--gpu<span class="w"> </span>none
+suave<span class="w"> </span>docker<span class="w"> </span>status
+suave<span class="w"> </span><span class="nb">test</span><span class="w"> </span>suave_runner
+suave<span class="w"> </span>--dry-run<span class="w"> </span>run
+suave<span class="w"> </span>docker<span class="w"> </span>shell
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span></code> selects an available SUAVE image or offers to pull one. Omit
+<code class="docutils literal notranslate"><span class="pre">--gpu</span> <span class="pre">none</span></code> to request NVIDIA GPU access, which requires the NVIDIA Container
+Toolkit. <code class="docutils literal notranslate"><span class="pre">test</span></code> builds the selected package before testing it. <code class="docutils literal notranslate"><span class="pre">--dry-run</span> <span class="pre">run</span></code>
+prints the campaign command without starting the campaign. <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">shell</span></code>
+opens a shell with ROS and the workspace sourced.</p>
+<p>To build an image from the checkout instead of pulling one, use
+<code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">docker</span> <span class="pre">build</span></code> before <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span></code>. See <a class="reference internal" href="run.html"><span class="doc">Run SUAVE</span></a> before executing
+<code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">run</span></code>, which uses the installed multi-run campaign configuration.</p>
+</section>
+<section id="where-commands-run">
+<h2>Where commands run<a class="headerlink" href="#where-commands-run" title="Link to this heading"></a></h2>
+<p>Docker-management commands run on the host. ROS commands (<code class="docutils literal notranslate"><span class="pre">build</span></code>, <code class="docutils literal notranslate"><span class="pre">test</span></code>,
+<code class="docutils literal notranslate"><span class="pre">run</span></code>, <code class="docutils literal notranslate"><span class="pre">batch</span></code>, <code class="docutils literal notranslate"><span class="pre">campaign</span></code>, and <code class="docutils literal notranslate"><span class="pre">analyze</span></code>) use an execution target:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">--exec</span></code></p></th>
+<th class="head"><p>Behavior outside a container</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">auto</span></code> (default)</p></td>
+<td><p>Use the named container if it is running, otherwise try a local ROS workspace</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">container</span></code></p></td>
+<td><p>Require Docker and the named running container</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">host</span></code></p></td>
+<td><p>Require a local ROS installation and workspace</p></td>
+</tr>
+</tbody>
+</table>
+<p>Inside a SUAVE container, ROS commands run locally regardless of <code class="docutils literal notranslate"><span class="pre">--exec</span></code>.
+Each target sources ROS and the workspace overlay when available, then runs
+from the workspace root.</p>
+<p>Select a nondefault container explicitly, or save it in configuration:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>--exec<span class="w"> </span>container<span class="w"> </span>--container<span class="w"> </span>suave_dev<span class="w"> </span><span class="nb">test</span><span class="w"> </span>suave_runner
+suave<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>container_name<span class="w"> </span>suave_dev
+suave<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="nb">exec</span><span class="w"> </span>container
+</pre></div>
+</div>
+<p>Use <code class="docutils literal notranslate"><span class="pre">--exec</span> <span class="pre">container</span></code> to prevent fallback to host execution. <code class="docutils literal notranslate"><span class="pre">--workspace</span> <span class="pre">PATH</span></code>
+selects a <strong>local</strong> workspace, not the container workspace. Configure
+<code class="docutils literal notranslate"><span class="pre">container_workspace</span></code> for the latter.</p>
+<section id="run-directly-on-the-host">
+<h3>Run directly on the host<a class="headerlink" href="#run-directly-on-the-host" title="Link to this heading"></a></h3>
+<p>Select host execution explicitly, even if a SUAVE container is running:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>--exec<span class="w"> </span>host<span class="w"> </span>--workspace<span class="w"> </span>~/suave_ws<span class="w"> </span>build<span class="w"> </span>suave_runner
+suave<span class="w"> </span>--exec<span class="w"> </span>host<span class="w"> </span>--workspace<span class="w"> </span>~/suave_ws<span class="w"> </span>run<span class="w"> </span>--config<span class="w"> </span>src/suave/my_runner.yml
+</pre></div>
+</div>
+<p>The CLI sources ROS and the workspace overlay before running the command.
+The workspace must contain the SUAVE checkout. For campaigns, the host also
+needs the simulation and SITL dependencies. Docker is not required for host
+execution.</p>
+<p>To make host execution the default:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="nb">exec</span><span class="w"> </span>host
+suave<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>host_workspace<span class="w"> </span>~/suave_ws
+</pre></div>
+</div>
+</section>
+<section id="paths-and-workspace-selection">
+<h3>Paths and workspace selection<a class="headerlink" href="#paths-and-workspace-selection" title="Link to this heading"></a></h3>
+<p>The CLI does not translate paths between host and container. Arguments after
+<code class="docutils literal notranslate"><span class="pre">--</span></code> also pass through unchanged.</p>
+<ul class="simple">
+<li><p>Relative configuration paths resolve from the execution workspace root.</p></li>
+<li><p>Absolute input paths must exist where the wrapped command runs.</p></li>
+<li><p>An unquoted <code class="docutils literal notranslate"><span class="pre">~</span></code> expands in the invoking shell, which can produce an invalid
+host-home path for a container command.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--latest</span></code> searches the target’s configured results directory and supported
+timestamped naming patterns. It fails if no matching result exists.</p></li>
+</ul>
+<p>For the default container layout:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>run<span class="w"> </span>--config<span class="w"> </span>src/suave/my_runner.yml
+suave<span class="w"> </span>campaign<span class="w"> </span>resume<span class="w"> </span>/home/ubuntu-user/suave/results/2026_09_26_10-15-00<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--config<span class="w"> </span>src/suave/my_runner.yml
+</pre></div>
+</div>
+<p>Local workspace detection searches above the checkout for a workspace whose
+<code class="docutils literal notranslate"><span class="pre">src/</span></code> contains it. For nested Git worktrees, use a container or an explicit
+local workspace to avoid colcon discovering duplicate package checkouts.</p>
+</section>
+</section>
+<section id="command-reference">
+<h2>Command reference<a class="headerlink" href="#command-reference" title="Link to this heading"></a></h2>
+<p>Run <code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">COMMAND</span> <span class="pre">--help</span></code> or <code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">COMMAND</span> <span class="pre">SUBCOMMAND</span> <span class="pre">--help</span></code> for all options.
+Global options can appear before or after subcommands, but must precede the
+<code class="docutils literal notranslate"><span class="pre">--</span></code> that starts forwarded arguments.</p>
+<section id="docker-lifecycle-and-images">
+<h3>Docker lifecycle and images<a class="headerlink" href="#docker-lifecycle-and-images" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Command</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">docker</span> <span class="pre">build</span> <span class="pre">[--all]</span> <span class="pre">[--tag</span> <span class="pre">TAG]</span> <span class="pre">[--no-cache]</span></code></p></td>
+<td><p>Build the headless image. <code class="docutils literal notranslate"><span class="pre">--all</span></code> also builds Kasm and the GUI image</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">docker</span> <span class="pre">run</span> <span class="pre">[--image</span> <span class="pre">IMAGE]</span> <span class="pre">[--gpu</span> <span class="pre">nvidia|none]</span></code></p></td>
+<td><p>Create, start, or reuse the named container</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">docker</span> <span class="pre">shell</span></code></p></td>
+<td><p>Open a ROS-sourced shell in the running container</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">docker</span> <span class="pre">status</span></code></p></td>
+<td><p>Show container state, image, and mounts</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">docker</span> <span class="pre">stop</span> <span class="pre">[--rm]</span></code></p></td>
+<td><p>Stop the container and optionally remove it</p></td>
+</tr>
+</tbody>
+</table>
+<p>Without an explicit image, selection prefers <code class="docutils literal notranslate"><span class="pre">suave-headless:latest</span></code>, then
+<code class="docutils literal notranslate"><span class="pre">suave-headless:dev</span></code>, then another local headless tag. If none exists, it offers
+to pull <code class="docutils literal notranslate"><span class="pre">ghcr.io/kas-lab/suave-headless:main</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span></code> reuses a running container or restarts a stopped one. It does not
+apply new image or mount settings to an existing container. Use <code class="docutils literal notranslate"><span class="pre">--recreate</span></code>
+to replace it. Replacement removes the old container, so retain needed files
+in bind-mounted directories rather than its writable layer.</p>
+<p>Default bind mounts expose the checkout at
+<code class="docutils literal notranslate"><span class="pre">/home/ubuntu-user/suave_ws/src/suave</span></code> and host <code class="docutils literal notranslate"><span class="pre">~/suave/results</span></code> at
+<code class="docutils literal notranslate"><span class="pre">/home/ubuntu-user/suave/results</span></code>. Source mounts do not replace the image’s
+existing build and install trees. Rebuild affected packages after changing
+C++, interfaces, entry points, or installed resources.</p>
+<p>The CLI shares a local X display through a per-container X cookie without
+requiring <code class="docutils literal notranslate"><span class="pre">xhost</span> <span class="pre">+</span></code>. GUI access requires a usable host display and <code class="docutils literal notranslate"><span class="pre">xauth</span></code>.
+Use <code class="docutils literal notranslate"><span class="pre">--interactive</span></code> for a shell container removed on exit, or <code class="docutils literal notranslate"><span class="pre">--no-mount-src</span></code>
+to run the code built into the image.</p>
+</section>
+<section id="additional-mounts">
+<h3>Additional mounts<a class="headerlink" href="#additional-mounts" title="Link to this heading"></a></h3>
+<p>Persist mounts for another ROS package or a data directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>docker<span class="w"> </span>mount<span class="w"> </span>add<span class="w"> </span>../my_package
+suave<span class="w"> </span>docker<span class="w"> </span>mount<span class="w"> </span>add<span class="w"> </span>~/data<span class="w"> </span>--to<span class="w"> </span>/data
+suave<span class="w"> </span>docker<span class="w"> </span>mount<span class="w"> </span>list
+suave<span class="w"> </span>docker<span class="w"> </span>run<span class="w"> </span>--recreate
+suave<span class="w"> </span>build<span class="w"> </span>my_package
+</pre></div>
+</div>
+<p>Without <code class="docutils literal notranslate"><span class="pre">--to</span></code>, a mount goes under the container workspace’s <code class="docutils literal notranslate"><span class="pre">src/</span></code> directory.
+<code class="docutils literal notranslate"><span class="pre">mount</span> <span class="pre">add</span></code> requires an existing host path and rejects overlapping destinations.
+<code class="docutils literal notranslate"><span class="pre">mount</span> <span class="pre">remove</span> <span class="pre">PATH</span></code> removes a saved entry by host or container path.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span> <span class="pre">--mount</span> <span class="pre">HOST[:CONTAINER]</span></code> for a one-time extra mount or
+<code class="docutils literal notranslate"><span class="pre">--no-extra-mounts</span></code> to ignore saved entries. Mount changes require recreation
+of an existing container.</p>
+</section>
+<section id="build-and-test">
+<h3>Build and test<a class="headerlink" href="#build-and-test" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>build<span class="w"> </span>suave_runner
+suave<span class="w"> </span>build<span class="w"> </span>--<span class="w"> </span>--cmake-args<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release
+suave<span class="w"> </span><span class="nb">test</span><span class="w"> </span>suave_runner<span class="w"> </span>--no-build
+suave<span class="w"> </span><span class="nb">test</span><span class="w"> </span>suave_monitor<span class="w"> </span>--lint
+suave<span class="w"> </span><span class="nb">test</span><span class="w"> </span>suave_runner<span class="w"> </span>-k<span class="w"> </span>wilcoxon
+</pre></div>
+</div>
+<p>Without package names, build and test select the built-in SUAVE package set,
+not every package in the workspace. Specify external packages explicitly.
+<code class="docutils literal notranslate"><span class="pre">suave_cli</span></code> has its own check, <code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">self-test</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">build</span></code> invokes <code class="docutils literal notranslate"><span class="pre">colcon</span> <span class="pre">build</span> <span class="pre">--symlink-install</span></code>. <code class="docutils literal notranslate"><span class="pre">--clean</span></code> first deletes the
+selected packages’ <code class="docutils literal notranslate"><span class="pre">build/PKG</span></code> and <code class="docutils literal notranslate"><span class="pre">install/PKG</span></code> directories. <code class="docutils literal notranslate"><span class="pre">test</span></code> builds by
+default, runs colcon tests, and checks each selected package’s test results.
+<code class="docutils literal notranslate"><span class="pre">--no-build</span></code> requires existing build artifacts. <code class="docutils literal notranslate"><span class="pre">--lint</span></code> selects linter tests,
+and <code class="docutils literal notranslate"><span class="pre">-k</span> <span class="pre">EXPR</span></code> filters pytest tests. Arguments after <code class="docutils literal notranslate"><span class="pre">--</span></code> go to colcon.</p>
+</section>
+<section id="campaigns-and-batches">
+<h3>Campaigns and batches<a class="headerlink" href="#campaigns-and-batches" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Command</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">run</span> <span class="pre">[--config</span> <span class="pre">FILE]</span></code></p></td>
+<td><p>Start a campaign using a custom or installed runner configuration</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">run</span> <span class="pre">--gui</span> <span class="pre">--seed</span> <span class="pre">N</span> <span class="pre">--run-duration</span> <span class="pre">SEC</span> <span class="pre">-p</span> <span class="pre">KEY:=VALUE</span></code></p></td>
+<td><p>Override campaign parameters</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">campaign</span> <span class="pre">list</span></code></p></td>
+<td><p>List standalone timestamped campaigns and completed-run counts</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">campaign</span> <span class="pre">resume</span> <span class="pre">PATH|--latest</span> <span class="pre">--config</span> <span class="pre">FILE</span></code></p></td>
+<td><p>Resume a campaign with its original configuration</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">batch</span> <span class="pre">start</span> <span class="pre">[--config</span> <span class="pre">FILE]</span> <span class="pre">[--batch-dir</span> <span class="pre">DIR]</span></code></p></td>
+<td><p>Start a sequence of campaigns</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">batch</span> <span class="pre">resume</span> <span class="pre">STATE_JSON|--latest</span></code></p></td>
+<td><p>Resume unfinished campaigns in a batch</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">batch</span> <span class="pre">list</span></code></p></td>
+<td><p>List timestamped batches and completed-run counts</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">batch</span> <span class="pre">diagnose</span> <span class="pre">PATH|--latest</span> <span class="pre">[--json]</span></code></p></td>
+<td><p>Read a batch or campaign’s failure report</p></td>
+</tr>
+</tbody>
+</table>
+<p><code class="docutils literal notranslate"><span class="pre">run</span></code> without overrides uses the runner launch file. Campaign-specific options
+switch to the runner node, retaining the installed configuration unless
+<code class="docutils literal notranslate"><span class="pre">--config</span></code> selects another file. <code class="docutils literal notranslate"><span class="pre">--result-path</span> <span class="pre">PATH</span></code> sets the parent directory
+for a new timestamped campaign. Use <code class="docutils literal notranslate"><span class="pre">-p</span> <span class="pre">gui:=false</span></code> to disable GUI explicitly.</p>
+<p>Always supply the original configuration when resuming a custom campaign.
+Without <code class="docutils literal notranslate"><span class="pre">--config</span></code>, campaign resume warns and uses the installed configuration.
+List and <code class="docutils literal notranslate"><span class="pre">--latest</span></code> commands do not discover arbitrary custom directory names.
+Use explicit paths for those. See <a class="reference internal" href="run.html"><span class="doc">Run SUAVE</span></a> for batch fail-fast behavior,
+readiness checks, recording controls, and recovery safeguards.</p>
+</section>
+<section id="analysis">
+<h3>Analysis<a class="headerlink" href="#analysis" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>analyze<span class="w"> </span>summarize<span class="w"> </span>--<span class="w"> </span>/home/ubuntu-user/suave/results/CAMPAIGN<span class="w"> </span>--latex
+suave<span class="w"> </span>analyze<span class="w"> </span>wilcoxon<span class="w"> </span>--<span class="w"> </span>--ros-args<span class="w"> </span>--params-file<span class="w"> </span>src/suave/my_analysis.yml
+suave<span class="w"> </span>analyze<span class="w"> </span>mann-whitney<span class="w"> </span>--<span class="w"> </span>--ros-args<span class="w"> </span>--params-file<span class="w"> </span>src/suave/independent_analysis.yml
+</pre></div>
+</div>
+<p>These invoke <code class="docutils literal notranslate"><span class="pre">summarize_results</span></code>, <code class="docutils literal notranslate"><span class="pre">wilcoxon_analysis</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">mann_whitney_analysis</span></code>. Arguments after <code class="docutils literal notranslate"><span class="pre">--</span></code> go to the executable unchanged.
+The CLI does not wrap batch statistical analysis, Q-Q plotting, or pairwise
+LaTeX generation. See <a class="reference internal" href="results.html"><span class="doc">Processing results</span></a> for those scripts and the analysis
+assumptions and input requirements.</p>
+</section>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>config<span class="w"> </span>show
+suave<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>container_name<span class="w"> </span>suave_dev
+suave<span class="w"> </span>config<span class="w"> </span><span class="nb">unset</span><span class="w"> </span>container_name
+suave<span class="w"> </span>config<span class="w"> </span>path
+suave<span class="w"> </span>config<span class="w"> </span>init
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">show</span></code> reports effective values and their sources. <code class="docutils literal notranslate"><span class="pre">path</span></code> identifies the active
+file. <code class="docutils literal notranslate"><span class="pre">init</span></code> runs interactive setup. Settings resolve in this order:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>command-line flag &gt; environment variable &gt; configuration file &gt; default
+</pre></div>
+</div>
+<p>Each checkout stores host settings in <code class="docutils literal notranslate"><span class="pre">.config/host.ini</span></code> and container settings
+in <code class="docutils literal notranslate"><span class="pre">.config/container.ini</span></code>. Both files are gitignored. Changing host settings
+does not change the configuration used by a CLI invoked inside the container.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Setting</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Flag or environment override</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exec</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">auto</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--exec</span></code>, <code class="docutils literal notranslate"><span class="pre">SUAVE_EXEC</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">container_name</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">suave</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--container</span></code>, <code class="docutils literal notranslate"><span class="pre">SUAVE_CONTAINER_NAME</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">image</span></code></p></td>
+<td><p>Auto-select</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span> <span class="pre">--image</span></code>, <code class="docutils literal notranslate"><span class="pre">SUAVE_IMAGE</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">gpu</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">nvidia</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span> <span class="pre">--gpu</span></code>, <code class="docutils literal notranslate"><span class="pre">SUAVE_GPU</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">run_mode</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">detached</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span> <span class="pre">--detach</span></code> or <code class="docutils literal notranslate"><span class="pre">--interactive</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mount_src</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span> <span class="pre">--[no-]mount-src</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mount_results</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span> <span class="pre">--[no-]mount-results</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">host_results_dir</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">~/suave/results</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span> <span class="pre">--results-dir</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">extra_mounts</span></code></p></td>
+<td><p>Empty</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">mount</span> <span class="pre">add/remove/list</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">host_workspace</span></code></p></td>
+<td><p>Auto-detect</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--workspace</span></code>, <code class="docutils literal notranslate"><span class="pre">SUAVE_WORKSPACE</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ros_setup</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/opt/ros/humble/setup.bash</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">config</span> <span class="pre">set</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">container_workspace</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/home/ubuntu-user/suave_ws</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">config</span> <span class="pre">set</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">container_src_dir</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/home/ubuntu-user/suave_ws/src/suave</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">config</span> <span class="pre">set</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">container_results_dir</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/home/ubuntu-user/suave/results</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">config</span> <span class="pre">set</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>Boolean settings accept <code class="docutils literal notranslate"><span class="pre">true/false</span></code>, <code class="docutils literal notranslate"><span class="pre">yes/no</span></code>, <code class="docutils literal notranslate"><span class="pre">on/off</span></code>, or <code class="docutils literal notranslate"><span class="pre">1/0</span></code>.
+<code class="docutils literal notranslate"><span class="pre">host_results_dir</span></code> and <code class="docutils literal notranslate"><span class="pre">container_results_dir</span></code> control result mounts and lookup.
+They do not override a runner’s <code class="docutils literal notranslate"><span class="pre">result_path</span></code>. Set that campaign parameter
+separately when changing the output destination.</p>
+</section>
+<section id="command-previews-and-automation">
+<h2>Command previews and automation<a class="headerlink" href="#command-previews-and-automation" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>suave<span class="w"> </span>--exec<span class="w"> </span>container<span class="w"> </span>--container<span class="w"> </span>suave_dev<span class="w"> </span>--dry-run<span class="w"> </span>build<span class="w"> </span>suave_runner
+suave<span class="w"> </span>batch<span class="w"> </span>start<span class="w"> </span>--config<span class="w"> </span>src/suave/my_batch.yml<span class="w"> </span>--dry-run-batch
+</pre></div>
+</div>
+<p>Global <code class="docutils literal notranslate"><span class="pre">--dry-run</span></code> previews wrapped commands but can still inspect Docker state.
+It requires a resolvable execution target for ROS commands. <code class="docutils literal notranslate"><span class="pre">--dry-run-batch</span></code>
+instead runs the batch node in its dry-run mode, which prints campaign commands
+without executing them or checking installed campaign configuration files.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">--verbose</span></code> to print commands during execution. <code class="docutils literal notranslate"><span class="pre">--yes</span></code> approves image pulls
+without a prompt. Noninteractive invocations do not offer setup or write an
+initial configuration automatically. Explicit <code class="docutils literal notranslate"><span class="pre">config</span> <span class="pre">set</span></code> commands still write
+configuration.</p>
+<p>The CLI normally returns the wrapped command’s exit code. <code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">test</span></code> also
+checks recorded test results and returns nonzero if a selected package failed.
+Explicit path guards, such as those for custom runner configurations, return
+2 when the path is missing. Forwarded arguments retain the wrapped tool’s
+validation and exit behavior.</p>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Symptom</p></th>
+<th class="head"><p>Action</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>No execution target or named container is stopped</p></td>
+<td><p>Run <code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">docker</span> <span class="pre">status</span></code>, start the container, or select its actual name with <code class="docutils literal notranslate"><span class="pre">--container</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Configuration or result path not found</p></td>
+<td><p>Check the path inside the selected target and its workspace root</p></td>
+</tr>
+<tr class="row-even"><td><p>NVIDIA runtime unavailable</p></td>
+<td><p>Install the NVIDIA Container Toolkit or use <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span> <span class="pre">--gpu</span> <span class="pre">none</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Changed image or mounts have no effect</p></td>
+<td><p>Preserve needed container-local data, then use <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span> <span class="pre">--recreate</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>GUI cannot open the display</p></td>
+<td><p>Check host <code class="docutils literal notranslate"><span class="pre">DISPLAY</span></code>, <code class="docutils literal notranslate"><span class="pre">xauth</span></code>, and user permissions. Recreate after changing displays</p></td>
+</tr>
+<tr class="row-odd"><td><p>No local workspace found</p></td>
+<td><p>Set <code class="docutils literal notranslate"><span class="pre">--workspace</span></code> to a valid colcon workspace or select container execution</p></td>
+</tr>
+<tr class="row-even"><td><p>Mount destination overlaps another mount</p></td>
+<td><p>Select a distinct destination with <code class="docutils literal notranslate"><span class="pre">--to</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--latest</span></code> finds no results</p></td>
+<td><p>Check configured result directories and use an explicit path for custom names</p></td>
+</tr>
+</tbody>
+</table>
+<p>Use <code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">config</span> <span class="pre">show</span></code> to inspect settings before changing them. For CLI
+regressions, run <code class="docutils literal notranslate"><span class="pre">suave</span> <span class="pre">self-test</span></code>. It runs the CLI’s own tests and linters
+without ROS or colcon.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="results.html" class="btn btn-neutral float-left" title="Processing results" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="architecture.html" class="btn btn-neutral float-right" title="System Architecture" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gustavo Rezende, Juliane Päßler, Jeroen Zwanepol, Elvin Alberts, Lizeth Tarifa, Ilias Gerostathopoulos, Einar Johnsen, Carlos Hernández.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,6 @@
+suave\_runner.analysis.summarize\_results.discover\_result\_files
+=================================================================
+
+.. currentmodule:: suave_runner.analysis.summarize_results
+
+.. autofunction:: discover_result_files

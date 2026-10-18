@@ -1,0 +1,6 @@
+suave\_runner.suave\_runner.StaleSimulationError
+================================================
+
+.. currentmodule:: suave_runner.suave_runner
+
+.. autoexception:: StaleSimulationError

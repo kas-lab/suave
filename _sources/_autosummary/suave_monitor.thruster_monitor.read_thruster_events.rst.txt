@@ -1,0 +1,6 @@
+suave\_monitor.thruster\_monitor.read\_thruster\_events
+=======================================================
+
+.. currentmodule:: suave_monitor.thruster_monitor
+
+.. autofunction:: read_thruster_events
