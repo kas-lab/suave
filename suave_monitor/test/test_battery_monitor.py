@@ -37,7 +37,8 @@ def monitor():
 
 def test_guided_starts_timer_once_and_keeps_subscription(monitor):
     """Repeated GUIDED states must not stack timers or destroy the sub."""
-    monitor.destroy_subscription = Mock()
+    # Keep real destruction available for fixture teardown.
+    monitor.destroy_subscription = Mock(wraps=monitor.destroy_subscription)
     monitor.status_cb(State(mode='MANUAL'))
     assert monitor.qa_publisher_timer is None
     monitor.status_cb(State(mode='GUIDED'))

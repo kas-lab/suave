@@ -120,7 +120,8 @@ def test_scheduled_failure_can_happen_after_recovery(monitor):
 def test_guided_starts_timers_once_and_keeps_subscription(monitor):
     """Repeated GUIDED states must not stack timers or destroy the sub."""
     node, _ = monitor
-    node.destroy_subscription = Mock()
+    # Keep real destruction available for fixture teardown.
+    node.destroy_subscription = Mock(wraps=node.destroy_subscription)
     node.status_cb(State(mode='MANUAL'))
     assert node.thruster_event_timer is None
     node.status_cb(State(mode='GUIDED'))
