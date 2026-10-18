@@ -19,11 +19,16 @@ import argparse
 from pathlib import Path
 import re
 import sys
-from tempfile import TemporaryDirectory
 
 import numpy as np
 
 import pandas as pd
+
+from suave_tools.labels import label
+from suave_tools.labels import MANAGER_ORDER
+from suave_tools.layout import batch_layout
+from suave_tools.layout import LATEX_DIR
+from suave_tools.layout import RESULTS_DIR
 
 
 if __package__:
@@ -34,22 +39,21 @@ else:
 
 HELP_TEXT = """Generate all campaign Wilcoxon LaTeX tables with the existing renderer.
 
-Keep latex_tables.py alongside this script. No ROS imports are required.
+Keep latex_tables.py alongside this script. Run it in the sourced SUAVE
+container: it imports suave_tools from the workspace.
 
     python3 wilcoxon_latex_tables_batch.py /path/to/batch
     python3 wilcoxon_latex_tables_batch.py /path/to/batch --p-values raw
 
-Reads campaings_results/<experiment>/wilcoxon_analysis/*_results.csv.
+The input is a batch, its campaigns/ directory, its state.json, or one
+campaign. Reads campaign_results/<experiment>/wilcoxon_analysis/
+*_results.csv (use --results-root for older campaings_results folders).
 Writes campaigns_latex_tables/wilcoxon_analysis/<experiment>_wilcoxon.tex.
 Adjusted p-values are used by default. Analysis must already exist: this
-script renders results without recomputing tests or sorting raw data.
+script renders results without recomputing tests.
 """
 
 
-METHOD_LABELS = {
-    'none': 'None', 'random': 'Random', 'bt': 'BT',
-    'metacontrol': 'MC', 'rosa_bt': 'ROSA', 'planta': 'PLANTA',
-}
 METRIC_ALTERNATIVES = {'search_time': 'less', 'distance_inspected': 'greater'}
 TEX_ESCAPES = {
     '\\': r'\textbackslash{}', '&': r'\&', '%': r'\%', '$': r'\$',
@@ -147,7 +151,7 @@ def render_campaign(campaign, results_root, output_root, p_values, alpha):
             'run wilcoxon_analysis_batch.py first if analysis is missing')
     frame = load_results(inputs[0])
     keys_present = set(frame['row']) | set(frame['col'])
-    keys = [key for key in METHOD_LABELS if key in keys_present]
+    keys = [key for key in MANAGER_ORDER if key in keys_present]
     keys += sorted(keys_present - set(keys))
     correction = frame['correction'].iloc[0]
     value_column = 'p_adjusted' if p_values == 'adjusted' else 'p_raw'
@@ -168,31 +172,26 @@ def render_campaign(campaign, results_root, output_root, p_values, alpha):
     if 'metacontrol' in keys:
         caption += " ``MC'' stands for Metacontrol."
     output = output_root / f'{campaign.name}_wilcoxon.tex'
-    with TemporaryDirectory(prefix='wilcoxon-latex-') as temporary:
-        matrices = {}
-        for metric in METRIC_ALTERNATIVES:
-            rows = frame.loc[frame.metric == metric]
-            matrix = rows.pivot(
-                index='row', columns='col', values=value_column)
-            matrix = matrix.reindex(index=keys, columns=keys)
-            path = Path(temporary) / f'{metric}.csv'
-            matrix.to_csv(path)
-            matrices[metric] = str(path)
-        config = {
-            'systems': [{'key': key, 'label': escape_tex(
-                METHOD_LABELS.get(key, key))} for key in keys],
-            'time_search_csv': matrices['search_time'],
-            'distance_csv': matrices['distance_inspected'],
-            'first_col_width': '1.65cm', 'col_width': '1.3cm',
-            'header_width': '1.65cm',
-            'resizebox_width': (r'0.7\textwidth' if len(keys) <= 3
-                                else r'\textwidth'),
-            'caption': caption,
-            'label': 'tab:wilcoxon-' + re.sub(
-                r'[^A-Za-z0-9-]', '-', campaign.name),
-            'alpha': alpha, 'output': str(output),
-        }
-        latex_tables.generate_table_file(config)
+    matrices = {
+        metric: frame.loc[frame.metric == metric].pivot(
+            index='row', columns='col', values=value_column,
+        ).reindex(index=keys, columns=keys)
+        for metric in METRIC_ALTERNATIVES
+    }
+    latex_tables.generate_table_file({
+        'systems': [{'key': key, 'label': escape_tex(label(key, short=True))}
+                    for key in keys],
+        'time_search_csv': matrices['search_time'],
+        'distance_csv': matrices['distance_inspected'],
+        'first_col_width': '1.65cm', 'col_width': '1.3cm',
+        'header_width': '1.65cm',
+        'resizebox_width': (r'0.7\textwidth' if len(keys) <= 3
+                            else r'\textwidth'),
+        'caption': caption,
+        'label': 'tab:wilcoxon-' + re.sub(
+            r'[^A-Za-z0-9-]', '-', campaign.name),
+        'alpha': alpha, 'output': str(output),
+    })
     print(f'Wrote {output} ({value_column}; '
           f'{int(frame[value_column].isna().sum())} uncomputed tests)')
     return output
@@ -203,13 +202,14 @@ def build_parser():
     parser = argparse.ArgumentParser(
         description=HELP_TEXT,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('input', type=Path, help='Batch root with campaigns/')
+    parser.add_argument('input', type=Path,
+                        help='Batch, campaigns directory, state.json, or '
+                        'campaign')
     parser.add_argument('--results-root', type=Path,
-                        help='Analysis root; defaults to '
-                        '<batch>/campaings_results')
+                        help=f'Analysis root; defaults to <batch>/{RESULTS_DIR}')
     parser.add_argument('--output', type=Path,
                         help='Table directory; defaults to '
-                        '<batch>/campaigns_latex_tables/wilcoxon_analysis')
+                        f'<batch>/{LATEX_DIR}/wilcoxon_analysis')
     parser.add_argument('--p-values', choices=('adjusted', 'raw'),
                         default='adjusted', help='Values to display '
                         '(default: adjusted; no correction is recomputed)')
@@ -224,21 +224,18 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if not 0 < args.alpha < 1:
         parser.error('--alpha must be between 0 and 1')
-    root = args.input.expanduser().resolve()
-    results_root = (args.results_root.expanduser() if args.results_root else
-                    root / 'campaings_results')
-    output_root = (args.output.expanduser() if args.output else
-                   root / 'campaigns_latex_tables' / 'wilcoxon_analysis')
     try:
-        if not (root / 'campaigns').is_dir():
-            raise ValueError(f'Campaigns directory does not exist: {root}')
-        campaigns = sorted(p for p in (root / 'campaigns').iterdir()
-                           if p.is_dir())
-        if not campaigns:
-            raise ValueError(f'No campaigns found in {root / "campaigns"}')
+        layout = batch_layout(args.input)
+        if not layout.campaigns:
+            raise ValueError(f'No campaigns found in {layout.root}')
     except (ValueError, OSError) as error:
         print(f'Error: {error}', file=sys.stderr)
         return 1
+    campaigns = layout.campaigns
+    results_root = (args.results_root.expanduser() if args.results_root else
+                    layout.results_root)
+    output_root = (args.output.expanduser() if args.output else
+                   layout.latex_root / 'wilcoxon_analysis')
     failures = 0
     for campaign in campaigns:
         try:

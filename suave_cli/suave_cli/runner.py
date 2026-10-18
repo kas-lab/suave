@@ -24,10 +24,19 @@ from suave_cli.targets import run_in_target, select_target, target_results_dir
 
 CAMPAIGN_GLOB = ('[0-9][0-9][0-9][0-9]_[0-9][0-9]_[0-9][0-9]_'
                  '[0-9][0-9]-[0-9][0-9]-[0-9][0-9]')
-BATCH_SUMMARY = (
-    'import json, sys; s = json.load(open(sys.argv[1])); o = s.get("campaign_order", []); '
-    'd = sum(1 for n in o if s["campaigns"].get(n, {}).get("status") == "completed"); '
-    'print(f"{sys.argv[1]}  {d}/{len(o)} campaigns completed")')
+# Progress is derived from each campaign's runs.json; the manifest only
+# lists campaigns, and expected counts need the (YAML) runner configs.
+RUNS_COMPLETED = (
+    'import json, os; '
+    'count = lambda d: sum(r["status"] == "completed" for r in json.load('
+    'open(os.path.join(d, "runs.json")))["runs"].values()) '
+    'if os.path.isfile(os.path.join(d, "runs.json")) else 0; ')
+BATCH_SUMMARY = RUNS_COMPLETED + (
+    'import sys; p = sys.argv[1]; m = json.load(open(p)); '
+    'b = os.path.join(os.path.dirname(p), "campaigns"); '
+    'print(p + "  runs completed: " + ", ".join('
+    'c["name"] + " " + str(count(os.path.join(b, c["name"]))) for c in m["campaigns"]))')
+CAMPAIGN_SUMMARY = RUNS_COMPLETED + 'import sys; print(count(sys.argv[1]))'
 
 RUN_EPILOG = """\
 examples:
@@ -43,6 +52,7 @@ examples:
   suave batch resume --latest                resume the newest batch under the results dir
   suave batch resume ~/suave/results/batches/batch_20260926_101500/state.json
   suave batch list
+  suave batch diagnose --latest              report failed runs and systemic failures
 """
 
 CAMPAIGN_EPILOG = """\
@@ -142,7 +152,8 @@ def campaign_list_body(results_dir):
     """Return shell code listing campaign folders with their finished runs."""
     base = shlex.quote(results_dir)
     return (f'for d in $(ls -1d {base}/{CAMPAIGN_GLOB} 2>/dev/null | sort -r); '
-            'do echo "$d  $(ls "$d"/run_*_*.done 2>/dev/null | wc -l) runs done"; done')
+            f'do echo "$d  $(python3 -c {shlex.quote(CAMPAIGN_SUMMARY)} "$d") runs completed"; '
+            'done')
 
 
 def resolve_latest(ctx, target, kind):
@@ -183,6 +194,21 @@ def cmd_batch_resume(ctx):
     target = select_target(ctx)
     state_file = _path_or_latest(ctx, target, ctx.args.state_file, 'batch')
     return run_in_target(ctx, batch_resume_body(state_file), target)
+
+
+def batch_diagnose_body(path, json_output=False):
+    """Return the read-only diagnostic command with safely quoted arguments."""
+    command = ['ros2', 'run', 'suave_runner', 'diagnose_batch', path]
+    if json_output:
+        command.append('--json')
+    return join(command)
+
+
+def cmd_batch_diagnose(ctx):
+    """Diagnose a checkpoint or result directory on the selected target."""
+    target = select_target(ctx)
+    path = _path_or_latest(ctx, target, ctx.args.path, 'batch')
+    return run_in_target(ctx, batch_diagnose_body(path, ctx.args.json), target)
 
 
 def cmd_batch_list(ctx):
@@ -244,6 +270,13 @@ def register(subparsers, common):
                         help="the batch's state.json")
     resume.add_argument('--latest', action='store_true', help='resume the newest batch')
     resume.set_defaults(func=cmd_batch_resume)
+    diagnose = batch_sub.add_parser(
+        'diagnose', parents=[common], help='diagnose batch or campaign failures')
+    diagnose.add_argument('path', nargs='?', metavar='STATE_OR_RESULT_PATH')
+    diagnose.add_argument('--latest', action='store_true',
+                          help='diagnose the newest batch')
+    diagnose.add_argument('--json', action='store_true', help='print JSON report')
+    diagnose.set_defaults(func=cmd_batch_diagnose)
     listing = batch_sub.add_parser('list', parents=[common],
                                    help='list batches with their progress')
     listing.set_defaults(func=cmd_batch_list)

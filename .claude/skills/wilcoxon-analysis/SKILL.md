@@ -31,11 +31,12 @@ make an updated executable available through `ros2 run`.
   Numeric `run_idx` values alone do not establish comparability across
   separate campaigns. Use an independent-samples analysis such as
   `mann_whitney_analysis` when the experimental design is independent.
-- Every CSV needs verified, non-missing, unique `run_idx` values. If these
-  are absent or their provenance is uncertain, use the `sort-suave-results` skill
-  or the repository's `sort_results.py` with the original completion
-  markers. Reuse already verified CSVs. Never pair by row position or
-  initial position alone.
+- Every `data_file` is a raw `<manager>_<mission>.csv` in a campaign folder
+  that holds the runner's `runs.json`. The loader keeps only each run's
+  accepted attempt, matching the CSV's `run_idx` and `attempt_id` columns
+  (written by `mission_metrics`) against `runs.json`, and raises when the
+  columns or `runs.json` are missing. There is no sorting step. Never pair
+  by row position or initial position alone.
 - Check that the selected systems have matching run-key sets. The current
   implementation reports unmatched keys but silently uses an inner join;
   do not claim it rejects mismatches. Report and resolve incomplete pairing
@@ -43,8 +44,8 @@ make an updated executable available through `ros2 run`.
   incomplete-pair policy.
 - Require finite numeric `time searching pipeline (s)` and
   `distance inspected (m)` values and valid `pipeline found` status for
-  every input row. The current loader recognizes case-insensitive
-  `true`/`false`; missing status can bypass censor filtering, and missing
+  every input row. The loader accepts case-insensitive
+  `true`/`false`/`1`/`0`/`yes`/`no` and rejects any other status; missing
   numeric values are not filtered reliably. Report invalid inputs before
   testing rather than silently imputing values.
 
@@ -56,12 +57,11 @@ with this repo's own runner configs), prefer the matching launch file under
 
 ```bash
 ros2 launch suave_runner exp1_analysis_launch.py \
-  results_root:=/path/campaign/sorted
+  results_root:=/path/campaign
 ```
 
-`results_root` must point at the directory holding that campaign's
-run_idx-sorted CSVs (e.g. `sort_results.py`'s `--output` directory, or a
-batch's `campaigns/exp1/sorted/`). `output_root` (defaults to
+`results_root` must point at the campaign folder (the one holding
+`runs.json` and the raw CSVs). `output_root` (defaults to
 `results_root`) and `correction` (defaults to `none`) can also be overridden.
 See `suave_runner/config/analysis/exp1_analysis_config.yml` for the exact
 `data_files` mapping used -- add or edit an entry there (or in a copy) for a
@@ -75,7 +75,7 @@ ros2 run suave_runner wilcoxon_analysis \
   -p result_path:=/path/campaign/wilcoxon_analysis \
   -p filename:=campaign_wilcoxon \
   -p correction:=none \
-  -p data_files:='["{\"managing_system\": \"none\", \"data_file\": \"/path/campaign/sorted/none_suave_sorted.csv\"}", "{\"managing_system\": \"bt\", \"data_file\": \"/path/campaign/sorted/bt_suave_sorted.csv\"}"]'
+  -p data_files:='["{\"managing_system\": \"none\", \"data_file\": \"/path/campaign/none_suave.csv\"}", "{\"managing_system\": \"bt\", \"data_file\": \"/path/campaign/bt_suave.csv\"}"]'
 ```
 
 `data_files` is a ROS string array whose elements are JSON objects with

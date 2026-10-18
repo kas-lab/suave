@@ -23,6 +23,10 @@ jobs:
         with:
           package-name: |
             suave
+            suave_base
+            suave_bringup
+            suave_bt
+            suave_cli
             suave_monitor
             suave_metrics
             suave_msgs
@@ -32,7 +36,11 @@ jobs:
             mavros
             mros2_reasoner
             mros2_msgs
+            suave_none
+            suave_random
+            suave_requirements
             suave_runner
+            suave_tools
           target-ros2-distro: humble
           skip-tests: true
           vcs-repo-file-url: ${{ github.workspace }}/suave.repos
@@ -43,7 +51,9 @@ jobs:
         shell: bash
         run: |
           source ${{ steps.action_ros_ci_step.outputs.ros-workspace-directory-name }}/install/setup.bash
+          make -C docs clean
           sphinx-build -W --keep-going docs/source docs/build
+          test -s docs/build/results.html
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}

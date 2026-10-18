@@ -104,6 +104,8 @@ The managing subsystem closes the adaptation loop. It has no prescribed internal
 
 See [Extending SUAVE](extend.md) for launch file conventions when connecting a new managing subsystem.
 
+**Note:** For managing the system's lifecycle nodes and parameters, you can skip `system_modes` entirely and change the node's states directly with the standard ROS services for managing lifecycle nodes states and parameters. In the date of writing this comment (18/10/26), System Modes is unmaintained, so we actually recommend skipping it if possible. We are currently working on a new execution interface to replace System Modes.
+
 ---
 
 ## Adaptation loop

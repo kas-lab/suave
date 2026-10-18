@@ -30,7 +30,7 @@
 #           "config_file": "config/runner/exp1_runner_config.yml"
 #         }
 #
-# "package" is any installed ROS package (resolved via `ros2 pkg prefix`),
+# "package" is any installed ROS package (resolved via the ament index),
 # so a campaign can also point at a runner config from a third-party
 # managing system's own package, and "config_file" is the params file path
 # relative to that package's share directory.
@@ -50,9 +50,17 @@ import subprocess
 import sys
 import time
 
+from ament_index_python.packages import get_package_share_directory
+from ament_index_python.packages import PackageNotFoundError
 import rclpy
 from rclpy.node import Node
-import yaml
+from suave_runner.diagnose_batch import campaign_progress
+from suave_runner.diagnose_batch import expected_runs
+from suave_runner.diagnose_batch import summary_lines
+from suave_tools.layout import load_manifest
+from suave_tools.runs import atomic_write_json
+from suave_tools.runs import load_runs
+from suave_tools.runs import RUNS_FILE
 
 active_process = None
 received_signal = None
@@ -67,19 +75,13 @@ def timestamp():
 def emit(message, log=None):
     """Print a timestamped orchestration message and optionally log it."""
     line = f'[{timestamp()}] {message}'
-    print(line, flush=True)
+    display = line
+    if message.startswith('SYSTEMIC:') and sys.stdout.isatty():
+        display = f'\033[31m{line}\033[0m'
+    print(display, flush=True)
     if log is not None:
         log.write(line + '\n')
         log.flush()
-
-
-def write_state(state_file, state):
-    """Atomically persist campaign state."""
-    state['updated_at'] = timestamp()
-    temporary_file = state_file.with_name(f'.{state_file.name}.tmp')
-    temporary_file.write_text(
-        json.dumps(state, indent=2) + '\n', encoding='utf-8')
-    os.replace(temporary_file, state_file)
 
 
 def parse_campaigns(campaign_strings):
@@ -113,33 +115,14 @@ def parse_campaigns(campaign_strings):
     return campaigns
 
 
-def load_state(state_file):
-    """Load and minimally validate a prior campaign state file."""
-    try:
-        state = json.loads(state_file.read_text(encoding='utf-8'))
-    except (OSError, json.JSONDecodeError) as error:
-        raise ValueError(
-            f'cannot read state file {state_file}: {error}') from error
-
-    if state.get('schema_version') != 2:
-        raise ValueError(f'unsupported state-file schema in {state_file}')
-    if not isinstance(state.get('campaigns'), dict):
-        raise ValueError(f'invalid campaign data in {state_file}')
-    if not isinstance(state.get('campaigns_manifest'), list):
-        raise ValueError(f'missing campaigns_manifest in {state_file}')
-    return state
-
-
-def new_state(campaigns):
-    """Create state for a fresh batch defined by a campaign list."""
-    names = [entry['name'] for entry in campaigns]
+def new_manifest(campaigns):
+    """Describe a batch once; its progress is derived from each campaign."""
     return {
         'schema_version': 2,
-        'created_at': timestamp(),
-        'updated_at': timestamp(),
-        'campaigns_manifest': campaigns,
-        'campaign_order': names,
-        'campaigns': {name: {'status': 'pending'} for name in names},
+        'campaigns': [
+            {key: entry[key] for key in ('name', 'package', 'config_file')}
+            for entry in campaigns
+        ],
     }
 
 
@@ -166,28 +149,15 @@ def resolve_config_files(campaigns):
     if shutil.which('ros2') is None:
         return None, 'ros2 is unavailable; source the ROS workspace first'
 
-    check = subprocess.run(
-        ['ros2', 'pkg', 'prefix', 'suave_runner'],
-        capture_output=True, text=True, check=False,
-    )
-    if check.returncode != 0:
-        return None, "ROS package 'suave_runner' is not discoverable"
-
-    prefixes = {}
     config_files = {}
     for entry in campaigns:
         package = entry['package']
-        if package not in prefixes:
-            check = subprocess.run(
-                ['ros2', 'pkg', 'prefix', package],
-                capture_output=True, text=True, check=False,
-            )
-            if check.returncode != 0:
-                return None, f'ROS package {package!r} is not discoverable'
-            prefixes[package] = Path(check.stdout.strip())
+        try:
+            share = Path(get_package_share_directory(package))
+        except PackageNotFoundError:
+            return None, f'ROS package {package!r} is not discoverable'
 
-        config_file = prefixes[package] / 'share' / package / \
-            entry['config_file']
+        config_file = share / entry['config_file']
         if not config_file.is_file():
             return None, (
                 f'missing installed runner config: {config_file}; '
@@ -195,27 +165,6 @@ def resolve_config_files(campaigns):
         config_files[entry['name']] = config_file
 
     return config_files, ''
-
-
-def expected_runs(config_file):
-    """Return the total number of runs declared in a runner config."""
-    try:
-        config = yaml.safe_load(config_file.read_text(encoding='utf-8'))
-        experiments = config[
-            '/suave_runner_node']['ros__parameters']['experiments']
-        return sum(
-            int(json.loads(experiment).get('num_runs', 1))
-            for experiment in experiments
-        )
-    except (OSError, KeyError, TypeError, ValueError,
-            json.JSONDecodeError, yaml.YAMLError) as error:
-        raise ValueError(
-            f'cannot read experiments from {config_file}: {error}') from error
-
-
-def completed_runs(result_path):
-    """Count successful run markers in a runner result directory."""
-    return sum(1 for _ in result_path.glob('run_*_*.done'))
 
 
 def run_campaign(config_file, result_path, log_file):
@@ -307,9 +256,8 @@ def prepare_batch(batch_dir_value, resume_state_file_value, campaign_strings):
             resume_state_file_value).expanduser().resolve()
         if not state_file.is_file():
             raise ValueError(f'state file does not exist: {state_file}')
-        state = load_state(state_file)
-        return (
-            state_file.parent, state_file, state, state['campaigns_manifest'])
+        manifest = load_manifest(state_file)
+        return state_file.parent, state_file, manifest['campaigns']
 
     campaigns = parse_campaigns(campaign_strings)
 
@@ -325,17 +273,45 @@ def prepare_batch(batch_dir_value, resume_state_file_value, campaign_strings):
             "the 'resume_state_file' parameter")
     batch_dir.mkdir(parents=True)
     state_file = batch_dir / 'state.json'
-    state = new_state(campaigns)
-    write_state(state_file, state)
-    return batch_dir, state_file, state, campaigns
+    atomic_write_json(state_file, new_manifest(campaigns))
+    return batch_dir, state_file, campaigns
 
 
-def print_summary(state, log):
-    """Print the status of every campaign."""
+def progress(batch_dir, name, config_file):
+    """Return (completed, expected) runs, or None if runs.json is unreadable."""
+    try:
+        return campaign_progress(batch_dir / 'campaigns' / name, config_file)
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+def campaign_done(batch_dir, name, config_file):
+    """Return whether every run a campaign's config declares has completed."""
+    counts = progress(batch_dir, name, config_file)
+    return counts is not None and counts[0] == counts[1]
+
+
+def print_summary(batch_dir, config_files, log):
+    """Print each campaign's progress, derived from its runs.json."""
     emit('Campaign summary:', log)
-    for name in state['campaign_order']:
-        status = state['campaigns'][name].get('status', 'unknown')
-        emit(f'  {name}: {status}', log)
+    for name, config_file in config_files.items():
+        counts = progress(batch_dir, name, config_file)
+        text = 'unreadable runs.json' if counts is None else (
+            f'{counts[0]}/{counts[1]} runs completed')
+        emit(f'  {name}: {text}', log)
+
+
+def emit_run_summary(result_path, log):
+    """Print per-manager outcomes; a damaged runs.json must not stop a batch."""
+    if not (result_path / RUNS_FILE).exists():
+        return
+    try:
+        runs = load_runs(result_path)['runs']
+    except (OSError, ValueError) as error:
+        emit(f'Cannot read {result_path / RUNS_FILE}: {error}', log)
+        return
+    for line in summary_lines(runs.values()):
+        emit(line, log)
 
 
 def run_dry(campaign_strings):
@@ -359,7 +335,7 @@ def run_batch(batch_dir_value, resume_state_file_value, campaign_strings,
               fail_fast):
     """Run or resume the complete experiment batch."""
     try:
-        batch_dir, state_file, state, campaigns = prepare_batch(
+        batch_dir, state_file, campaigns = prepare_batch(
             batch_dir_value, resume_state_file_value, campaign_strings)
     except ValueError as error:
         print(f'Error: {error}', file=sys.stderr)
@@ -371,10 +347,8 @@ def run_batch(batch_dir_value, resume_state_file_value, campaign_strings,
         return 2
 
     try:
-        run_counts = {
-            name: expected_runs(config_files[name])
-            for name in state['campaign_order']
-        }
+        for config_file in config_files.values():
+            expected_runs(config_file)
     except ValueError as error:
         print(f'Error: {error}', file=sys.stderr)
         return 2
@@ -385,37 +359,17 @@ def run_batch(batch_dir_value, resume_state_file_value, campaign_strings,
     overall_log_file = batch_dir / 'run_batch.log'
     with overall_log_file.open('a', encoding='utf-8') as overall_log:
         emit(f'Batch directory: {batch_dir}', overall_log)
-        emit(f'Checkpoint: {state_file}', overall_log)
+        emit(f'Manifest: {state_file}', overall_log)
 
-        for name in state['campaign_order']:
-            campaign_state = state['campaigns'][name]
-            if campaign_state.get('status') == 'completed':
+        for name, config_file in config_files.items():
+            if campaign_done(batch_dir, name, config_file):
                 emit(f'Skipping completed campaign: {name}', overall_log)
                 continue
 
             if received_signal is not None:
                 break
 
-            result_path_value = campaign_state.get('result_path')
-            if result_path_value:
-                result_path = Path(result_path_value).expanduser().resolve()
-            else:
-                result_path = (batch_dir / 'campaigns' / name).resolve()
-
-            config_file = config_files[name]
-            campaign_state.update({
-                'status': 'running',
-                'started_at': timestamp(),
-                'finished_at': None,
-                'return_code': None,
-                'elapsed_seconds': None,
-                'error': None,
-                'config_file': str(config_file),
-                'result_path': str(result_path),
-                'expected_runs': run_counts[name],
-                'completed_runs': completed_runs(result_path),
-            })
-            write_state(state_file, state)
+            result_path = (batch_dir / 'campaigns' / name).resolve()
             emit(f'Starting campaign: {name}', overall_log)
             emit(f'Resumable results: {result_path}', overall_log)
 
@@ -424,13 +378,6 @@ def run_batch(batch_dir_value, resume_state_file_value, campaign_strings,
                 return_code, elapsed = run_campaign(
                     config_file, result_path, batch_dir / log_name)
             except OSError as error:
-                campaign_state.update({
-                    'status': 'failed',
-                    'finished_at': timestamp(),
-                    'error': str(error),
-                    'completed_runs': completed_runs(result_path),
-                })
-                write_state(state_file, state)
                 emit(
                     f'Could not run campaign {name}: {error}',
                     overall_log,
@@ -439,40 +386,32 @@ def run_batch(batch_dir_value, resume_state_file_value, campaign_strings,
                     break
                 continue
 
-            campaign_state.update({
-                'finished_at': timestamp(),
-                'return_code': return_code,
-                'elapsed_seconds': round(elapsed, 3),
-                'completed_runs': completed_runs(result_path),
-            })
-
             if received_signal is not None:
-                campaign_state['status'] = 'interrupted'
-                write_state(state_file, state)
                 emit(f'Interrupted during campaign: {name}', overall_log)
                 break
 
-            all_runs_completed = (
-                campaign_state['completed_runs'] ==
-                campaign_state['expected_runs'])
-            if return_code == 0 and all_runs_completed:
-                campaign_state['status'] = 'completed'
-                write_state(state_file, state)
+            emit(f'Run summary for {name}:', overall_log)
+            emit_run_summary(result_path, overall_log)
+            print_summary(batch_dir, config_files, overall_log)
+
+            if return_code == 0 and campaign_done(
+                    batch_dir, name, config_file):
                 emit(
                     f'Completed campaign: {name} ({elapsed / 3600:.2f} h)',
                     overall_log,
                 )
                 continue
 
-            campaign_state['status'] = (
-                'incomplete' if return_code == 0 else 'failed')
-            write_state(state_file, state)
-            if return_code == 0:
+            counts = progress(batch_dir, name, config_file)
+            if return_code == 0 and counts is not None:
                 emit(
-                    f'Campaign incomplete: {campaign_state["completed_runs"]}'
-                    f'/{campaign_state["expected_runs"]} successful runs',
+                    f'Campaign incomplete: {counts[0]}/{counts[1]} '
+                    'successful runs',
                     overall_log,
                 )
+            elif return_code == 0:
+                emit(f'Campaign {name} has an unreadable runs.json',
+                     overall_log)
             else:
                 emit(
                     f'Campaign failed with exit code {return_code}: {name}',
@@ -481,7 +420,7 @@ def run_batch(batch_dir_value, resume_state_file_value, campaign_strings,
             if return_code != 0 and fail_fast:
                 break
 
-        print_summary(state, overall_log)
+        print_summary(batch_dir, config_files, overall_log)
 
         if received_signal is not None:
             emit(
@@ -491,24 +430,13 @@ def run_batch(batch_dir_value, resume_state_file_value, campaign_strings,
             )
             return 128 + received_signal
 
-        incomplete_campaigns = [
-            name for name in state['campaign_order']
-            if state['campaigns'][name].get('status') == 'incomplete'
-        ]
-        failed_campaigns = [
-            name for name in state['campaign_order']
-            if state['campaigns'][name].get('status') == 'failed'
-        ]
-        pending_campaigns = [
-            name for name in state['campaign_order']
-            if state['campaigns'][name].get('status') == 'pending'
-        ]
-        if incomplete_campaigns or failed_campaigns or pending_campaigns:
+        unfinished = [
+            name for name, config_file in config_files.items()
+            if not campaign_done(batch_dir, name, config_file)]
+        if unfinished:
             emit(
-                'Batch finished with '
-                f'{len(incomplete_campaigns)} incomplete, '
-                f'{len(failed_campaigns)} failed, and '
-                f'{len(pending_campaigns)} pending campaign(s).',
+                f'Batch finished with {len(unfinished)} unfinished '
+                f'campaign(s): {", ".join(unfinished)}.',
                 overall_log,
             )
             emit(

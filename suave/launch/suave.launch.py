@@ -23,7 +23,6 @@ from launch.actions import DeclareLaunchArgument
 from launch.actions import IncludeLaunchDescription
 from launch.actions import OpaqueFunction
 from launch.conditions import IfCondition
-from launch.conditions import LaunchConfigurationEquals
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import PythonExpression
@@ -34,6 +33,8 @@ from launch_ros.actions import Node
 def generate_launch_description():
     """Return the managed-system launch description."""
     silent = LaunchConfiguration('silent')
+    task_bridge = LaunchConfiguration('task_bridge')
+    system_modes = LaunchConfiguration('system_modes')
 
     def configure_logging(context, *args, **kwargs):
         if silent.perform(context) == 'true':
@@ -64,14 +65,14 @@ def generate_launch_description():
 
     task_bridge_arg = DeclareLaunchArgument(
         'task_bridge',
-        default_value='True',
+        default_value='true',
         description=(
             'Indicates whether task_bridge should be launched [True/False]')
     )
 
     system_modes_arg = DeclareLaunchArgument(
         'system_modes',
-        default_value='True',
+        default_value='true',
         description=(
             'Indicates whether system_modes should be launched [True/False]')
     )
@@ -181,13 +182,21 @@ def generate_launch_description():
         output=print_output,
     )
 
+    # Reports activations that mode_manager requested but never happened.
+    lifecycle_watchdog_node = Node(
+        package='suave',
+        executable='lifecycle_watchdog',
+        name='lifecycle_watchdog',
+        output=print_output,
+    )
+
     task_bridge_node = Node(
         package='suave',
         executable='task_bridge_none',
         name='task_bridge',
         parameters=[mission_config],
         output=print_output,
-        condition=LaunchConfigurationEquals('task_bridge', 'True')
+        condition=IfCondition(task_bridge)
     )
 
     pkg_suave_path = get_package_share_directory('suave')
@@ -199,7 +208,7 @@ def generate_launch_description():
 
     system_modes_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(system_modes_launch_path),
-        condition=LaunchConfigurationEquals('system_modes', 'True')
+        condition=IfCondition(system_modes)
     )
 
     return LaunchDescription([
@@ -221,6 +230,7 @@ def generate_launch_description():
         follow_pipeline_node,
         recharge_battery_node,
         recover_thrusters_node,
+        lifecycle_watchdog_node,
         task_bridge_node,
         system_modes_launch,
     ])

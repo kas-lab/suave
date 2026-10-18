@@ -87,6 +87,7 @@ class ThrusterMonitor(Node):
         self.recovery_diagnostics_sub = self.create_subscription(
             DiagnosticArray, '/diagnostics', self.recovery_diagnostics_cb, 10)
 
+        self.thruster_event_timer = None
         self.mavros_state_sub = self.create_subscription(
             State, 'mavros/state', self.status_cb, 10)
 
@@ -112,7 +113,7 @@ class ThrusterMonitor(Node):
 
     def status_cb(self, msg):
         """Start processing thruster events in guided mode."""
-        if msg.mode == 'GUIDED':
+        if msg.mode == 'GUIDED' and self.thruster_event_timer is None:
             self.last_event_time = self.get_clock().now().to_msg().sec
             self.thruster_event_timer = self.create_timer(
                 1, self.thruster_event_cb)
@@ -120,7 +121,6 @@ class ThrusterMonitor(Node):
                 'operational_thrusters_publishing_period').value
             self.operational_thrusters_timer = self.create_timer(
                 publishing_period, self.publish_operational_thrusters)
-            self.destroy_subscription(self.mavros_state_sub)
 
     def thruster_event_cb(self):
         """Apply the next event after its configured delay."""

@@ -50,6 +50,10 @@ def generate_launch_description():
             executable='suave_runner',
             name='suave_runner_node',
             output='screen',
+            # The runner needs up to 30s for launch shutdown plus 20s for
+            # session cleanup and 5s to reap SITL before finalizing artifacts.
+            sigterm_timeout='65',
+            sigkill_timeout='10',
             parameters=[config_file],
         )
     ])

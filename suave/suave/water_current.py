@@ -143,7 +143,6 @@ class WaterCurrent(Node):
         """Start advancing the current schedule when GUIDED is reached."""
         if msg.mode == 'GUIDED' and self.initial_time is None:
             self.initial_time = self.get_clock().now()
-            self.destroy_subscription(self.mavros_state_sub)
 
     def publish_current(self):
         """Publish the current vector projected onto horizontal axes."""

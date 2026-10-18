@@ -64,7 +64,18 @@ Run the local image with NVIDIA GPU support. Install the [NVIDIA Container Toolk
 docker run -it --rm --gpus all --runtime=nvidia --name suave_runner -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all -v /dev/dri:/dev/dri -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro suave-headless:dev
 ```
 
-If you want the image to have access to the host GUI, run the following command before starting the container:
+For GUI access, prefer the SUAVE CLI's per-container X-cookie setup:
+
+```bash
+suave docker run --image suave-headless:dev --gpu none
+suave docker shell
+```
+
+The CLI passes display credentials without disabling X-server access control.
+The direct Docker examples above require separately configured X authentication
+for GUI use. See {doc}`cli` for display and GPU options.
+
+Alternatively, if you dont want to use the CLI, you can set the following before starting the container (this approach is unsafe):
 ```Bash
 xhost +
 ```
@@ -98,7 +109,7 @@ Run the image built locally and mount the suave folder:
 
 From the workspace root:
 ```Bash
-docker run it --rm --name suave --runtime=nvidia --gpus all -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro -v "$PWD/src/suave:/home/ubuntu-user/suave_ws/src/suave" suave-headless:dev 
+docker run -it --rm --name suave --runtime=nvidia --gpus all -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro -v "$PWD/src/suave:/home/ubuntu-user/suave_ws/src/suave" suave-headless:dev
 ```
 
 If you want to mount other repositories from the same ROS workspace, just add `-v source_repo_path:/home/ubuntu-user/suave_ws/src/your_repo`.

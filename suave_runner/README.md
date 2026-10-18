@@ -52,9 +52,9 @@ it running unattended (e.g. in `screen`/`tmux`) rather than waiting on it.
 This creates a timestamped batch directory under `~/suave/results/batches/`
 (e.g. `batch_20260913_104200/`) containing:
 
-- `state.json` -- the batch checkpoint, tracking each campaign's status
-  (`pending`, `running`, `completed`, `incomplete`, `failed`, or
-  `interrupted`)
+- `state.json` -- the batch manifest (`schema_version: 2`): the campaign
+  list (`name`, `package`, `config_file`), written once when the batch starts.
+  Progress is not stored there; it is derived from each campaign's `runs.json`
 - `run_batch.log` -- the overall orchestration log
 - `<campaign_name>.log` -- combined stdout/stderr for each campaign (e.g.
   `exp1.log`)
@@ -64,20 +64,17 @@ This creates a timestamped batch directory under `~/suave/results/batches/`
 **Checking whether a batch needs to be resumed:** a batch finished cleanly if
 `run_batch.log` ends with `All campaigns completed successfully.`. If it
 stops early -- Ctrl+C, a crash, a failed campaign -- the log ends instead with
-a `Batch interrupted; ...` or `Batch finished with N incomplete, ...` line
-followed by the exact resume command to use. You can also check
-campaign-by-campaign at any time by inspecting `state.json`:
-
-```bash
-grep '"status"' ~/suave/results/batches/<batch_dir>/state.json
-```
-
-Any campaign not marked `"status": "completed"` still needs to (re)run.
+a `Batch interrupted; ...` or `Batch finished with N unfinished campaign(s): ...`
+line followed by the exact resume command to use. A campaign is done when the
+number of `"status": "completed"` entries in its `campaigns/<name>/runs.json`
+equals the number of runs its runner config declares. `suave batch list`
+prints the completed runs per campaign, and `diagnose_batch` prints
+completed/expected counts.
 
 **Resuming an interrupted batch:** pass the batch's `state.json` as the
-`resume_state_file` parameter; campaigns already marked `completed` are
-skipped, and an `incomplete` campaign picks up from its last saved run
-instead of starting over:
+`resume_state_file` parameter; campaigns whose runs have all completed are
+skipped, and an unfinished campaign picks up from its `runs.json` instead of
+starting over:
 
 ```bash
 ros2 run suave_runner run_batch --ros-args \
@@ -90,23 +87,196 @@ starting a new batch. `-p fail_fast:=true` stops the batch as soon as a
 campaign fails instead of continuing to the next one, and `-p dry_run:=true`
 prints the `ros2 run` command for each campaign without executing anything.
 
+## Diagnosing batch failures
+
+`diagnose_batch` reads a batch's or campaign's result files and reports which
+runs failed, why, and where the evidence is. It only reads files, so it works
+on a finished batch, a running one, or a copy on another machine:
+
+```bash
+ros2 run suave_runner diagnose_batch ~/suave/results/batches/<batch_dir>/state.json
+ros2 run suave_runner diagnose_batch ~/suave/results/batches/<batch_dir>
+ros2 run suave_runner diagnose_batch ~/suave/results/<campaign_folder>
+ros2 run suave_runner diagnose_batch <path> --json
+```
+
+**Accepted result paths.** `diagnose_batch`, `qq_plot_batch.py`,
+`wilcoxon_analysis_batch.py`, `wilcoxon_latex_tables_batch.py`, and
+`suave_requirements`' `plot_requirement_fulfillment.py` resolve their input
+the same way (`suave_tools.layout.batch_layout`): a batch folder, its
+`campaigns/` folder, its `state.json`, or one campaign folder (any folder
+holding `runs.json`). A campaign inside `<batch>/campaigns/` uses the batch's
+output folders; a campaign outside a batch uses its parent folder. New outputs
+go under `<root>/campaign_results/`. Existing `campaings_results/` folders
+are not renamed; for a `runs.json` batch whose analysis was written there,
+pass `--results-root` to the LaTeX script. Batches without `runs.json`
+(created before schema 2) are not supported.
+
+With the `suave` CLI: `suave batch diagnose --latest` or
+`suave batch diagnose <path> [--json]`.
+
+For each campaign it prints the completed and expected run counts, one line
+per adaptation manager (for example
+`bt: 18/20 completed; failures={'mission_done_timeout': 2}`), and, for each
+run that did not complete, its status, failure type, reason, log folder, and
+the first log lines that point at a cause (`suspected <type>: <log>:<line>`).
+It reads each campaign's `runs.json` and, for a batch, the manifest; the
+expected run count comes from the runner config the manifest names (`unknown`
+if that package is not found). An unreadable `runs.json`, or a completed run
+whose bag is not accepted, is reported as a warning. Results written before
+`runs.json` (`schema_version: 2`) are not supported. Mission CSV row
+counts are listed for reference but are not treated as proof of completion.
+The exit code is `0` whenever the diagnosis itself succeeded, even if runs
+failed, and `2` for an invalid path.
+
+| Failure type | Meaning |
+|---|---|
+| `mission_done_timeout` | No `mission_metrics/done` within `run_duration` |
+| `process_died_before_completion` | A launched process exited with a nonzero status |
+| `mission_control_failure` | A subsystem published `mission/control_failure`. This includes the `lifecycle_watchdog` node (launched by `suave.launch.py`), which reports a lifecycle node that did not become active within `activation_timeout` (10 s) of `mode_manager`'s activate request. The watchdog only reports; it never retries activation. Resume retries the run |
+| `readiness_timeout` | ArduPilot or the simulation was not ready within `ardupilot_ready_timeout` / `simulation_ready_timeout` |
+| `readiness_missing_service` | Services in the experiment's `required_services` were missing after `readiness_timeout` |
+| `startup_failure` | Launching the run's processes raised an error |
+| `interrupted` | The run was stopped by Ctrl+C or termination |
+| `unknown` | No recognizable cause was recorded |
+
+Suspected causes found in the attempt's `{experiment,simulation}/launch.log` are
+`mission_metrics_invalid_handle`, `missing_change_mode_service`, and
+`lost_lifecycle_activation` (the watchdog's report); lines after
+the run's teardown (`sending signal 'SIGINT'`) are ignored.
+
+**Systemic warnings:** a line `SYSTEMIC: <manager>: repeated <failure_type>`
+means that manager failed with the same type at least 3 times, or at least
+twice and in more than half of its attempted runs. That usually points at the
+configuration or environment rather than at chance, so inspect one failed run's
+logs before rerunning. The runner, `run_batch`, and `diagnose_batch` print it
+in red on a terminal and as plain text in log files.
+
 ## Resuming a crashed campaign
 
 If the runner crashes or is interrupted mid-campaign, it can resume from where it
 left off without re-running completed runs.
 
-After each successful run the runner writes a marker file
-`run_<exp_idx>_<run_idx>.done` inside the result folder. On resume the runner
-reads these markers and skips any run whose marker already exists. Runs that
-timed out (no `mission_metrics/done` received) are **not** marked and will be
-retried.
+Each campaign folder has one `runs.json` (`schema_version: 2`), written only by
+the runner and replaced atomically (temporary file, fsync, rename). Its
+`campaign` header records `random_seed`, `simulation_launch`, and
+`ardupilot_command` once. `runs` maps each `run_<exp_idx>_<run_idx>` to its
+current attempt: `adaptation_manager`, `mission_name`, `experiment_launch`,
+`status` (`running`, `completed`, `failed`, or `interrupted`), `attempt_id`,
+`bag` (`null` when recording is disabled, otherwise `pending`, `accepted`, or
+`failed`), `failure_type`, `failure_reason`, `started_at`, and `finished_at`.
+A retried run keeps its earlier attempts under `attempts`. A run is complete
+if and only if its `status` is `completed`: on resume the runner skips those
+runs and retries every other one, including runs that timed out (no
+`mission_metrics/done` within `run_duration`). Paths are derived, not stored:
+logs are under `logs/<run_id>/<attempt_id>/`, the mission config is
+`mission_config_run<run_idx>.yaml`, and the bag is
+`<manager>_<mission>_<run_id>_<attempt_id>` under `rosbags/pending/`,
+`rosbags/`, or `rosbags/failed/` according to `bag`.
+
+The runner passes each attempt's identity to the experiment launch as the
+environment variables `SUAVE_RUN_IDX` and `SUAVE_ATTEMPT_ID`. `mission_metrics`
+writes them as the last two columns, `run_idx` and `attempt_id`, of
+`<manager>_<mission>.csv` and of its three reaction-time CSVs
+(`*_component_recovery_time.csv`, `*_wv_reaction_time.csv`,
+`*_battery_reaction_time.csv`); both are empty outside the runner. Rows of
+failed attempts (for example a `mission_control_failure`) stay in the CSVs. The paired
+analysis scripts keep only each run's accepted attempt, the `attempt_id` of a
+`completed` run in `runs.json`, so there is no sorting step: no `sorted/`
+folder, no `*_sorted.csv`, no `rejected_runs.jsonl`, and no `*_rejected.csv`.
 
 The runner also ends a run immediately when a launched process exits with a
-nonzero status or a subsystem publishes `mission/control_failure`. Failed runs
-are left without a marker, and the runner continues with the remaining runs.
+nonzero status or a subsystem publishes `mission/control_failure`; the run is
+recorded as `failed` and the runner continues with the remaining runs.
 Process stdout, stderr, launch events, and ROS logs are retained below
-`logs/run_<exp_idx>_<run_idx>/`; setting `experiment_logging` to `false` only
-suppresses console output.
+`logs/run_<exp_idx>_<run_idx>/<attempt_id>/`; setting `experiment_logging` to
+`false` only suppresses console output.
+
+When bag recording is enabled, the runner records each attempt under
+`rosbags/pending/` first. When a run completes, the runner validates the MCAP
+metadata, storage files, and reader stream, moves the bag to
+`rosbags/<manager>_<mission>_<run_id>_<attempt_id>/`, and only then writes
+`status: completed` with `bag: accepted`. Failed, interrupted, or
+invalid-recording attempts are moved to `rosbags/failed/` (`bag: failed`), so
+resume retries them. With `record_bags` set to false, `bag` is `null` and no
+bag is required.
+
+A campaign folder is locked (`.runner.lock`) while a runner uses it, so a second
+runner on the same folder fails immediately. Before starting new runs, a
+resumed runner settles every run left `running` (or `interrupted` with a
+`pending` bag): it confirms the attempt's launch session has no live processes
+(recovery only checks and never kills processes), then decides from where the
+bag is on disk. A bag only under `rosbags/` is validated and the run becomes
+`completed`, or `failed` with the bag quarantined if it is invalid; a bag only
+under `rosbags/pending/` is moved to `rosbags/failed/` and the run becomes
+`interrupted`; with no bag the run becomes `interrupted`; a bag in both places
+stops recovery with an error. The accepted bag of every completed run is
+re-validated too, and a missing one stops recovery instead of rerunning the
+trial. After every attempt, the runner stops the launch processes, sends
+SIGTERM to any process still left in the attempt's launch sessions (for example
+a Gazebo server orphaned by its `gz sim` wrapper), and sends SIGKILL to
+survivors after 15 seconds. If a launch process has not exited after 30 seconds,
+or a session process survives SIGKILL, the runner records the attempt as
+`interrupted` with `failure_type: shutdown_unconfirmed`, leaves the bag in
+`rosbags/pending/` (`bag: pending`), and stops the campaign rather than starting
+another attempt. Bag acceptance does not change how CSV metric rows are written.
+
+Ctrl+C (SIGINT) and SIGTERM request cooperative termination: the runner stays
+alive while its campaign worker stops children and records the interrupted
+attempt. Repeated signals to the runner do not interrupt this cleanup. All
+launchers receive their stop request before the shared 30-second wait, and
+session cleanup still runs if a launcher times out. The supplied runner launch
+file allows 65 seconds before escalating to SIGTERM, then another 10 seconds
+before SIGKILL. Shutdown logs during that wait are expected; wait for the
+runner to exit before restarting. A forced SIGKILL cannot perform cleanup.
+
+Before every attempt the runner also refuses to start, raising
+`StaleSimulationError` and stopping the campaign without recording an attempt,
+while a live `gz sim` process exists or UDP port 9002 (the BlueROV2
+`ArduPilotPlugin` `fdm_port_in`) is bound. Session cleanup only sees processes
+the runner launched; a Gazebo server left from another session keeps that port,
+so the new SITL would drive its vehicle from wherever it last stopped. Stop the
+leftover server and resume the campaign. Zombie (`<defunct>`) processes are
+ignored: they hold no ports and cannot be killed, only reaped by PID 1. A
+container started without `--init` keeps them until it restarts.
+
+To plot requirement fulfillment from accepted bags only, see
+`suave_requirements/README.md`.
+
+After each run the runner logs a per-manager summary, and `run_batch` logs one
+after each campaign; both include the systemic warnings described under
+[Diagnosing batch failures](#diagnosing-batch-failures).
+
+The runner has no fixed sleeps: each launch stage waits until it is ready,
+and the timeouts are ceilings. The runner logs how long each stage took
+(`ArduPilot ready after 2.1s`, `Simulation ready after 6.4s`).
+
+1. ArduPilot: the runner first waits for TCP port 5760 to be free (a SITL
+   left over from the previous attempt), then starts `ardupilot_executable`
+   and waits until SITL listens on port 5760, its MAVLink port. The check
+   reads `/proc/net/tcp` and never connects, because SITL serves one client
+   on that port and MAVProxy needs it. Both waits use
+   `ardupilot_ready_timeout` (default `30.0` s). The default command passes
+   `-N` (`--no-rebuild`) to `sim_vehicle.py`, so ArduSub must already be built
+   (the SUAVE images are).
+2. Simulation: after the simulation launch, the runner waits for the first
+   message on `/model/bluerov2/pose`, which `ros_gz_bridge` only forwards
+   once Gazebo runs with the vehicle spawned. The ceiling is
+   `simulation_ready_timeout` (default `30.0` s).
+3. Manager services: after the experiment launch, the runner waits up to
+   `readiness_timeout` seconds (default `10.0`) for the services listed in
+   the experiment's `required_services` (absolute service names; a
+   `/change_mode` service must also have type
+   `system_modes_msgs/srv/ChangeMode`). An experiment without
+   `required_services` does not wait. The shipped configs list
+   `/f_maintain_motion/change_mode`, `/f_generate_search_path/change_mode`,
+   and `/f_follow_pipeline/change_mode` for every `bt` experiment, plus
+   `/generate_recharge_path/change_mode` when it launches
+   `suave_bt_extended`.
+
+A stage that is not ready in time fails the run as `readiness_timeout`; a
+missing service fails it as `readiness_missing_service`. Either way the
+runner continues with the next run.
 
 To resume, pass the path of the existing result folder via `resume_result_path`:
 
@@ -269,10 +439,11 @@ arithmetic means directly.
 
 Mann-Whitney treats each system's runs as unrelated samples. If the campaign
 reused the same perturbation configuration across managing systems (SUAVE
-campaigns do, see `sort-suave-results`), use the paired Wilcoxon analysis
-below instead -- it controls for per-scenario difficulty and is more
-statistically powerful, but requires a run-identity column that a resumed
-campaign's raw CSVs do not carry by default.
+campaigns do), use the paired Wilcoxon analysis below instead -- it controls
+for per-scenario difficulty and is more statistically powerful, and it pairs
+runs on the `run_idx` column of the raw campaign CSVs. `mann_whitney_analysis`
+and `summarize_results` read every CSV row, including rows that failed
+attempts left behind.
 
 ## Wilcoxon analysis (paired)
 
@@ -281,19 +452,11 @@ signed-rank test on matched runs across managing systems, instead of treating
 them as independent samples. See the `wilcoxon-analysis` skill for the full
 workflow; summary:
 
-**Prerequisite: sort first.** Every input CSV must carry a `run_idx` column
-identifying which run of that managing system each row is. A `--resume`d
-campaign appends retried runs out of order, so this cannot be assumed from
-row position. Recover it first with `sort_results.py` (see the
-`sort-suave-results` skill):
-
-```bash
-python3 suave_runner/analysis/sort_results.py \
-  --csv ~/suave/results/bt_suave.csv --exp-idx 2 \
-  --output ~/suave/results/sorted/bt_suave_sorted.csv
-```
-
-Then run the paired analysis on the sorted CSVs:
+**Input: raw campaign CSVs.** Point `data_files` at the raw
+`<manager>_<mission>.csv` files of one campaign folder (the folder holding
+`runs.json`). Every row carries `run_idx` and `attempt_id`; only the rows of
+each run's accepted attempt, read from `runs.json`, are analyzed, so retried
+or failed attempts never enter a comparison:
 
 ```bash
 ros2 run suave_runner wilcoxon_analysis \
@@ -303,9 +466,9 @@ ros2 run suave_runner wilcoxon_analysis \
   -p correction:=none \
   -p data_files:='[
     "{\"managing_system\": \"none\", \
-      \"data_file\": \"~/suave/results/sorted/none_suave_sorted.csv\"}",
+      \"data_file\": \"~/suave/results/<campaign>/none_suave.csv\"}",
     "{\"managing_system\": \"bt\", \
-      \"data_file\": \"~/suave/results/sorted/bt_suave_sorted.csv\"}"
+      \"data_file\": \"~/suave/results/<campaign>/bt_suave.csv\"}"
   ]'
 ```
 
@@ -315,10 +478,10 @@ with this repo's own runner configs), a preconfigured launch file under
 
 ```bash
 ros2 launch suave_runner exp1_analysis_launch.py \
-  results_root:=~/suave/results/sorted
+  results_root:=~/suave/results/<campaign>
 ```
 
-`results_root` must point at that campaign's sorted-CSV directory;
+`results_root` must point at the campaign folder;
 `output_root` (defaults to `results_root`) and `correction` (defaults to
 `none`) can also be overridden. See
 [config/analysis/exp1_analysis_config.yml](config/analysis/exp1_analysis_config.yml)
@@ -331,9 +494,11 @@ Parameters beyond those shared with `mann_whitney_analysis`:
 |---|---|---|
 | `correction` | `none` | Multiple-comparison correction across every pair and metric in the run; set to `holm` to enable Holm-Bonferroni adjustment (raw p-values are copied into `p_adjusted` otherwise) |
 
-Unlike `mann_whitney_analysis`, `data_files` here must point at
-`run_idx`-tagged, sorted CSVs. A missing `run_idx` column, a duplicate
-`run_idx`, or an unmatched run raises rather than falling back to row order.
+Unlike `mann_whitney_analysis`, `data_files` here must point at raw CSVs
+inside a `runs.json` campaign. A CSV without `run_idx` or `attempt_id`, a
+folder without `runs.json`, a manager without completed runs, duplicate
+accepted rows, a completed run without a row, or an unmatched run raises
+rather than falling back to row order.
 
 The command writes:
 
@@ -389,7 +554,9 @@ The terminal table reports the following information for each managing system:
 - mean and sample standard deviation of the distance inspected; and
 - mean and sample standard deviation of the reaction time.
 
-Search time and distance use every run. Reaction-time calculations exclude
+Search time and distance include only runs where the pipeline was found.
+Detection success rates still use all runs. If no run found the pipeline,
+search time and distance are reported as `N/A`. Reaction-time calculations exclude
 zero-valued runs because zero indicates that no reaction-time sample was
 recorded. Reaction time is reported as `N/A` if no nonzero samples remain. The
 sample standard deviation is also `N/A` when fewer than two applicable samples
@@ -430,7 +597,8 @@ The available arguments are:
 | `--precision N` | `2` | Use `N` decimal places in terminal and LaTeX output |
 
 The LaTeX output is a complete `table` environment with the caption
-`SUAVE results mean and standard deviation.` and label `tab:suave_results`.
+a caption describing successful-run mission statistics and per-run reaction-time
+averages, and label `tab:suave_results`.
 It uses `\toprule`, `\midrule`, and `\bottomrule` from `booktabs` and
 `\resizebox` from `graphicx`, so include both packages in the parent document:
 
@@ -463,18 +631,19 @@ python3 src/suave/suave_runner/suave_runner/analysis/qq_plot.py results.csv \
   --column-a suave --column-b baseline --output qq_suave_baseline.png
 ```
 
-Compare the same metric in two sorted method CSVs:
+Compare the same metric in two raw method CSVs of one campaign:
 
 ```bash
 python3 src/suave/suave_runner/suave_runner/analysis/qq_plot.py \
-  /path/to/campaign/sorted/metacontrol_suave_sorted.csv \
-  /path/to/campaign/sorted/bt_suave_sorted.csv \
+  /path/to/campaign/metacontrol_suave.csv \
+  /path/to/campaign/bt_suave.csv \
   --column-a 'time searching pipeline (s)' \
   --column-b 'time searching pipeline (s)' --output qq_search.png
 ```
 
-Separate files must belong to the same campaign and have matching, unique,
-nonmissing `run_idx` values; row order does not matter. `--run-column` selects
+Separate files must be raw CSVs of the same campaign folder (the one with
+`runs.json`). Each keeps only the accepted attempt of every run, and the
+files pair on matching, unique `run_idx` values; row order does not matter. `--run-column` selects
 another pairing key. Unmatched or duplicate IDs cause an error. The caller
 must ensure those IDs refer to the same experimental configurations.
 `--label-a` and `--label-b` override method labels derived from filenames.
@@ -489,21 +658,22 @@ python3 src/suave/suave_runner/suave_runner/analysis/qq_plot_batch.py \
 
 The batch script reuses the CSV script's validation and plotting functions;
 keep both scripts together. It accepts a batch root, its `campaigns` directory,
-or one campaign. It reads only `*_sorted.csv` files from each campaign's
-`sorted` folder and never pairs different campaigns. Search time and distance
+its `state.json`, or one campaign. It reads each campaign's raw `<manager>_<mission>.csv`
+files, with the managers taken from its `runs.json`, keeps each run's
+accepted attempt, and never pairs different campaigns. Search time and distance
 inspected are the default metrics; `--metrics` accepts an explicit list of
 metric column names.
 
 By default, results mirror the experiment folders under
-`<batch>/campaings_results/` (using this exact directory spelling):
+`<batch>/campaign_results/`:
 
 ```text
 all_experiments_20260904_093305/
   campaigns/
-    exp1/sorted/*.csv
-    exp2/sorted/*.csv
+    exp1/runs.json, *.csv
+    exp2/runs.json, *.csv
     ...
-  campaings_results/
+  campaign_results/
     exp1/q-q-plots/*.png
     exp2/q-q-plots/*.png
     ...
@@ -536,12 +706,12 @@ python3 src/suave/suave_runner/suave_runner/analysis/wilcoxon_analysis_batch.py 
   /home/ubuntu-user/suave/results/batches/all_experiments_20260904_093305
 ```
 
-It first sorts the raw aggregate CSVs in each `campaigns/<experiment>/`
-using the original `run_<exp_idx>_<run_idx>.done` markers, then analyzes
-the verified copies in `sorted/` and writes:
+For each `campaigns/<experiment>/` it reads the managers from `runs.json`,
+loads their raw `<manager>_<mission>.csv` files through the same
+accepted-attempt filter as `wilcoxon_analysis`, and writes:
 
 ```text
-campaings_results/
+campaign_results/
   exp1/
     q-q-plots/
     wilcoxon_analysis/
@@ -553,30 +723,13 @@ campaings_results/
       ...
 ```
 
-`--output PATH` overrides `campaings_results`, preserving the
+`--output PATH` overrides `campaign_results`, preserving the
 `<experiment>/wilcoxon_analysis/` structure. Keep this script alongside
-`wilcoxon_analysis.py` and `sort_results.py`. No package rebuild is needed
-for this direct invocation.
+`common.py` and `wilcoxon_analysis.py`. No package rebuild is needed for this
+direct invocation.
 
-Each campaign's runner configuration is resolved from `state.json`, supporting
-both the original batch launch-name keys and the newer campaign-name keys.
-The configuration's `experiments` list determines the method-to-`exp_idx`
-mapping, filenames, and expected run counts. If recorded config paths have
-moved, pass `--config-dir /path/to/original/configs`; this directory must
-contain the recorded config basenames (or `<experiment>_runner_config.yml`
-when no config is recorded). Use configs that match the original campaign.
-The script does not infer marker indices from alphabetical method order.
-
-The pre-step calls the existing `sort_results.reconstruct_run_index` without
-relaxing its count, timestamp-gap, or run-ID checks. Original CSVs and marker
-modification times are preserved. Run in the timezone used when the CSV
-`datetime` values were recorded. All configured methods are reconstructed and
-validated before any sorted CSV is updated; unchanged verified sorted files
-retain their modification times, and stale ones are refreshed. Only methods
-listed in that campaign configuration are analyzed, so unrelated old files
-in `sorted/` are ignored. Missing markers, configs, or raw CSVs, timestamp
-mismatches, and incomplete configured run counts fail that campaign before
-analysis instead of falling back to possibly stale sorted data.
+Every manager in a campaign's `runs.json` is analyzed, in experiment order;
+a campaign needs at least two.
 
 Runs must share experimental configurations within each campaign; never
 match unrelated campaigns just because their numeric IDs agree. The
@@ -619,8 +772,8 @@ python3 src/suave/suave_runner/suave_runner/latex/wilcoxon_latex_tables_batch.py
   /home/ubuntu-user/suave/results/batches/all_experiments_20260904_093305
 ```
 
-The wrapper discovers experiments under `<batch>/campaigns/` and reads each
-`<batch>/campaings_results/<experiment>/wilcoxon_analysis/*_results.csv`.
+The wrapper accepts the same path forms as the analysis scripts and reads
+each `<batch>/campaign_results/<experiment>/wilcoxon_analysis/*_results.csv`.
 It saves tables directly under the requested common directory:
 
 ```text
@@ -638,11 +791,11 @@ to `p_adjusted` from the primary results CSV; it does not use the secondary
 raw-p-value matrices or recompute correction. Temporary matrices adapt those
 values to the existing renderer and are removed after generation. Run
 `wilcoxon_analysis_batch.py` first if analysis is missing; table generation
-does not rerun sorting or statistical tests.
+does not rerun statistical tests.
 
 | Option | Meaning |
 |---|---|
-| `--results-root PATH` | Override `<batch>/campaings_results` |
+| `--results-root PATH` | Override `<batch>/campaign_results` (e.g. an older batch's `campaings_results`) |
 | `--output PATH` | Override the directory containing all generated tables |
 | `--p-values adjusted\|raw` | Display adjusted values by default; raw requires explicit selection |
 | `--alpha VALUE` | Color threshold, default 0.05 |
@@ -657,11 +810,13 @@ the primary analysis CSV. The wrapper checks both metric blocks for complete,
 unique ordered pairs, consistent alternatives and correction policy, valid
 p-values, and notes explaining missing results.
 
-Known method labels use None, Random, BT, MC, ROSA, and PLANTA; captions
-explain that MC means Metacontrol. ROSA and PLANTA are labels for two
-third-party managing systems, each from its own separate repo (not bundled
-with this one) -- they only appear when their result CSVs are added
-alongside this repo's own for a combined comparison. Tables follow the
+Method labels and their order come from the shared table in
+`suave_tools/labels.py`: TacticalRetreat, ROSA-BT, BT, MC, PLANTA, Random,
+and None; captions explain that MC means Metacontrol. TacticalRetreat
+(`rebetmc`), ROSA-BT (`rosa_bt`) and PLANTA are labels for third-party
+managing systems, each from its own separate repo (not bundled with this
+one) -- they only appear when their result CSVs are added alongside this
+repo's own for a combined comparison. Unknown managers keep their raw key. Tables follow the
 paper's pairwise-table layout: a 1.65 cm row-label column and 1.2 row
 spacing. Value columns are
 slightly wider at 1.3 cm so the names fit in the manuscript's font.
@@ -690,7 +845,8 @@ and the script exits nonzero if any campaign fails.
 The Python tools are grouped under `suave_runner/suave_runner/`:
 
 - `analysis/`: Mann-Whitney and Wilcoxon analysis, batch Wilcoxon analysis,
-  result sorting, Q-Q plotting, and descriptive result summaries.
+  Q-Q plotting, descriptive result summaries, and the shared CSV helpers in
+  `common.py`.
 - `latex/`: the table renderer and batch Wilcoxon LaTeX table generation.
 
 `suave_runner.py` and `run_batch.py` remain at the package root for experiment

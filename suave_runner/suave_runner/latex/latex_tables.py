@@ -17,7 +17,8 @@
 # wilcoxon_analysis as LaTeX.
 #
 # This module has no ROS dependency: it only reads the matrix CSVs written by
-# `StatisticalAnalysis.save_data_frames()` and formats them into the two-metric
+# `wilcoxon_analysis.save_results()` (or matrices passed in directly as
+# DataFrames) and formats them into the two-metric
 # pairwise-comparison table style used in the PLANTA manuscript
 # (`\cellcolor{pvalue_green}` / `\cellcolor{pvalue_blue}` cells, one block of
 # columns per metric). Run standalone: `python3 latex_tables.py --config
@@ -43,9 +44,10 @@ def _cell(value, alpha):
     return f'\\cellcolor{{{color}}}{formatted}'
 
 
-def _load_matrix(csv_path, keys):
-    """Load a p-value matrix CSV and reorder it to the requested key order."""
-    matrix = pd.read_csv(csv_path, index_col=0)
+def _load_matrix(source, keys):
+    """Load a p-value matrix (CSV path or DataFrame) in the given key order."""
+    matrix = (source if isinstance(source, pd.DataFrame)
+              else pd.read_csv(source, index_col=0))
     return matrix.loc[keys, keys]
 
 

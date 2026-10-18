@@ -19,6 +19,7 @@
           "experiment_launch": "ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt",
           "num_runs": 30,
           "adaptation_manager": "bt",
+          "required_services": ["/f_maintain_motion/change_mode", "/f_generate_search_path/change_mode", "/f_follow_pipeline/change_mode"],
           "mission_name": "suave"
         }
       - |
