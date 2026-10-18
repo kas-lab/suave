@@ -9,15 +9,55 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-1. `suave_requirements` package with a `requirement_monitor` node that publishes the runtime fulfillment of the thruster availability, search footprint, and adaptation reaction time RELAX requirements on `/requirements/<requirement>/fulfillment`.
+1. `suave_cli`: a Python command-line interface for Docker image and container management, package builds and tests, campaign and batch execution, resume, diagnosis, and analysis. Supports host or container execution, persistent configuration, extra bind mounts, command previews, and CLI self-tests. Available through `env.sh` or the optional colcon package and included in the Docker images.
 
-2. `suave_msgs/msg/ReactionTime` and the `mission_metrics/reaction_time` topic, carrying the latest and mean reaction time, reaction count, and validity status of each adaptation type.
+2. `suave_requirements`: runtime fulfillment monitoring for the thruster availability, search footprint, and adaptation reaction time RELAX requirements. Includes recorded-bag comparison plots, coverage reports, and TikZ export tools.
 
-3. `suave` `lifecycle_watchdog` node, launched by `suave.launch.py`. It watches the lifecycle nodes managed by `system_modes` (`watched_nodes`, default: the `type: node` parts of `suave_modes.yaml`). When `mode_manager` requests activation and the node does not become active within `activation_timeout` (default 10 s), it logs an error and publishes the reason on `mission/control_failure`. It never calls `change_state` or retries activation. `diagnose_batch` classifies its report as `lost_lifecycle_activation`.
+3. `suave_msgs/msg/ReactionTime` and the `mission_metrics/reaction_time` topic, carrying the latest and mean reaction time, reaction count, and validity status for each adaptation type.
+
+4. Diagnostic quality attributes for `operational_thrusters` and camera `coverage_area`, with a configurable camera field of view.
+
+5. Optional `water_current` node and Gazebo bridge for horizontal ocean currents, with sinusoidal speed and heading, seeded heading noise, and diagnostic measurements. Enabled through `enable_water_current` in mission launches and runner configurations.
+
+6. MCAP recording through `record_bags`, enabled by default, with campaign-level settings and per-experiment overrides. The runner validates recordings and separates pending, accepted, and failed attempts.
+
+7. `suave_runner` diagnostics through `diagnose_batch` and `suave batch diagnose`, reporting campaign progress, failure reasons, attempt logs, and repeated-failure warnings.
+
+8. `suave` lifecycle watchdog, launched by `suave.launch.py`. It reports requested activations that do not complete within `activation_timeout` through `mission/control_failure`, without retrying transitions. Diagnostics classify its report as `lost_lifecycle_activation`.
+
+### Changed
+
+1. **Runner checkpoint format:** each campaign now uses a schema-2 `runs.json` as its completion authority, with current attempt identity, status, recording state, failure details, and prior attempt history. Batch `state.json` now stores only campaign references, with progress derived from campaign checkpoints. Legacy checkpoint layouts are not supported.
+
+2. Runner logs now include an attempt directory under `logs/run_<experiment_index>_<run_index>/<attempt_id>/`, separating retries and retaining SITL, simulation, and experiment output. Campaign locking prevents concurrent runners from using the same result folder.
+
+3. Mission summary and per-event CSVs now include `run_idx` and `attempt_id`. Wilcoxon and separate-file Q-Q analysis select completed attempts through `runs.json` instead of relying on CSV row order. Their inputs must include run identity columns and campaign metadata. Summary and Mann-Whitney tools still read all supplied CSV rows.
+
+4. Batch Wilcoxon analysis validates matching run-ID sets and finite metrics before testing each campaign. Analysis, plotting, and LaTeX tools share campaign-layout discovery and manager labels through `suave_tools`.
+
+5. `suave_runner_launch.py` accepts a `config_file` launch argument. Mission and base launches propagate recording and water-current settings, and `suave_base` starts requirement monitoring alongside metrics.
+
+6. Docker builds use smaller layers and improved dependency caching. Container CI reuses build outputs and passes the built base-image digest to dependent image builds.
+
+7. Documentation now separates result processing into `results.md`, expands the CLI guide, and prioritizes CLI-based campaign workflows. Installation, extension, metrics, Docker, and recovery instructions have been corrected.
+
+### Fixed
+
+1. Runner process cleanup and interruption handling, including launch-session shutdown verification, termination of lingering SITL processes, and detection of stale Gazebo processes or occupied simulator ports before starting another attempt.
+
+2. Recording recovery after interrupted finalization. Resume resolves unfinished attempts from their bag locations and revalidates accepted recordings before skipping completed runs.
+
+3. Mission result saving is serialized and idempotent, rejects saves before GUIDED mode, and freezes progress measurements after saving. Pipeline detection, battery monitoring, and mission callbacks no longer destroy subscriptions from their own callbacks.
+
+4. The BT mission time limit now starts when the vehicle enters GUIDED mode rather than when pipeline search starts.
+
+5. Thruster availability counts now track failures and recovery without repeated-event drift.
+
+6. Documentation cleanup removes generated autosummary stubs after module changes, preventing obsolete API imports from breaking Sphinx builds. Documentation CI cleans these pages before rebuilding.
 
 ### Removed
 
-1. `suave_runner`: the after-the-fact log grep for runs whose search-path node never activated (`detect_broken_run`) and the `broken_run` failure type. The watchdog report ends such runs as `mission_control_failure`, which resume retries.
+1. The `sort_results.py` post-processing script. Attempt-aware analysis now selects and matches runs directly from campaign CSVs and `runs.json`.
 
 ## 1.5.0
 
