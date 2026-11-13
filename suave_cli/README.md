@@ -155,7 +155,7 @@ selected package failed, or if a package has no `build/` folder (which can happe
 ### `suave run`, `suave batch`, `suave campaign`
 
 These wrap the `suave_runner` and `run_batch` nodes. Their parameters are documented in
-`suave_runner/README.md`.
+[Run SUAVE](https://kas-lab.github.io/suave/run.html) (`docs/source/run.md`).
 
 | Command | Runs |
 |---|---|

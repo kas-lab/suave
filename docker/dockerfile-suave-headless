@@ -164,3 +164,9 @@ ENV SUAVE_ROOT=/home/ubuntu-user/suave_ws/src/suave
 ENV SUAVE_CLI_CONTEXT=container
 ENV PATH=${SUAVE_ROOT}/suave_cli/bin:${PATH}
 WORKDIR $HOME/suave_ws/
+
+# Source the SUAVE workspace for every `docker run` command, not only in
+# interactive shells (which also source it from ~/.bashrc).
+COPY --chmod=755 docker/suave_entrypoint.sh /suave_entrypoint.sh
+ENTRYPOINT ["/suave_entrypoint.sh"]
+CMD ["bash"]

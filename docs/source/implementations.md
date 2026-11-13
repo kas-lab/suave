@@ -50,9 +50,9 @@ These repositories implement a managing subsystem for SUAVE and are maintained s
 
 ### ROSA (`suave_rosa`)
 
-[Repository](https://github.com/kas-lab/rosa) · [Paper](https://www.frontiersin.org/journals/robotics-and-ai/articles/10.3389/frobt.2025.1531743/full)
+[ROSA](https://github.com/kas-lab/rosa) · [suave_rosa](https://github.com/kas-lab/suave_rosa) · [Paper](https://www.frontiersin.org/journals/robotics-and-ai/articles/10.3389/frobt.2025.1531743/full)
 
-ROSA is a knowledge-based self-adaptation framework for ROS 2. Its knowledge base is implemented with [TypeDB](https://typedb.com/), a strongly-typed graph database with a native inference engine. ROSA subscribes to `/diagnostics`, reasons over the knowledge base to select the appropriate adaptation, and issues reconfigures the managed system directly, by-passing `system_modes`. The `suave_rosa` repository provides the ROSA managing subsystem configured for SUAVE.
+ROSA is a knowledge-based self-adaptation framework for ROS 2. Its knowledge base is implemented with [TypeDB](https://typedb.com/), a strongly-typed graph database with a native inference engine. ROSA subscribes to `/diagnostics`, reasons over the knowledge base to select the appropriate adaptation, and reconfigures the managed system directly, bypassing `system_modes`. The `suave_rosa` repository provides the ROSA managing subsystem configured for SUAVE.
 
 ### Planta (`suave_planta`)
 

@@ -1,5 +1,16 @@
 # Troubleshooting
 
+## Common problems
+
+| Symptom | Cause and fix |
+|---|---|
+| A run fails with `readiness_timeout` or `readiness_missing_service` | SITL, the simulation, or the experiment did not start in time. Run `suave batch diagnose --latest` and read the reported attempt logs, starting with `ardupilot.log`. Check that `required_services` lists services the manager actually provides. See [Monitor and diagnose](run.md#monitor-and-diagnose) |
+| The runner refuses to start a run because of a live `gz sim` process or a bound UDP port 9002 | A simulation or SITL process from an earlier run is still alive. Stop it, or restart the container, then resume. See [Recovery safeguards](run.md#recovery-safeguards) |
+| MAVROS reports a GeographicLib exception at startup (local installation) | The geoid datasets are missing. Run `install_geographiclib_datasets.sh` as described in [Install SUAVE workspace](installation.md#install-suave-workspace) |
+| The Gazebo window does not open from the container | Start the container with `suave docker run`, which shares the display with an X cookie, and recreate it after changing displays. See the [CLI troubleshooting](cli.md#troubleshooting) |
+| The browser desktop of the Kasm image is blank or crashes | Start the container with `--shm-size=512m`, as in [Browser-based image](docker.md#browser-based-image) |
+| A change to C++, messages, entry points, or configuration files has no effect | The installed copy is stale. Rebuild the package, for example `suave build suave_runner` |
+
 ## MAVROS and ArduSub integration
 
 Inspect SITL and MAVROS logs before changing dependencies. Use the tested

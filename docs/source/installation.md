@@ -11,7 +11,7 @@ Follow the [official instructions](https://docs.ros.org/en/humble/Installation/U
 
 ## Install ROS_GZ
 
-```Bash
+```bash
 sudo apt install ros-humble-ros-gzharmonic
 ```
 
@@ -21,7 +21,7 @@ ArduSub is a subproject within ArduPilot for piloting underwater vehicles.
 **Disclaimer:**
 Problems may occur with different combinations of ArduPilot and MavROS versions. This repo was tested with [ArduSub commit `571e8c7`](https://github.com/ArduPilot/ardupilot/tree/571e8c7bd3793fce1bc5184a2f6586feb8a616e5) (ArduSub 4.7.0-beta4) and [mavros 2.14.0](https://github.com/mavlink/mavros/tree/2.14.0).
 
-```Bash
+```bash
 cd ~/
 git clone https://github.com/ArduPilot/ardupilot.git
 cd ardupilot
@@ -33,7 +33,7 @@ Tools/environment_install/install-prereqs-ubuntu.sh -y
 
 To test if the installation worked, run:
 
-```Bash
+```bash
 sim_vehicle.py -v ArduSub -L RATBeach --console --map
 ```
 ArduPilot SITL should open and a console plus a map should appear.
@@ -42,13 +42,13 @@ ArduPilot SITL should open and a console plus a map should appear.
 
 Install the dependencies:
 
-```Bash
+```bash
 sudo apt update
 sudo apt install libgz-sim8-dev rapidjson-dev
 sudo apt install libopencv-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-gl
 ```
 
-```Bash
+```bash
 export GZ_VERSION=harmonic
 sudo bash -c 'wget https://raw.githubusercontent.com/osrf/osrf-rosdep/master/gz/00-gazebo.list -O /etc/ros/rosdep/sources.list.d/00-gazebo.list'
 rosdep update
@@ -57,7 +57,7 @@ rosdep resolve gz-harmonic
 
 Clone and build the repository:
 
-```Bash
+```bash
 cd ~/
 git clone https://github.com/ArduPilot/ardupilot_gazebo
 cd ardupilot_gazebo
@@ -84,66 +84,61 @@ More info about the plugin can be found in the corresponding [repository](https:
 ## Install SUAVE workspace
 
 Create the workspace and download the required repositories:
-```Bash
+```bash
 mkdir -p ~/suave_ws/src/
 cd ~/suave_ws/
 ```
 
 If you want to get the most updated version of the repo:
 
-```Bash
+```bash
 wget https://raw.githubusercontent.com/kas-lab/suave/main/suave.repos
 vcs import src < suave.repos --recursive
 ```
 For a reproducible release installation, download `suave.repos` from the
 matching Git tag instead of `main`.
 
-**SEAMS 2023 artifact:** The exact source submitted with the published paper
-is preserved at commit
-[`9e64688`](https://github.com/kas-lab/suave/tree/9e6468896ce766376557ca9522d84f92b70129f1).
-Because that artifact uses a historical dependency set, the recommended way
-to reproduce it is the archived container image:
-
-```Bash
-docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password \
-  --security-opt seccomp=unconfined ghcr.io/kas-lab/suave:seams2023
-```
-
-Use the `main` or release-tag instructions above for current development.
-
-Before building the `ros_gz` package (one of the dependencies), you need to export the gazebo version:
-
-```
-export GZ_VERSION="harmonic"
-```
-You can also add this to your `~/.bashrc` to make this process easier.
-
 Install Python dependencies:
-```Bash
+```bash
 pip install -r src/suave/requirements.txt
 ```
 
 Install the ROS dependencies:
-```Bash
+```bash
 source /opt/ros/humble/setup.bash
 cd ~/suave_ws/
 rosdep install --from-paths src --ignore-src -r -y
 ```
 
 Build the project:
-```Bash
+```bash
 cd ~/suave_ws/
 colcon build --symlink-install
 ```
 
 If you have memory problems while building the package, run the following command instead, it is slower but uses less memory:
 
-```Bash
+```bash
 colcon build --symlink-install --executor sequential --parallel-workers 1
 ```
 
 Install a MAVROS dependency:
-```Bash
+```bash
 wget https://raw.githubusercontent.com/mavlink/mavros/master/mavros/scripts/install_geographiclib_datasets.sh
 sudo bash ./install_geographiclib_datasets.sh
 ```
+
+## Reproduce the SEAMS 2023 artifact
+
+The exact source submitted with the published paper
+is preserved at commit
+[`9e64688`](https://github.com/kas-lab/suave/tree/9e6468896ce766376557ca9522d84f92b70129f1).
+Because that artifact uses a historical dependency set, the recommended way
+to reproduce it is the archived container image:
+
+```bash
+docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password \
+  --security-opt seccomp=unconfined ghcr.io/kas-lab/suave:seams2023
+```
+
+Use the instructions above for current development.

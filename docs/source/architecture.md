@@ -89,22 +89,19 @@ for their initial decisions should wait for that observation.
 
 ## Managing subsystem (pluggable)
 
-The managing subsystem closes the adaptation loop. It has no prescribed internal architecture — implementations range from rule-based (BT, Metacontrol) to planning-based (Planta) to knowledge-based (ROSA). All implementations must satisfy the following interface:
+The managing subsystem closes the adaptation loop. It has no prescribed internal architecture — implementations range from rule-based (BT, Metacontrol) to planning-based (Planta) to knowledge-based (ROSA). Each one uses the subset of SUAVE's ROS 2 interfaces that matches its control strategy:
 
-### Inputs
+| Interface | Type | Purpose |
+|---|---|---|
+| `/diagnostics` | `diagnostic_msgs/DiagnosticArray` | Monitoring data from the monitor subsystem |
+| `/requirements/<requirement>/fulfillment` | `std_msgs/Float32` | Optional: runtime fulfillment of the quality requirements (see {doc}`mission`) |
+| `/task/request`, `/task/cancel` | `suave_msgs/srv/Task` | Task level: request or cancel mission tasks |
+| `/f_generate_search_path/change_mode`, `/f_follow_pipeline/change_mode`, `/f_maintain_motion/change_mode` | `system_modes_msgs/srv/ChangeMode` | Function level: switch a functionality to one of its modes |
+| Lifecycle and parameter services of the managed nodes | standard ROS 2 services | Low level: change node states and parameters directly |
 
-- **`/diagnostics`** (`diagnostic_msgs/DiagnosticArray`) — monitoring data from the monitor subsystem.
+[System Modes](https://github.com/micro-ROS/system_modes) is no longer maintained. New managing subsystems can skip it and use the managed nodes' lifecycle and parameter services directly, as ROSA does. A replacement execution interface is under development.
 
-### Outputs
-
-- **`/f_generate_search_path/change_mode`** (`system_modes_msgs/srv/ChangeMode`) — change the search path generation mode.
-- **`/f_follow_pipeline/change_mode`** (`system_modes_msgs/srv/ChangeMode`) — change the pipeline following mode.
-- **`/f_maintain_motion/change_mode`** (`system_modes_msgs/srv/ChangeMode`) — change the motion maintenance mode.
-- **`/task/request`** and **`/task/cancel`** (`suave_msgs/srv/Task`) — request or cancel high-level mission tasks.
-
-See [Extending SUAVE](extend.md) for launch file conventions when connecting a new managing subsystem.
-
-**Note:** For managing the system's lifecycle nodes and parameters, you can skip `system_modes` entirely and change the node's states directly with the standard ROS services for managing lifecycle nodes states and parameters. In the date of writing this comment (18/10/26), System Modes is unmaintained, so we actually recommend skipping it if possible. We are currently working on a new execution interface to replace System Modes.
+See [Extending SUAVE](extend.md) for how to choose an integration level and for launch file conventions.
 
 ---
 
@@ -115,6 +112,6 @@ The end-to-end adaptation cycle follows the MAPE-K pattern:
 1. **Monitor** — SUAVE nodes observe thruster health, water visibility, water current, and battery level and publish findings to `/diagnostics`.
 2. **Analyze** — The managing subsystem subscribes to `/diagnostics` and detects whether the system is meeting its quality requirements.
 3. **Plan** — The managing subsystem selects the appropriate function design (mode) for each affected functionality.
-4. **Execute** — The managing subsystem calls `change_mode` on the relevant `system_modes` service. `system_modes` transitions the lifecycle node to the target mode, which may change node parameters (e.g., spiral altitude) or activate/deactivate nodes.
+4. **Execute** — The managing subsystem reconfigures the managed nodes, either by calling `change_mode` on the relevant `system_modes` service or through the nodes' lifecycle and parameter services. Reconfiguration activates or deactivates nodes, or changes their parameters (e.g., spiral altitude).
 
-The `mission_metrics` node observes this cycle and records the **reaction time** — the elapsed time between a disturbance appearing in `/diagnostics` and the corresponding lifecycle node transition completing. See the [Metrics Reference](metrics.md) for details.
+The `mission_metrics` node observes this cycle and records the **reaction time**: the time between a disturbance appearing in `/diagnostics` and the managed system adopting the configuration that addresses it. For a thruster failure or a low battery, that is the activation of the recovery or recharge node. For a water visibility change, it is the change of the spiral altitude to the one expected for the new visibility. See the [Metrics Reference](metrics.md) for details.

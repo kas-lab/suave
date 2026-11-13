@@ -31,8 +31,11 @@ def parse_args(argv=None):
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         description=('Export SUAVE requirement-fulfillment summaries as '
-                     'PGFPlots-friendly data tables. Run it in the sourced '
-                     'SUAVE container.'))
+                     'PGFPlots-friendly data tables.\nRun it in the sourced '
+                     'SUAVE container.'),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(fulfillment_plots.BAG_SELECTION_HELP + '\n' +
+                fulfillment_plots.SAMPLING_HELP))
     parser.add_argument(
         'path',
         help='Batch, campaigns directory, state.json, or campaign folder.')

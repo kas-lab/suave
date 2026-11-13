@@ -1,120 +1,102 @@
 # Use SUAVE with Docker
 
-You can pull and run the exemplar as a Docker container using the following command. Keep in mind you need to have [Docker](https://docs.docker.com/get-docker/) installed on your computer and running.
+SUAVE provides two images:
 
-In a terminal on your computer run:
-```Bash
-docker run -it --shm-size=512m -p 6901:6901 -e VNC_PW=password --security-opt seccomp=unconfined ghcr.io/kas-lab/suave:main
-```
+| Image | Use |
+|---|---|
+| `ghcr.io/kas-lab/suave-headless:main` | Terminal-based development and experiments. The SUAVE CLI uses this image |
+| `ghcr.io/kas-lab/suave:main` | Browser-based desktop (Kasm VNC), for trying SUAVE without a local display setup |
 
-Optionally you can add the parameter `-v <absolute_path_host_compute>:/home/kasm-user/suave/results` to save the results into your computer, replace `<absolute_path_host_compute>` with the absolute path of where you want the data to be saved in your computer, e.g:
+You need [Docker](https://docs.docker.com/get-docker/) installed and running.
 
-```Bash
-docker run -it --shm-size=512m -v $HOME/suave_results:/home/kasm-user/suave/results -p 6901:6901 -e VNC_PW=password --security-opt seccomp=unconfined ghcr.io/kas-lab/suave:main
-```
+## Headless image with the SUAVE CLI
 
-**SEAMS2023:** To use the docker image used in the SEAMS2023 paper, replace `ghcr.io/kas-lab/suave:main` with `ghcr.io/kas-lab/suave:seams2023`.
-
-Once the container is up and running, you can interface with it through your web browser. The container will be hosted locally at the port specified, in this case 6901. So in your browser, go to
-`http://localhost:6901`.
-
-A dialog will request a username and password, these are shown below, with the password being specifiable in the run command.
-
- - **User** : `kasm_user`
- - **Password**: `password`
-
-<!-- Now you can proceed to [run the exemplar](#run-suave). -->
-
-## Headless docker image
-
-We also provide a docker image without a VNC/Web interface, so you can run experiments directly from your terminal without logging in to the web interface.
-
-Pull image:
-```Bash
-docker pull ghcr.io/kas-lab/suave-headless:main
-```
-
-Build the headless image locally from your current checkout:
-```Bash
-docker build -t suave-headless:dev -f docker/dockerfile-suave-headless .
-```
-
-### Non-interactive (pass command directly)
-
-Run an experiment campaign and save results to your host machine:
-
-```Bash
-docker run -it --shm-size=512m \
-  -v $HOME/suave_results:/home/ubuntu-user/suave/results \
-  ghcr.io/kas-lab/suave-headless:main \
-  ./src/suave/runner/headless_runner.sh false metacontrol time 2
-```
-
-The runner arguments are: `[true|false] [metacontrol|random|none|bt] [time|distance] <runs>`.
-
-### Interactive (open a shell, then run inside)
-
-Run the local image without GPU:
-```Bash
-docker run -it --rm --name suave_runner -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro suave-headless:dev
-```
-
-Run the local image with NVIDIA GPU support. Install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) first.
-```Bash
-docker run -it --rm --gpus all --runtime=nvidia --name suave_runner -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all -v /dev/dri:/dev/dri -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro suave-headless:dev
-```
-
-For GUI access, prefer the SUAVE CLI's per-container X-cookie setup:
+The SUAVE CLI is the recommended way to start and use the container. From the
+root of a SUAVE checkout:
 
 ```bash
-suave docker run --image suave-headless:dev --gpu none
-suave docker shell
+source env.sh
+suave docker run
+suave run
 ```
 
-The CLI passes display credentials without disabling X-server access control.
-The direct Docker examples above require separately configured X authentication
-for GUI use. See {doc}`cli` for display and GPU options.
+`suave docker run` starts a container named `suave`. If no SUAVE image exists
+locally, it offers to pull `ghcr.io/kas-lab/suave-headless:main`. The
+container mounts the checkout at `/home/ubuntu-user/suave_ws/src/suave` and
+the host's `~/suave/results` at `/home/ubuntu-user/suave/results`, so results
+stay on the host. `suave run` then starts a campaign inside the container. See
+{doc}`run` for campaign configuration.
 
-Alternatively, if you dont want to use the CLI, you can set the following before starting the container (this approach is unsafe):
-```Bash
-xhost +
+Other common commands:
+
+```bash
+suave docker run --gpu none   # without NVIDIA GPU access
+suave docker shell            # open a shell with ROS and the workspace sourced
+suave docker status
+suave docker stop --rm
 ```
 
-Once inside the container, start an experiment with the ROS 2 runner:
+GPU access is requested by default and requires the
+[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+The CLI shares the host display with a per-container X cookie, so Gazebo's GUI
+works without `xhost +`. See {doc}`cli` for all options, extra mounts, and
+configuration.
 
-```Bash
-ros2 run suave_runner suave_runner \
-  --ros-args \
-  -p gui:=False \
-  -p experiments:='[
-    "{\"experiment_launch\": \"ros2 launch suave_bringup mission.launch.py adaptation_manager:=bt\", \
-      \"num_runs\": 2, \
-      \"adaptation_manager\": \"bt\", \
-      \"mission_name\": \"suave\"}"
-  ]'
+### Equivalent Docker commands
+
+For reference, without GPU or display access, `suave docker run` and
+`suave docker shell` correspond to:
+
+```bash
+docker run -d --name suave \
+  -v "$PWD:/home/ubuntu-user/suave_ws/src/suave" \
+  -v "$HOME/suave/results:/home/ubuntu-user/suave/results" \
+  ghcr.io/kas-lab/suave-headless:main sleep infinity
+docker exec -it suave bash
 ```
 
-## Build Docker images locally
-To build the docker images locally, run:
+Run these from the checkout root. To run a campaign without opening a shell:
 
-```Bash
-./build_docker_images.sh
+```bash
+docker exec suave suave run
 ```
 
-This builds `kasm-jammy:dev`, `suave:dev`, and `suave-headless:dev` from the repository root.
+GPU access adds `--gpus all --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all
+-e NVIDIA_DRIVER_CAPABILITIES=all -v /dev/dri:/dev/dri`. Display access adds
+`-e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix` plus X authentication,
+which the CLI configures for you. Avoid `xhost +`: it disables access control
+for the whole X server.
 
-## Development:
+The source mount replaces the image's copy of the checkout, but not its
+`build/` and `install/` folders. Run `suave build` after changing C++,
+messages, entry points, or installed files.
 
-Run the image built locally and mount the suave folder:
+## Browser-based image
 
-From the workspace root:
-```Bash
-docker run -it --rm --name suave --runtime=nvidia --gpus all -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro -v "$PWD/src/suave:/home/ubuntu-user/suave_ws/src/suave" suave-headless:dev
+The Kasm image runs a desktop that you open in a web browser:
+
+```bash
+docker run -it --name suave --shm-size=512m -p 6901:6901 -e VNC_PW=password \
+  --security-opt seccomp=unconfined \
+  -v "$HOME/suave/results:/home/kasm-user/suave/results" \
+  ghcr.io/kas-lab/suave:main
 ```
 
-If you want to mount other repositories from the same ROS workspace, just add `-v source_repo_path:/home/ubuntu-user/suave_ws/src/your_repo`.
+Then open `http://localhost:6901` and log in with user `kasm_user` and the
+password set by `VNC_PW` (`password` above). Results are saved to
+`~/suave/results` on the host. Remove the `-v` option to keep them only inside
+the container. For the image used in the SEAMS 2023 paper, see
+[Reproduce the SEAMS 2023 artifact](installation.md#reproduce-the-seams-2023-artifact).
 
-From the source root:
-```Bash
-docker run -it --rm --name suave --runtime=nvidia --gpus all -e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix -v /etc/localtime:/etc/localtime:ro -v "$PWD:/home/ubuntu-user/suave_ws/src/suave" suave-headless:dev 
+## Build images locally
+
+```bash
+suave docker build          # suave-headless:latest
+suave docker build --all    # also the Kasm base and GUI images
 ```
+
+Without the CLI, `./build_docker_images.sh` builds `kasm-jammy:dev`,
+`suave:dev`, and `suave-headless:dev` from the repository root, and
+`docker build -t suave-headless:dev -f docker/dockerfile-suave-headless .`
+builds only the headless image. Select a local image with
+`suave docker run --image suave-headless:dev`.

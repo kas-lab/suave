@@ -2,7 +2,7 @@
 
 If you find this repository useful, please consider citing:
 
-```
+```bibtex
 @INPROCEEDINGS{10173938,
   author={Silva, Gustavo Rezende and Päßler, Juliane and Zwanepol, Jeroen and Alberts, Elvin and Tarifa, S. Lizeth Tapia and Gerostathopoulos, Ilias and Johnsen, Einar Broch and Corbato, Carlos Hernández},
   booktitle={2023 IEEE/ACM 18th Symposium on Software Engineering for Adaptive and Self-Managing Systems (SEAMS)},

@@ -1,39 +1,38 @@
-.. SUAVE documentation master file, created by
-   sphinx-quickstart on Mon Nov 20 11:30:50 2023.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to SUAVE's documentation!
 =================================
 
 SUAVE (Self-adaptive Underwater Autonomous Vehicle Exemplar) is a ROS 2 Humble
-exemplar for pipeline-search and inspection missions. It separates the managed
-vehicle functionality from pluggable managing subsystems, making adaptation
-approaches directly comparable through common ROS 2 interfaces.
+exemplar for self-adaptive robotics. An autonomous underwater vehicle searches
+for and inspects a pipeline while thrusters fail, water visibility changes, and
+its battery drains. SUAVE separates the managed vehicle functionality from
+pluggable managing subsystems, so different adaptation approaches can be
+compared through common ROS 2 interfaces.
 
 Quick start
 -----------
 
-The supported Docker image is the fastest way to try SUAVE. See
-:doc:`docker` for image setup, then :doc:`run` for mission and experiment
-commands. For a local source installation, follow :doc:`installation`.
+Read :doc:`mission` for what the vehicle does and which uncertainties it faces.
+The Docker images are the fastest way to try SUAVE: see :doc:`docker`, then
+:doc:`run` for missions and experiment campaigns. For a local installation,
+follow :doc:`installation`.
 
 .. toctree::
+ :maxdepth: 1
+
  Home <self>
+ mission
  installation
  docker
+ cli
  run
  results
- cli
+ metrics
  architecture
  extend
  implementations
- metrics
  troubleshooting
- related
  citing
  api
- :maxdepth: 1
 
 Contribute
 ----------
@@ -44,12 +43,17 @@ Contribute
 Support
 -------
 
-If you are having issues, please let us know by creating an issue in github.
+If you are having issues, please let us know by creating an issue on GitHub.
+
+Related work
+------------
+
+- `REMARO Summer School Delft 2022 <https://github.com/remaro-network/tudelft_hackathon>`_: underwater robotics hackathon
 
 License
 -------
 
-The project is licensed under the Apache 2.0 license
+The project is licensed under the Apache 2.0 license.
 
 Acknowledgments
 ----------------

@@ -6,17 +6,18 @@ analysis, summaries, plots, and LaTeX tables.
 
 ## Prerequisites
 
-To run SUAVE you either need need to have a install SUAVE deps and build a ROS workspace with SUAVE, or you can use the docker images provided, check the isntalation and docker pages for more info. The easiest way to run SUAVE its through its CLI, which requires that you either run it after sourcing a workspace with SUAVE built, or sourcing `env.sh` directly, or running from a development container with ROS and the workspace installed.
-The CLI can invoke that container from the host. Put `suave` on `PATH` by
-sourcing the checkout's `env.sh`, or use the workspace's installed CLI hook.
-See {doc}`cli` for setup and execution-target settings.
+You need a SUAVE environment: either a SUAVE Docker container ({doc}`docker`)
+or a local workspace with SUAVE built ({doc}`installation`). The examples on
+this page use the SUAVE CLI, which runs each command in the container named
+`suave` when it is running, and in the local workspace otherwise. See
+{doc}`cli` to put `suave` on `PATH` and to select where commands run.
 
-If the container is not named `suave`, pass `--container NAME`. Use paths visible
-inside that container. The CLI does not translate host paths, and relative
-configuration paths resolve from the container's workspace root.
+Paths given to the CLI must exist where the command runs: the CLI does not
+translate host paths into container paths. Relative configuration paths, such
+as `src/suave/my_runner.yml`, resolve from the workspace root.
 
-Run direct ROS commands inside the container. If the environment does not
-already source the workspace, run:
+The direct ROS commands on this page run inside the container, or in a shell
+with the workspace sourced:
 
 ```bash
 cd ~/suave_ws
@@ -151,9 +152,27 @@ suave batch diagnose /home/ubuntu-user/suave/results/batches/BATCH --json
 ```
 
 `diagnose` accepts a batch directory, its `state.json`, or a campaign directory.
-It only reads files. It reports completed and expected run counts, failures by
-manager, failure reasons, attempt log paths, and log lines that suggest a cause.
-The direct equivalent is `ros2 run suave_runner diagnose_batch PATH [--json]`.
+It only reads files, so it also works on a running batch or a copy on another
+machine. It reports completed and expected run counts, failures by manager,
+failure reasons, attempt log paths, and log lines that suggest a cause. The
+direct equivalent is `ros2 run suave_runner diagnose_batch PATH [--json]`.
+
+The expected run count comes from the runner configuration named in the batch
+manifest, and is `unknown` if that package is not installed. Mission CSV row
+counts are listed for reference only, since failed attempts also leave rows.
+The command exits with `0` whenever the diagnosis succeeds, even if runs
+failed, and with `2` for an invalid path. Results written before `runs.json`
+schema version 2 are not supported.
+
+The suspected causes it looks for in each attempt's launch logs are:
+
+| Suspected cause | Log evidence |
+|---|---|
+| `mission_metrics_invalid_handle` | A line mentioning both `mission_metrics` and `InvalidHandle` |
+| `missing_change_mode_service` | `change_mode service not available` |
+| `lost_lifecycle_activation` | The lifecycle watchdog's report that a node `did not become active within` the timeout |
+
+Log lines after the run's teardown (`sending signal 'SIGINT'`) are ignored.
 
 The runner prints per-manager summaries after each run. The batch runner prints
 them after each campaign. A batch completes when all configured runs have
@@ -166,7 +185,7 @@ summary.
 |---|---|
 | `mission_done_timeout` | No `mission_metrics/done` within `run_duration` |
 | `process_died_before_completion` | A launched process exited nonzero |
-| `mission_control_failure` | A subsystem published `mission/control_failure`, including lifecycle-watchdog activation failures |
+| `mission_control_failure` | A subsystem published `mission/control_failure`. This includes the `lifecycle_watchdog` node, which reports a lifecycle node that did not become active within 10 s of the mode manager's request. The watchdog only reports and never retries; resuming retries the run |
 | `readiness_timeout` | SITL or simulation did not become ready before its timeout |
 | `readiness_missing_service` | A required experiment service did not appear before `readiness_timeout` |
 | `startup_failure` | Starting the run raised an exception |
@@ -244,7 +263,27 @@ It then resolves the attempt from its recording location:
 Before each new attempt, the runner also refuses to start if it detects a live
 `gz sim` process or a bound UDP port 9002, used by the vehicle's
 `ArduPilotPlugin`. Stop the leftover simulation or SITL process before resuming.
-These checks prevent a new run from controlling a stale vehicle.
+These checks prevent a new run from controlling a stale vehicle. Zombie
+(`<defunct>`) processes are ignored: they hold no ports, and only PID 1 can
+reap them. A container started without `--init` keeps them until it restarts.
+
+A campaign folder is locked (`.runner.lock`) while a runner uses it, so a
+second runner on the same folder fails immediately.
+
+### Stopping a campaign
+
+Ctrl+C or SIGTERM requests a cooperative stop: the runner stops the attempt's
+processes and records it as `interrupted`. Further signals do not interrupt
+this cleanup, so wait for the runner to exit before restarting. When launched
+through `suave_runner_launch.py`, the runner gets 65 seconds before SIGTERM and
+another 10 seconds before SIGKILL. A forced SIGKILL cannot clean up.
+
+After every attempt, the runner stops its launch processes, sends SIGTERM to
+anything left in their process sessions (for example a Gazebo server orphaned
+by `gz sim`), and sends SIGKILL to survivors after 15 seconds. If a launch
+process is still alive after 30 seconds, or a process survives SIGKILL, the
+attempt is recorded as `shutdown_unconfirmed`, its recording stays under
+`rosbags/pending/`, and the campaign stops instead of starting another attempt.
 
 ## Configuration reference
 
@@ -309,7 +348,8 @@ using readiness checks rather than fixed startup delays:
 2. Start simulation and wait for `/model/bluerov2/pose`, bounded by
    `simulation_ready_timeout`.
 3. Launch the experiment and wait for `required_services`, bounded by
-   `readiness_timeout`. Then wait for `mission_metrics/done`.
+   `readiness_timeout`. A `/change_mode` service must also have type
+   `system_modes_msgs/srv/ChangeMode`. Then wait for `mission_metrics/done`.
 
 The bundled BT configurations require the three mode-change services shown in
 the example. Extended BT configurations also require
@@ -347,10 +387,22 @@ CAMPAIGN/
     failed/<manager>_<mission>_<run_id>_<attempt_id>/
 ```
 
-The runner writes `runs.json` as the completion checkpoint. Each run records its
-configuration, current attempt ID, status, recording state, timestamps, and
-failure details. Earlier attempts remain under `attempts`. The campaign header
-records the seed, simulation launch command, and SITL command.
+The runner writes `runs.json` as the completion checkpoint, replacing it
+atomically. Its `campaign` header records `random_seed`, `simulation_launch`,
+and `ardupilot_command`. `runs` maps each `run_<experiment_index>_<run_index>`
+to its current attempt:
+
+| Field | Contents |
+|---|---|
+| `adaptation_manager`, `mission_name`, `experiment_launch` | The experiment the run belongs to |
+| `status` | `running`, `completed`, `failed`, or `interrupted` |
+| `attempt_id` | The current attempt. Earlier attempts remain under `attempts` |
+| `bag` | `null` without recording, otherwise `pending`, `accepted`, or `failed` |
+| `failure_type`, `failure_reason` | Why the attempt did not complete |
+| `started_at`, `finished_at` | Attempt timestamps |
+
+Log, configuration, and recording paths are derived from `run_id` and
+`attempt_id` rather than stored.
 
 A run is complete only when its status is `completed`. Mission completion does
 not imply pipeline detection. A failed process or `mission/control_failure`

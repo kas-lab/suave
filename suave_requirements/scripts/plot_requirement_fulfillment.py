@@ -64,6 +64,29 @@ REQUIREMENTS.update({
 })
 
 MANAGERS = list(MANAGER_ORDER)
+BAG_SELECTION_HELP = """\
+bag selection:
+  Bags come from each campaign's runs.json (schema_version 2), never from
+  directory names. A trial counts only if its status is "completed"; it must
+  then have "bag": "accepted", read from
+  rosbags/<manager>_<mission>_<run_id>_<attempt_id>/. A completed trial
+  without an accepted bag, or an unsupported runs.json, is an error. Trials
+  recorded with "bag": null are reported as recording_disabled. Bags under
+  rosbags/pending/ or rosbags/failed/ are never loaded. An unreadable bag is
+  an error; a readable bag missing a topic is allowed and reported.
+"""
+SAMPLING_HELP = """\
+time and statistics:
+  Time is normalized recording time, 0-100 % of each bag's metadata
+  start/duration, with one origin for every topic; it is not mission time.
+  Each run is resampled with previous-value hold (no interpolation or
+  lookahead): before a topic's first message the value is a gap, not zero,
+  and at duplicate timestamps the last message wins. Non-finite values and
+  values outside [0, 1] by more than 1e-6 are counted as invalid and dropped.
+  Curves are the mean over runs with a value at each grid point; bands are
+  approximate 95 % confidence intervals (1.96 * SD / sqrt(n), ddof=1) drawn
+  for n >= 2. Legends show the number of contributing runs.
+"""
 MANAGER_LABELS = {manager: label(manager) for manager in MANAGERS}
 COLORS = {
     'rebetmc': '#0072B2',
@@ -79,8 +102,16 @@ TOPICS = {spec['topic']: key for key, spec in REQUIREMENTS.items()}
 def parse_args(argv=None):
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description=('Generate one plot per SUAVE requirement fulfillment. '
-                     'Run it in the sourced SUAVE container.'))
+        description=('Generate one plot per SUAVE requirement fulfillment.\n'
+                     'Run it in the sourced SUAVE container.'),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=BAG_SELECTION_HELP + '\n' + SAMPLING_HELP + """
+coverage.json:
+  Holds per-grid-point run counts and invalid-sample counts. Managers with no
+  observations for a topic are named in the figure caption and listed under
+  no_observations; managers with no accepted runs are listed under
+  no_accepted_runs. A topic with no data gets an explicit no-data figure.
+""")
     parser.add_argument(
         'path',
         help='Batch, campaigns directory, state.json, or campaign folder.')

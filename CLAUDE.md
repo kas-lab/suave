@@ -101,7 +101,7 @@ ros2 launch suave_runner suave_runner_launch.py
 
 # Batch runner (sequences multiple campaigns; resume from its state.json manifest)
 ros2 launch suave_runner run_batch_launch.py
-# Config: suave_runner/config/runner/batch_campaigns.yml — see suave_runner/README.md "Batch runner" section
+# Config: suave_runner/config/runner/batch_campaigns.yml — see docs/source/run.md "Run a batch"
 
 # Shell runner (simple positional args)
 cd runner && ./runner.sh [true|false] [metacontrol|random|none|bt] [time|distance] <runs>
@@ -234,8 +234,8 @@ The runner passes `SUAVE_RUN_IDX`/`SUAVE_ATTEMPT_ID` to the experiment launch; `
 
 ## Documentation
 
-`docs/source/` is a Sphinx GitHub Pages site that mirrors README content — keep both in sync when updating installation steps, Docker commands, or runner docs. Pages: `installation`, `docker`, `run`, `architecture`, `extend`, `implementations`, `metrics`, `troubleshooting`, `related`, `citing`, `api`.
-When changing `suave_runner` behavior or parameters, update **both** `suave_runner/README.md` and `docs/source/run.md`.
+`docs/source/` is a Sphinx GitHub Pages site (https://kas-lab.github.io/suave/) and the source of truth for user documentation. The top-level `README.md` is a short landing page (overview, quick start, links to the docs pages, managing subsystems, repository layout, citation); do not copy installation, Docker, runner, or troubleshooting details back into it. Update its quick start or links when the corresponding docs change. Pages: `mission`, `installation`, `docker`, `cli`, `run`, `results`, `metrics`, `architecture`, `extend`, `implementations`, `troubleshooting`, `citing`, `api`.
+When changing `suave_runner` behavior or parameters, update `docs/source/run.md` (and `docs/source/results.md` for analysis tools). `suave_runner/README.md` is a short package overview (executables, launch files, configurations, module layout); update it only when those change.
 
 The VCS dependencies file is `suave.repos` (vcs format). The old name `suave.rosinstall` is obsolete — do not reference it.
 

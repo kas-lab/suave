@@ -6,10 +6,18 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+import datetime
+import pathlib
+import re
+
 project = 'SUAVE'
-copyright = '2023, Gustavo Rezende, Juliane Päßler, Jeroen Zwanepol, Elvin Alberts, Lizeth Tarifa, Ilias Gerostathopoulos, Einar Johnsen, Carlos Hernández'
 author = 'Gustavo Rezende, Juliane Päßler, Jeroen Zwanepol, Elvin Alberts, Lizeth Tarifa, Ilias Gerostathopoulos, Einar Johnsen, Carlos Hernández'
-release = '1.5.0'
+copyright = f'2023-{datetime.date.today().year}, {author}'
+
+# The release is the most recent version heading in the CHANGELOG.
+_changelog = pathlib.Path(__file__).resolve().parents[2] / 'CHANGELOG.md'
+_version = re.search(r'^## (\d+\.\d+\.\d+)', _changelog.read_text(encoding='utf-8'), re.MULTILINE)
+release = _version.group(1)
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

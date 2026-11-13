@@ -209,7 +209,7 @@ If `setup.py` `data_files` or console script entry points change, verify they ar
 
 ## Documentation
 
-`docs/source/` is a Sphinx GitHub Pages site that mirrors README content. Keep both in sync when changing installation steps, Docker commands, runner usage, architecture, extension guidance, implementations, metrics, troubleshooting, related work, citing, or API docs. When changing `suave_runner` behavior or parameters, update both `suave_runner/README.md` and `docs/source/run.md`.
+`docs/source/` is a Sphinx GitHub Pages site (https://kas-lab.github.io/suave/) and the source of truth for user documentation. The top-level `README.md` is a short landing page (overview, quick start, links to the docs pages, managing subsystems, repository layout, citation); do not copy installation, Docker, runner, or troubleshooting details back into it. Update its quick start or links when the corresponding docs change. When changing `suave_runner` behavior or parameters, update `docs/source/run.md` (and `docs/source/results.md` for analysis tools). `suave_runner/README.md` is a short package overview (executables, launch files, configurations, module layout); update it only when those change.
 
 The VCS dependencies file is `suave.repos`. The old name `suave.rosinstall` is obsolete and should not be referenced.
 

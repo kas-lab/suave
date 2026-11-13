@@ -29,10 +29,15 @@ Add `suave_base` as an `exec_depend` in your package's `package.xml`:
 In your launch file, include `suave_base.launch.py` to start the managed system and metrics, then add your manager nodes:
 
 ```python
-from ament_index_python.packages import get_package_share_directory
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 import os
+
+from ament_index_python.packages import get_package_share_directory
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
+
+result_path_arg = DeclareLaunchArgument(
+    'result_path', default_value='~/suave/results')
 
 suave_base = IncludeLaunchDescription(
     PythonLaunchDescriptionSource(
@@ -41,16 +46,16 @@ suave_base = IncludeLaunchDescription(
             'launch', 'suave_base.launch.py')),
     launch_arguments={
         'adaptation_manager': 'my_manager',
-        'result_path': result_path,
+        'result_path': LaunchConfiguration('result_path'),
     }.items())
 
 # ... your manager nodes below
 ```
 
-`suave_base.launch.py` starts the managed system (with `task_bridge` disabled — your manager owns task routing) and the mission metrics node. It does **not** start a mission node, add that separately if your manager relies on it.
+`suave_base.launch.py` starts the managed system (with `task_bridge` disabled, since your manager owns task routing), the mission metrics node, the `requirement_monitor` node that publishes requirement fulfillment, and, unless `record_bags:=false`, the bag recorder. It does **not** start a mission node: add one separately if your manager relies on it. Pass `system_modes:=false` if your manager changes lifecycle states and parameters directly. Run `ros2 launch suave_base suave_base.launch.py --show-args` for all arguments.
 
 ### Option B — Built-in manager
- 
+
 Create a manager-only launch file (see [suave_metacontrol.launch.py](https://github.com/kas-lab/suave/blob/main/suave_managing/suave_metacontrol/launch/suave_metacontrol.launch.py) for an example). The manager launch must not start the managed system, mission node, or metrics — `suave_bringup` owns that composition.
 
 Declare the manager package as an `exec_depend` of `suave_bringup`. In

@@ -6,9 +6,9 @@ SUAVE automatically records mission metrics at the end of each run via the `miss
 
 By default results are saved to `~/suave/results/`. This can be changed via the `result_path` ROS parameter or the `result_path` field in `runner_config.yml`.
 
-Each run produces a main summary file plus up to three optional per-event files, all using the same base filename (`result_filename`).
+Each run produces a main summary file plus up to three optional per-event files, all using the same base filename (`result_filename`, default `mission_results`). `suave_runner` sets it to `<adaptation_manager>_<mission_name>` for each experiment, for example `bt_suave`, so a campaign holds one set of files per managing system, with one row per attempt.
 
-## Main summary file — `<result_filename>.csv`
+## Main summary file: `<result_filename>.csv`
 
 The metrics node appends a row when it saves mission results. A row does not
 establish successful completion of a runner attempt. It can remain after
@@ -70,42 +70,14 @@ The publisher uses RELIABLE reliability, TRANSIENT_LOCAL durability, and depth
 
 ## Requirement fulfillment
 
-The `suave_requirements` package provides the `requirement_monitor` node,
-which publishes the runtime fulfillment (`std_msgs/Float32` in `[0, 1]`) of
-the SUAVE RELAX requirements. It is not started by the default launch files:
+The `requirement_monitor` node of the `suave_requirements` package publishes
+the runtime fulfillment (`std_msgs/Float32` in `[0, 1]`) of the SUAVE RELAX
+requirements: thrusters availability, search footprint, and adaptation
+reaction time. `suave_base.launch.py` starts it, so every mission publishes
+these values on `/requirements/<requirement>/fulfillment`.
 
-```bash
-ros2 run suave_requirements requirement_monitor
-```
-
-| Topic | Input | Membership |
-|---|---|---|
-| `/requirements/thruster_availability/fulfillment` | `operational_thrusters` on `/diagnostics` | AS CLOSE AS POSSIBLE TO 0, `FuzzyLeftShoulder(foot, shoulder)` over `required_thrusters - operational_thrusters` |
-| `/requirements/search_footprint/fulfillment` | `coverage_area` on `/diagnostics` | AS MANY AS POSSIBLE, `FuzzyRightShoulder(foot, shoulder)` |
-| `/requirements/adaptation_reaction_time/<type>/fulfillment` | `latest` of valid `mission_metrics/reaction_time` messages of that `adaptation_type` | AS EARLY AS POSSIBLE, `FuzzyExponentialDecay(exponent)` |
-| `/requirements/adaptation_reaction_time/fulfillment` | all reaction events | Moving average of the per-event fulfillment over the last `reaction_time_window_size` events |
-
-`<type>` is `thruster`, `water_visibility`, or `battery`. No fulfillment is
-published until its input is available: thruster and footprint fulfillment
-after their first measurement, per-type reaction-time fulfillment after the
-first `STATUS_VALID` message of that type, and the combined reaction-time
-fulfillment after the first valid reaction of any type. `STATUS_INVALID`
-messages and unknown adaptation types are ignored (unknown types are logged as
-warnings). Values are published when inputs change and republished every
-`publishing_period`.
-`pipeline_detection` stops publishing `coverage_area` after the first pipeline
-detection, so the search footprint fulfillment then holds its last value.
-
-| Parameter | Default | Description |
-|---|---|---|
-| `required_thrusters` | `6` | Thrusters required by the motion controller |
-| `thruster_availability_foot` | `1.0` | Missing thrusters with zero fulfillment |
-| `thruster_availability_shoulder` | `0.0` | Missing thrusters with full fulfillment |
-| `search_footprint_foot` | `0.0` | Footprint (m²) with zero fulfillment |
-| `search_footprint_shoulder` | `12.0` | Footprint (m²) with full fulfillment (3 m altitude at 60° FOV) |
-| `reaction_time_exponent` | `0.2` | Exponential decay rate (1/s) |
-| `reaction_time_window_size` | `5` | Reaction events in the combined moving average |
-| `publishing_period` | `1.0` | Republish period (s) |
+The requirements, their topics, and the node's parameters are described in the
+[suave_requirements README](https://github.com/kas-lab/suave/blob/main/suave_requirements/README.md).
 
 ## Mission config parameters
 
