@@ -58,7 +58,8 @@ To build an image from the checkout instead of pulling one, use
 ## Where commands run
 
 Docker-management commands run on the host. ROS commands (`build`, `test`,
-`run`, `batch`, `campaign`, and `analyze`) use an execution target:
+`mission`, `run`, `batch`, `campaign`, `analyze`, and `docs`) use an execution
+target:
 
 | `--exec` | Behavior outside a container |
 |---|---|
@@ -227,19 +228,90 @@ List and `--latest` commands do not discover arbitrary custom directory names.
 Use explicit paths for those. See {doc}`run` for batch fail-fast behavior,
 readiness checks, recording controls, and recovery safeguards.
 
+### Single mission
+
+```bash
+suave mission
+suave mission --manager bt --gui
+suave mission --manager bt -a bt_executable:=suave_bt_extended -p experiment_logging:=true
+```
+
+`mission` replaces the three terminals of the manual run ({doc}`run`). It
+starts the runner node with a temporary configuration that holds one
+experiment with `num_runs: 1`, launching `suave_bringup mission.launch.py`
+with `adaptation_manager:=MANAGER` (default `none`). The runner starts ArduSub
+SITL and the simulation, waits for them to be ready, stops all processes when
+the mission ends or on Ctrl+C, and writes a normal timestamped campaign folder
+under `--result-path` (default `~/suave/results`).
+
+| Option | Purpose |
+|---|---|
+| `--manager none\|metacontrol\|random\|bt` | Adaptation manager |
+| `--gui` | Start Gazebo with its GUI |
+| `--result-path PATH` | Parent directory of the campaign folder |
+| `--run-duration SEC` | Maximum seconds to wait for the mission to finish |
+| `-a`, `--launch-arg KEY:=VALUE` | Extra `mission.launch.py` argument, repeatable |
+| `-p`, `--param KEY:=VALUE` | Runner parameter override, repeatable |
+
+The other runner parameters keep their node defaults, which differ from the
+installed `runner_config.yml`: the vehicle starts at `x=-17.0`, `y=2.0`, the
+mission uses `suave_missions/config/mission_config.yaml`, and no thruster or
+water-visibility perturbations are injected. Node output is silent unless
+`-p experiment_logging:=true`. The SITL console is not opened; its output goes
+to the run's `ardupilot.log`. Run the three commands by hand when you need the
+interactive console.
+
 ### Analysis
 
 ```bash
 suave analyze summarize -- /home/ubuntu-user/suave/results/CAMPAIGN --latex
 suave analyze wilcoxon -- --ros-args --params-file src/suave/my_analysis.yml
-suave analyze mann-whitney -- --ros-args --params-file src/suave/independent_analysis.yml
+suave analyze wilcoxon-exp exp1 /home/ubuntu-user/suave/results/CAMPAIGN --correction holm
+suave analyze wilcoxon-batch -- /home/ubuntu-user/suave/results/batches/BATCH --correction holm
+suave analyze qq-batch -- /home/ubuntu-user/suave/results/batches/BATCH
 ```
 
-These invoke `summarize_results`, `wilcoxon_analysis`, and
-`mann_whitney_analysis`. Arguments after `--` go to the executable unchanged.
-The CLI does not wrap batch statistical analysis, Q-Q plotting, or pairwise
-LaTeX generation. See {doc}`results` for those scripts and the analysis
-assumptions and input requirements.
+| Command | Runs |
+|---|---|
+| `summarize` | `ros2 run suave_runner summarize_results` |
+| `wilcoxon` | `ros2 run suave_runner wilcoxon_analysis` |
+| `mann-whitney` | `ros2 run suave_runner mann_whitney_analysis` |
+| `wilcoxon-exp EXPERIMENT RESULTS_ROOT` | `ros2 launch suave_runner EXPERIMENT_analysis_launch.py` |
+| `wilcoxon-batch` | `suave_runner/suave_runner/analysis/wilcoxon_analysis_batch.py` |
+| `qq` | `suave_runner/suave_runner/analysis/qq_plot.py` |
+| `qq-batch` | `suave_runner/suave_runner/analysis/qq_plot_batch.py` |
+| `latex-tables` | `suave_runner/suave_runner/latex/wilcoxon_latex_tables_batch.py` |
+| `requirements` | `suave_requirements/scripts/plot_requirement_fulfillment.py` |
+| `representative-run` | `suave_requirements/scripts/export_representative_run_tikz.py` |
+| `requirements-tikz` | `suave_requirements/scripts/export_requirement_fulfillment_tikz.py` |
+| `footprint-alternatives` | `suave_requirements/scripts/export_search_footprint_alternatives.py` |
+
+Arguments after `--` go to the executable or script unchanged. The scripts run
+with `python3` from the SUAVE checkout (`container_src_dir` in a container, the
+CLI's checkout otherwise), so relative paths are relative to the checkout. The
+`suave_requirements` scripts are not installed and exist only in the checkout.
+`wilcoxon-exp` takes one of the bundled experiments (`exp1` to `exp3`,
+`extended_exp1` to `extended_exp3`) and the campaign folder, plus optional
+`--correction holm|none` and `--output-root DIR`; extra launch arguments go
+after `--`. See {doc}`results` for the analysis assumptions and input
+requirements.
+
+### Documentation
+
+```bash
+suave docs build
+suave docs build --output /tmp/suave-docs -- -j auto
+```
+
+`docs build` builds the HTML documentation the way CI does: from the SUAVE
+checkout, with ROS and the workspace sourced (the API pages import the
+packages), with `sphinx-build -W --keep-going -E -a docs/source docs/build`.
+It first removes the generated `docs/source/_autosummary` pages, which can hold
+stale pages of removed functions. On first use, it installs the pinned
+`docs/requirements.txt` into `~/.cache/suave/docs-python` where the command
+runs, and reinstalls them when that file changes; this needs network access
+and `pip`. `--output DIR` is relative to the checkout. Arguments after `--` go
+to `sphinx-build`.
 
 ## Configuration
 

@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""suave analyze: wrappers around the suave_runner analysis scripts."""
+"""suave analyze: wrappers around the SUAVE analysis scripts."""
 
 import argparse
 
 from suave_cli.executor import join
-from suave_cli.targets import run_in_target
+from suave_cli.targets import in_checkout, run_in_target, select_target, target_checkout
 
 ANALYSES = {
     'wilcoxon': ('wilcoxon_analysis', 'Wilcoxon signed-rank tests on matched campaigns'),
@@ -25,12 +25,71 @@ ANALYSES = {
     'summarize': ('summarize_results', 'summarize campaign results'),
 }
 
+BATCH = '/home/ubuntu-user/suave/results/batches/BATCH'
+
+# Source-tree scripts, run by path with python3 from the SUAVE checkout, as the
+# docs do. The suave_requirements scripts are not installed, and some defaults
+# (footprint-alternatives' --output-dir) are relative to the checkout.
+SCRIPTS = {
+    'wilcoxon-batch': (
+        'suave_runner/suave_runner/analysis/wilcoxon_analysis_batch.py',
+        'Wilcoxon tests on every campaign of a batch', f'{BATCH} --correction holm'),
+    'qq': (
+        'suave_runner/suave_runner/analysis/qq_plot.py',
+        'Q-Q plot of the paired differences of two columns',
+        'results.csv --column-a suave --column-b baseline --output qq.png'),
+    'qq-batch': (
+        'suave_runner/suave_runner/analysis/qq_plot_batch.py',
+        'Q-Q plots for every manager pair of a batch', BATCH),
+    'latex-tables': (
+        'suave_runner/suave_runner/latex/wilcoxon_latex_tables_batch.py',
+        'LaTeX tables from the batch Wilcoxon results', BATCH),
+    'requirements': (
+        'suave_requirements/scripts/plot_requirement_fulfillment.py',
+        'plot requirement fulfillment from recorded bags', BATCH),
+    'representative-run': (
+        'suave_requirements/scripts/export_representative_run_tikz.py',
+        'export one representative run as PGFPlots tables', BATCH),
+    'requirements-tikz': (
+        'suave_requirements/scripts/export_requirement_fulfillment_tikz.py',
+        'export requirement fulfillment as PGFPlots tables', BATCH),
+    'footprint-alternatives': (
+        'suave_requirements/scripts/export_search_footprint_alternatives.py',
+        'export search-footprint summaries as PGFPlots tables', BATCH),
+}
+
+EXPERIMENTS = ('exp1', 'exp2', 'exp3', 'extended_exp1', 'extended_exp2', 'extended_exp3')
+
 ANALYZE_EPILOG = """\
-Arguments after '--' go to the analysis script unchanged.
+Arguments after '--' go to the analysis script unchanged. Paths are not
+translated between the host and the container.
 
 examples:
   suave analyze summarize -- --help
   suave analyze wilcoxon -- --ros-args --params-file my_analysis.yml
+  suave analyze wilcoxon-exp exp1 /home/ubuntu-user/suave/results/CAMPAIGN --correction holm
+  suave analyze wilcoxon-batch -- /home/ubuntu-user/suave/results/batches/BATCH
+  suave analyze qq-batch -- --help
+"""
+
+SCRIPT_EPILOG = """\
+Runs from the SUAVE checkout: python3 {path} <arguments after '--'>
+Relative paths are relative to the checkout.
+
+examples:
+  suave analyze {name} -- {example}
+  suave analyze {name} -- --help
+"""
+
+WILCOXON_EXP_EPILOG = """\
+Runs: ros2 launch suave_runner EXPERIMENT_analysis_launch.py results_root:=RESULTS_ROOT
+The launch file maps the campaign's CSV files for the bundled experiment
+configurations. Extra launch arguments go after '--'.
+
+examples:
+  suave analyze wilcoxon-exp exp1 /home/ubuntu-user/suave/results/CAMPAIGN
+  suave analyze wilcoxon-exp extended_exp2 /home/ubuntu-user/suave/results/CAMPAIGN \\
+    --correction holm --output-root /home/ubuntu-user/suave/results/analysis
 """
 
 SUMMARIZE_EPILOG = """\
@@ -64,9 +123,41 @@ def analysis_body(executable, extra):
     return join(['ros2', 'run', 'suave_runner', executable, *extra])
 
 
+def script_body(checkout, script, extra):
+    """Return the shell code that runs one source-tree script from the checkout."""
+    return in_checkout(checkout, join(['python3', script, *extra]))
+
+
+def wilcoxon_exp_body(experiment, results_root, correction=None, output_root=None,
+                      extra=()):
+    """Return the shell code that runs a bundled experiment's Wilcoxon launch file."""
+    parts = ['ros2', 'launch', 'suave_runner', f'{experiment}_analysis_launch.py',
+             f'results_root:={results_root}']
+    if correction:
+        parts.append(f'correction:={correction}')
+    if output_root:
+        parts.append(f'output_root:={output_root}')
+    return join([*parts, *extra])
+
+
 def cmd_analyze(ctx):
     """Run the selected analysis script in the selected target."""
     return run_in_target(ctx, analysis_body(ctx.args.executable, ctx.passthrough))
+
+
+def cmd_analyze_script(ctx):
+    """Run the selected source-tree script from the checkout in the selected target."""
+    target = select_target(ctx)
+    body = script_body(target_checkout(ctx, target), ctx.args.script, ctx.passthrough)
+    return run_in_target(ctx, body, target)
+
+
+def cmd_wilcoxon_exp(ctx):
+    """Run the Wilcoxon launch file of one bundled experiment."""
+    args = ctx.args
+    return run_in_target(ctx, wilcoxon_exp_body(
+        args.experiment, args.results_root, args.correction, args.output_root,
+        ctx.passthrough))
 
 
 def register(subparsers, common):
@@ -86,3 +177,23 @@ def register(subparsers, common):
             })
         leaf = sub.add_parser(name, **kwargs)
         leaf.set_defaults(func=cmd_analyze, executable=executable, accepts_passthrough=True)
+    raw = argparse.RawDescriptionHelpFormatter
+    exp = sub.add_parser(
+        'wilcoxon-exp', parents=[common], help='Wilcoxon tests on a bundled experiment campaign',
+        description='Run the Wilcoxon analysis launch file of a bundled experiment.',
+        epilog=WILCOXON_EXP_EPILOG, formatter_class=raw)
+    exp.add_argument('experiment', choices=EXPERIMENTS, metavar='EXPERIMENT',
+                     help=f'bundled experiment: {", ".join(EXPERIMENTS)}')
+    exp.add_argument('results_root', metavar='RESULTS_ROOT', help='the campaign folder')
+    exp.add_argument('--correction', choices=('holm', 'none'),
+                     help='multiple-comparison correction (launch default: none)')
+    exp.add_argument('--output-root', metavar='DIR',
+                     help='directory for output CSVs (default: RESULTS_ROOT)')
+    exp.set_defaults(func=cmd_wilcoxon_exp, accepts_passthrough=True)
+    for name, (script, summary, example) in SCRIPTS.items():
+        leaf = sub.add_parser(
+            name, parents=[common], help=summary,
+            description=f'Run {script.rsplit("/", 1)[-1]} ({summary}).',
+            epilog=SCRIPT_EPILOG.format(path=script, name=name, example=example),
+            formatter_class=raw)
+        leaf.set_defaults(func=cmd_analyze_script, script=script, accepts_passthrough=True)

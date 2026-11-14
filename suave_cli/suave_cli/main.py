@@ -18,18 +18,20 @@ import argparse
 import os
 import sys
 
-from suave_cli import analyze, config, docker_cmd, ros_build, runner, selftest, term
+from suave_cli import (analyze, config, docker_cmd, docs_cmd, mission, ros_build, runner,
+                       selftest, term)
 from suave_cli.context import AppContext, in_container, resolve_suave_root
 from suave_cli.errors import CliError
 from suave_cli.executor import Executor
 
-COMMAND_MODULES = [docker_cmd, ros_build, runner, analyze, config, selftest]
+COMMAND_MODULES = [docker_cmd, ros_build, mission, runner, analyze, docs_cmd, config, selftest]
 
 DESCRIPTION = """\
 SUAVE command-line helper.
 
 Builds and runs the SUAVE Docker images, builds and tests the SUAVE packages,
-and starts, resumes and lists experiment campaigns. ROS commands run in the
+runs single missions, starts, resumes and lists experiment campaigns,
+runs the analysis scripts and builds the documentation. ROS commands run in the
 SUAVE container or in a colcon workspace on this machine (see --exec).
 """
 
@@ -39,6 +41,7 @@ examples:
   suave docker run                start the 'suave' container in the background
   suave docker mount add PATH     also mount PATH into the container's workspace src/
   suave test suave_runner         build and test one package
+  suave mission --manager bt      run one mission with the BT manager
   suave batch resume --latest     resume the most recent batch
   suave config show               show settings and where they come from
 

@@ -112,6 +112,20 @@ def target_results_dir(ctx, target):
     return str(Path(ctx.settings.get('host_results_dir')).expanduser())
 
 
+def target_checkout(ctx, target):
+    """Return the SUAVE checkout as seen from inside target."""
+    if target.kind == 'docker':
+        return ctx.settings.get('container_src_dir')
+    return str(ctx.suave_root)
+
+
+def in_checkout(checkout, body):
+    """Return shell code that runs body from the SUAVE checkout, or stops with code 2."""
+    quoted = shlex.quote(checkout)
+    return (f'if [ ! -d {quoted} ]; then echo "SUAVE checkout not found: "{quoted} >&2; '
+            f'exit 2; fi; cd {quoted} && {body}')
+
+
 def run_in_target(ctx, body, target=None):
     """Run body in target (selected when not given) and return its exit code."""
     target = target or select_target(ctx)

@@ -52,6 +52,7 @@ A typical first session on a host with Docker:
 suave docker build              # build suave-headless:latest from this checkout
 suave docker run                # start container 'suave' in the background
 suave test suave_runner         # colcon build + test inside the container
+suave mission --manager bt      # one mission with the BT manager
 suave run                       # one campaign with the installed runner_config.yml
 suave campaign list             # result folders and how many runs finished
 suave docker shell              # interactive shell in the container, ROS sourced
@@ -152,6 +153,24 @@ suave test suave_runner --no-build      # skip the build step
 selected package failed, or if a package has no `build/` folder (which can happen with
 `--no-build`).
 
+### `suave mission`
+
+Runs one mission: SITL, the simulation and `suave_bringup mission.launch.py`. It writes a
+temporary runner params file with one experiment (`num_runs: 1`) and runs
+`ros2 run suave_runner suave_runner --ros-args --params-file <it> -p ...`, so the runner's
+readiness checks, cleanup and logging apply and the results are a normal campaign folder.
+
+| Option | Effect |
+|---|---|
+| `--manager none\|metacontrol\|random\|bt` | `adaptation_manager` (default `none`) |
+| `--gui`, `--result-path P`, `--run-duration S` | runner `gui`, `result_path`, `run_duration` |
+| `-a/--launch-arg K:=V` | extra `mission.launch.py` argument (repeatable) |
+| `-p/--param K:=V` | runner parameter override (repeatable), e.g. `experiment_logging:=true` |
+
+Other runner parameters keep the node defaults (no perturbations, start at x=-17, y=2).
+There is no interactive SITL console; run the commands in `docs/source/run.md` by hand
+for that.
+
 ### `suave run`, `suave batch`, `suave campaign`
 
 These wrap the `suave_runner` and `run_batch` nodes. Their parameters are documented in
@@ -182,14 +201,35 @@ Things to keep in mind:
 
 ### `suave analyze`
 
-`suave analyze wilcoxon|mann-whitney|summarize` runs `ros2 run suave_runner
-wilcoxon_analysis|mann_whitney_analysis|summarize_results`. Everything after `--` goes to
-the script unchanged:
+Everything after `--` goes to the tool unchanged. Paths are not translated between the
+host and the container.
+
+| Command | Runs |
+|---|---|
+| `wilcoxon`, `mann-whitney`, `summarize` | `ros2 run suave_runner wilcoxon_analysis\|mann_whitney_analysis\|summarize_results` |
+| `wilcoxon-exp EXP RESULTS_ROOT [--correction C] [--output-root D]` | `ros2 launch suave_runner EXP_analysis_launch.py results_root:=...` |
+| `wilcoxon-batch`, `qq`, `qq-batch`, `latex-tables` | `python3 suave_runner/suave_runner/{analysis,latex}/<script>.py` |
+| `requirements`, `representative-run`, `requirements-tikz`, `footprint-alternatives` | `python3 suave_requirements/scripts/<script>.py` |
+
+The `python3` scripts run from the SUAVE checkout (`container_src_dir` in a container,
+the CLI's checkout otherwise), as the docs ask; the `suave_requirements` scripts are not
+installed. `suave analyze COMMAND --help` names the script and shows an example.
 
 ```bash
 suave analyze summarize -- --help
 suave analyze wilcoxon -- --ros-args --params-file my_analysis.yml
+suave analyze wilcoxon-exp exp1 /home/ubuntu-user/suave/results/CAMPAIGN --correction holm
+suave analyze qq-batch -- /home/ubuntu-user/suave/results/batches/BATCH
 ```
+
+### `suave docs build`
+
+Builds the HTML docs like CI: from the checkout, with ROS and the workspace sourced,
+`python3 -m sphinx -W --keep-going -E -a docs/source docs/build` (`--output DIR` changes the
+folder; arguments after `--` go to Sphinx). It removes `docs/source/_autosummary` first so
+stale pages of removed functions cannot fail the build. The SUAVE images have no Sphinx, so
+the pinned `docs/requirements.txt` is installed with `pip install --target` into
+`~/.cache/suave/docs-python` on first use and again whenever that file changes.
 
 ### `suave config` and `suave self-test`
 
@@ -209,7 +249,7 @@ and `-v/--verbose` (print each command before running it).
 
 ## Where ROS commands run
 
-`build`, `test`, `run`, `batch`, `campaign` and `analyze` need ROS. The `exec` setting
+`build`, `test`, `mission`, `run`, `batch`, `campaign`, `analyze` and `docs` need ROS. The `exec` setting
 (`--exec auto|container|host`, default `auto`) chooses where they run:
 
 | Mode | Runs in | Fails when |
@@ -364,5 +404,5 @@ colcon test --packages-select suave_cli           # same tests + ament linters
 ```
 
 The code is in `suave_cli/suave_cli/`. Each command group has its own module (`container.py`,
-`ros_build.py`, `runner.py`, `analyze.py`, `config.py`). `targets.py` chooses where ROS
+`ros_build.py`, `mission.py`, `runner.py`, `analyze.py`, `docs_cmd.py`, `config.py`). `targets.py` chooses where ROS
 commands run.

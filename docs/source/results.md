@@ -15,10 +15,10 @@ diagnosis, and recovery.
 | Generate pairwise comparison tables | [Wilcoxon LaTeX tables](#wilcoxon-latex-tables) | Existing Wilcoxon results |
 | Plot quality-requirement fulfillment over time | [Requirement fulfillment](#requirement-fulfillment) | Recorded bags of one campaign |
 
-Use the SUAVE CLI ({doc}`cli`) for summaries and single-campaign statistical
-comparisons. Pass analysis arguments after `--`. The CLI does not wrap the
-batch analysis, Q-Q plotting, or pairwise LaTeX scripts. Run those scripts with
-`python3` from the SUAVE repository root, in the sourced SUAVE container.
+Run every tool through the SUAVE CLI ({doc}`cli`) with `suave analyze`, passing
+the tool's arguments after `--`. The script-based tools (batch analysis, Q-Q
+plots, LaTeX tables, requirement fulfillment) run with `python3` from the SUAVE
+repository root. The direct `python3` commands are shown with each tool.
 
 ## Inputs and filtering
 
@@ -134,6 +134,12 @@ For the bundled `exp1` through `exp3` and `extended_exp1` through `extended_exp3
 campaigns, preconfigured launch files provide the CSV mappings:
 
 ```bash
+suave analyze wilcoxon-exp exp1 /home/ubuntu-user/suave/results/campaign --correction holm
+```
+
+The direct ROS equivalent is:
+
+```bash
 ros2 launch suave_runner exp1_analysis_launch.py \
   results_root:=/home/ubuntu-user/suave/results/campaign correction:=holm
 ```
@@ -159,6 +165,12 @@ filename defaults:
 
 The batch script analyzes every manager listed in each campaign's `runs.json`,
 in experiment order. Each campaign needs at least two managers.
+
+```bash
+suave analyze wilcoxon-batch -- /home/ubuntu-user/suave/results/batches/BATCH --correction holm
+```
+
+The direct equivalent, from the SUAVE repository root, is:
 
 ```bash
 python3 suave_runner/suave_runner/analysis/wilcoxon_analysis_batch.py \
@@ -257,6 +269,14 @@ does not perform a formal normality test or classify the distribution.
 Compare two columns in one CSV, paired by row:
 
 ```bash
+suave analyze qq -- results.csv \
+  --column-a suave --column-b baseline --output qq_suave_baseline.png
+```
+
+`suave analyze qq` runs `qq_plot.py` from the SUAVE repository root, so relative
+paths are relative to the repository root. The direct equivalent is:
+
+```bash
 python3 suave_runner/suave_runner/analysis/qq_plot.py results.csv \
   --column-a suave --column-b baseline --output qq_suave_baseline.png
 ```
@@ -277,6 +297,12 @@ override filename-derived labels. Without `--output`, the tool displays the
 plot interactively.
 
 ### Batch plots
+
+```bash
+suave analyze qq-batch -- /home/ubuntu-user/suave/results/batches/BATCH
+```
+
+The direct equivalent, from the SUAVE repository root, is:
 
 ```bash
 python3 suave_runner/suave_runner/analysis/qq_plot_batch.py \
@@ -303,6 +329,12 @@ maximum of the differences.
 ## Wilcoxon LaTeX tables
 
 Run the batch Wilcoxon analysis first, then generate one table per campaign:
+
+```bash
+suave analyze latex-tables -- /home/ubuntu-user/suave/results/batches/BATCH
+```
+
+The direct equivalent, from the SUAVE repository root, is:
 
 ```bash
 python3 suave_runner/suave_runner/latex/wilcoxon_latex_tables_batch.py \
@@ -348,8 +380,16 @@ Include a generated table with:
 ## Requirement fulfillment
 
 The `suave_requirements` package plots the runtime fulfillment of the quality
-requirements ({doc}`mission`) from the bags recorded in a campaign. Run the
-scripts from the SUAVE repository root, in the sourced SUAVE container:
+requirements ({doc}`mission`) from the bags recorded in a campaign:
+
+```bash
+suave analyze requirements -- /home/ubuntu-user/suave/results/batches/BATCH
+suave analyze representative-run -- /home/ubuntu-user/suave/results/batches/BATCH
+```
+
+The scripts are not installed. They exist only in the SUAVE checkout. The
+direct equivalent, from the SUAVE repository root in the sourced SUAVE
+container, is:
 
 ```bash
 python3 suave_requirements/scripts/plot_requirement_fulfillment.py \
@@ -362,7 +402,8 @@ The first command writes one figure per requirement, comparing the mean
 fulfillment of each managing system. The second exports one representative
 run as PGFPlots tables and a LaTeX figure. Both accept the
 [batch input forms](#batch-usage) and need campaigns recorded with
-`record_bags: true`. See the
+`record_bags: true`. `suave analyze requirements-tikz` and
+`suave analyze footprint-alternatives` run the other two exporters. See the
 [suave_requirements README](https://github.com/kas-lab/suave/blob/main/suave_requirements/README.md)
 for all scripts, and each script's `--help` for how runs are selected and
 sampled.
@@ -399,4 +440,4 @@ The Python tools reside under `suave_runner/suave_runner/`:
 | `latex/` | Pairwise table renderer and batch LaTeX generation |
 
 Keep this package structure when invoking scripts directly. Use each script's
-`--help` for its command-line reference.
+`--help`, or `suave analyze COMMAND -- --help`, for its command-line reference.

@@ -1,6 +1,6 @@
 # Run SUAVE
 
-Use the SUAVE CLI ({doc}`cli`) to run campaigns, sequence batches, diagnose
+Use the SUAVE CLI ({doc}`cli`) to run single missions or campaigns, sequence batches, diagnose
 failures, and resume interrupted experiments. See {doc}`results` for statistical
 analysis, summaries, plots, and LaTeX tables.
 
@@ -422,6 +422,17 @@ references. Each campaign's `runs.json` stores progress. See {doc}`metrics` for
 CSV contents and {doc}`results` for selecting attempts during analysis.
 
 ## Run manually
+
+To run one mission without opening three terminals, use the CLI:
+
+```bash
+suave mission --manager bt
+```
+
+It runs the mission as a one-run campaign: the runner starts SITL and the
+simulation, waits for them, stops everything at the end, and writes a normal
+campaign folder. See {doc}`cli` for its options. Run the commands below by hand
+when you need the interactive SITL console or want to restart parts separately.
 
 Start these commands in **three separate terminals** inside the container,
 with the workspace environment available in each.
