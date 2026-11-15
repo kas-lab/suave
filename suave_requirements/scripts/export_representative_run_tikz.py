@@ -137,7 +137,7 @@ def parse_args(argv=None):
               '<manager>_<run_id>/ (default: <batch>/campaign_results/'
               '<campaign>/representative_run/<manager>_<run_id>).'))
     parser.add_argument(
-        '--manager', default='rebetmc',
+        '--manager', default='bt',
         help='Manager identifier whose run is exported.')
     parser.add_argument(
         '--run-id',

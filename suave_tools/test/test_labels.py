@@ -23,6 +23,7 @@ from suave_tools.labels import MANAGERS
 
 @pytest.mark.parametrize('key, full, short', [
     ('rebetmc', 'TacticalRetreat', 'TacticalRetreat'),
+    ('tactical_retreat', 'TacticalRetreat', 'TacticalRetreat'),
     ('rosa_bt', 'ROSA-BT', 'ROSA-BT'),
     ('bt', 'BT', 'BT'),
     ('metacontrol', 'Metacontrol', 'MC'),

@@ -16,6 +16,7 @@
 
 MANAGERS = {  # key: (full label, short LaTeX label)
     'rebetmc': ('TacticalRetreat', 'TacticalRetreat'),
+    'tactical_retreat': ('TacticalRetreat', 'TacticalRetreat'),
     'rosa_bt': ('ROSA-BT', 'ROSA-BT'),
     'bt': ('BT', 'BT'),
     'metacontrol': ('Metacontrol', 'MC'),

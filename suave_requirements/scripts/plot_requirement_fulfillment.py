@@ -90,6 +90,7 @@ time and statistics:
 MANAGER_LABELS = {manager: label(manager) for manager in MANAGERS}
 COLORS = {
     'rebetmc': '#0072B2',
+    'tactical_retreat': '#0072B2',
     'rosa_bt': '#009E73',
     'bt': '#E69F00',
     'metacontrol': '#CC79A7',

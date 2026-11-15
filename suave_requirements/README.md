@@ -26,9 +26,7 @@ that needs fewer thrusters.
 **Search footprint.** *The AUV SHALL observe AS MUCH of the search area AS
 POSSIBLE while searching for the pipeline.* A higher search altitude gives a
 larger camera footprint, but the pipeline cannot be detected when the
-altitude is above the water visibility. The search-altitude tactics manage
-this trade-off. The requirement only applies until the pipeline is detected;
-after that its fulfillment holds its last value.
+altitude is above the water visibility. The requirement only applies until the pipeline is detected, after that its fulfillment holds its last value.
 
 **Adaptation reaction time.** *The AUV SHALL complete an appropriate
 adaptation AS EARLY AS POSSIBLE AFTER a thruster failure, a water-visibility
@@ -86,7 +84,8 @@ python3 suave_requirements/scripts/plot_requirement_fulfillment.py \
 ```
 
 **Representative run:** the fulfillment, water visibility, adaptations, and
-mission phases of one run (by default the most typical `rebetmc` run), as
+mission phases of one run (default to the `bt` manager, pass `--manager` to
+pick another manager), as
 PGFPlots tables and a standalone LaTeX figure.
 
 ```bash
