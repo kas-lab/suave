@@ -5,13 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## Unreleased
+## 1.6.0
 
 ### Added
 
-1. `suave_cli`: a Python command-line interface for Docker image and container management, package builds and tests, campaign and batch execution, resume, diagnosis, and analysis. Supports host or container execution, persistent configuration, extra bind mounts, command previews, and CLI self-tests. Available through `env.sh` or the optional colcon package and included in the Docker images.
+1. `suave_cli`: a Python command-line interface for Docker image and container management, package builds and tests, single-mission execution, campaign and batch execution, resume, diagnosis, analysis, and documentation builds. Supports host or container execution, persistent configuration, extra bind mounts, host-display and NVIDIA GPU integration, command previews, and CLI self-tests. Analysis commands wrap bundled-experiment and batch Wilcoxon tests, Q-Q plots, LaTeX tables, requirement plots, and TikZ exports. Available through `env.sh` or the optional colcon package and included in the Docker images.
 
-2. `suave_requirements`: runtime fulfillment monitoring for the thruster availability, search footprint, and adaptation reaction time RELAX requirements. Includes recorded-bag comparison plots, coverage reports, and TikZ export tools.
+2. `suave_requirements`: runtime fulfillment monitoring for the thruster availability, search footprint, and adaptation reaction time RELAX requirements. Includes recorded-bag comparison plots, coverage reports, and TikZ export tools for requirement fulfillment, representative runs, and search-footprint alternatives.
 
 3. `suave_msgs/msg/ReactionTime` and the `mission_metrics/reaction_time` topic, carrying the latest and mean reaction time, reaction count, and validity status for each adaptation type.
 
@@ -35,11 +35,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 4. Batch Wilcoxon analysis validates matching run-ID sets and finite metrics before testing each campaign. Analysis, plotting, and LaTeX tools share campaign-layout discovery and manager labels through `suave_tools`.
 
-5. `suave_runner_launch.py` accepts a `config_file` launch argument. Mission and base launches propagate recording and water-current settings, and `suave_base` starts requirement monitoring alongside metrics.
+5. `suave_runner_launch.py` accepts a `config_file` launch argument. The mission launch now includes `suave_base`, consolidating metrics, requirement monitoring, and bag recording. Mission and base launches propagate recording and water-current settings.
 
 6. Docker builds use smaller layers and improved dependency caching. Container CI reuses build outputs and passes the built base-image digest to dependent image builds.
 
 7. Documentation now separates result processing into `results.md`, expands the CLI guide, and prioritizes CLI-based campaign workflows. Installation, extension, metrics, Docker, and recovery instructions have been corrected.
+
+8. Runner startup now uses readiness checks instead of fixed delays: it waits for the SITL port, the first simulated vehicle pose, and each experiment's configured `required_services`. The `ardupilot_ready_timeout`, `simulation_ready_timeout`, and `readiness_timeout` parameters bound these waits. Shipped BT experiment configurations declare their required mode-change services.
+
+9. The headless Docker image now sources ROS and the SUAVE workspace through its entrypoint for noninteractive `docker run` commands, and defaults to `bash`. This entrypoint does not apply to `docker exec`.
+
+10. Updated the `remaro_worlds` dependency to `ac042b17ec2b69977a9c44ab287131586e9518b0`.
 
 ### Fixed
 
@@ -54,6 +60,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 5. Thruster availability counts now track failures and recovery without repeated-event drift.
 
 6. Documentation cleanup removes generated autosummary stubs after module changes, preventing obsolete API imports from breaking Sphinx builds. Documentation CI cleans these pages before rebuilding.
+
+7. The `task_bridge` and `system_modes` launch conditions now accept lowercase boolean values instead of requiring the exact string `True`.
 
 ### Removed
 
