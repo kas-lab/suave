@@ -1,0 +1,6 @@
+suave\_runner.analysis.common.campaign\_methods
+===============================================
+
+.. currentmodule:: suave_runner.analysis.common
+
+.. autofunction:: campaign_methods

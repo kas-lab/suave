@@ -1,0 +1,36 @@
+﻿suave\_runner.analysis.summarize\_results
+=========================================
+
+.. automodule:: suave_runner.analysis.summarize_results
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      build_argument_parser
+      calculate_statistics
+      discover_result_files
+      format_console_table
+      main
+      render_latex_table
+      write_latex_table
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

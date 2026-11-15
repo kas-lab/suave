@@ -1,0 +1,6 @@
+suave\_runner.analysis.common.parse\_pipeline\_found
+====================================================
+
+.. currentmodule:: suave_runner.analysis.common
+
+.. autofunction:: parse_pipeline_found

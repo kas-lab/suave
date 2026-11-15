@@ -1,0 +1,6 @@
+suave\_runner.analysis.qq\_plot.describe\_differences
+=====================================================
+
+.. currentmodule:: suave_runner.analysis.qq_plot
+
+.. autofunction:: describe_differences

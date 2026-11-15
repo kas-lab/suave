@@ -1,0 +1,6 @@
+suave\_requirements.fulfillment.thruster\_availability\_fulfillment
+===================================================================
+
+.. currentmodule:: suave_requirements.fulfillment
+
+.. autofunction:: thruster_availability_fulfillment

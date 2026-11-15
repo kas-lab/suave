@@ -1,0 +1,6 @@
+suave\_runner.analysis.summarize\_results.build\_argument\_parser
+=================================================================
+
+.. currentmodule:: suave_runner.analysis.summarize_results
+
+.. autofunction:: build_argument_parser

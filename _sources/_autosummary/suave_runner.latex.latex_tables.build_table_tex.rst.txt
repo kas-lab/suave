@@ -1,0 +1,6 @@
+suave\_runner.latex.latex\_tables.build\_table\_tex
+===================================================
+
+.. currentmodule:: suave_runner.latex.latex_tables
+
+.. autofunction:: build_table_tex

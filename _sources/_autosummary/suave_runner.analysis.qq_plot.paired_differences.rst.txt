@@ -1,0 +1,6 @@
+suave\_runner.analysis.qq\_plot.paired\_differences
+===================================================
+
+.. currentmodule:: suave_runner.analysis.qq_plot
+
+.. autofunction:: paired_differences

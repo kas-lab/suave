@@ -1,0 +1,6 @@
+suave\_monitor.water\_visibility\_observer.main
+===============================================
+
+.. currentmodule:: suave_monitor.water_visibility_observer
+
+.. autofunction:: main

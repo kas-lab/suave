@@ -1,0 +1,38 @@
+﻿suave.water\_current
+====================
+
+.. automodule:: suave.water_current
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      gauss_markov_step
+      main
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+   
+      WaterCurrent
+   
+   
+
+   
+   
+   
+
+
+

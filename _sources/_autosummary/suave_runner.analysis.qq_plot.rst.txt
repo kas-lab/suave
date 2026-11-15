@@ -1,0 +1,38 @@
+﻿suave\_runner.analysis.qq\_plot
+===============================
+
+.. automodule:: suave_runner.analysis.qq_plot
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      build_parser
+      describe_differences
+      main
+      method_name
+      numeric_column
+      paired_differences
+      plot_differences
+      read_csv
+      validate_run_ids
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

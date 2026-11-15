@@ -1,0 +1,6 @@
+suave\_runner.suave\_runner.main
+================================
+
+.. currentmodule:: suave_runner.suave_runner
+
+.. autofunction:: main

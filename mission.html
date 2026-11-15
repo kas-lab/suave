@@ -1,0 +1,271 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mission and uncertainties &mdash; SUAVE 1.6.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=72d88caf"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Install SUAVE locally" href="installation.html" />
+    <link rel="prev" title="Welcome to SUAVE’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SUAVE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Mission and uncertainties</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#mission">Mission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#uncertainties">Uncertainties</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#search-altitude-trade-off">Search altitude trade-off</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#key-performance-indicators">Key performance indicators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#quality-requirements">Quality requirements</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Install SUAVE locally</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker.html">Use SUAVE with Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">SUAVE CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run.html">Run SUAVE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="results.html">Processing results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">System Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extend.html">Extending SUAVE and connecting managing subsystems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementations.html">Managing Subsystem Implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citing.html">Citation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SUAVE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Mission and uncertainties</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/mission.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="mission-and-uncertainties">
+<h1>Mission and uncertainties<a class="headerlink" href="#mission-and-uncertainties" title="Link to this heading"></a></h1>
+<p>SUAVE simulates an autonomous underwater vehicle (AUV), a BlueROV2 running
+ArduSub, that must find and inspect a pipeline on the seabed. The AUV starts
+close to where the pipeline is expected to be, but does not know its exact
+location, as in a real deployment.</p>
+<section id="mission">
+<h2>Mission<a class="headerlink" href="#mission" title="Link to this heading"></a></h2>
+<p>The mission is a sequence of tasks:</p>
+<ol class="arabic simple">
+<li><p><strong>A1: Search for the pipeline.</strong> The AUV follows a spiral path at a
+configurable altitude until its camera detects the pipeline.</p></li>
+<li><p><strong>A2: Follow and inspect the pipeline.</strong> Once the pipeline is detected, the
+AUV follows it and inspects as much of it as possible.</p></li>
+</ol>
+<p>The <a class="reference external" href="https://www.frontiersin.org/journals/robotics-and-ai/articles/10.3389/frobt.2025.1531743/full">ROSA</a>
+extension adds a third task:</p>
+<ol class="arabic simple" start="3">
+<li><p><strong>A3: Recharge the battery.</strong> When the battery runs low, the AUV interrupts
+its current task, recharges, and then resumes the mission.</p></li>
+</ol>
+<p>The default mission is time-constrained: it ends after a time limit
+(<code class="docutils literal notranslate"><span class="pre">time_limit</span></code>, 300 s by default), whether or not the pipeline was found.</p>
+</section>
+<section id="uncertainties">
+<h2>Uncertainties<a class="headerlink" href="#uncertainties" title="Link to this heading"></a></h2>
+<p>While the AUV operates, its environment and its own components change in
+ways that are not known at design time:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Uncertainty</p></th>
+<th class="head"><p>Effect</p></th>
+<th class="head"><p>Adaptation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>U1: Thruster failures</strong></p></td>
+<td><p>One or more thrusters stop working during A1 or A2. The motion controller still commands them, so the AUV deviates from its path</p></td>
+<td><p>Activate thruster recovery (<code class="docutils literal notranslate"><span class="pre">f_maintain_motion</span></code> in <code class="docutils literal notranslate"><span class="pre">fd_recover_thrusters</span></code>). Recovery always succeeds</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>U2: Changing water visibility</strong></p></td>
+<td><p>During A1, the camera cannot detect the pipeline when the AUV searches above the water visibility</p></td>
+<td><p>Select a lower or higher spiral altitude (1, 2, or 3 m) for the current visibility</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>U3: Low battery</strong></p></td>
+<td><p>During A1 or A2, the battery level reaches a critical threshold</p></td>
+<td><p>Interrupt the current task and run A3, which needs its own architectural configuration</p></td>
+</tr>
+</tbody>
+</table>
+<p>U1 and U2 only require changing the architecture, and the task sequence stays
+the same. U3 also changes the task sequence. The scenario with U1 and U2 is
+the <strong>original use case</strong>, and the scenario with all three is the <strong>extended
+use case</strong>. Water current is available as an optional environmental
+disturbance (<code class="docutils literal notranslate"><span class="pre">enable_water_current</span></code>), with no built-in adaptation.</p>
+<p>The disturbances are simulated and configurable:</p>
+<ul class="simple">
+<li><p><strong>Thruster failures</strong> are scheduled through the <code class="docutils literal notranslate"><span class="pre">thruster_events</span></code> parameter
+of <code class="docutils literal notranslate"><span class="pre">thruster_monitor</span></code>. Each entry <code class="docutils literal notranslate"><span class="pre">(thruster,</span> <span class="pre">failure|recovery,</span> <span class="pre">delay_s)</span></code>
+names a thruster (1 to 6) and the seconds since the previous event.</p></li>
+<li><p><strong>Water visibility</strong> varies periodically between a minimum and a maximum,
+by default from 1.25 m to 3.75 m with an 80 s period.</p></li>
+<li><p><strong>Battery level</strong> drops linearly over <code class="docutils literal notranslate"><span class="pre">discharge_time</span></code> (200 s by default).
+A level below <code class="docutils literal notranslate"><span class="pre">battery_limit</span></code> (0.25) counts as low battery.</p></li>
+</ul>
+<p>The experiment runner can shift these disturbances randomly between runs. See
+<a class="reference internal" href="run.html"><span class="doc">Run SUAVE</span></a> for the campaign parameters.</p>
+</section>
+<section id="search-altitude-trade-off">
+<h2>Search altitude trade-off<a class="headerlink" href="#search-altitude-trade-off" title="Link to this heading"></a></h2>
+<p>A higher search altitude gives the camera a larger footprint, so the AUV
+covers the search area faster. But the pipeline is only detected when the
+altitude is below the water visibility. The expected altitude for each
+visibility is:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Water visibility</p></th>
+<th class="head"><p>Spiral altitude</p></th>
+<th class="head"><p>Mode</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>≥ 3.25 m</p></td>
+<td><p>3.0 m</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fd_spiral_high</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>≥ 2.25 m and &lt; 3.25 m</p></td>
+<td><p>2.0 m</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fd_spiral_medium</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>≥ 1.25 m and &lt; 2.25 m</p></td>
+<td><p>1.0 m</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fd_spiral_low</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>The thresholds are the <code class="docutils literal notranslate"><span class="pre">water_visibility_threshold</span></code> and <code class="docutils literal notranslate"><span class="pre">expected_altitude</span></code>
+parameters of <code class="docutils literal notranslate"><span class="pre">mission_metrics</span></code>, which uses them to measure reaction times.</p>
+</section>
+<section id="key-performance-indicators">
+<h2>Key performance indicators<a class="headerlink" href="#key-performance-indicators" title="Link to this heading"></a></h2>
+<p>The mission’s success is measured with two KPIs:</p>
+<ul class="simple">
+<li><p><strong>Search time:</strong> how long the AUV takes to find the pipeline.</p></li>
+<li><p><strong>Distance inspected:</strong> how much of the pipeline the AUV inspects before the
+time limit.</p></li>
+</ul>
+<p>SUAVE also measures the <strong>adaptation reaction time</strong>: how long the managing
+subsystem takes to adapt after a disturbance. See <a class="reference internal" href="metrics.html"><span class="doc">Metrics Reference</span></a> for how
+each metric is recorded.</p>
+</section>
+<section id="quality-requirements">
+<h2>Quality requirements<a class="headerlink" href="#quality-requirements" title="Link to this heading"></a></h2>
+<p>SUAVE’s quality requirements are written in RELAX: each one has a fulfillment
+degree between 0 (violated) and 1 (fully satisfied), instead of simply passing
+or failing.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Requirement</p></th>
+<th class="head"><p>Statement</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Thrusters availability</strong></p></td>
+<td><p>The AUV SHALL keep the number of operational thrusters AS CLOSE AS POSSIBLE TO the number required by the active motion controller</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Search footprint</strong></p></td>
+<td><p>The AUV SHALL observe AS MUCH of the search area AS POSSIBLE while searching for the pipeline</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Adaptation reaction time</strong></p></td>
+<td><p>The AUV SHALL complete an appropriate adaptation AS EARLY AS POSSIBLE AFTER a thruster failure, a water visibility change, or a low battery</p></td>
+</tr>
+</tbody>
+</table>
+<p>Each requirement captures a stakeholder concern without prescribing a
+solution. For example, thrusters availability can be satisfied by recovering
+the failed thrusters, or by switching to a motion controller that needs fewer
+thrusters.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">requirement_monitor</span></code> node publishes the fulfillment of each requirement
+at runtime on <code class="docutils literal notranslate"><span class="pre">/requirements/&lt;requirement&gt;/fulfillment</span></code>. Managing subsystems
+can use these topics to decide when to adapt, and the offline scripts plot
+them per managing subsystem. The RELAX expressions, fuzzy membership
+functions, topics, and scripts are described in the
+<a class="reference external" href="https://github.com/kas-lab/suave/blob/main/suave_requirements/README.md">suave_requirements README</a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to SUAVE’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="installation.html" class="btn btn-neutral float-right" title="Install SUAVE locally" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023-2026, Gustavo Rezende, Juliane Päßler, Jeroen Zwanepol, Elvin Alberts, Lizeth Tarifa, Ilias Gerostathopoulos, Einar Johnsen, Carlos Hernández.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

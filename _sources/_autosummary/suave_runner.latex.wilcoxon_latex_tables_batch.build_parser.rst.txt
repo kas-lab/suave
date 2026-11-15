@@ -1,0 +1,6 @@
+suave\_runner.latex.wilcoxon\_latex\_tables\_batch.build\_parser
+================================================================
+
+.. currentmodule:: suave_runner.latex.wilcoxon_latex_tables_batch
+
+.. autofunction:: build_parser

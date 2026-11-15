@@ -1,0 +1,38 @@
+﻿suave\_metrics.mission\_metrics
+===============================
+
+.. automodule:: suave_metrics.mission_metrics
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      build_reaction_time_msg
+      main
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+   
+      MissionMetrics
+   
+   
+
+   
+   
+   
+
+
+

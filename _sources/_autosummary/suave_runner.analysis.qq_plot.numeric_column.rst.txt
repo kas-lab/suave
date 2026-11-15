@@ -1,0 +1,6 @@
+suave\_runner.analysis.qq\_plot.numeric\_column
+===============================================
+
+.. currentmodule:: suave_runner.analysis.qq_plot
+
+.. autofunction:: numeric_column

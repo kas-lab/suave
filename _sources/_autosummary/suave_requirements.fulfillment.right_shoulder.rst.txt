@@ -1,0 +1,6 @@
+suave\_requirements.fulfillment.right\_shoulder
+===============================================
+
+.. currentmodule:: suave_requirements.fulfillment
+
+.. autofunction:: right_shoulder

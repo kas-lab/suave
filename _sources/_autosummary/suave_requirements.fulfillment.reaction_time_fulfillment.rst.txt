@@ -1,0 +1,6 @@
+suave\_requirements.fulfillment.reaction\_time\_fulfillment
+===========================================================
+
+.. currentmodule:: suave_requirements.fulfillment
+
+.. autofunction:: reaction_time_fulfillment

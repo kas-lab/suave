@@ -1,0 +1,6 @@
+suave\_requirements.requirement\_monitor.main
+=============================================
+
+.. currentmodule:: suave_requirements.requirement_monitor
+
+.. autofunction:: main

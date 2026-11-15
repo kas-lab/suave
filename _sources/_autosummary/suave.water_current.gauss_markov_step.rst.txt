@@ -1,0 +1,6 @@
+suave.water\_current.gauss\_markov\_step
+========================================
+
+.. currentmodule:: suave.water_current
+
+.. autofunction:: gauss_markov_step

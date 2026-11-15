@@ -1,0 +1,32 @@
+﻿suave\_runner.latex.latex\_tables
+=================================
+
+.. automodule:: suave_runner.latex.latex_tables
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      build_table_tex
+      generate_table_file
+      main
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

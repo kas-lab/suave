@@ -1,0 +1,6 @@
+suave\_runner.analysis.wilcoxon\_analysis.paired\_test
+======================================================
+
+.. currentmodule:: suave_runner.analysis.wilcoxon_analysis
+
+.. autofunction:: paired_test

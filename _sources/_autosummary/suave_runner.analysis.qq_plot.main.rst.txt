@@ -1,0 +1,6 @@
+suave\_runner.analysis.qq\_plot.main
+====================================
+
+.. currentmodule:: suave_runner.analysis.qq_plot
+
+.. autofunction:: main

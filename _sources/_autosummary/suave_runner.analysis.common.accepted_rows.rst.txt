@@ -1,0 +1,6 @@
+suave\_runner.analysis.common.accepted\_rows
+============================================
+
+.. currentmodule:: suave_runner.analysis.common
+
+.. autofunction:: accepted_rows

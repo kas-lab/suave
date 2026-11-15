@@ -1,0 +1,35 @@
+MannWhitneyAnalysis
+===================
+
+.. currentmodule:: suave_runner.analysis.mann_whitney_analysis
+
+.. autoclass:: MannWhitneyAnalysis
+
+   
+
+   
+    .. automethod:: __init__
+    .. automethod:: perform_analysis
+    .. automethod:: save_data_frames
+    .. automethod:: u_test
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MannWhitneyAnalysis.__init__
+      ~MannWhitneyAnalysis.perform_analysis
+      ~MannWhitneyAnalysis.save_data_frames
+      ~MannWhitneyAnalysis.u_test
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+   
+   

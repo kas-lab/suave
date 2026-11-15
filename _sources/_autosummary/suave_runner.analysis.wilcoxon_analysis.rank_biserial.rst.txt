@@ -1,0 +1,6 @@
+suave\_runner.analysis.wilcoxon\_analysis.rank\_biserial
+========================================================
+
+.. currentmodule:: suave_runner.analysis.wilcoxon_analysis
+
+.. autofunction:: rank_biserial

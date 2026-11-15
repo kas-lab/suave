@@ -1,0 +1,6 @@
+suave\_runner.latex.latex\_tables.generate\_table\_file
+=======================================================
+
+.. currentmodule:: suave_runner.latex.latex_tables
+
+.. autofunction:: generate_table_file

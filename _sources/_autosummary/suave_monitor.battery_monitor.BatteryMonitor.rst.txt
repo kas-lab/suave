@@ -1,0 +1,37 @@
+BatteryMonitor
+==============
+
+.. currentmodule:: suave_monitor.battery_monitor
+
+.. autoclass:: BatteryMonitor
+
+   
+
+   
+    .. automethod:: __init__
+    .. automethod:: publish_battery_level
+    .. automethod:: qa_publisher_cb
+    .. automethod:: recharge_battery_cb
+    .. automethod:: status_cb
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~BatteryMonitor.__init__
+      ~BatteryMonitor.publish_battery_level
+      ~BatteryMonitor.qa_publisher_cb
+      ~BatteryMonitor.recharge_battery_cb
+      ~BatteryMonitor.status_cb
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+   
+   
